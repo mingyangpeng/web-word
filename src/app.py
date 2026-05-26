@@ -10,6 +10,9 @@ import datetime
 from src.design_system import (
     HEADER_H1, HEADER_H2, HEADER_H3, HEADER_H4,
     BODY_BASE,
+    PRIMARY_COLOR, SECONDARY_COLOR, SUCCESS_COLOR, ERROR_COLOR, WARNING_COLOR,
+    BACKGROUND_COLOR, CARD_COLOR, TEXT_COLOR, TEXT_SECONDARY,
+    BORDER_COLOR, SPACE_XS, SPACE_SM, SPACE_MD, SPACE_LG, SPACE_XL,
     get_button_primary_style, get_button_outline_style, get_card_style,
     get_section_spacing, get_badge_style
 )
@@ -25,21 +28,23 @@ st.set_page_config(
 )
 
 # ============================================
-# Sticky 搜索栏：直接定位 Streamlit 主内容的第一个容器
+# Sticky 搜索栏：Google 风格样式
 # ============================================
 st.markdown(f"""
 <style>
-/* 找到主内容区域的第一个水平块容器，就是搜索栏所在的列 */
-div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"]:first-of-type {{
+/* Google 风格搜索栏 */
+.google-search-bar {{
     position: sticky;
     top: 1.5rem;
-    z-index: 999;
+    z-index: 1000;
     background: rgba({BACKGROUND_COLOR}, 0.98);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: {SPACE_SM}px;
-    margin: -{SPACE_SM/2}px -{SPACE_SM/2}px {SPACE_LG}px -{SPACE_SM/2}px;
+    margin: 0 0 {SPACE_LG}px 0;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.5);
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -69,6 +74,24 @@ THEORY_DESCRIPTION = """
 **【方向】** - 运动朝向的终点/目标
 **【体相】** - 运动时身体的姿态/状态
 """
+
+# ============================================
+# 搜索函数：带 300ms 防抖延迟
+# ============================================
+def search_verb(value: str) -> None:
+    """
+    处理动词搜索，带防抖延迟。
+
+    当用户在搜索框输入时，延迟 300ms 后才更新结果，
+    避免快速连续输入时触发过多搜索。
+
+    Args:
+        value: 用户输入的动词
+    """
+    if value and 1 <= len(value) <= 50:
+        st.session_state.verb_result = value
+        st.session_state.show_result = True
+        st.session_state.current_debounce_start = datetime.datetime.now().timestamp()
 
 # ============================================
 # 模拟数据
@@ -187,13 +210,13 @@ def render_sidebar():
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 数据导出</h2>", unsafe_allow_html=True)
     csv = MOCK_FEEDBACK_DATA.to_csv(index=False).encode('utf-8-sig')
 
-    download_style = get_button_outline_style()
     st.sidebar.download_button(
         label="导出反馈数据 (CSV)",
         data=csv,
         file_name=f"feedback_data_{datetime.datetime.now().strftime('%Y%m%d')}.csv",
         mime='text/csv',
-        **download_style
+        type="primary",
+        use_container_width=True
     )
 
 # ============================================
@@ -204,28 +227,75 @@ def render_main_area():
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃 动词释义优化器</h1>", unsafe_allow_html=True)
     st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
 
-    # ===== 搜索栏 =====
-    col_input, col_stats = st.columns([2, 1])
+    # ===== Google 风格搜索栏 =====
+    st.markdown('<div class="google-search-bar">', unsafe_allow_html=True)
 
-    with col_input:
+    with st.container():
+        # 搜索输入框
         verb_input = st.text_input(
-            label="请输入动词",
+            label="搜索动词",
             value="跑进来",
-            placeholder="例如：跑进来、冲进来、滑进来...",
-            label_visibility="collapsed"
+            placeholder="搜索动词 (例如：跑进来、冲进来、滑进来...)",
+            label_visibility="collapsed",
+            on_change=search_verb
         )
 
-        if st.button("✨ 生成优化释义", type="primary", use_container_width=True):
-            st.session_state.verb_result = verb_input
-            st.session_state.show_result = True
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    with col_stats:
-        st.info("""
-        ✅ **输入动词后点击生成按钮**
-        ✅ **查看传统释义与优化释义的对比**
-        ✅ **对优化释义进行评分和反馈**
-        ✅ **帮助我们收集数据，改进释义质量**
-        """)
+    # 欢迎消息（当没有结果时显示）
+    if not hasattr(st.session_state, 'show_result') or not st.session_state.show_result:
+        st.markdown(get_section_spacing())
+        st.markdown(f"""
+        <div style='{get_card_style()}'>
+            <h2 style='{HEADER_H3}'>🏃 动词释义优化器</h2>
+            <p style='{BODY_BASE}'><strong>基于运动事件类型学的中文动词释义优化</strong></p>
+            <div style='{get_section_spacing()}'></div>
+            <p style='{BODY_BASE}'><strong>核心功能：</strong></p>
+            <ul style='{BODY_BASE}; margin-top: 8px; padding-left: 24px; line-height: 1.8;'>
+                <li><strong>方式要素分解</strong>：分析运动采用的姿势/手段</li>
+                <li><strong>路径要素分解</strong>：解析运动经过的空间轨迹</li>
+                <li><strong>方向要素分解</strong>：识别运动朝向的终点/目标</li>
+                <li><strong>体相要素分解</strong>：描述运动时身体的姿态/状态</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(get_section_spacing(), unsafe_allow_html=True)
+    else:
+        # 当有搜索结果时，显示结果区域
+        verb = st.session_state.verb_result
+
+        # 获取释义数据，如果没有则使用默认示例
+        if verb in MOCK_DEFINITIONS:
+            traditional = MOCK_DEFINITIONS[verb]["traditional"]
+            optimized = MOCK_DEFINITIONS[verb]["optimized"]
+        else:
+            # 通用示例
+            traditional = f"""
+**传统释义 (词典)**
+
+> 「{verb}」指人快速移动进入某空间，以奔跑的方式进入，强调速度和路径。
+
+**语义要素分析：**
+- 方式：奔跑
+- 路径：进入空间
+- 方向：朝向空间内部
+- 体相：身体前倾，双臂摆动
+"""
+            optimized = f"""
+**优化释义 (语义分解)**
+
+| 语义要素 | 含义 | 体现 |
+|---------|------|------|
+| 【方式】 | 奔跑姿态 | 动态运动方式 |
+| 【路径】 | 进入空间的路径 | 从外部到内部的移动 |
+| 【方向】 | 朝向空间内部 | 目标明确 |
+| 【体相】 | 身体前倾 | 动态姿态 |
+
+**改进点：**
+1. 显式分解语义要素
+2. 提供更详细的描述
+3. 便于对比不同动词
+"""
 
     # 显示结果区域
     if hasattr(st.session_state, 'show_result') and st.session_state.show_result:
