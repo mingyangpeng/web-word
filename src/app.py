@@ -28,6 +28,18 @@ st.set_page_config(
 )
 
 # ============================================
+# Session State 初始化
+# ============================================
+# 卡片展开/折叠状态管理
+if 'card_expanded' not in st.session_state:
+    st.session_state.card_expanded = {
+        'prototype': True,
+        'anchor': True,
+        'core': True,
+        'example': True
+    }
+
+# ============================================
 # Sticky 搜索栏：Google 风格样式
 # ============================================
 st.markdown(f"""
@@ -94,6 +106,260 @@ def search_verb(value: str) -> None:
         st.session_state.current_debounce_start = datetime.datetime.now().timestamp()
 
 # ============================================
+# 语义表渲染函数
+# ============================================
+def render_semantic_table(semantic_data):
+    """
+    渲染语义分解表，带 emoji 和颜色编码。
+
+    Args:
+        semantic_data: 二维列表 [[类型, emoji, 描述], ...]
+
+    Returns:
+        HTML 格式的语义表
+    """
+    if not semantic_data:
+        return "<p style='color: #a0aec0;'>暂无语义分解数据</p>"
+
+    html = '<table style="border-collapse: collapse; width: 100%; margin: 16px 0;">'
+
+    # 表头
+    html += '<thead style="background-color: #4a5568; color: white; font-weight: 600;">'
+    html += '<tr>'
+    html += '<th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; width: 25%;">类型</th>'
+    html += '<th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; width: 20%;">标识</th>'
+    html += '<th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; width: 55%;">描述</th>'
+    html += '</tr></thead><tbody>'
+
+    # 表格行
+    for i, row in enumerate(semantic_data):
+        semantic_type, emoji, description = row
+        color = SEMANTIC_COLORS.get(semantic_type, {}).get("color", "#4a5568")
+
+        # 奇偶行背景色
+        bg_color = "#f7fafc" if i % 2 == 0 else "#ffffff"
+
+        html += f'''
+        <tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: {color}; font-weight: 500;">{semantic_type}</td>
+            <td style="padding: 12px; font-size: 1.2em;">{emoji}</td>
+            <td style="padding: 12px; color: #2d3748;">{description}</td>
+        </tr>'''
+
+    html += '</tbody></table>'
+    return html
+
+# ============================================
+# 卡片渲染函数
+# ============================================
+def render_card_header(title, icon, expandable=True, collapsed=False):
+    """
+    渲染可折叠卡片头部。
+
+    Args:
+        title: 卡片标题
+        icon: 图标
+        expandable: 是否可折叠
+        collapsed: 是否处于折叠状态
+
+    Returns:
+        HTML 格式的卡片头部
+    """
+    expanded = not collapsed
+
+    if expandable:
+        arrow = "▼" if expanded else "▶"
+    else:
+        arrow = "▪"
+
+    style = f"""
+    <div style="display: flex; justify-content: space-between; align-items: center;
+                padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white; border-radius: 8px 8px 0 0; cursor: pointer;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5em;">{icon}</span>
+            <span style="font-weight: 600; font-size: 1.1em;">{title}</span>
+        </div>
+        <span style="font-size: 0.9em; opacity: 0.9;">{arrow}</span>
+    </div>
+    """
+
+    return style
+
+def render_card_prototype(verb):
+    """
+    渲染原型与位移事件分析卡片。
+
+    Args:
+        verb: 动词
+
+    Returns:
+        卡片内容 HTML
+    """
+    semantic_table = MOCK_DEFINITIONS.get(verb, {}).get("semantic_table", [])
+
+    html = '''
+    <div style="padding: 20px;">
+        <h4 style="color: #667eea; font-weight: 600; margin: 0 0 16px 0;">🧬 原型与位移事件分析</h4>
+    '''
+
+    if semantic_table:
+        html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>动词:</strong> ' + verb + '</p>'
+        html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>事件类型:</strong> 基于运动事件类型学的位移事件分析</p>'
+        html += '<p style="color: #2d3748;"><strong>语义要素分解:</strong></p>'
+        html += render_semantic_table(semantic_table)
+    else:
+        html += '<p style="color: #718096;">暂无详细的位移事件分析数据</p>'
+
+    html += '</div>'
+    return html
+
+def render_card_anchor(verb):
+    """
+    渲染范畴锚定卡片。
+
+    Args:
+        verb: 动词
+
+    Returns:
+        卡片内容 HTML
+    """
+    semantic_table = MOCK_DEFINITIONS.get(verb, {}).get("semantic_table", [])
+
+    html = '''
+    <div style="padding: 20px;">
+        <h4 style="color: #48bb78; font-weight: 600; margin: 0 0 16px 0;">🎯 范畴锚定</h4>
+    '''
+
+    html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>所属范畴:</strong> 运动方式复合事件</p>'
+
+    if semantic_table:
+        html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>语义特征:</strong></p>'
+        html += '<div style="display: flex; flex-wrap: wrap; gap: 8px;">'
+        for row in semantic_table:
+            semantic_type, emoji, description = row
+            color = SEMANTIC_COLORS.get(semantic_type, {}).get("color", "#4a5568")
+            html += f'<span style="background-color: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;">{emoji} {semantic_type}</span>'
+        html += '</div>'
+    else:
+        html += '<p style="color: #718096;">暂无范畴锚定数据</p>'
+
+    html += '</div>'
+    return html
+
+def render_card_core(verb):
+    """
+    渲染核心释义与多维辨异卡片。
+
+    Args:
+        verb: 动词
+
+    Returns:
+        卡片内容 HTML
+    """
+    definitions = MOCK_DEFINITIONS.get(verb, {})
+    traditional = definitions.get("traditional", "")
+    optimized = definitions.get("optimized", "")
+
+    html = '''
+    <div style="padding: 20px;">
+        <h4 style="color: #ed8936; font-weight: 600; margin: 0 0 16px 0;">📚 核心释义与多维辨异</h4>
+    '''
+
+    if traditional:
+        html += '<div style="background-color: #edf2f7; padding: 12px; border-radius: 8px; margin-bottom: 16px;">'
+        html += '<h5 style="color: #2d3748; margin: 0 0 8px 0;">📋 传统释义</h5>'
+        html += '<p style="color: #4a5568; margin: 0;">' + traditional + '</p>'
+        html += '</div>'
+
+    if optimized:
+        html += '<div style="background-color: #c6f6d5; padding: 12px; border-radius: 8px;">'
+        html += '<h5 style="color: #22543d; margin: 0 0 8px 0;">✅ 优化释义 (语义分解)</h5>'
+        html += '<p style="color: #2f855a; margin: 0;">' + optimized + '</p>'
+        html += '</div>'
+
+    html += '</div>'
+    return html
+
+def render_card_example(verb):
+    """
+    渲染图式示例卡片。
+
+    Args:
+        verb: 动词
+
+    Returns:
+        卡片内容 HTML
+    """
+    html = '''
+    <div style="padding: 20px;">
+        <h4 style="color: #9f7aea; font-weight: 600; margin: 0 0 16px 0;">🖼️ 图式示例</h4>
+    '''
+
+    html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>示例场景:</strong></p>'
+    html += '<ul style="color: #4a5568; line-height: 1.8;">'
+    html += '<li>用户看到"{' + verb + '}"时，会联想到...</li>'
+    html += '<li>在具体语境中，该动词通常出现在...</li>'
+    html += '<li>与类似动词"跑进来"的区别在于...</li>'
+    html += '</ul>'
+
+    html += '</div>'
+    return html
+
+# ============================================
+# 示例库渲染函数
+# ============================================
+def render_example_library():
+    """
+    渲染示例库组件，带分类标签页。
+
+    使用 Streamlit tabs 和 buttons 创建交互式示例库。
+    点击动词按钮会调用 search_verb 函数触发搜索。
+    """
+    st.markdown("<h3 style='color: #2d3748; font-weight: 600; margin: 0 0 16px 0;'>📚 示例库</h3>", unsafe_allow_html=True)
+
+    # 创建标签页
+    tab1, tab2, tab3 = st.tabs([
+        "🏃 " + CATEGORY_MODE,
+        "🛤️ " + CATEGORY_PATH,
+        "💪 " + CATEGORY_MANNER
+    ])
+
+    with tab1:
+        for verb in EXAMPLE_VERBS.get(CATEGORY_MODE, []):
+            st.button(
+                verb,
+                use_container_width=True,
+                key=f"example_{verb}",
+                type="secondary",
+                on_click=search_verb,
+                args=(verb,)
+            )
+
+    with tab2:
+        for verb in EXAMPLE_VERBS.get(CATEGORY_PATH, []):
+            st.button(
+                verb,
+                use_container_width=True,
+                key=f"example_{verb}",
+                type="secondary",
+                on_click=search_verb,
+                args=(verb,)
+            )
+
+    with tab3:
+        for verb in EXAMPLE_VERBS.get(CATEGORY_MANNER, []):
+            st.button(
+                verb,
+                use_container_width=True,
+                key=f"example_{verb}",
+                type="secondary",
+                on_click=search_verb,
+                args=(verb,)
+            )
+
+# ============================================
 # 模拟数据
 # ============================================
 # 模拟统计数据
@@ -115,6 +381,12 @@ MOCK_HOT_VERBS = [
 # 模拟释义数据
 MOCK_DEFINITIONS = {
     "跑进来": {
+        "semantic_table": [
+            ["方式", "🏃", "双脚快速交替蹬地前进"],
+            ["路径", "🛤️", "直线穿越边界进入空间"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "身体前倾，双臂自然摆动"]
+        ],
         "traditional": """
 **传统释义 (词典)**
 
@@ -144,6 +416,12 @@ MOCK_DEFINITIONS = {
 """
     },
     "冲进来": {
+        "semantic_table": [
+            ["方式", "🏃", "急速奔跑，带有强烈冲击力"],
+            ["路径", "🛤️", "带有横向移动的直线进入"],
+            ["方向", "🎯", "目的明确的快速进入"],
+            ["体相", "💪", "身体前倾更明显，肌肉紧绷"]
+        ],
         "traditional": """
 **传统释义 (词典)**
 
@@ -170,7 +448,190 @@ MOCK_DEFINITIONS = {
 2. **体相更详细**：肌肉紧绷体现紧张感
 3. **路径有横向移动**：不只是直线
 """
+    },
+    "走进去": {
+        "semantic_table": [
+            ["方式", "🚶", "平稳移动，步伐稳定"],
+            ["路径", "🛤️", "沿着某轨迹进入空间"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "姿态自然，无明显前倾"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "滑进来": {
+        "semantic_table": [
+            ["方式", "🏃", "身体贴近地面快速滑行"],
+            ["路径", "🛤️", "弧形轨迹穿越边界"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "身体压低，保持平衡"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "滚进来": {
+        "semantic_table": [
+            ["方式", "🏃", "以身体为轴滚动前进"],
+            ["路径", "🛤️", "波浪式轨迹移动"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "身体蜷缩，保持稳定"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "跌进来": {
+        "semantic_table": [
+            ["方式", "🏃", "失去平衡跌入空间"],
+            ["路径", "🛤️", "向下弧形轨迹进入"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "身体前倾，慌乱姿态"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "窜进来": {
+        "semantic_table": [
+            ["方式", "🏃", "突然快速窜动进入"],
+            ["路径", "🛤️", "曲折但快速进入"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "身体扭曲，快速动作"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "走进来": {
+        "semantic_table": [
+            ["方式", "🚶", "平稳行走进入空间"],
+            ["路径", "🛤️", "从外部到内部移动"],
+            ["方向", "🎯", "朝向空间内部"],
+            ["体相", "💪", "姿态端正，步伐稳健"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "冲出去": {
+        "semantic_table": [
+            ["方式", "🏃", "急速奔跑向外冲出"],
+            ["路径", "🛤️", "直线向外穿越边界"],
+            ["方向", "🎯", "朝向空间外部"],
+            ["体相", "💪", "身体后仰，用力冲刺"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "滚出去": {
+        "semantic_table": [
+            ["方式", "🏃", "以身体为轴向外滚动"],
+            ["路径", "🛤️", "波浪式轨迹向外移动"],
+            ["方向", "🎯", "朝向空间外部"],
+            ["体相", "💪", "身体蜷缩，保持稳定"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "跌出去": {
+        "semantic_table": [
+            ["方式", "🏃", "失去平衡跌出空间"],
+            ["路径", "🛤️", "向下弧形轨迹离开"],
+            ["方向", "🎯", "朝向空间外部"],
+            ["体相", "💪", "身体前倾，慌乱姿态"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "滑出去": {
+        "semantic_table": [
+            ["方式", "🏃", "身体贴地向外滑行"],
+            ["路径", "🛤️", "弧形轨迹穿越边界"],
+            ["方向", "🎯", "朝向空间外部"],
+            ["体相", "💪", "身体压低，保持平衡"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "站着": {
+        "semantic_table": [
+            ["方式", "🚶", "保持身体直立姿态"],
+            ["路径", "🛤️", "原地固定，无明显位移"],
+            ["方向", "🎯", "朝向水平方向延伸"],
+            ["体相", "💪", "双臂自然下垂或摆动"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "躺着": {
+        "semantic_table": [
+            ["方式", "🚶", "身体平躺于地面"],
+            ["路径", "🛤️", "水平移动，贴近地面"],
+            ["方向", "🎯", "朝向任意水平方向"],
+            ["体相", "💪", "全身放松，四肢伸展"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "坐着": {
+        "semantic_table": [
+            ["方式", "🚶", "臀部接触平面坐姿"],
+            ["路径", "🛤️", "相对于地面垂直方向"],
+            ["方向", "🎯", "朝向前方或侧方"],
+            ["体相", "💪", "上身挺直，双腿下垂"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "蹲着": {
+        "semantic_table": [
+            ["方式", "🚶", "屈膝半蹲姿态"],
+            ["路径", "🛤️", "身体上下起伏移动"],
+            ["方向", "🎯", "朝向原地或前方"],
+            ["体相", "💪", "身体前倾，重心降低"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "趴着": {
+        "semantic_table": [
+            ["方式", "🚶", "腹部贴地匍匐移动"],
+            ["路径", "🛤️", "贴近地面曲折前进"],
+            ["方向", "🎯", "朝向任意水平方向"],
+            ["体相", "💪", "身体平贴地面，手脚交替"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
+    },
+    "靠着": {
+        "semantic_table": [
+            ["方式", "🚶", "身体倚靠固定物移动"],
+            ["路径", "🛤️", "沿支撑物表面移动"],
+            ["方向", "🎯", "朝向支撑物方向"],
+            ["体相", "💪", "背部接触支撑面"]
+        ],
+        "traditional": "传统释义...",
+        "optimized": "优化释义..."
     }
+}
+
+# ============================================
+# 语义颜色常量
+# ============================================
+SEMANTIC_COLORS = {
+    "方式": {"color": "#4a5568", "emoji": "🏃", "label": "方式"},
+    "路径": {"color": "#48bb78", "emoji": "🛤️", "label": "路径"},
+    "方向": {"color": "#ed8936", "emoji": "🎯", "label": "方向"},
+    "体相": {"color": "#805ad5", "emoji": "💪", "label": "体相"}
+}
+
+# ============================================
+# 示例库分类
+# ============================================
+CATEGORY_MODE = "方式聚焦类"
+CATEGORY_PATH = "路径聚焦类"
+CATEGORY_MANNER = "体相聚焦类"
+
+EXAMPLE_VERBS = {
+    CATEGORY_MODE: ["跑进来", "冲进来", "滑进来", "滚进来", "跌进来", "窜进来"],
+    CATEGORY_PATH: ["走进去", "走进来", "冲出去", "滚出去", "跌出去", "滑出去"],
+    CATEGORY_MANNER: ["站着", "躺着", "坐着", "蹲着", "趴着", "靠着"]
 }
 
 # 模拟历史反馈数据
@@ -301,52 +762,43 @@ def render_main_area():
     if hasattr(st.session_state, 'show_result') and st.session_state.show_result:
         verb = st.session_state.verb_result
 
-        # 获取释义数据，如果没有则使用默认示例
-        if verb in MOCK_DEFINITIONS:
-            traditional = MOCK_DEFINITIONS[verb]["traditional"]
-            optimized = MOCK_DEFINITIONS[verb]["optimized"]
-        else:
-            # 通用示例
-            traditional = f"""
-**传统释义 (词典)**
+        # 显示四张卡片布局
+        st.markdown(f"<h2 style='{HEADER_H2}'>结果展示</h2>", unsafe_allow_html=True)
 
-> 「{verb}」指人快速移动进入某空间，以奔跑的方式进入，强调速度和路径。
+        # 卡片 1: 原型与位移事件分析
+        st.markdown(get_card_style(), unsafe_allow_html=True)
+        st.markdown(render_card_header("原型与位移事件分析", "🧬", expandable=True, collapsed=not st.session_state.card_expanded['prototype']), unsafe_allow_html=True)
+        if st.session_state.card_expanded['prototype']:
+            st.markdown(render_card_prototype(verb), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-**语义要素分析：**
-- 方式：奔跑
-- 路径：进入空间
-- 方向：朝向空间内部
-- 体相：身体前倾，双臂摆动
-"""
-            optimized = f"""
-**优化释义 (语义分解)**
+        # 卡片 2: 范畴锚定
+        st.markdown(get_card_style(), unsafe_allow_html=True)
+        st.markdown(render_card_header("范畴锚定", "🎯", expandable=True, collapsed=not st.session_state.card_expanded['anchor']), unsafe_allow_html=True)
+        if st.session_state.card_expanded['anchor']:
+            st.markdown(render_card_anchor(verb), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-| 语义要素 | 含义 | 体现 |
-|---------|------|------|
-| 【方式】 | 奔跑姿态 | 动态运动方式 |
-| 【路径】 | 进入空间的路径 | 从外部到内部的移动 |
-| 【方向】 | 朝向空间内部 | 目标明确 |
-| 【体相】 | 身体前倾 | 动态姿态 |
+        # 卡片 3: 核心释义与多维辨异
+        st.markdown(get_card_style(), unsafe_allow_html=True)
+        st.markdown(render_card_header("核心释义与多维辨异", "📚", expandable=True, collapsed=not st.session_state.card_expanded['core']), unsafe_allow_html=True)
+        if st.session_state.card_expanded['core']:
+            st.markdown(render_card_core(verb), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-**改进点：**
-1. 显式分解语义要素
-2. 提供更详细的描述
-3. 便于对比不同动词
-"""
+        # 卡片 4: 图式示例
+        st.markdown(get_card_style(), unsafe_allow_html=True)
+        st.markdown(render_card_header("图式示例", "🖼️", expandable=True, collapsed=not st.session_state.card_expanded['example']), unsafe_allow_html=True)
+        if st.session_state.card_expanded['example']:
+            st.markdown(render_card_example(verb), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # 使用两列展示释义
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.subheader("📋 传统释义")
-            st.markdown(traditional, unsafe_allow_html=True)
-
-        with col2:
-            st.subheader("✅ 优化释义 (语义分解)")
-            st.markdown(optimized, unsafe_allow_html=True)
+        # 示例库
+        st.markdown(get_section_spacing(), unsafe_allow_html=True)
+        render_example_library()
 
         # 用户反馈区域
-        st.markdown(get_section_spacing())
+        st.markdown(get_section_spacing(), unsafe_allow_html=True)
 
         st.markdown(f"<h3 style='{HEADER_H3}'>💬 反馈与评分</h3>", unsafe_allow_html=True)
 
@@ -388,7 +840,7 @@ def render_main_area():
 
         # 显示提交历史
         if hasattr(st.session_state, 'feedback_submitted') and st.session_state.feedback_submitted:
-            st.markdown(get_section_spacing())
+            st.markdown(get_section_spacing(), unsafe_allow_html=True)
 
             st.markdown(f"<h3 style='{HEADER_H3}'>📝 反馈历史</h3>", unsafe_allow_html=True)
             if hasattr(st.session_state, 'last_feedback'):
