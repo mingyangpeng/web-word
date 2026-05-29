@@ -1,0 +1,20 @@
+{
+  "name": "web-word",
+  "description": "English synonym verb definition tool for Chinese learners",
+  "version": "1.0.0",
+  "tech_stack": {
+    "frontend": "Streamlit",
+    "backend": "Python 3.11+",
+    "database": "MySQL 8.0",
+    "llm": "OpenAI SDK (DeepSeek/智谱)"
+  },
+  "workflow": {
+    "auto_mode": false,
+    "auto_approve_plans": false,
+    "auto_approve_commits": false
+  },
+  "project_info": {
+    "primary_users": "Chinese speakers learning English",
+    "main_problem": "Help users distinguish between English synonym verbs"
+  }
+}
