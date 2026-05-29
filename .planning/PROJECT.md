@@ -1,57 +1,112 @@
-# 中文动词释义优化器
-
-## What This Is
-
-A Streamlit-based tool that provides optimized Chinese verb definitions through semantic decomposition based on Talmy's motion event typology (1985). The app breaks down verbs into semantic elements: Way (方式), Path (路径), Direction (方向), and Manner/Aspect (体相) to provide richer, more precise meanings.
-
-## Core Value
-
-Enable accurate understanding of Chinese motion verbs through explicit semantic decomposition, helping users grasp the subtle differences between similar verbs (e.g., "跑进来" vs "冲进来").
-
-## Requirements
-
-### Validated
-
-- Streamlit frontend with sticky search bar
-- Semantic decomposition template (MOCK_DEFINITIONS)
-- Mock statistics display (total queries, avg rating, hot verbs)
-- Mock user feedback UI (rating + text input)
-
-### Active
-
-- Redesign main content area with improved layout
-- Refactor sidebar structure
-- Change navigation approach
-- Implement multi-view design
-- Improve data display and interaction
-
-### Out of Scope
-
-- Backend API integration (LLM, database) — separate milestone
-- Real-time backend data connections
-
-## Context
-
-- **Technical Environment**: Python 3.11, Streamlit, Pandas
-- **Domain**: Chinese linguistics and motion event typology
-- **Current State**: Frontend complete with mock data; backend services pending
-- **Target Platform**: Hugging Face Spaces (free hosting for ML/AI apps)
-
-## Constraints
-
-- **Streamlit Limitation**: No server-side templates or advanced UI components; limited customization
-- **Single File**: Currently all code in app.py (to be refactored for maintainability)
-- **Language**: Chinese interface, English technical comments
-- **Performance**: Streamlit has some performance overhead for heavy UI updates
-
-## Key Decisions
-
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Streamlit framework | Rapid prototyping, easy deployment to Hugging Face | ✓ Good — quick to build and deploy |
-| Single-file initial codebase | Fast iteration on core functionality | ✓ Good — now ready for modularization |
-| Mock data placeholder | Focus on UI/UX first before backend integration | ✓ Good — clear scope for this milestone |
-| Semantic decomposition template | Based on validated research (Talmy 1985) | ✓ Good — theoretically grounded |
-
 ---
-*Last updated: 2026-05-26 after complete UI/UX redesign milestone initialization*
+name: web-word
+description: English synonym verb definition tool for Chinese learners
+type: project
+---
+
+# Web Word 项目
+
+## 项目概述
+
+**核心价值**：为中文用户提供英语近义动词的精准释义和对比，帮助用户准确理解和区分英语动词的使用场景。
+
+**主要问题**：中文用户在学习英语动词时，常遇到近义动词难以区分的问题（如 look, watch, see, gaze, stare 等词汇）。本项目通过语义分解和对比展示，帮助用户理解每个动词的独特用法和细微差别。
+
+**主要用户**：
+- 中文母语者学习英语的成年人
+- 英语学习者（B1-C1 水平）
+- 需要精确表达的外语工作者
+
+## 项目目标
+
+1. 提供近义动词的精准释义，突出每个动词的独特语义特征
+2. 通过对比展示帮助用户理解近义动词的细微差别
+3. 支持用户自定义添加和反馈
+4. 积累高质量的动词释义数据集
+
+## 核心功能
+
+### 1. 动词查询与释义
+- 输入英语动词
+- 返回释义（包括语义分解）
+- 近义词对比展示
+
+### 2. 语义分解要素
+- 【方式】- 动作采用的姿势/手段
+- 【方向】- 动作朝向的目标
+- 【体相】- 动作时的身体姿态
+- 【范围】- 动作涉及的范围/程度
+
+### 3. 用户反馈系统
+- 评分反馈（1-5星）
+- 用法示例补充
+- 释义改进建议
+
+### 4. 数据统计
+- 热门动词排行
+- 平均评分
+- 用户反馈收集
+
+## 技术架构
+
+### 前端
+- **Streamlit** - 快速构建 Web 界面
+- **Sticky 搜索栏** - 固定定位，实时反馈
+- **语义表格展示** - 颜色编码，易于理解
+- **目标平台**：电脑端 Chrome 浏览器
+
+### 后端
+- **Python 3.11+** - 主要编程语言
+- **MySQL 8.0** - 数据库存储
+- **大模型 API** - 提示词工程与释义生成
+- **FastAPI/Flask** - 可选的 API 层
+
+### 数据层
+- **MySQL** - 存储动词释义、用户反馈、统计数据
+- **缓存层** - 减少重复查询
+- **数据导出** - CSV 格式支持
+
+## 待实现功能
+
+### 必须实现
+1. **动词释义查询**
+   - 输入：英语动词
+   - 输出：释义 + 语义分解
+   - 后端：LLM API 集成
+
+2. **近义词对比展示**
+   - 并排展示近义动词
+   - 突出差异点
+   - 示例句子
+
+3. **用户反馈系统**
+   - 评分（1-5 星）
+   - 文字反馈
+   - 提交到数据库
+
+4. **MySQL 数据库**
+   - 动词表（definitions）
+   - 用户反馈表（feedbacks）
+   - 统计数据表（statistics）
+
+### 可选增强
+1. **用户收藏/历史记录**
+2. **个性化学习路径**
+3. **学习进度追踪**
+
+## 项目状态
+
+- **当前阶段**：v1.0 初始化
+- **代码状态**：已完成基础架构和前端界面
+- **数据库**：已设计 MySQL 8.0 模式
+- **LLM 集成**：待接入 API
+
+## 技术债务与关注点
+
+详见 `.planning/codebase/CONCERNS.md`
+
+## 参考资料
+
+- Talmy, L. (1985). *Lexicalization patterns: Semantic structure in lexical forms*
+- 中文英语学习领域研究
+- 英语近义词词典研究

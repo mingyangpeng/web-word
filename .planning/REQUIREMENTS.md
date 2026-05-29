@@ -8,8 +8,8 @@
 ## 设计系统
 
 - [ ] **DESIGN-01**: 统一的视觉设计系统（颜色、字体、间距、组件样式）
-- [ ] **DESIGN-02**: 响应式布局适配（桌面、平板、移动端）
-- [ ] **DESIGN-03**: 可访问性优化（对比度、字体大小、屏幕阅读器支持）
+- [ ] **DESIGN-02**: 电脑端 Chrome 优化（桌面分辨率 1920x1080 适配）
+- [ ] **DESIGN-03**: 可访问性优化（对比度、字体大小）
 
 ---
 
@@ -59,7 +59,7 @@
 
 ## 超出范围（Out of Scope）
 
-- [ ] **UI-11**: 比较视图（并排对比多个动词）
+- [ ] **UI-11**: 响应式布局（移动端/平板适配）
 - [ ] **UI-12**: 历史记录视图
 - [ ] **UI-13**: 主题切换（浅色/深色模式）
 - [ ] **UI-14**: 数据导出（CSV/JSON）
@@ -96,4 +96,4 @@
 
 ---
 
-*Updated: 2026-05-29 - Project direction changed to English synonym verb definitions*
+*Updated: 2026-05-29 - Project direction changed to English synonym verb definitions, target: Desktop Chrome only*

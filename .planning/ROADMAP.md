@@ -3,7 +3,7 @@
 **Milestone:** v1.0 - 英语近义动词释义工具
 **Total Phases:** 4
 **Total Requirements:** 19
-**Coverage:** 100%
+**Target Platform:** 电脑端 Chrome 浏览器（桌面分辨率 1920x1080）
 
 ---
 
@@ -13,8 +13,8 @@
 
 **Requirements:**
 - DESIGN-01: 统一的视觉设计系统
-- DESIGN-02: 响应式布局适配
-- DESIGN-03: 可访问性优化
+- DESIGN-02: 电脑端 Chrome 优化（桌面分辨率 1920x1080 适配）
+- DESIGN-03: 可访问性优化（对比度、字体大小）
 - CORE-01: 动词查询输入区域
 - CORE-02: 释义展示
 - CORE-03: 近义词对比展示
@@ -41,6 +41,7 @@
 - 近义词对比一目了然
 - 评分和反馈提交成功
 - 统计数据正确显示
+- 在 Chrome 1920x1080 分辨率下测试通过
 
 **Plans:**
 - [ ] 01-01-PLAN.md — 核心功能与界面设计
@@ -72,7 +73,7 @@
 **Acceptance Test:**
 - 输入动词后，释义展示区域立即响应
 - 可以点击示例库中的动词快速填充
-- 语义分解表格在所有主题下清晰可读
+- 语义分解表格在 Chrome 下清晰可读
 
 **Plans:**
 - [ ] 02-01-PLAN.md — 用户体验优化
@@ -148,9 +149,9 @@
 **v1.0 完成标志:**
 1. 所有 4 个阶段完成并通过验收测试
 2. 应用在所有主要功能上无阻塞性 bug
-3. 用户界面在至少 3 种屏幕尺寸下测试通过
+3. 用户界面在 Chrome 1920x1080 分辨率下测试通过
 4. 数据库连接和 API 调用稳定可靠
 
 ---
 
-*Roadmap updated: 2026-05-29 - Project direction changed to English synonym verb definitions*
+*Roadmap updated: 2026-05-29 - Project direction changed to English synonym verb definitions, target: Desktop Chrome only*
