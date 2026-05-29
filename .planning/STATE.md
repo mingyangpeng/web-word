@@ -8,6 +8,7 @@ type: project
 
 **Core value:** 为中文用户提供英语近义动词的精准释义和对比
 **Current focus:** v1.0 - 英语近义动词释义工具
+**Target Platform:** 电脑端 Chrome 浏览器（桌面分辨率 1920x1080）
 
 ## Phase Progress
 
@@ -49,6 +50,7 @@ type: project
 - [x] REQUIREMENTS.md updated (19 requirements)
 - [x] ROADMAP.md updated (4 phases)
 - [x] STATE.md created
+- [x] Target platform specified as Desktop Chrome only
 
 ## Phase 1 Plan Details
 
@@ -70,6 +72,7 @@ type: project
 - Monolithic app.py structure
 - No database integration yet
 - No LLM API integration yet
+- Target: Chrome 1920x1080 only
 
 ---
 
