@@ -110,7 +110,7 @@
 - 统计数据准确显示
 
 **Plans:**
-- [ ] 03-01-PLAN.md — 后端集成
+- [x] 03-01-PLAN.md — MySQL 8.0 数据库和 Zhipu AI LLM API 集成
 
 ---
 

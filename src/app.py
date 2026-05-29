@@ -1,8 +1,17 @@
+import sys
+import os
+# 确保项目根目录在 sys.path 中，使 from src.xxx 导入正常工作
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
 import json
 import datetime
+
+# Backend integration imports
+from src.mysql_db import init_database, get_stats, get_hot_verbs, get_feedback_data
+from src.llm_api import get_definition, is_cache_available
 
 # ============================================
 # 设计系统导入
@@ -40,6 +49,20 @@ if 'card_expanded' not in st.session_state:
     }
 
 # ============================================
+# 数据库初始化（连接失败时降级为无数据库模式）
+# ============================================
+DB_AVAILABLE = False
+try:
+    # Initialize MySQL database
+    if init_database():
+        DB_AVAILABLE = True
+        st.success("✅ 数据库连接成功")
+    else:
+        st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
+except Exception as e:
+    st.warning(f"⚠️ 数据库初始化失败，使用离线模式：{e}")
+
+# ============================================
 # Sticky 搜索栏：Google 风格样式
 # ============================================
 st.markdown(f"""
@@ -57,6 +80,7 @@ st.markdown(f"""
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(226, 232, 240, 0.5);
+
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -90,20 +114,19 @@ THEORY_DESCRIPTION = """
 # ============================================
 # 搜索函数：带 300ms 防抖延迟
 # ============================================
-def search_verb(value: str) -> None:
-    """
-    处理动词搜索，带防抖延迟。
-
-    当用户在搜索框输入时，延迟 300ms 后才更新结果，
-    避免快速连续输入时触发过多搜索。
-
-    Args:
-        value: 用户输入的动词
-    """
+def search_verb() -> None:
+    """on_change 回调：当搜索框值变化时触发搜索。"""
+    value = st.session_state.get("搜索动词", "")
     if value and 1 <= len(value) <= 50:
         st.session_state.verb_result = value
         st.session_state.show_result = True
-        st.session_state.current_debounce_start = datetime.datetime.now().timestamp()
+
+
+def select_example_verb(verb: str) -> None:
+    """点击示例库动词时触发搜索。"""
+    st.session_state.verb_result = verb
+    st.session_state.show_result = True
+    st.session_state["搜索动词"] = verb
 
 # ============================================
 # 语义表渲染函数
@@ -197,7 +220,7 @@ def render_card_prototype(verb):
     Returns:
         卡片内容 HTML
     """
-    semantic_table = MOCK_DEFINITIONS.get(verb, {}).get("semantic_table", [])
+    semantic_table = get_semantic_table_for_verb(verb)
 
     html = '''
     <div style="padding: 20px;">
@@ -333,7 +356,7 @@ def render_example_library():
                 use_container_width=True,
                 key=f"example_{verb}",
                 type="secondary",
-                on_click=search_verb,
+                on_click=select_example_verb,
                 args=(verb,)
             )
 
@@ -344,7 +367,7 @@ def render_example_library():
                 use_container_width=True,
                 key=f"example_{verb}",
                 type="secondary",
-                on_click=search_verb,
+                on_click=select_example_verb,
                 args=(verb,)
             )
 
@@ -355,29 +378,71 @@ def render_example_library():
                 use_container_width=True,
                 key=f"example_{verb}",
                 type="secondary",
-                on_click=search_verb,
+                on_click=select_example_verb,
                 args=(verb,)
             )
 
 # ============================================
-# 模拟数据
+# LLM API Integration
 # ============================================
-# 模拟统计数据
-MOCK_STATS = {
-    "total_queries": 847,
-    "avg_rating": 4.2,
-    "total_feedbacks": 312
-}
+def get_verb_definition(verb: str) -> Optional[Dict[str, Any]]:
+    """
+    Get verb definition from LLM API with caching.
 
-# 模拟热门动词
-MOCK_HOT_VERBS = [
-    {"verb": "跑进来", "count": 234, "avg_rating": 4.5},
-    {"verb": "冲进来", "count": 187, "avg_rating": 4.3},
-    {"verb": "滑进来", "count": 156, "avg_rating": 4.1},
-    {"verb": "滚进来", "count": 143, "avg_rating": 3.9},
-    {"verb": "跌进来", "count": 128, "avg_rating": 4.0},
-]
+    Args:
+        verb: The verb to define
 
+    Returns:
+        Dictionary containing definition data or None if failed
+    """
+    if not verb or not verb.strip():
+        return None
+
+    # Check cache first
+    result = get_definition(verb, force_refresh=False)
+    if result:
+        return result
+
+    # If cache not available or failed, try without cache
+    result = get_definition(verb, force_refresh=True)
+    return result
+
+
+def get_semantic_table_for_verb(verb: str) -> List:
+    """
+    Get semantic table for a verb in the format expected by render_semantic_table.
+
+    Args:
+        verb: The verb
+
+    Returns:
+        List of [type, emoji, description] tuples
+    """
+    result = get_verb_definition(verb)
+
+    if not result or not result.get("semantic_table"):
+        # Return default structure
+        return [
+            ["方式", "🏃", "待生成"],
+            ["路径", "🛤️", "待生成"],
+            ["方向", "🎯", "待生成"],
+            ["体相", "💪", "待生成"]
+        ]
+
+    # Convert semantic table dict to the format expected by render_semantic_table
+    semantic_table = result["semantic_table"]
+    return [
+        ["方式", "🏃", semantic_table.get("manner", "待生成")],
+        ["路径", "🛤️", semantic_table.get("path", "待生成")],
+        ["方向", "🎯", semantic_table.get("direction", "待生成")],
+        ["体相", "💪", semantic_table.get("aspect", "待生成")],
+        ["范围", "🌍", semantic_table.get("scope", "待生成")]
+    ]
+
+
+# ============================================
+# Mock Data (Fallback for offline mode)
+# ============================================
 # 模拟释义数据
 MOCK_DEFINITIONS = {
     "跑进来": {
@@ -634,42 +699,54 @@ EXAMPLE_VERBS = {
     CATEGORY_MANNER: ["站着", "躺着", "坐着", "蹲着", "趴着", "靠着"]
 }
 
-# 模拟历史反馈数据
-MOCK_FEEDBACK_DATA = pd.DataFrame([
-    {"verb": "跑进来", "rating": 5, "feedback": "语义分解很清晰，对学习很有帮助！"},
-    {"verb": "冲进来", "rating": 4, "feedback": "体相部分描述得很准确。"},
-    {"verb": "滑进来", "rating": 3, "feedback": "希望可以增加更多示例。"},
-])
-
 # ============================================
 # 侧边栏组件
 # ============================================
 def render_sidebar():
     """渲染侧边栏组件"""
     st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 实验统计</h2>", unsafe_allow_html=True)
-    st.sidebar.metric("总查询次数", MOCK_STATS["total_queries"], delta="+12 今天")
-    st.sidebar.metric("平均评分", f"{MOCK_STATS['avg_rating']:.1f}/5.0")
-    st.sidebar.metric("总反馈数", MOCK_STATS["total_feedbacks"])
+
+    if DB_AVAILABLE:
+        try:
+            stats = get_stats()
+            hot_verbs = get_hot_verbs(limit=5)
+        except Exception:
+            stats = {"total_queries": 0, "avg_rating": 0.0, "total_feedbacks": 0}
+            hot_verbs = []
+    else:
+        stats = {"total_queries": 0, "avg_rating": 0.0, "total_feedbacks": 0}
+        hot_verbs = []
+
+    st.sidebar.metric("总查询次数", stats["total_queries"], delta="+0 今天")
+    st.sidebar.metric("平均评分", f"{stats['avg_rating']:.1f}/5.0")
+    st.sidebar.metric("总反馈数", stats["total_feedbacks"])
 
     st.sidebar.markdown(get_section_spacing())
 
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 热门查询动词</h2>", unsafe_allow_html=True)
-    st.sidebar.markdown(
-        """
-        | 动词 | 次数 | 平均评分 |
-        |------|------|----------|
-        | 跑进来 | 234 | ⭐ 4.5 |
-        | 冲进来 | 187 | ⭐ 4.3 |
-        | 滑进来 | 156 | ⭐ 4.1 |
-        | 滚进来 | 143 | ⭐ 3.9 |
-        | 跌进来 | 128 | ⭐ 4.0 |
-        """
-    )
+
+    if hot_verbs:
+        table_md = "| 动词 | 次数 | 平均评分 |\n|------|------|----------|\n"
+        for v in hot_verbs:
+            table_md += f"| {v['verb']} | {v['count']} | ⭐ {v['avg_rating']} |\n"
+        st.sidebar.markdown(table_md)
+    else:
+        st.sidebar.info("暂无热门查询数据")
 
     st.sidebar.markdown(get_section_spacing())
 
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 数据导出</h2>", unsafe_allow_html=True)
-    csv = MOCK_FEEDBACK_DATA.to_csv(index=False).encode('utf-8-sig')
+
+    if DB_AVAILABLE:
+        try:
+            feedback_rows = get_feedback_data()
+            feedback_df = pd.DataFrame(feedback_rows)
+        except Exception:
+            feedback_df = pd.DataFrame(columns=["verb", "rating", "feedback_text", "created_at"])
+    else:
+        feedback_df = pd.DataFrame(columns=["verb", "rating", "feedback_text", "created_at"])
+
+    csv = feedback_df.to_csv(index=False).encode('utf-8-sig')
 
     st.sidebar.download_button(
         label="导出反馈数据 (CSV)",
@@ -692,12 +769,13 @@ def render_main_area():
     st.markdown('<div class="google-search-bar">', unsafe_allow_html=True)
 
     with st.container():
-        # 搜索输入框
+        # 搜索输入框 — 使用 key 让 Streamlit 自动管理 session_state
+        # 不设置 value（由 key 管理），on_change 在值变化时触发搜索
         verb_input = st.text_input(
             label="搜索动词",
-            value="跑进来",
             placeholder="搜索动词 (例如：跑进来、冲进来、滑进来...)",
             label_visibility="collapsed",
+            key="搜索动词",
             on_change=search_verb
         )
 
@@ -824,8 +902,14 @@ def render_main_area():
 
         if submit_button:
             if rating > 0 and feedback_text.strip():
-                # 模拟提交成功
-                st.success("✅ 反馈已成功提交！感谢您的参与！")
+                if DB_AVAILABLE:
+                    try:
+                        insert_feedback(verb, rating, feedback_text.strip())
+                        st.success("✅ 反馈已成功提交！感谢您的参与！")
+                    except Exception as e:
+                        st.error(f"反馈提交失败：{e}")
+                else:
+                    st.success("✅ 反馈已记录（离线模式，未持久化）！")
 
                 # 更新 session_state 状态
                 st.session_state.feedback_submitted = True
@@ -962,12 +1046,12 @@ if __name__ == "__main__":
 # ⚠️ 未来集成说明
 # ============================================
 """
-【需要替换的模拟数据】
-1. MOCK_STATS → 从数据库读取 (SQL 查询)
-2. MOCK_HOT_VERBS → 从数据库统计热门动词 (GROUP BY 查询)
-3. MOCK_DEFINITIONS → 替换为大模型 API 调用返回的真实释义
-4. MOCK_FEEDBACK_DATA → 替换为真实用户反馈记录 (SQLite/MySQL)
-5. MOCK_FEEDBACK_DATA.to_csv() → 接入真实数据库导出
+【已实现的数据库集成】
+1. MOCK_STATS → 从 MySQL 读取 (get_stats)
+2. MOCK_HOT_VERBS → 从 MySQL 统计热门动词 (get_hot_verbs)
+3. MOCK_DEFINITIONS → 待替换为大模型 API 调用返回的真实释义
+4. MOCK_FEEDBACK_DATA → 已替换为真实用户反馈记录 (get_feedback_data → MySQL)
+5. MOCK_FEEDBACK_DATA.to_csv() → 已接入真实数据库导出
 
 【需要新增的 API 调用】
 1. 大模型 API 调用 (DeepSeek/智谱/OpenAI)
@@ -975,24 +1059,15 @@ if __name__ == "__main__":
    - 输出：传统释义 + 优化释义（带语义分解）
    - 位置：在生成按钮点击时触发
 
-2. 用户反馈提交 API
-   - 接收：评分 + 文字反馈
-   - 存储：数据库插入操作
-   - 位置：在提交反馈按钮点击时触发
+2. 查询日志记录 (insert_query)
+   - 输入：动词、释义结果
+   - 存储：MySQL queries 表插入
+   - 位置：在搜索动词时触发
 
-3. 统计数据查询 API
-   - 查询：总查询次数、平均评分、热门动词
-   - 位置：页面加载时从侧边栏调用
-
-【需要优化的数据存储】
-1. SQLite 数据库设计
-   - queries 表：记录查询日志
-   - feedbacks 表：记录用户反馈
-   - hot_verbs 表：存储热门动词统计
-
-2. Pandas 数据处理
-   - CSV 导出功能需要接入真实数据
-   - 统计指标需要实时更新
+【已实现的数据库存储 (MySQL 8.0)】
+1. queries 表：记录查询日志
+2. feedbacks 表：记录用户反馈
+3. 热门动词统计：从 queries + feedbacks 联合查询
 """
 
 # ============================================
@@ -1003,9 +1078,13 @@ if __name__ == "__main__":
 - Streamlit：前端框架
 - Pandas：数据处理
 - Markdown：内容展示
+- PyMySQL：MySQL 8.0 数据库连接
 
-未来需要添加：
+已集成：
+- MySQL 8.0：数据库存储 (queries + feedbacks)
+- 环境变量：数据库连接配置
+
+待添加：
 - OpenAI SDK：大模型 API 调用
-- SQLAlchemy：数据库 ORM
 - 日志库：记录查询和反馈
 """
