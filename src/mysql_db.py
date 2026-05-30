@@ -21,84 +21,137 @@ except ImportError:
     PYMYSQL_AVAILABLE = False
     logging.warning("PyMySQL not available. Install with: pip install pymysql")
 
+# Try to import PyYAML for config loading
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
+    logging.warning("PyYAML not available. Install with: pip install pyyaml")
+
+# Load configuration from config.yaml
+def load_config():
+    """从 config.yaml 加载配置文件"""
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.yaml')
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                return config
+        except Exception as e:
+            logger.error(f"Failed to load config.yaml: {e}")
+    else:
+        logger.warning(f"Config file not found: {config_path}")
+    return None
+
+def get_config():
+    """获取全局配置对象"""
+    global _config
+    if _config is None:
+        _config = load_config()
+    return _config
+
+def get_mysql_config():
+    """获取 MySQL 配置"""
+    config = get_config()
+    if config and 'database' in config and 'mysql' in config['database']:
+        return config['database']['mysql']
+    return None
+
+def get_pool_config():
+    """获取连接池配置"""
+    config = get_config()
+    if config and 'database' in config and 'pool' in config['database']:
+        return config['database']['pool']
+    return {'size': 5, 'max_overflow': 10}
+
+_config = None  # 全局配置对象
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ============================================
-# 数据库配置
+# 数据库配置（从 YAML 配置加载）
 # ============================================
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "web_word_db")
-MYSQL_USER = os.getenv("MYSQL_USER", "web_word_user")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-MYSQL_CHARSET = "utf8mb4"
-MYSQL_COLLATION = "utf8mb4_unicode_ci"
+_mysql_config = get_mysql_config()
+if _mysql_config:
+    MYSQL_HOST = _mysql_config.get('host', 'localhost')
+    MYSQL_PORT = _mysql_config.get('port', 3306)
+    MYSQL_DATABASE = _mysql_config.get('database', 'web_word_db')
+    MYSQL_USER = _mysql_config.get('user', 'web_word_user')
+    MYSQL_PASSWORD = _mysql_config.get('password', '')
+    MYSQL_CHARSET = _mysql_config.get('charset', 'utf8mb4')
+    MYSQL_COLLATION = _mysql_config.get('collation', 'utf8mb4_unicode_ci')
+else:
+    # Fallback to environment variables
+    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "web_word_db")
+    MYSQL_USER = os.getenv("MYSQL_USER", "web_word_user")
+    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+    MYSQL_CHARSET = "utf8mb4"
+    MYSQL_COLLATION = "utf8mb4_unicode_ci"
 
 # Connection pool configuration
-MYSQL_POOL_SIZE = int(os.getenv("MYSQL_POOL_SIZE", "5"))
-MYSQL_POOL_MAX_OVERFLOW = int(os.getenv("MYSQL_POOL_MAX_OVERFLOW", "10"))
+_pool_config = get_pool_config()
+MYSQL_POOL_SIZE = _pool_config.get('size', 5)
+MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 
 # ============================================
 # 建表 SQL
 # ============================================
-CREATE_TABLES_SQL = """
--- Definitions table: store verb definitions and semantic decomposition
-CREATE TABLE IF NOT EXISTS definitions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    verb VARCHAR(100) NOT NULL UNIQUE,
-    chinese_ndef TEXT NOT NULL,
-    semantic_table JSON NOT NULL,
-    example_sentence TEXT,
-    model_version VARCHAR(50) DEFAULT 'zhipu-glm-4',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_definitions_verb (verb(50)),
-    INDEX idx_definitions_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE_TABLES_SQL = [
+    """CREATE TABLE IF NOT EXISTS definitions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        verb VARCHAR(100) NOT NULL UNIQUE,
+        chinese_ndef TEXT NOT NULL,
+        semantic_table JSON NOT NULL,
+        example_sentence TEXT,
+        model_version VARCHAR(50) DEFAULT 'zhipu-glm-4',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_definitions_verb (verb(50)),
+        INDEX idx_definitions_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
--- Synonyms table: store synonym relationships
-CREATE TABLE IF NOT EXISTS synonyms (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    original_verb_id INT NOT NULL,
-    synonym_verb VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (original_verb_id) REFERENCES definitions(id) ON DELETE CASCADE,
-    INDEX idx_synonyms_original (original_verb_id),
-    INDEX idx_synonyms_synonym (synonym_verb(50))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    """CREATE TABLE IF NOT EXISTS synonyms (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        original_verb_id INT NOT NULL,
+        synonym_verb VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (original_verb_id) REFERENCES definitions(id) ON DELETE CASCADE,
+        INDEX idx_synonyms_original (original_verb_id),
+        INDEX idx_synonyms_synonym (synonym_verb(50))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
--- Feedbacks table: store user feedback
-CREATE TABLE IF NOT EXISTS feedbacks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    verb VARCHAR(100) NOT NULL,
-    rating INT NOT NULL CHECK(rating BETWEEN 1 AND 5),
-    feedback_text TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_feedbacks_verb (verb(50)),
-    INDEX idx_feedbacks_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    """CREATE TABLE IF NOT EXISTS feedbacks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        verb VARCHAR(100) NOT NULL,
+        rating INT NOT NULL CHECK(rating BETWEEN 1 AND 5),
+        feedback_text TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_feedbacks_verb (verb(50)),
+        INDEX idx_feedbacks_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
--- Usage logs table: record query logs
-CREATE TABLE IF NOT EXISTS usage_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    verb VARCHAR(100) NOT NULL,
-    query_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    device_info VARCHAR(255),
-    INDEX idx_usage_logs_verb (verb(50)),
-    INDEX idx_usage_logs_query_time (query_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    """CREATE TABLE IF NOT EXISTS usage_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        verb VARCHAR(100) NOT NULL,
+        query_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        device_info VARCHAR(255),
+        INDEX idx_usage_logs_verb (verb(50)),
+        INDEX idx_usage_logs_query_time (query_time)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
--- Statistics table: cached statistics
-CREATE TABLE IF NOT EXISTS statistics (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    stat_name VARCHAR(50) NOT NULL UNIQUE,
-    stat_value TEXT NOT NULL,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_statistics_name (stat_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-"""
+    """CREATE TABLE IF NOT EXISTS statistics (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        stat_name VARCHAR(50) NOT NULL UNIQUE,
+        stat_value TEXT NOT NULL,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_statistics_name (stat_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
+]
 
 # ============================================
 # 初始化数据库
@@ -137,7 +190,8 @@ def init_database() -> bool:
         cursor.execute(f"USE {MYSQL_DATABASE}")
 
         # Create tables
-        cursor.executescript(CREATE_TABLES_SQL)
+        for table_sql in CREATE_TABLES_SQL:
+            cursor.execute(table_sql)
         logger.info("Database tables created successfully")
 
         cursor.close()
@@ -162,8 +216,8 @@ def get_connection_pool():
     """
     Get or create a connection pool.
 
-    Returns:
-        pymysql.connections.ConnectionPool or None if PyMySQL unavailable
+    Note: PyMySQL 1.1.0 does not support ConnectionPool,
+    so we'll manage connections manually.
     """
     global _connection_pool
 
@@ -174,21 +228,9 @@ def get_connection_pool():
         return None
 
     try:
-        _connection_pool = pymysql.ConnectionPool(
-            host=MYSQL_HOST,
-            port=MYSQL_PORT,
-            user=MYSQL_USER,
-            password=MYSQL_PASSWORD,
-            database=MYSQL_DATABASE,
-            charset=MYSQL_CHARSET,
-            cursorclass=DictCursor,
-            pool_size=MYSQL_POOL_SIZE,
-            max_overflow=MYSQL_POOL_MAX_OVERFLOW,
-            autocommit=True
-        )
-        logger.info("Connection pool created successfully")
+        _connection_pool = []
+        logger.info("Connection pool created (manual management)")
         return _connection_pool
-
     except pymysql.Error as e:
         logger.error(f"Failed to create connection pool: {e}")
         return None
@@ -209,7 +251,17 @@ def get_db_cursor():
         # Try connection pool first
         pool = get_connection_pool()
         if pool is not None:
-            conn = pool.get_connection()
+            # Manual connection management
+            conn = pymysql.connect(
+                host=MYSQL_HOST,
+                port=MYSQL_PORT,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                database=MYSQL_DATABASE,
+                charset=MYSQL_CHARSET,
+                cursorclass=DictCursor,
+                autocommit=True
+            )
             cursor = conn.cursor()
         else:
             # Fallback: direct connection for testing
@@ -220,7 +272,8 @@ def get_db_cursor():
                 password=MYSQL_PASSWORD,
                 database=MYSQL_DATABASE,
                 charset=MYSQL_CHARSET,
-                cursorclass=DictCursor
+                cursorclass=DictCursor,
+                autocommit=True
             )
             cursor = conn.cursor()
 

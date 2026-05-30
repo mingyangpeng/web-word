@@ -9,7 +9,7 @@ import json
 import logging
 import hashlib
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 
 # Try to import ZhipuAI SDK
 try:

@@ -11,6 +11,7 @@ import datetime
 
 # Backend integration imports
 from src.mysql_db import init_database, get_stats, get_hot_verbs, get_feedback_data
+from typing import Optional, Dict, List, Any, Tuple
 from src.llm_api import get_definition, is_cache_available
 
 # ============================================
