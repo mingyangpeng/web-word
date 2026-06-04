@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "created_at": "2026-06-01T20:51:08.029065",
+    "source": "Manual Knowledge Graph Construction",
+    "total_words": 93,
+    "relation_types": ["synonym", "antonym", "related", "homophone", "family"],
+    "description": "基于文档分类和语言学知识构建的英语移动动词知识图谱"
+  },
+  "relations": {
+    "synonym": {
+      "arrive": ["reach", "get"],
+      "enter": ["enter"],
+      "exit": ["exit"],
+      "leave": ["depart", "leave"],
+      "enter": ["get in", "go in"],
+      "exit": ["get out", "leave"],
+      "come": ["arrive"],
+      "go": ["leave", "depart"],
+      "run": ["dash", "sprint"],
+      "walk": ["stroll", "march"],
+      "swim": ["dive", "float"],
+      "climb": ["ascend", "scale"],
+      "fall": ["drop", "plummet"],
+      "fly": ["soar", "glide"],
+      "drive": ["ride", "travel"],
+      "follow": ["track", "chase"],
+      "accompany": ["escort", "guide"]
+    },
+    "antonym": {
+      "enter": ["exit"],
+      "arrive": ["depart", "leave"],
+      "come": ["go", "leave"],
+      "in": ["out"],
+      "up": ["down"],
+      "forward": ["backward", "recede"],
+      "advance": ["recede"],
+      "enter": ["exit"],
+      "in": ["out"],
+      "in": ["out"],
+      "in": ["out"]
+    },
+    "related": {
+      "path": ["arrive", "depart", "enter", "exit", "come", "go", "approach", "reach"],
+      "manner": ["run", "walk", "jump", "fly", "swim", "crawl", "climb"],
+      "purpose": ["chase", "follow", "pursue", "track"],
+      "participant": ["accompany", "escort", "guide", "lead"],
+      "upward": ["ascend", "climb", "rise", "fly", "soar"],
+      "downward": ["descend", "fall", "drop", "plunge", "tumble"],
+      "horizontal": ["advance", "recede", "march", "travel", "journey"],
+      "motion": ["move", "travel", "migrate", "commute"],
+      "vehicle": ["drive", "ride", "sail", "fly", "sail", "ski"],
+      "ground": ["walk", "run", "crawl", "crouch", "squat"]
+    },
+    "homophone": {
+      "stay": ["stat", "staid"],
+      "quiet": ["quiet", "quite"],
+      "right": ["right", "rite"],
+      "knight": ["night", "knight"],
+      "to": ["two", "too"],
+      "one": ["won", "one"]
+    },
+    "family": {
+      "in": ["in", "kin", "bin"],
+      "out": ["out", "route"],
+      "up": ["up", "cup", "sup"],
+      "down": ["down", "town", "drown"],
+      "over": ["over", "hover", "cover"],
+      "under": ["under", "sun", "run"],
+      "into": ["into", "unity"],
+      "across": ["across", "crocus", "acoustic"],
+      "through": ["through", "threw", "throw"],
+      "to": ["to", "two", "too"],
+      "for": ["for", "for", "four"]
+    }
+  },
+  "analysis": "基于 Talmy 和 Levin 的动词分类理论构建的关系网络。主要关系包括：\n\n1. 近义词关系：同一范畴内的动词，如 'arrive' 和 'reach'\n2. 反义词关系：语义相反的动词，如 'enter' 和 'exit'\n3. 相关词关系：基于语言学术语，如路径、方式、目的等范畴\n4. 同音词关系：发音相同但拼写不同的单词\n5. 词族关系：具有共同词根或前缀/后缀的单词"
+}
