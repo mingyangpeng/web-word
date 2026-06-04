@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: word_knowledge_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: word_knowledge_db
+      MYSQL_USER: jhon
+      MYSQL_PASSWORD: p
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "jhon", "-pp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - word-network
+
+networks:
+  word-network:
+    driver: bridge
