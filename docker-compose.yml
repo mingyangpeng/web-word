@@ -1,17 +1,50 @@
-version: '3.8'
-
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: web-word-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass123}
+      MYSQL_DATABASE: web_word_db
+      MYSQL_USER: web_word_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-webword123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpass123}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
   web:
     build: .
+    container_name: web-word-app
+    restart: unless-stopped
     ports:
       - "8501:8501"
     environment:
-      - ZHIPU_API_KEY=${ZHIPU_API_KEY}
-      - MYSQL_HOST=host.docker.internal
+      - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
+      - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=web_word_db
       - MYSQL_USER=web_word_user
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-webword123}
     volumes:
-      - ./data:/app/data
-      - ./config:/app/config
+      - app_data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+    name: web-word-mysql-data
+  app_data:
+    name: web-word-app-data

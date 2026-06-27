@@ -1,13 +1,13 @@
 # MySQL 数据库配置文件
-# 使用 YAML 格式方便维护
+# Docker 容器内配置 — MySQL host 使用 Compose 服务名
 
 database:
   mysql:
-    host: localhost
+    host: mysql          # Docker Compose 服务名
     port: 3306
     database: web_word_db
     user: web_word_user
-    password: ""  # Empty password (mysql_native_password plugin)
+    password: "webword123"  # 与 docker-compose.yml MYSQL_PASSWORD 一致
     charset: utf8mb4
     collation: utf8mb4_unicode_ci
 

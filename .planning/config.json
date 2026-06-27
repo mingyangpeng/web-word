@@ -16,5 +16,8 @@
   "project_info": {
     "primary_users": "Chinese speakers learning English",
     "main_problem": "Help users distinguish between English synonym verbs"
+  },
+  "graphify": {
+    "enabled": true
   }
 }

@@ -16,3 +16,11 @@ htmlcov/
 *.db
 *.bak
 screenshots
+data/mysql/
+docs/
+.planning/
+scripts/get-stats*
+.claude/
+.DS_Store
+temp/
+browser_screenshot.png
