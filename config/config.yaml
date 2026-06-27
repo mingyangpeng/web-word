@@ -16,17 +16,13 @@ database:
     size: 5
     max_overflow: 10
 
-  # SQLite 配置（备用）
-  sqlite:
-    path: data/web_word.db
-    enabled: false
 
 # 应用配置
 app:
   model:
     provider: zhipu  # zhipu, openai, deepseek
-    model_name: glm-4
-    api_key_env: ZHIPU_API_KEY
+    model_name: glm-4.7-flash
+    api_key_env: ZHIPU_API_KEY  # Read from environment variable
 
 logging:
   level: INFO
