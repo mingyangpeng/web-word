@@ -156,55 +156,75 @@ CREATE_TABLES_SQL = [
 # ============================================
 # 初始化数据库
 # ============================================
-def init_database() -> bool:
+def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
     """
     Initialize MySQL database and create tables.
+
+    Includes retry logic for Docker environments where MySQL may not be ready yet.
+
+    Args:
+        max_retries: Maximum number of connection attempts (default 3)
+        retry_delay: Seconds to wait between retries (default 2.0)
 
     Returns:
         bool: True if successful, False if database is unavailable
     """
+    import time
+
     if not PYMYSQL_AVAILABLE:
         logger.warning("PyMySQL not available, skipping MySQL initialization")
         return False
 
-    try:
-        # Create connection without database (to create it)
-        conn = pymysql.connect(
-            host=MYSQL_HOST,
-            port=MYSQL_PORT,
-            user=MYSQL_USER,
-            password=MYSQL_PASSWORD,
-            charset=MYSQL_CHARSET,
-            cursorclass=DictCursor
-        )
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Create connection without database (to create it)
+            conn = pymysql.connect(
+                host=MYSQL_HOST,
+                port=MYSQL_PORT,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                charset=MYSQL_CHARSET,
+                cursorclass=DictCursor
+            )
 
-        cursor = conn.cursor()
+            cursor = conn.cursor()
 
-        # Create database if not exists
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DATABASE} "
-                      f"CHARACTER SET {MYSQL_CHARSET} "
-                      f"COLLATE {MYSQL_COLLATION}")
-        logger.info(f"Database '{MYSQL_DATABASE}' ready")
+            # Create database if not exists
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DATABASE} "
+                          f"CHARACTER SET {MYSQL_CHARSET} "
+                          f"COLLATE {MYSQL_COLLATION}")
+            logger.info(f"Database '{MYSQL_DATABASE}' ready")
 
-        # Use the database
-        cursor.execute(f"USE {MYSQL_DATABASE}")
+            # Use the database
+            cursor.execute(f"USE {MYSQL_DATABASE}")
 
-        # Create tables
-        for table_sql in CREATE_TABLES_SQL:
-            cursor.execute(table_sql)
-        logger.info("Database tables created successfully")
+            # Create tables
+            for table_sql in CREATE_TABLES_SQL:
+                cursor.execute(table_sql)
+            logger.info("Database tables created successfully")
 
-        cursor.close()
-        conn.close()
+            cursor.close()
+            conn.close()
 
-        return True
+            return True
 
-    except pymysql.Error as e:
-        logger.error(f"MySQL initialization error: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error during MySQL initialization: {e}")
-        return False
+        except pymysql.Error as e:
+            logger.warning(f"MySQL init attempt {attempt}/{max_retries} failed: {e}")
+            if attempt < max_retries:
+                logger.info(f"Retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"MySQL initialization failed after {max_retries} attempts")
+                return False
+        except Exception as e:
+            logger.warning(f"Unexpected error on attempt {attempt}/{max_retries}: {e}")
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"MySQL initialization failed after {max_retries} attempts")
+                return False
+
+    return False
 
 
 # ============================================
