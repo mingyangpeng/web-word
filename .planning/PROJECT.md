@@ -117,28 +117,35 @@ Real-time, semantically-transparent verb definitions that make motion-verb nuanc
 - BACKEND-01/02/03/04 — MySQL 8.0, LLM API, feedback storage, stats query
 - UI-06/07/08 — Sidebar collapse rail, stats polish, clickable+filterable hot verbs
 
-### Active (v1.1+)
-- UI-09: 顶部导航栏
-- UI-10: 面包屑导航
-- UI-11: 响应式布局（移动端/平板适配）
+### Active (v1.1 — Live Generation & Admin)
+- **LLM-01**: 接入智谱 AI 实时生成释义，替代 MOCK_DEFINITIONS 成为主显示来源（缓存 + 降级策略）
+- **SETTINGS-01**: 页面高级配置面板（TOKEN / URL / MODEL），默认预填智谱参数，部署时免改环境变量
+- **AUTH-01**: 管理员登录模式（轻量口令，非完整用户注册），门控管理员功能
+- **ADMIN-01**: 管理员登录后从网页端新增词条到 MySQL（动词 + 中文释义 + 语义分解 JSON + 例句）
+
+### Deferred (v2.0+)
+- UI-09/10: 顶部导航栏 / 面包屑
+- UI-11: 响应式布局（移动端/平板）
 - UI-12: 历史记录视图
-- UI-13: 主题切换（浅色/深色模式）
-- UI-14: 数据导出（CSV/JSON）
+- UI-13: 主题切换（浅色/深色）
+- UI-14: 数据导出（CSV/JSON 增强）
 - BACKEND-05: 实时数据同步
-- AUTH-01: 用户登录和注册功能
+- 动词库扩容至 500+（v1.1 保持 155 基础动词，仅通过管理员新增；扩容留待 v2.0）
 
 ### Out of Scope
 - Mobile app (PWA instead)
 - Video chat
 - Offline mode
+- 完整用户注册/社交账户系统（v1.1 仅管理员口令）
 
 ## Known Issues & Technical Debt
 
-1. **Mock data still primary** — `MOCK_DEFINITIONS` 在 `app.py` 中仍为主显示，LLM API 仅作 fallback（需在 v1.1 接入真实生成）
-2. **API Key 管理** — `.env` 中 ZHIPU/OPENAI/DEEPSEEK 密钥均为空，需部署时注入
+1. **Mock data still primary** — `MOCK_DEFINITIONS` 在 `app.py` 中仍为主显示，LLM API 仅作 fallback → **v1.1 目标：接入真实生成**
+2. **API Key 管理** — `.env` 中 ZHIPU/OPENAI/DEEPSEEK 密钥均为空，需部署时注入 → **v1.1 目标：页面配置面板免改环境变量**
 3. **Docker MySQL 基线** — 工作树 `origin/HEAD` 未解析，worktree 自动降级为顺序模式（需设置 `worktree.baseRef:"head"`）
 4. **19 个 REQ-ID 追溯表** 尚未同步到 REQUIREMENTS.md（待 v1.1 首轮规划时补齐）
 5. **Phase 1/2/3 VERIFICATION.md 缺失** — 仅 Phase 4 有正式验收报告；v1.0 以 override_closeout 关闭，已记录 3 阶段验证缺口
+6. **新增词条管理缺失** — v1.1 新增管理员模式下的网页端词条录入（当前仅能通过 DB 脚本写入）
 
 ## Key Decisions Audit
 
@@ -160,14 +167,15 @@ Real-time, semantically-transparent verb definitions that make motion-verb nuanc
 - **Tech Stack**: Streamlit, Python 3.11, MySQL 8.0, Zhipu AI, Docker
 - **User Feedback Themes**: None yet (v1.0 just shipped)
 
-## Next Milestone Goals (v1.1)
+## Current Milestone: v1.1 Live Generation & Admin
 
-1. **真实 LLM 生成** — 替换 MOCK_DEFINITIONS，接入 Zhipu AI 实时生成
-2. **动词库扩充** — 从 155 扩展到 500+，覆盖高频英语动词
-3. **侧边栏导航** — 顶部导航栏 + 面包屑
-4. **响应式/主题** — 移动端适配 + 深色模式
-5. **用户系统** — 登录/注册 + 历史记录
-6. **数据导出增强** — 多格式、分享链接
+**Goal:** 把项目从"演示（mock 数据主显示）"变成"可用的真实工具"——让智谱 AI 实时生成释义、提供页面内 API 配置、并用管理员模式支持网页端新增词条。
+
+**Target features:**
+- 智谱 AI 实时生成释义（替代 MOCK_DEFINITIONS 主显示，含缓存与降级）
+- 页面高级配置面板（TOKEN / URL / MODEL，默认预填智谱参数）
+- 管理员登录模式（轻量口令）
+- 管理员网页端新增词条到 MySQL
 
 ---
 
