@@ -17,6 +17,8 @@ if PROJECT_ROOT not in sys.path:
 
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
+from src.app import filter_hot_verbs  # noqa: E402
+
 RUN_TIMEOUT = 30
 
 
@@ -53,3 +55,11 @@ def test_stats_section(at):
     assert any("实验统计" in m.value for m in at.markdown)
     # 展开态下至少存在一处分隔线元素
     assert len(at.divider) > 0
+
+
+def test_filter_hot_verbs():
+    """前端子串过滤：含关键字则保留，空查询返回原列表（UI-08，D-05）。"""
+    verbs = [{"verb": "跑步"}, {"verb": "跑进来"}, {"verb": "走路"}]
+    assert filter_hot_verbs(verbs, "跑") == [{"verb": "跑步"}, {"verb": "跑进来"}]
+    assert filter_hot_verbs(verbs, "") == verbs
+    assert filter_hot_verbs(verbs, "   ") == verbs
