@@ -8,10 +8,10 @@ last_updated: "2026-08-24T03:39:51.533Z"
 state_head: cc4107994926f611ef43a8762156e950ab10863c
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 4
   total_plans: 5
-  completed_plans: 4
-  percent: 25
+  completed_plans: 5
+  percent: 100
 current_phase_name: feature-polish
 ---
 
@@ -28,7 +28,7 @@ current_phase_name: feature-polish
 | 01 | Complete | 100% | 01-01 (5/5 tasks) | 2026-05-29 |
 | 02 | Complete | 100% | 02-01 (1/1), 02-02 (1/1) | 2026-05-27 |
 | 03 | Complete | 100% | 03-01 (3/3 tasks) | 2026-06-27 |
-| 04 | Pending | 0% | Not yet created | — |
+| 04 | Complete | 100% | 04-01 (3/3 tasks) | 2026-08-24 |
 
 ## Requirements Status
 
@@ -50,9 +50,9 @@ current_phase_name: feature-polish
 | BACKEND-02 | Phase 3 | Completed | 2026-06-27 |
 | BACKEND-03 | Phase 3 | Completed | 2026-06-27 |
 | BACKEND-04 | Phase 3 | Completed | 2026-06-27 |
-| UI-06 | Phase 4 | Pending | — |
-| UI-07 | Phase 4 | Pending | — |
-| UI-08 | Phase 4 | Pending | — |
+| UI-06 | Phase 4 | Completed | 2026-08-24 |
+| UI-07 | Phase 4 | Completed | 2026-08-24 |
+| UI-08 | Phase 4 | Completed | 2026-08-24 |
 
 ## Tasks Completed
 
@@ -66,11 +66,33 @@ current_phase_name: feature-polish
 - [x] Phase 1.1 verb tool core functionality implemented
 - [x] Design system properly integrated
 - [x] Phase 3 backend integration verified and closed
+- [x] Phase 4 feature-polish executed and verified (UI-06/07/08, 18 tests passing)
 
 ## Phase 1 Completion Details
 
 **Status:** All phases complete
 **Date:** 2026-05-29
+
+## Phase 4 Completion Details
+
+**Status:** Complete
+**Date:** 2026-08-24
+
+### Completed Tasks
+
+- 04-01 Task 1 (UI-06): Sidebar icon-rail collapse/expand (session_state `sidebar_collapsed`, ☰ + 📊🔥📥 rail, NOT floating button)
+- 04-01 Task 2 (UI-07): Stats `st.sidebar.metric` polish — spacing/heading/divider only, no card components
+- 04-01 Task 3 (UI-08): Clickable hot verbs (reuse `select_example_verb`) + local `hot_filter` substring filter
+
+### Key Files Modified
+
+- `src/app.py` — `render_sidebar()` dual collapse/expand branch (single integration point)
+- `tests/test_phase4.py` — AppTest + unit tests (4 passing)
+
+### Verification
+
+- `python3 -m pytest tests/ -x -q` → 18 passed
+- `04-VERIFICATION.md` → status: passed (5/5 must-have truths, UI-06/07/08 + D-01..D-05 honored)
 
 ### Completed Tasks
 
