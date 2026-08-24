@@ -44,3 +44,12 @@ def test_collapse_toggle(at):
     at.run(timeout=RUN_TIMEOUT)
     labels = [b.label for b in at.button]
     assert "◀" in labels
+
+
+def test_stats_section(at):
+    """展开态下统计标题已渲染且区块分隔线存在（UI-07）。"""
+    at.run(timeout=RUN_TIMEOUT)
+    # 统计主标题 markdown 含 "实验统计"
+    assert any("实验统计" in m.value for m in at.markdown)
+    # 展开态下至少存在一处分隔线元素
+    assert len(at.divider) > 0
