@@ -118,9 +118,9 @@ Real-time, semantically-transparent verb definitions that make motion-verb nuanc
 - UI-06/07/08 — Sidebar collapse rail, stats polish, clickable+filterable hot verbs
 
 ### Active (v1.1 — Live Generation & Admin)
-- **LLM-01**: 接入智谱 AI 实时生成释义，替代 MOCK_DEFINITIONS 成为主显示来源（缓存 + 降级策略）
-- **SETTINGS-01**: 页面高级配置面板（TOKEN / URL / MODEL），默认预填智谱参数，部署时免改环境变量
-- **AUTH-01**: 管理员登录模式（轻量口令，非完整用户注册），门控管理员功能
+- **LLM-01**: 接入智谱 AI 实时生成释义，替代 MOCK_DEFINITIONS 成为主显示来源（数据流：DB 命中 → 缓存/实时 LLM → 解析入库 → 渲染；LLM 与 DB 均失败时退回 Mock）
+- **SETTINGS-01**: 页面高级配置面板（TOKEN / URL / MODEL），默认预填智谱参数；修改后写入配置文件（config 文件，非仅环境变量），部署时免改环境变量
+- **AUTH-01**: 用户登录（users 表 + 角色 role 字段，管理员角色门控管理功能）；v1.1 仅管理员账户，由种子/部署配置初始化，无公开注册
 - **ADMIN-01**: 管理员登录后从网页端新增词条到 MySQL（动词 + 中文释义 + 语义分解 JSON + 例句）
 
 ### Deferred (v2.0+)
@@ -136,7 +136,8 @@ Real-time, semantically-transparent verb definitions that make motion-verb nuanc
 - Mobile app (PWA instead)
 - Video chat
 - Offline mode
-- 完整用户注册/社交账户系统（v1.1 仅管理员口令）
+- 完整用户注册/社交账户系统（v1.1 仅管理员账户，users 表 + role 字段，由种子初始化；公开注册留待 v2.0）
+- 公开用户注册（v1.1 无注册页，管理员账户由部署种子创建）
 
 ## Known Issues & Technical Debt
 
