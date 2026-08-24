@@ -49,6 +49,10 @@ if 'card_expanded' not in st.session_state:
         'example': True
     }
 
+# 侧边栏折叠状态标志（D-02，与 initial_sidebar_state="expanded" 一致，默认展开）
+if 'sidebar_collapsed' not in st.session_state:
+    st.session_state.sidebar_collapsed = False
+
 # ============================================
 # 数据库初始化（连接失败时降级为无数据库模式）
 # ============================================
@@ -704,7 +708,25 @@ EXAMPLE_VERBS = {
 # 侧边栏组件
 # ============================================
 def render_sidebar():
-    """渲染侧边栏组件"""
+    """渲染侧边栏组件（折叠/展开双分支，D-01）"""
+    collapsed = st.session_state.get("sidebar_collapsed", False)
+
+    if collapsed:
+        # 折叠分支：窄图标栏（D-01），点击任意图标即展开回完整宽度
+        st.sidebar.button("☰", key="expand_sidebar", help="展开侧边栏",
+                          on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
+        st.sidebar.button("📊", key="rail_stats", help="统计",
+                          on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
+        st.sidebar.button("🔥", key="rail_hot", help="热门查询动词",
+                          on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
+        st.sidebar.button("📥", key="rail_export", help="数据导出",
+                          on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
+        return
+
+    # 展开分支：完整内容（D-01）
+    st.sidebar.button("◀", key="collapse_sidebar", help="折叠侧边栏",
+                      on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", True))
+
     st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 实验统计</h2>", unsafe_allow_html=True)
 
     if DB_AVAILABLE:
@@ -722,7 +744,7 @@ def render_sidebar():
     st.sidebar.metric("平均评分", f"{stats['avg_rating']:.1f}/5.0")
     st.sidebar.metric("总反馈数", stats["total_feedbacks"])
 
-    st.sidebar.markdown(get_section_spacing())
+    st.sidebar.divider()
 
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 热门查询动词</h2>", unsafe_allow_html=True)
 
@@ -734,7 +756,7 @@ def render_sidebar():
     else:
         st.sidebar.info("暂无热门查询数据")
 
-    st.sidebar.markdown(get_section_spacing())
+    st.sidebar.divider()
 
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 数据导出</h2>", unsafe_allow_html=True)
 
