@@ -133,6 +133,22 @@ def select_example_verb(verb: str) -> None:
     st.session_state.show_result = True
     st.session_state["搜索动词"] = verb
 
+
+def filter_hot_verbs(hot_verbs: List[dict], query: str) -> List[dict]:
+    """对热门动词列表做前端子串过滤（D-05，确定性、无后端调用）。
+
+    Args:
+        hot_verbs: 已加载的热门动词列表（dict 含 'verb' 键）。
+        query: 筛选关键字；为空或全空白时返回原列表。
+
+    Returns:
+        过滤后的新列表，仅保留 verb 含 query 子串（忽略大小写）的项。
+    """
+    if not query or not query.strip():
+        return hot_verbs
+    q = query.lower()
+    return [v for v in hot_verbs if v.get("verb", "").lower().__contains__(q)]
+
 # ============================================
 # 语义表渲染函数
 # ============================================
@@ -749,10 +765,17 @@ def render_sidebar():
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 热门查询动词</h2>", unsafe_allow_html=True)
 
     if hot_verbs:
-        table_md = "| 动词 | 次数 | 平均评分 |\n|------|------|----------|\n"
-        for v in hot_verbs:
-            table_md += f"| {v['verb']} | {v['count']} | ⭐ {v['avg_rating']} |\n"
-        st.sidebar.markdown(table_md)
+        # 本地前端子串筛选输入框（D-05，无后端往返）
+        st.sidebar.text_input("筛选热门动词", key="hot_filter", placeholder="输入关键字筛选…")
+        filtered = filter_hot_verbs(hot_verbs, st.session_state.get("hot_filter", ""))
+        for v in filtered:
+            # 可点击行：复用 select_example_verb 填充搜索框并触发搜索（D-04）
+            st.sidebar.button(
+                f"{v['verb']} · {v['count']}次 ⭐{v['avg_rating']}",
+                key=f"hot_{v['verb']}",
+                on_click=select_example_verb,
+                args=(v['verb'],),
+            )
     else:
         st.sidebar.info("暂无热门查询数据")
 
