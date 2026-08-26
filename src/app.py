@@ -8,11 +8,15 @@ import streamlit.components.v1 as components
 import pandas as pd
 import json
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Backend integration imports
-from src.mysql_db import init_database, get_stats, get_hot_verbs, get_feedback_data, insert_feedback
+from src.mysql_db import init_database, get_stats, get_hot_verbs, get_feedback_data, insert_feedback, get_definition_by_verb, insert_definition
 from typing import Optional, Dict, List, Any, Tuple
-from src.llm_api import get_definition, is_cache_available
+from src.llm_api import get_definition, is_cache_available, get_fallback_definition
+from src.security import InputValidator
 
 # ============================================
 # 设计系统导入
@@ -429,9 +433,194 @@ def get_verb_definition(verb: str) -> Optional[Dict[str, Any]]:
     return result
 
 
+# ============================================
+# Unified Display Adapter (Phase 5 tracer: D-01/D-02/D-05/D-06/D-07)
+# ============================================
+# Module-level key names for the combined chinese_ndef JSON stored in MySQL.
+TRAD_OPT_KEYS = ("traditional", "optimized")
+
+
+def _normalize_mock_semantic_table(mock_list) -> Dict[str, str]:
+    """
+    Convert MOCK_DEFINITIONS' list-of-lists semantic_table into the
+    five-key dict (manner/path/direction/aspect/scope) expected downstream.
+
+    Args:
+        mock_list: List of [type, emoji, desc] rows from MOCK_DEFINITIONS.
+
+    Returns:
+        Dict mapping the five semantic keys to their descriptions.
+    """
+    key_map = {
+        "方式": "manner",
+        "路径": "path",
+        "方向": "direction",
+        "体相": "aspect",
+        "范围": "scope",
+    }
+    result = {k: "待生成" for k in key_map.values()}
+    if not mock_list:
+        return result
+    for row in mock_list:
+        if not row:
+            continue
+        label = row[0]
+        desc = row[2] if len(row) > 2 else (row[1] if len(row) > 1 else "")
+        if label in key_map:
+            result[key_map[label]] = desc
+    return result
+
+
+def _restore_trad_opt(chinese_ndef: str):
+    """
+    Restore (traditional, optimized) from the stored chinese_ndef string.
+
+    The definitions table has no separate columns; Phase 5 (D-03) persists a
+    JSON object {"traditional": t, "optimized": o} inside chinese_ndef.
+    Legacy rows store a plain string and are treated as traditional only.
+
+    Returns:
+        (traditional, optimized) tuple of strings.
+    """
+    if not chinese_ndef:
+        return "", ""
+    try:
+        parsed = json.loads(chinese_ndef)
+        if isinstance(parsed, dict) and "traditional" in parsed and "optimized" in parsed:
+            return parsed.get("traditional", "") or "", parsed.get("optimized", "") or ""
+    except (json.JSONDecodeError, TypeError):
+        pass
+    # Legacy plain-text storage
+    return chinese_ndef, ""
+
+
+def get_display_definition(verb: str) -> Dict[str, Any]:
+    """
+    Single source of truth for verb definitions (Phase 5 tracer).
+
+    Resolution priority (D-02): DB hit → live LLM → MOCK_DEFINITIONS → fallback.
+
+    Args:
+        verb: The verb to define.
+
+    Returns:
+        Normalized dict {traditional, optimized, semantic_table, example}.
+        Never raises; on total failure returns the absolute fallback shape.
+    """
+    # (0) Entry validation (T-05-01 mitigation): reject malformed verb, never
+    #     feed it into the LLM prompt, and bypass straight to the fallback.
+    ok, err = InputValidator.validate_string(verb, max_length=50)
+    if not ok:
+        logger.warning(f"非法 verb 输入被拒绝: {str(verb)[:50]}")
+        fb = get_fallback_definition(verb)
+        return {
+            "traditional": fb.get("chinese_ndef", ""),
+            "optimized": fb.get("chinese_ndef", ""),
+            "semantic_table": fb.get("semantic_table", {}),
+            "example": fb.get("example", ""),
+        }
+
+    # (1) DB first (D-02, LLM-02). Persisted rows take precedence over MOCK.
+    try:
+        row = get_definition_by_verb(verb)
+    except Exception as e:
+        logger.error(f"DB lookup failed for '{verb}': {e}")
+        row = None
+
+    if row:
+        trad, opt = _restore_trad_opt(row.get("chinese_ndef", ""))
+        semantic_table = row.get("semantic_table") or {}
+        if isinstance(semantic_table, str):
+            try:
+                semantic_table = json.loads(semantic_table)
+            except (json.JSONDecodeError, TypeError):
+                semantic_table = {}
+        return {
+            "traditional": trad,
+            "optimized": opt,
+            "semantic_table": semantic_table,
+            "example": row.get("example_sentence") or "",
+        }
+
+    # (2) Live LLM generation, wrapped in a spinner (D-07: spinner only here).
+    result = None
+    try:
+        with st.spinner("正在调用大模型生成释义..."):
+            result = get_definition(verb)
+    except Exception as e:
+        # (4) LLM failure / exception (D-06): log, warn once, fall through.
+        logger.error(f"实时 LLM 生成失败 for '{verb}': {e}")
+        st.warning("实时生成暂不可用，已显示离线释义")
+
+    if result and result.get("semantic_table"):
+        normalized = {
+            "traditional": result.get("traditional") or result.get("chinese_ndef", ""),
+            "optimized": result.get("optimized", ""),
+            "semantic_table": result.get("semantic_table", {}),
+            "example": result.get("example", ""),
+        }
+        # (3) Persist LLM result to DB so subsequent queries hit DB (LLM-03).
+        try:
+            mysql_db_persist(verb, normalized)
+        except Exception as e:
+            logger.error(f"持久化失败 for '{verb}': {e}")
+        return normalized
+
+    # (5) MOCK fallback (D-02): only after LLM fails.
+    if verb in MOCK_DEFINITIONS:
+        mock = MOCK_DEFINITIONS[verb]
+        return {
+            "traditional": mock.get("traditional", ""),
+            "optimized": mock.get("optimized", ""),
+            "semantic_table": _normalize_mock_semantic_table(mock.get("semantic_table", [])),
+            "example": "",
+        }
+
+    # (6) Absolute last resort.
+    fb = get_fallback_definition(verb)
+    return {
+        "traditional": fb.get("chinese_ndef", ""),
+        "optimized": fb.get("chinese_ndef", ""),
+        "semantic_table": fb.get("semantic_table", {}),
+        "example": fb.get("example", ""),
+    }
+
+
+def mysql_db_persist(verb: str, normalized: Dict[str, Any]) -> bool:
+    """
+    Persist a normalized definition to MySQL (LLM-03).
+
+    Stores traditional+optimized as a combined JSON inside chinese_ndef so the
+    columns need no migration (D-03); semantic_table is stored as JSON, and
+    example_sentence carries the example.
+
+    Args:
+        verb: The verb.
+        normalized: {traditional, optimized, semantic_table, example}.
+
+    Returns:
+        bool: True if successful.
+    """
+    trad = normalized.get("traditional", "") or ""
+    opt = normalized.get("optimized", "") or ""
+    combined = json.dumps(
+        {"traditional": trad, "optimized": opt}, ensure_ascii=False
+    )
+    return insert_definition(
+        verb=verb,
+        chinese_ndef=combined,
+        semantic_table=normalized.get("semantic_table", {}),
+        example_sentence=normalized.get("example", ""),
+        model_version="zhipu-glm-4",
+    )
+
+
 def get_semantic_table_for_verb(verb: str) -> List:
     """
     Get semantic table for a verb in the format expected by render_semantic_table.
+
+    Now sourced from the unified adapter get_display_definition (Phase 5 tracer).
+    The external signature and return shape are unchanged.
 
     Args:
         verb: The verb
@@ -439,9 +628,10 @@ def get_semantic_table_for_verb(verb: str) -> List:
     Returns:
         List of [type, emoji, description] tuples
     """
-    result = get_verb_definition(verb)
+    display = get_display_definition(verb)
+    semantic_table = display.get("semantic_table") or {}
 
-    if not result or not result.get("semantic_table"):
+    if not semantic_table:
         # Return default structure
         return [
             ["方式", "🏃", "待生成"],
@@ -451,7 +641,6 @@ def get_semantic_table_for_verb(verb: str) -> List:
         ]
 
     # Convert semantic table dict to the format expected by render_semantic_table
-    semantic_table = result["semantic_table"]
     return [
         ["方式", "🏃", semantic_table.get("manner", "待生成")],
         ["路径", "🛤️", semantic_table.get("path", "待生成")],
