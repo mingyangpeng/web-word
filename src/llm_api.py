@@ -52,15 +52,21 @@ PROMPT_TEMPLATE = """你是一个中文释义助手。请解释以下中文动�
 
 要求：
 1. 用简体中文回答
-2. 包含：传统释义、优化释义（带语义分解表）
-3. 提供一个例句
-4. 如果有近义词，简要说明差异
+2. 分别给出两个独立的文本块：
+   - traditional（传统词典式释义，一段自然语言描述）
+   - optimized（优化释义，基于运动事件类型学对语义要素进行分解的解释，一段自然语言描述）
+3. 提供 semantic_table 语义分解字典，键为五元模型：manner（方式）、path（路径）、direction（方向）、aspect（体相）、scope（范围）
+4. 提供一个例句
+5. 如果有近义词，简要说明差异
 
 请以 JSON 格式返回：
 {{
-  "chinese_ndef": "中文释义",
+  "traditional": "传统词典式释义（自然语言段落）",
+  "optimized": "优化释义（语义分解释义，自然语言段落）",
+  "chinese_ndef": "中文释义（与 traditional 一致或为其精简版）",
   "semantic_table": {{
     "manner": "方式（运动采用的姿势/手段）",
+    "path": "路径（运动经过的空间轨迹）",
     "direction": "方向（运动朝向的终点/目标）",
     "aspect": "体相（运动时身体的姿态/状态）",
     "scope": "范围（运动的范围/程度）"
@@ -305,6 +311,8 @@ def _parse_llm_response(content: str, verb: str) -> Optional[Dict[str, Any]]:
         # Ensure required fields exist
         result = {
             "verb": verb,
+            "traditional": data.get("traditional", ""),
+            "optimized": data.get("optimized", ""),
             "chinese_ndef": data.get("chinese_ndef", ""),
             "semantic_table": data.get("semantic_table", {}),
             "example": data.get("example", ""),
