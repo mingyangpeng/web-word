@@ -428,6 +428,44 @@ def get_badge_style(color: str = PRIMARY_COLOR) -> str:
 
 
 # ============================================================================
+# Color Utilities
+# ============================================================================
+
+def hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
+    """
+    Convert a hex color constant into a CSS ``rgba(...)`` string.
+
+    CSS does not accept a hex value inside ``rgba()`` — ``rgba(#ffffff, 0.98)``
+    is invalid and the browser drops the whole declaration. Interpolating a
+    design-system hex constant into a translucent color therefore requires a
+    real conversion, which this helper provides.
+
+    Args:
+        hex_color: Hex color string, with or without a leading '#'
+                   (e.g. "#ffffff", "4a5568").
+        alpha: Opacity between 0.0 and 1.0 (default: 1.0).
+
+    Returns:
+        CSS color string, e.g. "rgba(255, 255, 255, 0.98)".
+
+    Example:
+        >>> background: rgba({hex_to_rgba(BACKGROUND_COLOR, 0.98)});
+        background: rgba(255, 255, 255, 0.98);
+    """
+    value = hex_color.lstrip("#")
+
+    # Support the 3-digit shorthand ("#fff") and the 6-digit form.
+    if len(value) == 3:
+        value = "".join(ch * 2 for ch in value)
+
+    if len(value) != 6:
+        raise ValueError(f"Unsupported hex color: {hex_color!r}")
+
+    red, green, blue = (int(value[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({red}, {green}, {blue}, {alpha})"
+
+
+# ============================================================================
 # Accessibility Utilities
 # ============================================================================
 

@@ -4,7 +4,6 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import json
 import datetime
@@ -28,7 +27,7 @@ from src.design_system import (
     BACKGROUND_COLOR, CARD_COLOR, TEXT_COLOR, TEXT_SECONDARY,
     BORDER_COLOR, SPACE_XS, SPACE_SM, SPACE_MD, SPACE_LG, SPACE_XL,
     get_button_primary_style, get_button_outline_style, get_card_style,
-    get_section_spacing, get_badge_style
+    get_section_spacing, get_badge_style, hex_to_rgba
 )
 
 # ============================================
@@ -74,22 +73,38 @@ except Exception as e:
 # ============================================
 # Sticky 搜索栏：Google 风格样式
 # ============================================
+# 实现说明（2026-09-15 修复）：
+#   1. Streamlit 会把每个 st.markdown 渲染成独立的兄弟节点，所以
+#      "<div class=...>" 无法包住后面的 st.text_input —— 以前的写法里输入框
+#      始终在容器之外，CSS 从未生效。
+#   2. 现在改用 st.container(key="search_bar")：Streamlit 会为容器生成稳定的
+#      .st-key-search_bar class，输入框真正位于该容器内部。
+#   3. sticky 必须落在 wrapper（[data-testid="stLayoutWrapper"]）上而不是容器
+#      本身：容器的高度等于自身内容，没有滚动行程；wrapper 的父级
+#      stVerticalBlock 才是整页高度，sticky 才能一路吸顶。
+#   4. 外观（背景/内边距/圆角/边框）只放在容器上，wrapper 只负责定位，
+#      否则两层各加一次内边距，搜索栏会明显变高。
+#   5. 背景色通过 hex_to_rgba 转换：CSS 不接受 rgba() 里写十六进制，
+#      rgba(#ffffff, 0.98) 是非法值，浏览器会整条丢弃。
 st.markdown(f"""
 <style>
-/* Google 风格搜索栏 */
-.google-search-bar {{
-    position: sticky;
-    top: 1.5rem;
-    z-index: 1000;
-    background: rgba({BACKGROUND_COLOR}, 0.98);
+/* 外观：容器本身（不支持 :has() 的浏览器也能看到样式，只是不吸顶） */
+.st-key-search_bar {{
+    background: {hex_to_rgba(BACKGROUND_COLOR, 0.98)};
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     padding: {SPACE_SM}px;
-    margin: 0 0 {SPACE_LG}px 0;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(226, 232, 240, 0.5);
+}}
 
+/* 定位：容器的 wrapper 一直贴在窗口顶部，方便随时切换搜索的单词 */
+[data-testid="stLayoutWrapper"]:has(> .st-key-search_bar) {{
+    position: sticky;
+    top: 1rem;
+    z-index: 1000;
+    margin-bottom: {SPACE_LG}px;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -1002,10 +1017,12 @@ def render_main_area():
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃 动词释义优化器</h1>", unsafe_allow_html=True)
     st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
 
-    # ===== Google 风格搜索栏 =====
-    st.markdown('<div class="google-search-bar">', unsafe_allow_html=True)
-
-    with st.container():
+    # ===== 浮动固定搜索栏 =====
+    # 用 st.container(key="search_bar") 让输入框真正位于 .st-key-search_bar 容器内，
+    # 固定的 CSS 挂在容器的 wrapper 上（见文件顶部样式块）。不要再改回
+    # st.markdown('<div class=...>') 的写法——那只会生成一个空的兄弟 div，
+    # 输入框不在其中，sticky 与背景都不会生效。
+    with st.container(key="search_bar"):
         # 搜索输入框 — 使用 key 让 Streamlit 自动管理 session_state
         # 不设置 value（由 key 管理），on_change 在值变化时触发搜索
         verb_input = st.text_input(
@@ -1015,8 +1032,6 @@ def render_main_area():
             key="搜索动词",
             on_change=search_verb
         )
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # 欢迎消息（当没有结果时显示）
     if not hasattr(st.session_state, 'show_result') or not st.session_state.show_result:
@@ -1145,91 +1160,6 @@ def render_main_area():
                     unsafe_allow_html=True
                 )
 
-    # ===== JS 注入：实现搜索栏固定 =====
-    components.html("""
-<script>
-(function() {
-    const doc = window.parent.document;
-    let searchBar = null;
-    let isFixed = false;
-    let spacer = null;
-
-    function init() {
-        // 找到标记
-        const marker = doc.querySelector('.search-bar-start');
-        if (!marker) {
-            setTimeout(init, 300);
-            return;
-        }
-
-        // 找到标记后面的行容器
-        searchBar = marker.nextElementSibling;
-        if (!searchBar || !searchBar.style) {
-            setTimeout(init, 300);
-            return;
-        }
-
-        // 保存原始样式
-        searchBar.dataset.originalTop = searchBar.getBoundingClientRect().top + doc.documentElement.scrollTop;
-
-        // 创建占位符，防止内容跳动
-        spacer = doc.createElement('div');
-        spacer.style.height = searchBar.offsetHeight + 'px';
-        spacer.style.display = 'none';
-        searchBar.parentNode.insertBefore(spacer, searchBar);
-
-        // 监听滚动
-        window.addEventListener('scroll', handleScroll);
-        handleScroll();
-    }
-
-    function handleScroll() {
-        if (!searchBar) return;
-
-        const scrollY = doc.documentElement.scrollTop || doc.body.scrollTop;
-        const originalTop = parseInt(searchBar.dataset.originalTop) || 0;
-
-        if (scrollY > originalTop - 20 && !isFixed) {
-            // 转为固定定位
-            const width = searchBar.offsetWidth;
-            searchBar.style.position = 'fixed';
-            searchBar.style.top = '20px';
-            searchBar.style.zIndex = '9999';
-            searchBar.style.width = width + 'px';
-            searchBar.style.background = 'rgba(255, 255, 255, 0.98)';
-            searchBar.style.backdropFilter = 'blur(12px)';
-            searchBar.style.padding = '16px';
-            searchBar.style.borderRadius = '12px';
-            searchBar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
-            searchBar.style.margin = '0 0 0 -16px';
-
-            spacer.style.display = 'block';
-            isFixed = true;
-        } else if (scrollY <= originalTop - 20 && isFixed) {
-            // 恢复原始
-            searchBar.style.position = '';
-            searchBar.style.top = '';
-            searchBar.style.zIndex = '';
-            searchBar.style.width = '';
-            searchBar.style.background = '';
-            searchBar.style.backdropFilter = '';
-            searchBar.style.padding = '';
-            searchBar.style.borderRadius = '';
-            searchBar.style.boxShadow = '';
-            searchBar.style.margin = '';
-
-            spacer.style.display = 'none';
-            isFixed = false;
-        }
-    }
-
-    // 多次尝试初始化
-    setTimeout(init, 500);
-    setTimeout(init, 1000);
-    setTimeout(init, 2000);
-})();
-</script>
-""", height=0, width=0)
 
 # ============================================
 # 主函数
