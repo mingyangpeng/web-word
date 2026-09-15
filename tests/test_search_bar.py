@@ -134,14 +134,58 @@ def test_obsolete_div_wrapper_is_gone(app_source):
 
 def test_sticky_targets_container_wrapper(app_source):
     """sticky 必须挂在 wrapper 上，容器本身没有滚动行程。"""
+    # f-string 里 CSS 花括号被转义成 {{ }}，因此按转义形式匹配。
+    # 注意用 DOTALL：body 内还可能出现 {STICKY_SEARCH_BAR_TOP} 这类插值。
     sticky_block = re.search(
-        r':has\(>\s*\.st-key-search_bar\)\s*\{(?P<body>[^}]*)\}', app_source
+        r':has\(>\s*\.st-key-search_bar\)\s*\{\{(?P<body>.*?)\}\}',
+        app_source,
+        re.DOTALL,
     )
     assert sticky_block is not None, "缺少 :has(> .st-key-search_bar) 定位规则"
     body = sticky_block.group("body")
     assert "position: sticky" in body
     assert "top:" in body
     assert "z-index" in body
+
+
+def test_sticky_top_clears_streamlit_header(app_source):
+    """吸顶偏移必须让开 Streamlit 顶栏（Deploy/菜单那个常驻条）。
+
+    stHeader 是高度 60px、z-index 999990 的常驻元素。若 sticky top 小于该高度，
+    搜索栏会有一截压在顶栏下面且输入框不可点（实测 top:1rem 时重叠 44px、
+    输入框 elementFromPoint 命中的是顶栏而非输入框）。
+    """
+    match = re.search(
+        r'^STICKY_SEARCH_BAR_TOP\s*=\s*["\'](?P<value>[^"\']+)["\']',
+        app_source,
+        re.MULTILINE,
+    )
+    assert match is not None, "缺少 STICKY_SEARCH_BAR_TOP 常量，无法校验吸顶偏移"
+
+    raw = match.group("value")
+    value = float(raw.replace("rem", "")) * 16 if raw.endswith("rem") else float(
+        raw.replace("px", "")
+    )
+
+    # 60px 是 stHeader 的固定高度；留出间隙避免视觉贴边。
+    assert value >= 60, f"吸顶偏移 {raw}（{value}px）未让开 60px 的 Streamlit 顶栏"
+
+    # 且 CSS 必须真的使用这个常量，而不是又写死一个小值。
+    assert "top: {STICKY_SEARCH_BAR_TOP}" in app_source, (
+        "sticky top 必须引用 STICKY_SEARCH_BAR_TOP"
+    )
+
+
+def test_sticky_stays_below_header_zindex(app_source):
+    """回归：不得把搜索栏 z-index 提到顶栏之上，否则会盖住 Deploy 按钮。"""
+    sticky_block = re.search(
+        r':has\(>\s*\.st-key-search_bar\)\s*\{\{(?P<body>.*?)\}\}', app_source, re.DOTALL
+    )
+    assert sticky_block is not None
+    z_match = re.search(r"z-index:\s*(\d+)", sticky_block.group("body"))
+    assert z_match is not None, "缺少 z-index"
+    # stHeader 的 z-index 是 999990；必须远低于它。
+    assert int(z_match.group(1)) < 999990, "搜索栏 z-index 不得高于 Streamlit 顶栏"
 
 
 def test_appearance_is_on_container_not_wrapper(app_source):

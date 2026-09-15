@@ -86,6 +86,12 @@ except Exception as e:
 #      否则两层各加一次内边距，搜索栏会明显变高。
 #   5. 背景色通过 hex_to_rgba 转换：CSS 不接受 rgba() 里写十六进制，
 #      rgba(#ffffff, 0.98) 是非法值，浏览器会整条丢弃。
+#   6. 吸顶偏移必须让开 Streamlit 顶栏：stHeader 是常驻的 absolute 元素
+#      （高度 60px、z-index 999990，内含 Deploy 与菜单按钮）。用 top:1rem(16px)
+#      会让搜索栏有 44px 压在顶栏下面、输入框完全不可点。这里用 4.5rem
+#      （72px = 60px 顶栏 + 12px 间隙）让搜索栏停在顶栏下方。
+#      不要改成把 z-index 提到顶栏之上——那会反过来盖住 Deploy 按钮。
+STICKY_SEARCH_BAR_TOP = "4.5rem"
 st.markdown(f"""
 <style>
 /* 外观：容器本身（不支持 :has() 的浏览器也能看到样式，只是不吸顶） */
@@ -99,10 +105,10 @@ st.markdown(f"""
     border: 1px solid rgba(226, 232, 240, 0.5);
 }}
 
-/* 定位：容器的 wrapper 一直贴在窗口顶部，方便随时切换搜索的单词 */
+/* 定位：容器的 wrapper 一直贴在 Streamlit 顶栏下方，方便随时切换搜索的单词 */
 [data-testid="stLayoutWrapper"]:has(> .st-key-search_bar) {{
     position: sticky;
-    top: 1rem;
+    top: {STICKY_SEARCH_BAR_TOP};
     z-index: 1000;
     margin-bottom: {SPACE_LG}px;
 }}
