@@ -307,9 +307,10 @@ def render_card_core(verb):
     Returns:
         卡片内容 HTML
     """
-    definitions = MOCK_DEFINITIONS.get(verb, {})
-    traditional = definitions.get("traditional", "")
-    optimized = definitions.get("optimized", "")
+    # 数据来源：统一适配器（Phase 5, D-01）
+    display = get_display_definition(verb)
+    traditional = display.get("traditional", "")
+    optimized = display.get("optimized", "")
 
     html = '''
     <div style="padding: 20px;">
@@ -1035,42 +1036,6 @@ def render_main_area():
         </div>
         """, unsafe_allow_html=True)
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
-    else:
-        # 当有搜索结果时，显示结果区域
-        verb = st.session_state.verb_result
-
-        # 获取释义数据，如果没有则使用默认示例
-        if verb in MOCK_DEFINITIONS:
-            traditional = MOCK_DEFINITIONS[verb]["traditional"]
-            optimized = MOCK_DEFINITIONS[verb]["optimized"]
-        else:
-            # 通用示例
-            traditional = f"""
-**传统释义 (词典)**
-
-> 「{verb}」指人快速移动进入某空间，以奔跑的方式进入，强调速度和路径。
-
-**语义要素分析：**
-- 方式：奔跑
-- 路径：进入空间
-- 方向：朝向空间内部
-- 体相：身体前倾，双臂摆动
-"""
-            optimized = f"""
-**优化释义 (语义分解)**
-
-| 语义要素 | 含义 | 体现 |
-|---------|------|------|
-| 【方式】 | 奔跑姿态 | 动态运动方式 |
-| 【路径】 | 进入空间的路径 | 从外部到内部的移动 |
-| 【方向】 | 朝向空间内部 | 目标明确 |
-| 【体相】 | 身体前倾 | 动态姿态 |
-
-**改进点：**
-1. 显式分解语义要素
-2. 提供更详细的描述
-3. 便于对比不同动词
-"""
 
     # 显示结果区域
     if hasattr(st.session_state, 'show_result') and st.session_state.show_result:
