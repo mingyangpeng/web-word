@@ -273,7 +273,8 @@ def render_card_anchor(verb):
     Returns:
         卡片内容 HTML
     """
-    semantic_table = MOCK_DEFINITIONS.get(verb, {}).get("semantic_table", [])
+    # 数据来源：统一适配器（Phase 5, D-01）；返回 5 行 [[类型, emoji, 描述], ...]
+    semantic_table = get_semantic_table_for_verb(verb)
 
     html = '''
     <div style="padding: 20px;">
