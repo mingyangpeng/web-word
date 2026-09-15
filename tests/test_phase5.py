@@ -23,6 +23,7 @@ if PROJECT_ROOT not in sys.path:
 import src.app as app_module  # noqa: E402
 from src.app import get_display_definition  # noqa: E402
 from src import llm_api  # noqa: E402
+from streamlit.testing.v1 import AppTest  # noqa: E402
 
 
 RUN_TIMEOUT = 30
@@ -228,3 +229,28 @@ def test_adapter_rejects_illegal_input(monkeypatch):
 
     assert isinstance(result["semantic_table"], dict)
     assert called == [], "非法输入不得进入 LLM 调用"
+
+
+# ============================================
+# Task 2 — 集成测试：AppTest 加载与结果渲染
+# ============================================
+def test_app_loads():
+    """改接后应用可加载，无导入/运行期异常。"""
+    at = AppTest.from_file("src/app.py")
+    at.run(timeout=RUN_TIMEOUT)
+
+    assert at.exception == []
+
+
+def test_result_render_no_mock_hardcode():
+    """展示态下四卡区域渲染成功，且渲染层不再硬编码 MOCK。"""
+    at = AppTest.from_file("src/app.py")
+    at.run(timeout=RUN_TIMEOUT)
+
+    at.session_state["verb_result"] = "跑进来"
+    at.session_state["show_result"] = True
+    at.run(timeout=RUN_TIMEOUT)
+
+    assert at.exception == []
+    assert any("结果展示" in m.value for m in at.markdown)
+    assert any("核心释义与多维辨异" in m.value for m in at.markdown)
