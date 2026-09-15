@@ -13,10 +13,10 @@ API configuration, and an admin mode for web-based entry addition.
 
 ### Live Generation (LLM)
 
-- [ ] **LLM-01**: 用户查询动词时，应用调用智谱 AI 实时生成释义（含语义分解表），替代 MOCK_DEFINITIONS 成为主显示来源
-- [ ] **LLM-02**: 数据流为「DB 命中 → 实时 LLM 生成 → 解析入库 → 渲染」；LLM 与 DB 均失败时退回 Mock 数据作为最终降级
-- [ ] **LLM-03**: 生成的释义（动词、中文释义、语义分解 JSON、例句、模型版本）写入 MySQL `definitions` 表，供后续查询直接命中
-- [ ] **LLM-04**: LLM 调用具备错误处理与超时降级，API 密钥缺失/失效时不崩溃，明确提示并退回可用数据源
+- [x] **LLM-01**: 用户查询动词时，应用调用智谱 AI 实时生成释义（含语义分解表），替代 MOCK_DEFINITIONS 成为主显示来源
+- [x] **LLM-02**: 数据流为「DB 命中 → 实时 LLM 生成 → 解析入库 → 渲染」；LLM 与 DB 均失败时退回 Mock 数据作为最终降级
+- [x] **LLM-03**: 生成的释义（动词、中文释义、语义分解 JSON、例句、模型版本）写入 MySQL `definitions` 表，供后续查询直接命中
+- [x] **LLM-04**: LLM 调用具备错误处理与超时降级，API 密钥缺失/失效时不崩溃，明确提示并退回可用数据源
 
 ### Page Configuration (SETTINGS)
 
@@ -66,10 +66,10 @@ Design: DESIGN-01/02/03 · Core: CORE-01..05 · UI: UI-01..04, UI-06/07/08 · Ba
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LLM-01 | Phase 5 | Pending |
-| LLM-02 | Phase 5 | Pending |
-| LLM-03 | Phase 5 | Pending |
-| LLM-04 | Phase 5 | Pending |
+| LLM-01 | Phase 5 | Complete |
+| LLM-02 | Phase 5 | Complete |
+| LLM-03 | Phase 5 | Complete |
+| LLM-04 | Phase 5 | Complete |
 | SETTINGS-01 | Phase 6 | Pending |
 | SETTINGS-02 | Phase 6 | Pending |
 | SETTINGS-03 | Phase 6 | Pending |

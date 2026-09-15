@@ -26,7 +26,7 @@
 
 ### Phases
 
-- [ ] **Phase 5: 实时生成接入 (Live Generation)** - 智谱 AI 成为主显示来源，DB→实时 LLM→解析入库→渲染，Mock 仅作最终降级
+- [x] **Phase 5: 实时生成接入 (Live Generation)** - 智谱 AI 成为主显示来源，DB→实时 LLM→解析入库→渲染，Mock 仅作最终降级
 - [ ] **Phase 6: 页面配置面板 (Page Configuration)** - 页面内 API TOKEN/URL/MODEL 配置，预填智谱默认，持久化到配置文件
 - [ ] **Phase 7: 管理员认证 (Authentication)** - users 表 + role，管理员种子账户，session 登录门控管理功能
 - [ ] **Phase 8: 管理员词条录入 (Admin Entry Management)** - 网页端表单新增/更新动词词条到 MySQL，带校验与反馈
@@ -44,7 +44,7 @@
   2. 数据流按「DB 命中 → 实时 LLM 生成 → 解析入库 → 渲染」执行，DB 已有记录时不再调用 LLM，新动词首次查询后写入 MySQL `definitions` 表供后续直接命中
   3. 生成的释义（动词、中文释义、语义分解 JSON、例句、模型版本）成功写入 MySQL `definitions` 表
   4. 当 API 密钥缺失或调用超时/失败时，应用不崩溃，明确提示用户并退回可用数据源（DB 优先，Mock 最终兜底）
-**Plans**: 3 plans (05-01 tracer, 05-02 render rewire, 05-03 tests)
+**Plans**: 3 plans (05-01 tracer, 05-02 render rewire, 05-03 tests) — all complete 2026-09-15 (28 tests passing)
 **UI hint**: yes
 
 ### Phase 6: 页面配置面板 (Page Configuration)
@@ -86,7 +86,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. 实时生成接入 | 0/3 | Planning | - |
+| 5. 实时生成接入 | 3/3 | Complete | 2026-09-15 |
 | 6. 页面配置面板 | 0/0 | Not started | - |
 | 7. 管理员认证 | 0/0 | Not started | - |
 | 8. 管理员词条录入 | 0/0 | Not started | - |
