@@ -1099,7 +1099,9 @@ def render_main_area():
         )
 
         # 提交按钮
-        submit_button = st.button("📤 提交反馈", type="primary", **get_button_primary_style())
+        # 注：get_button_primary_style() 返回的是 CSS 字符串（不是关键字参数字典），
+        # 展开传入 st.button 会在渲染结果区时抛 TypeError。
+        submit_button = st.button("📤 提交反馈", type="primary")
 
         if submit_button:
             if rating > 0 and feedback_text.strip():
