@@ -1,0 +1,60 @@
+# ============================================
+# MySQL 数据库配置示例
+# ============================================
+# 用法：把本文件复制为 config/config.yaml 后按环境修改。
+#
+#     cp config/config.example.yaml config/config.yaml
+#
+# 注意：config/config.yaml 已提交到仓库，应用启动时会读取它，
+# 因此不要删除该文件；部署到新机器时直接用本示例覆盖并改值即可。
+#
+# ---------------------------------------------------------------
+# 配置优先级（重要）
+# ---------------------------------------------------------------
+#  环境变量  >  config/config.yaml  >  代码内置默认值
+#
+# 也就是说：只要同名环境变量存在且非空，就覆盖下面 YAML 里的值。
+# 这样同一份 config.yaml 能同时服务两种部署方式，部署方无需改动
+# 任何被 git 跟踪的文件：
+#
+#   * Docker Compose —— MySQL 主机名是 compose 服务名 "mysql"
+#   * 本地开发       —— MySQL 主机名通常是 "127.0.0.1"
+#
+# 代码识别的环境变量名（见 src/mysql_db.py）：
+#   MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD,
+#   MYSQL_CHARSET, MYSQL_COLLATION
+#
+# 例：本地不改 YAML，只临时指定主机与密码
+#   MYSQL_HOST=127.0.0.1 MYSQL_PASSWORD=your_password streamlit run src/app.py
+
+database:
+  mysql:
+    # 本地开发用 127.0.0.1；Docker Compose 用服务名 mysql（由 compose 注入
+    # 环境变量覆盖，无需改这里）。
+    host: localhost
+    port: 3306
+    database: web_word_db
+    # 占位值：请改成你自己的账号与密码。
+    user: web_word_user
+    password: "CHANGE_ME"
+    charset: utf8mb4
+    collation: utf8mb4_unicode_ci
+
+  # 连接池配置
+  pool:
+    size: 5
+    max_overflow: 10
+
+
+# 应用配置
+app:
+  model:
+    # 说明：当前 src/llm_api.py 并没有读取本段配置，它直接读环境变量
+    # ZHIPUAI_API_KEY / LLM_MODEL。此处保留仅为将来接入预留。
+    provider: zhipu  # zhipu, openai, deepseek
+    model_name: glm-4
+    api_key_env: ZHIPUAI_API_KEY
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
