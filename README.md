@@ -223,11 +223,13 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 
 搜索结果页（四张卡片下方）有一块 **🕸️ 词与词关系图谱**：查询任意动词，页面直接把
 「该词 + 其所属词簇」的完全图画出来 —— 簇内每个词一个节点，两两之间的近义边全部画出，
-当前查询词用紫色大圆标出。旁边可以：
+中心词用紫色大圆标出。旁边可以：
 
+* **切换词簇** 下拉框 —— 默认「跟随当前词」，也可以直接打开 25 个簇中的任意一个来浏览，
+  不必先搜一个别的词才能进去（选别的簇时文案会注明「当前高亮 X，非本次查询词 Y」）；
 * 切换 **完整簇完全图 / 只显示中心词连线**（大簇下看清「这个词和谁相关」）；
 * 查看 **簇大小** 与 **完全图边数 C(n,2)**；
-* 点开 **簇内全部动词** 展开面板，点任一词即可直接切换查询。
+* 点开 **簇内全部动词** 展开面板，点任一词即可直接切换查询（此时图谱跟随前进到该词的簇）。
 
 实现见 `src/cluster_graph.py`（内联 SVG，不依赖 CDN）：56 词大簇会画出全部 1540 条边，
 但只标注中心词，其余节点靠鼠标悬停看词名 —— 否则标签互相压盖成一团。
@@ -308,8 +310,20 @@ python -m pytest -q -p no:cacheprovider --no-cov
 pytest tests/test_security.py
 ```
 
-覆盖率 HTML 报告输出到 `htmlcov/index.html`。测试用 `monkeypatch` 隔离外部依赖，
+覆盖率 HTML 报告输出到 `htmlcov/index.html`。绝大多数测试用 `monkeypatch` 隔离外部依赖，
 不会真实调用智谱 API 或 MySQL。
+
+例外是 `tests/test_migration_integration.py`：它必须在**真 MySQL** 上跑，因为它要验证的
+正是「迁移之后业务数据还在不在」。连不上库、或账号没有建库权限时，该模块整体 `skip`
+（不是 fail）—— 这是环境能力问题，不是代码缺陷。本地要跑它，先授权：
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS web_word_migration_test; \
+                  GRANT ALL ON web_word_migration_test.* TO 'web_word_user'@'%';"
+MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
+```
+
+无数据库时：`60 passed, 12 skipped`；有数据库时：`72 passed`。
 
 测试文件与覆盖内容：
 
@@ -318,7 +332,8 @@ pytest tests/test_security.py
 | `tests/test_phase5.py` | 释义分级策略（DB → LLM → 兜底）、LLM 结果持久化、缺 key 不崩溃 |
 | `tests/test_phase4.py` | 侧边栏折叠 / 统计 / 热门动词筛选 |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
-| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询与 SVG 渲染 |
+| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询（含按簇 id 取图与切换簇）与 SVG 渲染 |
+| `tests/test_migration_integration.py` | **真实 MySQL** 上的 v1→v2 迁移：业务数据一行不丢、旧表删除、新表建立、连跑三次幂等 |
 | `tests/test_security.py` | 输入校验与密钥掩码 |
 
 ## ❓ 常见问题

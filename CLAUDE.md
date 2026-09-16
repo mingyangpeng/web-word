@@ -123,21 +123,21 @@ web-word/
 └── .planning/              # GSD 规划与归档
 ```
 
-## 代码位置参考（`src/app.py`，共约 1430 行）
+## 代码位置参考（`src/app.py`，共约 1479 行）
 
 | 内容 | 位置 |
 |------|------|
 | 固定搜索栏 CSS 与 `st.container(key="search_bar")` | 第 99 行 / 第 1245 行 |
 | `THEORY_DESCRIPTION`（理论说明） | 第 157 行 |
 | 热门动词前端筛选 `filter_hot_verbs()` | 第 223 行 |
-| `render_semantic_table()`（五元表格渲染） | 第 241 行 |
-| `render_cluster_graph_section()`（词与词关系图谱） | 第 474 行 |
-| `render_example_library()`（示例库三标签页） | 第 570 行 |
-| `get_display_definition()`（释义适配层，核心） | 第 706 行 |
-| `MOCK_DEFINITIONS`（内置示例） | 第 866 行 |
-| `SEMANTIC_COLORS` / `CATEGORY_*` / `EXAMPLE_VERBS` | 第 1101 行 |
-| `render_sidebar()`（统计 / 热门 / 导出） | 第 1137 行 |
-| `render_main_area()`（卡片与反馈表单） | 第 1231 行 |
+| `render_semantic_table()`（五元表格渲染） | 第 245 行 |
+| `render_cluster_graph_section()`（词与词关系图谱 + 切换簇） | 第 478 行 |
+| `render_example_library()`（示例库三标签页） | 第 619 行 |
+| `get_display_definition()`（释义适配层，核心） | 第 755 行 |
+| `MOCK_DEFINITIONS`（内置示例） | 第 915 行 |
+| `SEMANTIC_COLORS` / `CATEGORY_*` / `EXAMPLE_VERBS` | 第 1150 行 |
+| `render_sidebar()`（统计 / 热门 / 导出） | 第 1186 行 |
+| `render_main_area()`（卡片与反馈表单） | 第 1280 行 |
 
 > 行号会随编辑漂移，用 `grep -n` 复核，不要直接相信上表。
 

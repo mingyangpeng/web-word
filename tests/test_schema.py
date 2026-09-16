@@ -109,20 +109,41 @@ class TestMigrationIdempotency:
 # ============================================
 # 词簇图谱查询
 # ============================================
-def _fake_cursor_factory(center_row, member_rows):
-    """构造一个假游标：按 SQL 内容返回 definitions / 成员列表。"""
+def _fake_cursor_factory(fake):
+    """
+    构造假游标，按 SQL 特征分派。
+
+    fake 是 {
+        "verb_to_cluster": {verb: cluster_id},
+        "clusters": {cluster_id: {id,label,sub_cat,main_cat,size}},
+        "members": {cluster_id: [{"id":..,"verb":..}, ...]},
+    }
+
+    用 SQL 特征而非调用顺序来分派：一旦实现里的查询顺序变了（本轮就变过），
+    顺序式 mock 会以「返回错数据」而不是「报错」的方式静默失效。
+    """
 
     class FakeCursor:
         def __init__(self):
-            self._last = None
             self._rows = []
 
         def execute(self, sql, params=None):
-            self._last = sql
-            if "FROM definitions d" in sql and "LEFT JOIN word_clusters" in sql:
-                self._rows = [center_row] if center_row else []
-            elif "WHERE cluster_id = %s ORDER BY verb" in sql:
-                self._rows = member_rows
+            if "FROM definitions WHERE verb" in sql:
+                cid = fake["verb_to_cluster"].get(params[0])
+                self._rows = [{"cluster_id": cid}] if cid is not None else []
+            elif "FROM word_clusters WHERE id" in sql:
+                if "label, sub_cat, main_cat, size" in sql:
+                    row = fake["clusters"].get(params[0])
+                    self._rows = [row] if row else []
+                else:
+                    self._rows = []
+            elif "FROM definitions" in sql and "WHERE cluster_id" in sql:
+                self._rows = list(fake["members"].get(params[0], []))
+            elif "FROM word_clusters" in sql and "ORDER BY size" in sql:
+                self._rows = sorted(
+                    (dict(c) for c in fake["clusters"].values()),
+                    key=lambda c: (-c["size"], c["label"]),
+                )[: (params[0] if params else 500)]
             else:
                 self._rows = []
 
@@ -146,23 +167,32 @@ class _FakeCtx:
         return False
 
 
+def _fixture(cluster_size=3):
+    """一个三词簇的默认测试数据（abandon / desert / leave）。"""
+    members = [
+        {"id": 1, "verb": "abandon"},
+        {"id": 2, "verb": "desert"},
+        {"id": 3, "verb": "leave"},
+    ][:cluster_size]
+    return {
+        "verb_to_cluster": {m["verb"]: 7 for m in members},
+        "clusters": {
+            7: {"id": 7, "label": "路径聚焦类 / 处所脱离", "sub_cat": "处所脱离",
+                "main_cat": "路径聚焦类", "size": cluster_size},
+        },
+        "members": {7: members},
+    }
+
+
 class TestClusterGraph:
     """get_cluster_graph 必须返回**完全图**。"""
 
-    def _patch(self, monkeypatch, center_row, members):
-        cur = _fake_cursor_factory(center_row, members)
+    def _patch(self, monkeypatch, fake):
+        cur = _fake_cursor_factory(fake)
         monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(cur))
 
     def test_three_member_cluster_is_complete(self, monkeypatch):
-        self._patch(
-            monkeypatch,
-            {"id": 1, "verb": "abandon", "cluster_id": 7,
-             "cluster_label": "路径聚焦类 / 处所脱离", "sub_cat": "处所脱离",
-             "cluster_size": 3},
-            [{"id": 1, "verb": "abandon"},
-             {"id": 2, "verb": "desert"},
-             {"id": 3, "verb": "leave"}],
-        )
+        self._patch(monkeypatch, _fixture())
         g = db.get_cluster_graph("abandon")
 
         assert len(g["nodes"]) == 3
@@ -175,25 +205,21 @@ class TestClusterGraph:
         assert g["cluster"]["sub_cat"] == "处所脱离"
 
     def test_center_is_flagged(self, monkeypatch):
-        self._patch(
-            monkeypatch,
-            {"id": 1, "verb": "abandon", "cluster_id": 7,
-             "cluster_label": "x", "sub_cat": "处所脱离", "cluster_size": 2},
-            [{"id": 1, "verb": "abandon"}, {"id": 2, "verb": "leave"}],
-        )
+        self._patch(monkeypatch, _fixture(cluster_size=2))
         g = db.get_cluster_graph("abandon")
         flagged = [n["id"] for n in g["nodes"] if n["is_center"]]
         assert flagged == ["abandon"]
 
     def test_large_cluster_edge_count_matches_formula(self, monkeypatch):
         members = [{"id": i, "verb": f"v{i:02d}"} for i in range(56)]
-        self._patch(
-            monkeypatch,
-            {"id": 0, "verb": "v00", "cluster_id": 4,
-             "cluster_label": "方式聚焦类 / 常态行走", "sub_cat": "常态行走",
-             "cluster_size": 56},
-            members,
-        )
+        fake = {
+            "verb_to_cluster": {"v00": 4},
+            "clusters": {4: {"id": 4, "label": "方式聚焦类 / 常态行走",
+                             "sub_cat": "常态行走", "main_cat": "方式聚焦类",
+                             "size": 56}},
+            "members": {4: members},
+        }
+        self._patch(monkeypatch, fake)
         g = db.get_cluster_graph("v00")
         assert len(g["nodes"]) == 56
         # 用户明确要求完全图：56 词应产生 C(56,2)=1540 条边
@@ -202,20 +228,72 @@ class TestClusterGraph:
         assert g["truncated"] is False
 
     def test_unknown_verb_returns_empty(self, monkeypatch):
-        self._patch(monkeypatch, None, [])
+        self._patch(monkeypatch, _fixture())
         g = db.get_cluster_graph("nonexistent")
         assert g["nodes"] == [] and g["links"] == []
         assert g["cluster"] is None
 
     def test_verb_without_cluster_returns_empty(self, monkeypatch):
-        self._patch(
-            monkeypatch,
-            {"id": 9, "verb": "solo", "cluster_id": None,
-             "cluster_label": None, "sub_cat": None, "cluster_size": None},
-            [],
-        )
+        fake = _fixture()
+        fake["verb_to_cluster"]["solo"] = None
+        self._patch(monkeypatch, fake)
         g = db.get_cluster_graph("solo")
         assert g["nodes"] == []
+
+
+class TestClusterGraphById:
+    """按簇 id 直接取图 —— 这是页面上「切换簇」依赖的能力。"""
+
+    def _patch(self, monkeypatch, fake):
+        cur = _fake_cursor_factory(fake)
+        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(cur))
+
+    def test_open_cluster_without_any_verb(self, monkeypatch):
+        """不传 center 也要能打开一个簇，并自动高亮一个节点。"""
+        self._patch(monkeypatch, _fixture())
+        g = db.get_cluster_graph_by_id(7)
+
+        assert g["cluster"]["id"] == 7
+        assert len(g["nodes"]) == 3
+        assert len(g["links"]) == 3
+        flagged = [n["id"] for n in g["nodes"] if n["is_center"]]
+        # 总得有一个高亮节点，否则用户不知道从哪儿看起
+        assert len(flagged) == 1
+        assert g["center"] == flagged[0]
+
+    def test_center_outside_cluster_falls_back(self, monkeypatch):
+        """点了别的簇、但 center 来自原查询词时应退化，而不是一个高亮都没有。"""
+        self._patch(monkeypatch, _fixture())
+        g = db.get_cluster_graph_by_id(7, center="not_in_this_cluster")
+        flagged = [n["id"] for n in g["nodes"] if n["is_center"]]
+        assert len(flagged) == 1
+        assert g["center"] == flagged[0]
+
+    def test_center_inside_cluster_is_kept(self, monkeypatch):
+        self._patch(monkeypatch, _fixture())
+        g = db.get_cluster_graph_by_id(7, center="desert")
+        assert g["center"] == "desert"
+        assert [n["id"] for n in g["nodes"] if n["is_center"]] == ["desert"]
+
+    def test_missing_cluster_returns_empty(self, monkeypatch):
+        self._patch(monkeypatch, _fixture())
+        g = db.get_cluster_graph_by_id(999)
+        assert g["nodes"] == [] and g["cluster"] is None
+
+
+class TestListClusters:
+    def test_lists_all_with_edge_counts(self, monkeypatch):
+        fake = _fixture()
+        fake["clusters"][8] = {"id": 8, "label": "方式聚焦类 / 奔跑行进",
+                               "sub_cat": "奔跑行进", "main_cat": "方式聚焦类",
+                               "size": 31}
+        cur = _fake_cursor_factory(fake)
+        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(cur))
+
+        cs = db.list_clusters()
+        assert [c["id"] for c in cs] == [8, 7]          # 按 size 降序
+        assert cs[0]["edge_count"] == 31 * 30 // 2      # C(31,2) = 465
+        assert cs[1]["edge_count"] == 3
 
 
 # ============================================

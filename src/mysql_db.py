@@ -808,25 +808,108 @@ def get_synonyms(verb: str) -> List[str]:
         return []
 
 
-def get_cluster_graph(center: str, max_members: int = 60) -> Dict[str, Any]:
+def _build_cluster_graph(cursor, cluster_id: int, center, max_members: int) -> Dict[str, Any]:
+    """
+    给定簇 id，组装完全图结构。get_cluster_graph / get_cluster_graph_by_id 共用。
+
+    Args:
+        cursor: 已打开的游标
+        cluster_id: 词簇 id
+        center: 中心词（可不在该簇内，此时不标记 is_center）
+        max_members: 参与绘制的最大成员数
+
+    Returns:
+        见 get_cluster_graph 的 Returns 说明
+    """
+    cursor.execute(
+        """SELECT id, label, sub_cat, main_cat, size
+           FROM word_clusters WHERE id = %s""",
+        (cluster_id,),
+    )
+    cluster_row = cursor.fetchone()
+    if not cluster_row:
+        return {
+            "center": center or "",
+            "cluster": None,
+            "nodes": [],
+            "links": [],
+            "truncated": False,
+            "complete_edge_count": 0,
+        }
+
+    cursor.execute(
+        """SELECT id, verb FROM definitions
+           WHERE cluster_id = %s ORDER BY verb""",
+        (cluster_id,),
+    )
+    members = cursor.fetchall()
+
+    full_size = len(members)
+    truncated = full_size > max_members
+    if truncated:
+        # 稳定截断：中心词必留，其余按字母序取前 max_members-1 个
+        others = [m for m in members if m["verb"] != center]
+        keep = set()
+        if center:
+            keep.add(center)
+        keep |= {m["verb"] for m in others[: max(0, max_members - len(keep))]}
+        members = [m for m in members if m["verb"] in keep]
+
+    nodes = [
+        {
+            "id": m["verb"],
+            "label": m["verb"],
+            "is_center": bool(center) and m["verb"] == center,
+            "cluster_id": cluster_id,
+        }
+        for m in members
+    ]
+
+    # 簇内完全图：任意两成员一条边
+    links = []
+    for i, a in enumerate(members):
+        for b in members[i + 1:]:
+            links.append(
+                {"source": a["verb"], "target": b["verb"], "relation": "近义"}
+            )
+
+    return {
+        "center": center or "",
+        "cluster": {
+            "id": cluster_id,
+            "label": cluster_row["label"],
+            "sub_cat": cluster_row["sub_cat"],
+            "main_cat": cluster_row["main_cat"],
+            # size 用簇的真实成员数（不是截断后的），否则页面会低报规模
+            "size": int(cluster_row["size"] or full_size),
+        },
+        "nodes": nodes,
+        "links": links,
+        "truncated": truncated,
+        # 完全图边数取**完整簇**的 C(n,2)，与 DB 中 word_relations 的边数一致
+        "complete_edge_count": full_size * (full_size - 1) // 2,
+    }
+
+
+def get_cluster_graph(center: str, max_members: int = 200) -> Dict[str, Any]:
     """
     取「中心词 + 其所属词簇」的完全图，供页面用 graphify 风格可视化。
 
     返回结构刻意对齐 graphify 的 graph.json（nodes / links），这样页面渲染器与
     文件产物 `data/word_graph.json` 可以共用同一套前端代码。
 
-    完全图的边数按 C(n,2) 增长：56 词的「常态行走」簇就是 1540 条边。所以这里设
-    max_members 上限，超过时只取与中心词最相关的若干成员（按字母序稳定截断），
-    并在返回值里用 truncated 标明，避免页面画出无法阅读的毛球。
+    完全图的边数按 C(n,2) 增长：56 词的「常态行走」簇就是 1540 条边。max_members
+    是安全阀（默认 200，远大于当前最大的 56 词簇，正常不会触发），触发时按字母序
+    稳定截断并在返回值里用 truncated 标明，避免意外的超大簇把浏览器拖死。
 
     Args:
         center: 用户查询的动词
-        max_members: 单簇参与绘制的最大成员数（含中心词）
+        max_members: 单簇参与绘制的最大成员数
 
     Returns:
         {
           "center": str,
-          "cluster": {"id", "label", "sub_cat", "size"} | None,
+          "cluster": {"id","label","sub_cat","main_cat","size"} | None,
           "nodes": [{"id","label","is_center","cluster_id"}],
           "links": [{"source","target","relation"}],
           "truncated": bool,
@@ -834,7 +917,7 @@ def get_cluster_graph(center: str, max_members: int = 60) -> Dict[str, Any]:
         }
     """
     empty = {
-        "center": center,
+        "center": center or "",
         "cluster": None,
         "nodes": [],
         "links": [],
@@ -847,64 +930,13 @@ def get_cluster_graph(center: str, max_members: int = 60) -> Dict[str, Any]:
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
-                """SELECT d.id, d.verb, d.cluster_id,
-                          c.label AS cluster_label, c.sub_cat AS sub_cat, c.size AS cluster_size
-                   FROM definitions d
-                   LEFT JOIN word_clusters c ON c.id = d.cluster_id
-                   WHERE d.verb = %s""",
+                "SELECT cluster_id FROM definitions WHERE verb = %s LIMIT 1",
                 (center,),
             )
-            me = cursor.fetchone()
-            if not me or me["cluster_id"] is None:
+            row = cursor.fetchone()
+            if not row or row["cluster_id"] is None:
                 return empty
-
-            cluster_id = me["cluster_id"]
-            cursor.execute(
-                """SELECT id, verb FROM definitions
-                   WHERE cluster_id = %s ORDER BY verb""",
-                (cluster_id,),
-            )
-            members = cursor.fetchall()
-
-        size = len(members)
-        truncated = size > max_members
-        if truncated:
-            # 稳定截断：中心词必留，其余按字母序取前 max_members-1 个
-            others = [m for m in members if m["verb"] != center]
-            keep = {center} | {m["verb"] for m in others[: max(0, max_members - 1)]}
-            members = [m for m in members if m["verb"] in keep]
-
-        nodes = [
-            {
-                "id": m["verb"],
-                "label": m["verb"],
-                "is_center": m["verb"] == center,
-                "cluster_id": cluster_id,
-            }
-            for m in members
-        ]
-
-        # 簇内完全图：任意两成员一条边
-        links = []
-        for i, a in enumerate(members):
-            for b in members[i + 1:]:
-                links.append(
-                    {"source": a["verb"], "target": b["verb"], "relation": "近义"}
-                )
-
-        return {
-            "center": center,
-            "cluster": {
-                "id": cluster_id,
-                "label": me["cluster_label"],
-                "sub_cat": me["sub_cat"],
-                "size": int(me["cluster_size"] or size),
-            },
-            "nodes": nodes,
-            "links": links,
-            "truncated": truncated,
-            "complete_edge_count": size * (size - 1) // 2,
-        }
+            return _build_cluster_graph(cursor, row["cluster_id"], center, max_members)
 
     except pymysql.Error as e:
         logger.error(f"Failed to get cluster graph for '{center}': {e}")
@@ -913,6 +945,85 @@ def get_cluster_graph(center: str, max_members: int = 60) -> Dict[str, Any]:
         logger.error(f"Unexpected error building cluster graph: {e}")
         return empty
 
+
+def get_cluster_graph_by_id(cluster_id: int, center: str = None,
+                           max_members: int = 200) -> Dict[str, Any]:
+    """
+    按簇 id 直接取完全图 —— 这是页面上「切换簇」的入口。
+
+    get_cluster_graph 只能从某个词反查它所在的簇，用户因此无法主动浏览别的簇，
+    只能靠「先搜一个别的词」间接跳过去。这个函数让任意簇都能被直接打开。
+
+    Args:
+        cluster_id: 词簇 id（来自 list_clusters）
+        center: 想要高亮的词；缺省或不在簇内时，取簇内字母序第一个词
+        max_members: 单簇参与绘制的最大成员数
+
+    Returns:
+        与 get_cluster_graph 相同结构
+    """
+    empty = {
+        "center": center or "",
+        "cluster": None,
+        "nodes": [],
+        "links": [],
+        "truncated": False,
+        "complete_edge_count": 0,
+    }
+    try:
+        with get_db_cursor() as cursor:
+            graph = _build_cluster_graph(cursor, cluster_id, center, max_members)
+        # 没传 center、或 center 不在簇内时，退化为簇内第一个词，
+        # 保证图上总有一个被高亮的节点（否则用户看不出「从哪儿看起」）。
+        if graph["nodes"] and not any(n["is_center"] for n in graph["nodes"]):
+            first = graph["nodes"][0]["id"]
+            graph["center"] = first
+            for node in graph["nodes"]:
+                node["is_center"] = node["id"] == first
+        return graph
+    except pymysql.Error as e:
+        logger.error(f"Failed to get cluster graph for cluster {cluster_id}: {e}")
+        return empty
+    except Exception as e:
+        logger.error(f"Unexpected error building cluster graph {cluster_id}: {e}")
+        return empty
+
+
+def list_clusters(limit: int = 500) -> List[Dict[str, Any]]:
+    """
+    列出所有词义簇（按成员数降序），供页面「切换簇」下拉框使用。
+
+    Returns:
+        [{"id","label","main_cat","sub_cat","size","edge_count"}, ...]
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT id, main_cat, sub_cat, label, size
+                   FROM word_clusters
+                   ORDER BY size DESC, label ASC
+                   LIMIT %s""",
+                (limit,),
+            )
+            rows = cursor.fetchall()
+            out = []
+            for row in rows:
+                size = int(row["size"] or 0)
+                out.append({
+                    "id": row["id"],
+                    "main_cat": row["main_cat"],
+                    "sub_cat": row["sub_cat"],
+                    "label": row["label"],
+                    "size": size,
+                    "edge_count": size * (size - 1) // 2,
+                })
+            return out
+    except pymysql.Error as e:
+        logger.error(f"Failed to list clusters: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error listing clusters: {e}")
+        return []
 
 
 # ============================================

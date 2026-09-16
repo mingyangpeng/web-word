@@ -177,7 +177,7 @@ def render_cluster_graph_svg(
         parts.append(
             f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{fill}" '
             f'stroke="#ffffff" stroke-width="2">'
-            f"<title>{_esc(verb)}{'（当前查询词）' if is_center else ''}</title>"
+            f"<title>{_esc(verb)}{'（中心词）' if is_center else ''}</title>"
             f"</circle>"
         )
 
@@ -217,7 +217,7 @@ def render_cluster_graph_svg(
         "<div style='font-size:0.85em;color:#718096;line-height:1.9;'>"
         + " · ".join(notes)
         + "<br/>节点=动词；边=近义关系（同一次语义范畴内两两相连，即完全图）；"
-        + "紫色实心大圆=当前查询词；鼠标悬停节点可看词名。"
+        + "紫色实心大圆=中心词；鼠标悬停节点可看词名。"
         + "</div>"
     )
 
