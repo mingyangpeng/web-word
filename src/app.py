@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 from src.mysql_db import (
     init_database, get_stats, get_hot_verbs, get_feedback_data,
     insert_feedback, get_definition_by_verb, insert_definition,
-    log_usage, get_synonyms, get_cluster_graph,
+    log_usage, get_synonyms, get_cluster_graph, get_cluster_graph_by_id, list_clusters,
 )
 from src.cluster_graph import render_cluster_graph_svg
 from typing import Optional, Dict, List, Any
@@ -209,6 +209,8 @@ def search_verb() -> None:
     if value and 1 <= len(value) <= 50:
         st.session_state.verb_result = value
         st.session_state.show_result = True
+        # 让词簇图谱跟随新查的词，否则会停在用户上次手动选的簇上
+        st.session_state.pop("cluster_selector", None)
         _record_query(value)
 
 
@@ -217,6 +219,8 @@ def select_example_verb(verb: str) -> None:
     st.session_state.verb_result = verb
     st.session_state.show_result = True
     st.session_state["搜索动词"] = verb
+    # 同上：换词就让图谱回到该词所在的簇
+    st.session_state.pop("cluster_selector", None)
     _record_query(verb)
 
 
@@ -473,14 +477,15 @@ def render_card_example(verb):
 # ============================================
 def render_cluster_graph_section(verb: str) -> None:
     """
-    渲染「当前查询词 + 其所属词簇」的完全图。
+    渲染「当前查询词 + 其所属词簇」的完全图，并支持切换到任意其它簇。
 
-    这是 graphify 那套「词与词关系」在**页面上的接口** —— 之前只有命令行
-    （graphify query / explain，读 graphify-out/graph.json）和文件产物
-    （data/word_graph.json），页面上看不到任何一张图，用户无从感知词间关系。
+    这是词与词关系在**页面上的接口**。之前它只存在于命令行（graphify query /
+    explain）和文件产物（data/word_graph.json），页面上看不到任何一张图。
 
-    三个视图开关都有默认值，且用的是 st.radio/st.checkbox 的 session_state key，
-    所以切换不会触发整页重跑丢失状态。
+    三条进入路径：
+      1. 默认 —— 跟随当前查询词，画它所在的簇；
+      2. 「切换词簇」下拉框 —— 直接打开任意一个簇（25 个），不必先搜一个别的词；
+      3. 展开簇内成员列表 —— 点任一词即切换查询，图谱随之前进到它的簇。
 
     Args:
         verb: 当前查询的动词
@@ -491,11 +496,44 @@ def render_cluster_graph_section(verb: str) -> None:
         st.info("数据库不可用，无法展示词簇图谱（离线模式下仅提供释义）。")
         return
 
+    # --- 簇选择器 ---
+    # key="cluster_selector" 由 Streamlit 管理；search_verb / select_example_verb
+    # 会在换词时 pop 掉它，从而回到「跟随当前词」的默认行为。
     try:
-        graph = get_cluster_graph(verb)
+        clusters = list_clusters()
     except Exception as e:
-        logger.error(f"构建词簇图谱失败 for '{verb}': {e}")
-        graph = None
+        logger.error(f"读取词簇列表失败: {e}")
+        clusters = []
+
+    follow_label = f"跟随当前词「{verb}」"
+    if clusters:
+        options = [follow_label] + [
+            f"{c['label']}（{c['size']} 词 / {c['edge_count']} 边）" for c in clusters
+        ]
+        label_to_id = {
+            f"{c['label']}（{c['size']} 词 / {c['edge_count']} 边）": c["id"]
+            for c in clusters
+        }
+
+        picked = st.selectbox(
+            "切换词簇",
+            options=options,
+            index=0,
+            key="cluster_selector",
+            help="默认跟随当前查询词所在的簇；也可以直接选任意一个簇来浏览其完全图。",
+        )
+
+        if picked != follow_label:
+            cluster_id = label_to_id.get(picked)
+            try:
+                graph = get_cluster_graph_by_id(cluster_id)
+            except Exception as e:
+                logger.error(f"按簇 id 取图失败 ({cluster_id}): {e}")
+                graph = None
+        else:
+            graph = get_cluster_graph(verb)
+    else:
+        graph = get_cluster_graph(verb)
 
     if not graph or not graph.get("nodes"):
         st.info(
@@ -507,10 +545,23 @@ def render_cluster_graph_section(verb: str) -> None:
     cluster = graph.get("cluster") or {}
     size = cluster.get("size", len(graph["nodes"]))
     edges = graph.get("complete_edge_count", 0)
+    center = graph.get("center") or verb
+
+    # 用户是「查到某个词」进来的，还是自己选了别的簇 —— 文案要区分开，
+    # 否则在别的簇里看到「」属于该词簇」会让人以为查错了词。
+    if center == verb:
+        intro = (
+            f"「<strong>{verb}</strong>」属于词簇 "
+            f"<strong>{cluster.get('label', '未分组')}</strong>"
+        )
+    else:
+        intro = (
+            f"正在浏览词簇 <strong>{cluster.get('label', '未分组')}</strong>"
+            f"（当前高亮 <strong>{center}</strong>，非本次查询词「{verb}」）"
+        )
 
     st.markdown(
-        f"<p style='{BODY_BASE}'>「<strong>{verb}</strong>」属于词簇 "
-        f"<strong>{cluster.get('label', '未分组')}</strong> —— 簇内 {size} 个动词语义相近，"
+        f"<p style='{BODY_BASE}'>{intro} —— 簇内 {size} 个动词语义相近，"
         f"两两互为近义（完全图，共 {edges} 条边）。</p>",
         unsafe_allow_html=True,
     )
@@ -533,10 +584,9 @@ def render_cluster_graph_section(verb: str) -> None:
 
     highlight_only = mode == "只显示中心词连线"
 
-    # 大簇（>SMALL_CLUSTER）默认只标中心词名，这里给个开关让用户自己决定
     if size > 18:
         st.caption(
-            f"该簇有 {size} 个词、{edges} 条边，全部标名会互相压盖；"
+            f"该簇有 {size} 个词、{edges} 条边（= C({size},2)），全部标名会互相压盖；"
             "当前只标注中心词，其余节点可用鼠标悬停查看词名。"
             f"{'（已切换为只显示中心词连线）' if highlight_only else ''}"
         )
@@ -553,15 +603,14 @@ def render_cluster_graph_section(verb: str) -> None:
             cols = st.columns(per_row)
             for col, member in zip(cols, row):
                 with col:
-                    label = f"📍 {member}" if member == verb else member
-                    if st.button(
+                    label = f"📍 {member}" if member == center else member
+                    st.button(
                         label,
                         key=f"cluster_member_{member}",
                         use_container_width=True,
                         on_click=select_example_verb,
                         args=(member,),
-                    ):
-                        pass
+                    )
 
 
 # ============================================

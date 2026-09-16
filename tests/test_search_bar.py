@@ -221,5 +221,8 @@ def test_search_bar_style_and_input_render():
     assert any("position: sticky" in s for s in styles)
     assert any("rgba(255, 255, 255, 0.98)" in s for s in styles)
 
-    assert len(at.text_input) == 1
-    assert at.text_input[0].key == "搜索动词"
+    # 页面上可能有别的输入框（如侧边栏「筛选热门动词」，只在统计可用时出现），
+    # 所以不能断言总数 == 1 —— 那会让测试结果依赖数据库是否可达。
+    # 这里只钉住「搜索框存在且 key 正确」。
+    keys = [t.key for t in at.text_input]
+    assert "搜索动词" in keys

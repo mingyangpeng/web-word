@@ -134,6 +134,20 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 `statistics`、写版本号）。业务表行原地保留，只有 `synonyms` 的旧环邻边被丢弃
 （它是新完全图的错误子集，跑一次灌库脚本即重建）。
 
+### 词簇图谱的三层接口
+
+词与词的关系在三个层次上可用，同一份数据（`word_clusters` + `word_relations`）：
+
+| 层次 | 入口 | 用途 |
+|------|------|------|
+| 数据 | `get_cluster_graph(verb)` / `get_cluster_graph_by_id(id)` / `list_clusters()` | 返回 `{nodes, links}`（结构对齐 graphify 的 graph.json） |
+| 文件 | `data/word_graph.json`（`scripts/load_word_library.py` 生成） | 审阅、导出、喂给 graphify CLI |
+| 页面 | `app.py: render_cluster_graph_section()` + `src/cluster_graph.py` | 交互浏览：切换簇、切换视图、点击成员切词 |
+
+页面渲染刻意不用 vis-network + iframe（graphify 的 `graph.html` 是那套）：本项目已确立
+「零网络依赖」原则（灌库脚本、离线降级），CDN 脚本在内网会渲染成空白；且完全图是静态
+结构，不需力学布局，内联 SVG 还能继承页面主题。代价是没有拖拽缩放。
+
 ### 知识图谱（两张，均可离线重建）
 
 | 图谱 | 产物 | 内容 |
