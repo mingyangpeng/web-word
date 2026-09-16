@@ -29,8 +29,11 @@ python -m pytest -q -p no:cacheprovider --no-cov   # 快速跑，不带覆盖率
 flake8 src/    # 配置见 .flake8
 mypy src/      # 配置见 mypy.ini
 
-# 灌词库（离线，无网络依赖）
+# 灌词库（离线，无网络依赖；--if-empty 幂等，已有数据则跳过）
 python scripts/load_word_library.py
+
+# 重建两张知识图谱（代码图谱 + 词间关系图谱）
+scripts/build_knowledge_graphs.sh
 
 # GSD 项目统计（需要 node）
 scripts/get-stats.sh
@@ -89,8 +92,6 @@ web-word/
 │   ├── llm_api.py          # 智谱 AI 封装
 │   ├── design_system.py    # 设计系统
 │   ├── security.py         # 输入校验与密钥掩码
-│   ├── api.py              # 遗留：第二套 LLM 封装，主流程未用
-│   ├── database.py         # 遗留：SQLite 模块，主流程未用
 │   └── .streamlit/config.toml
 ├── config/
 │   ├── config.yaml         # 应用实际读取的配置（已跟踪）
@@ -128,7 +129,7 @@ web-word/
 - 同一份被跟踪的 `config.yaml` 要同时服务 Docker（MySQL 主机名 `mysql`）与本地（`127.0.0.1`），
   所以环境变量必须能覆盖 YAML —— 改 `src/mysql_db.py` 的配置读取时不要颠倒这个顺序。
 - 应用真正读取的 key 变量名是 **`ZHIPUAI_API_KEY`**（`src/llm_api.py`）。旧名 `ZHIPU_API_KEY`
-  只被遗留的 `src/api.py` / `src/security.py` 读取。
+  只有 `src/security.py` 的 `KeyManager` 接受（历史上的 `src/api.py` 已删除）。
 - `.env` **不会**被自动加载（仓库无 python-dotenv），需 `set -a; source .env; set +a`。
 
 ## GSD 工作流

@@ -1,5 +1,14 @@
 # Coding Conventions
 
+> ⚠️ **本文件已过期（原分析日期 2026-05-29，未随代码更新）。**
+> 其中的数据库、模块清单与目录结构描述的是当时的 **SQLite** 版本；应用现为
+> **MySQL 8.0**，且已删除 `src/database.py`、`src/api.py`、`tests/conftest.py`、
+> `scripts/migrate_db.py` 等文件。请以仓库根的
+> [`README.md`](../../README.md)、[`ARCHITECTURE.md`](../../ARCHITECTURE.md)、
+> [`CLAUDE.md`](../../CLAUDE.md) 为准；如需刷新本映射，请重新运行 GSD 的
+> codebase-map 工作流。
+
+
 **Analysis Date:** 2026-05-29
 
 ## Naming Patterns

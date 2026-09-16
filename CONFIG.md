@@ -8,7 +8,7 @@
 | 类别 | 位置 | 谁在读 |
 |------|------|--------|
 | 数据库连接 | `config/config.yaml`（模板：`config/config.example.yaml`） | `src/mysql_db.py` |
-| 其余全部设置 | 环境变量（模板：`.env.example`） | `src/llm_api.py`、`src/api.py`、`src/security.py` |
+| 其余全部设置 | 环境变量（模板：`.env.example`） | `src/llm_api.py`、`src/security.py` |
 
 **优先级：环境变量 > `config/config.yaml` > 代码内置默认值。**
 
@@ -48,13 +48,13 @@ Docker Compose（MySQL 主机名是服务名 `mysql`）与本地开发（主机�
 | `MYSQL_ROOT_PASSWORD` | `rootpass123` | 仅 `docker-compose.yml` 的 mysql 服务读取，应用不读 |
 | `MYSQL_PASSWORD` | `webword123` | Compose 注入给 web 容器 |
 
-### 旧版 `src/api.py` / `src/security.py` 使用
+### 旧名变量（仅 `src/security.py` 的 `KeyManager` 读取）
 
-`ZHIPU_API_KEY`、`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`、`DEFAULT_MODEL`、`TEMPERATURE`、
-`MAX_TOKENS`。主应用 `src/app.py` 不导入这两个模块，因此运行应用**不需要**它们。
+`ZHIPU_API_KEY`、`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`。主应用取释义时**不读**这些名字，
+因此运行应用不需要它们（历史上的 `src/api.py` 已删除）。
 
-> 注意 `ZHIPU_API_KEY` 与 `ZHIPUAI_API_KEY` 是两个不同的名字：前者只被旧模块读取，后者才是
-> 主应用读的。填错名字不会报错，只会静默走到离线释义。
+> 注意 `ZHIPU_API_KEY` 与 `ZHIPUAI_API_KEY` 是两个不同的名字：主应用只认后者。
+> 填错名字不会报错，只会静默走到离线释义。
 
 ### 无任何代码读取（预留）
 

@@ -7,7 +7,6 @@
 import re
 import logging
 import os
-from typing import Optional
 from html import escape
 
 logger = logging.getLogger(__name__)

@@ -45,6 +45,9 @@ MySQL 由 Compose 自动起（`mysql:8.0`，服务名 `mysql`），数据写入�
 `web-word-mysql-data`，首次启动执行 `scripts/init_db.sql` 建表。`docker-compose.yml`
 会给 web 容器注入 `MYSQL_HOST=mysql` 等环境变量，**不需要改 `config/config.yaml`**。
 
+**词库无需手工导入**：容器首启时 `entrypoint.sh` 会自动灌入 155 个动词及其词间近义关系
+（`--if-empty` 幂等，已有数据则跳过）。起来就能直接搜索，例如输入 `dash` 或 `climb`。
+
 停止与清理：
 
 ```bash
@@ -90,23 +93,27 @@ set -a; source .env; set +a      # 本项目没有 python-dotenv，必须手动�
 > }
 > ```
 
-**3）启动应用**
+**3）灌入词库（首次必做一次）**
+
+```bash
+python scripts/load_word_library.py
+```
+
+脚本会建表、写入 155 个动词的释义与语义分解，并把词间近义关系双向写入 `synonyms`
+表（实测 `definitions=155, synonyms=738`）。它只读仓库内的 JSON，**不需要联网**。
+可重复执行；已有数据时加 `--if-empty` 可跳过写入。
+
+**4）启动应用**
 
 ```bash
 streamlit run src/app.py
 ```
 
-打开 <http://localhost:8501>。建表由应用启动时自动完成。
+打开 <http://localhost:8501>。建表也由应用启动时自动完成（与灌库脚本互为幂等）。
 
 > 不想动 `.env` 也可以只临时覆盖主机名：
 > `MYSQL_HOST=127.0.0.1 streamlit run src/app.py`
 > 环境变量优先级高于 `config/config.yaml`（详见 `config/README.md`）。
-
-**4）（可选）灌入词库**
-
-```bash
-python scripts/load_word_library.py            # 离线，无网络依赖
-```
 
 ## 📁 目录结构
 
@@ -118,27 +125,27 @@ web-word/
 │   ├── llm_api.py              # 智谱 AI 封装（调用、解析、MySQL 缓存、兜底释义）
 │   ├── design_system.py        # 设计系统常量与样式生成
 │   ├── security.py             # 输入校验（SQL 注入 / XSS）与密钥掩码
-│   ├── api.py                  # 旧版多提供商 LLM 封装，主流程未使用（见「已知遗留」）
-│   ├── database.py             # 旧版 SQLite 模块，已废弃（见「已知遗留」）
 │   └── .streamlit/config.toml  # Streamlit 运行配置
 ├── config/
 │   ├── config.yaml             # 应用实际读取的数据库配置（已提交）
 │   ├── config.example.yaml     # 同结构模板（含注释，推荐复制后修改）
 │   └── README.md               # 配置优先级与环境变量说明
 ├── scripts/
-│   ├── entrypoint.sh           # 容器入口：等 MySQL → 启动 Streamlit
+│   ├── entrypoint.sh           # 容器入口：等 MySQL → 首启灌词库 → 启动 Streamlit
 │   ├── wait_for_mysql.py       # TCP 探活等待 MySQL（Docker 使用）
-│   ├── wait-for-mysql.sh       # 同上，bash 版本备用
 │   ├── init_db.sql             # 建表与授权 SQL（Compose 首启动执行）
 │   ├── load_word_library.py    # 离线灌词库（读仓库内 JSON，零网络依赖）
 │   ├── ingest_motion_verbs.py  # 解析 docx + 联网抓释义（需 python-docx、requests）
-│   ├── migrate_db.py           # 旧 SQLite → MySQL 迁移脚本
+│   ├── build_knowledge_graphs.sh  # 一键重建代码图谱 + 词间关系图谱
 │   └── get-stats.sh/.js        # 项目统计（GSD 工作流辅助）
 ├── tests/                      # pytest 测试（见「测试」）
-├── data/                       # 运行期数据（已被 .gitignore 忽略）
-│   ├── docs/                   # 原始 docx 资料
-│   ├── motion_verbs_extracted.json / oxford_cache.json  # 词库与释义缓存
-│   └── mysql/                  # 本机 MySQL datadir（不提交）
+├── data/                       # 运行期数据目录
+│   ├── motion_verbs_extracted.json   # 155 词词库（已提交，部署必需）
+│   ├── oxford_cache.json             # 英文释义缓存（已提交）
+│   ├── word_graph.json               # 词间关系图谱（已提交）
+│   ├── docs/                         # 原始 docx 研究资料（已提交）
+│   ├── mysql/                        # 本机 MySQL datadir（不提交）
+│   └── dictionary.db                 # 197MB 第三方词典（不提交，建库不需要）
 ├── docs/                       # 设计系统文档
 ├── screenshots_final/          # 界面截图
 ├── graphify-out/               # 代码图谱生成物（已忽略）
@@ -265,7 +272,6 @@ pytest tests/test_security.py
 | `tests/test_phase4.py` | 侧边栏折叠 / 统计 / 热门动词筛选 |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
 | `tests/test_security.py` | 输入校验与密钥掩码 |
-| `tests/test_api.py` | 旧版 `src/api.py` 的 LLM 封装 |
 
 ## ❓ 常见问题
 
@@ -307,8 +313,9 @@ streamlit run src/app.py
 `.env.example`：`LLM_MODEL`（默认 `glm-4`）、`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、
 `LLM_TIMEOUT`、`CACHE_TTL_HOURS`。
 
-> `.env.example` 里另有旧名 `ZHIPU_API_KEY`，那是旧版 `src/api.py` / `src/security.py`
-> 读的，主应用不读它 —— 填错名字只会静默走到离线释义。
+> `.env.example` 里另有旧名 `ZHIPU_API_KEY`，应用主流程不读它（历史上是给已删除的
+> `src/api.py` 用的，`src/security.py` 的 `KeyManager` 仍接受它）—— 填错名字只会静默
+> 走到离线释义。**认准 `ZHIPUAI_API_KEY`。**
 
 **为什么没有 API key 也能跑？**
 
@@ -341,17 +348,26 @@ docker compose down            # 停止
 ```
 
 - web 容器启动流程：`scripts/entrypoint.sh` → `scripts/wait_for_mysql.py` 探活
-  `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ `streamlit run src/app.py`。
-- 探活超时也不会失败退出，而是以 **离线模式** 启动应用。
+  `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ `scripts/load_word_library.py --if-empty`
+  **首次启动自动灌入 155 词词库与词间近义关系** → `streamlit run src/app.py`。
+- `--if-empty` 是幂等的：`definitions` 表已有数据就跳过，不会覆盖运营中新增或修改的词条。
+  因此 `docker compose up` 起来即有完整词库，无需手工执行任何灌库命令。
+- 探活超时或灌库失败都不会失败退出，而是以 **离线模式** 启动应用。
 - 端口：web `8501:8501`，MySQL `3306:3306`；数据分别在命名卷
   `web-word-app-data` 与 `web-word-mysql-data`。
 
 ## 📌 已知遗留
 
-- `src/database.py` 是**旧版 SQLite 模块**，当前应用完全走 MySQL（`src/mysql_db.py`），
-  `src/` 内无任何文件导入它；仅 `tests/conftest.py` 导入了 `init_db`，其 `test_db` fixture
-  是空实现。保留待清理。
-- `src/api.py` 是**第二套 LLM 封装**，`src/app.py` 不导入它（应用只用 `src/llm_api.py`）；
-  `tests/test_api.py` 覆盖它，故保留。
-- `src/mysql_db.py: migrate_from_sqlite()` 是历史迁移入口，与上述遗留模块同理。
-- `graphify-out/`、`.gsd/`、`.planning/milestone.lock`、`data/` 均为本机运行产物，已被忽略。
+- `data/dictionary.db`（197MB 第三方词典）**不在仓库**，也不需要它：155 词的释义已固化进
+  `data/motion_verbs_extracted.json`，`scripts/load_word_library.py` 离线即可建库。
+  只有重跑 `scripts/ingest_motion_verbs.py`（从词典/联网补释义）时才需要它。
+- `scripts/ingest_motion_verbs.py` 会**覆盖** `definitions` 表中的行（UPSERT），
+  并且它不写 `synonyms`。若跑过它，记得再跑一次 `python scripts/load_word_library.py`
+  恢复词间近义关系。
+- 生成物不入库：`graphify-out/`、`.gsd/`、`.planning/milestone.lock`、`data/mysql/`。
+
+> 已清理的历史包袱：`src/database.py`（旧 SQLite 模块）、`src/api.py`（第二套 LLM 封装，
+> 依赖的 `zhipuai.model_api` 在 SDK v2 已移除、实际不可用）、`tests/conftest.py`（空 fixture）、
+> `tests/test_api.py`、`scripts/migrate_db.py`（读 `config['database']['sqlite']`，配置里早已
+> 没有该键，一跑就 KeyError）、`scripts/wait-for-mysql.sh`（无人引用且硬编码密码），
+> 以及 `src/mysql_db.py: migrate_from_sqlite()`（无调用方、无测试）。

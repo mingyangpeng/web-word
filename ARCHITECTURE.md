@@ -109,13 +109,23 @@ Streamlit 界面       src/app.py
 - `src/design_system.py` — 颜色、间距、字体常量与样式生成函数（卡片、按钮、徽章等），由
   `src/app.py` 统一引用以保持视觉一致。
 
-### 遗留模块（未接入主流程）
+### 知识图谱（两张，均可离线重建）
 
-- `src/database.py` — 旧版 SQLite 模块。`src/` 内无任何文件导入；仅 `tests/conftest.py`
-  导入其 `init_db`，且 `test_db` fixture 是空实现。
-- `src/api.py` — 早期多提供商（智谱 / OpenAI / DeepSeek）LLM 封装。`src/app.py` 不导入；
-  `tests/test_api.py` 覆盖它，故保留。
-- `src/mysql_db.py: migrate_from_sqlite()` — 旧 SQLite → MySQL 迁移入口。
+| 图谱 | 产物 | 内容 |
+|------|------|------|
+| 代码结构图谱 | `graphify-out/graph.json` + `GRAPH_REPORT.md` + `graph.html` | graphify 对源码做 AST 解析（不需 API key），给出社区划分、枢纽节点、执行流 |
+| 词间关系图谱 | `data/word_graph.json` | 节点=动词，边=近义关系；来源是词库的次语义范畴 `sub_cat` |
+
+两者由 `scripts/build_knowledge_graphs.sh` 统一重建；索引范围由 `.graphifyignore`
+控制（排除数据目录与历史归档文档）。词间关系同时灌入 MySQL `synonyms` 表，
+供应用「图式示例」卡片展示近义词。
+
+> 历史包袱已清理（2026-09）：`src/database.py`（旧 SQLite 模块）、`src/api.py`
+> （第二套 LLM 封装，依赖的 `zhipuai.model_api` 在 SDK v2 已移除、实际不可用）、
+> `tests/conftest.py`（空 fixture）、`tests/test_api.py`、`scripts/migrate_db.py`
+> （读已不存在的 `config['database']['sqlite']`，一跑就 KeyError）、
+> `scripts/wait-for-mysql.sh`（无人引用 + 硬编码密码），
+> 以及 `src/mysql_db.py: migrate_from_sqlite()`（无调用方、无测试）。
 
 ## 数据流
 
