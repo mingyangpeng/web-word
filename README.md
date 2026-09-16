@@ -172,6 +172,73 @@ web-word/
 完整的字段说明、从零搭建本地 MySQL 的步骤、Compose 的注入行为与故障排除，见
 [`config/README.md`](config/README.md)。
 
+## 🕸️ 知识图谱（词间关系 + 代码结构）
+
+项目维护**两张**图谱，都是本地生成、可离线重建。
+
+### 1. 词间关系图谱：`data/word_graph.json`
+
+节点是动词，边是「近义」关系。关系来源是词库里的**次语义范畴**（`sub_cat`）：
+同一次范畴的动词语义相近，构成近义簇，例如
+
+| 次范畴 | 成员示例 |
+|--------|----------|
+| 处所脱离 | abandon · desert · leave |
+| 奔跑行进 | bolt · canter · charge · dart · dash · gallop … |
+| 攀爬匍匐 | clamber · crawl · creep · scramble |
+| 同行随行 | accompany · conduct · escort |
+
+小簇（≤6 词）连成完全图——任意两词互为近义；大簇（如 56 词的「常态行走」）
+每个词只连左右各 3 个邻居，避免每个词都变成 55 度的枢纽。当前共 155 节点、
+369 条边、25 个簇，最大度 6。
+
+这张图同时灌进 MySQL 的 `synonyms` 表（双向写入 738 行），应用里「图式示例」
+卡片展示的近义动词就来自它。重建：
+
+```bash
+python scripts/load_word_library.py --dry-run   # 只重建图谱文件，不写库
+python scripts/load_word_library.py             # 重建图谱 + 灌入 MySQL
+```
+
+查询（需要 `graphify` CLI，见下）：
+
+```bash
+graphify explain "abandon" --graph data/word_graph.json   # 看它的近义邻居
+graphify path "abandon" "leave" --graph data/word_graph.json
+```
+
+### 2. 代码结构图谱：`graphify-out/`
+
+用 [graphify](https://pypi.org/project/graphifyy/) 对源码做 AST 解析（纯本地，
+**不需要任何 API key**），产出社区划分、枢纽节点与意外连接报告，以及可在浏览器
+点击浏览的 `graph.html`。
+
+```bash
+# 一次性安装
+uv tool install graphifyy
+export PATH="$HOME/.local/bin:$PATH"     # uv tool 的默认安装目录常不在 PATH
+
+# 重建两张图
+scripts/build_knowledge_graphs.sh
+
+# 也可以只重建代码图谱 / 只重建词间图谱
+scripts/build_knowledge_graphs.sh --code
+scripts/build_knowledge_graphs.sh --words
+```
+
+日常查询：
+
+```bash
+graphify query "释义生成的数据流"           # 按概念找相关节点与执行流
+graphify explain get_display_definition    # 某个符号的 360° 视图（调用者/被调用者）
+graphify impact get_display_definition     # 改这个函数会影响谁
+graphify god-nodes --top 10                # 架构枢纽节点
+```
+
+`graphify-out/` 与 `data/word_graph.json` 都已提交或按需重建；前者已被 `.gitignore`
+忽略（属生成物），后者随 `data/word_graph.json` 一并入库。图谱构建范围由仓库根目录的
+`.graphifyignore` 控制（排除数据目录、历史归档文档等，只索引源码与当前文档）。
+
 ## 🧪 测试
 
 ```bash
