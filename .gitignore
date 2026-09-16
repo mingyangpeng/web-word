@@ -32,3 +32,6 @@ screenshots/
 
 # Docker (data managed by named volumes)
 data/
+
+# Generated output
+graphify-out/
