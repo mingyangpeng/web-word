@@ -380,3 +380,79 @@ class TestSidebarStatsContract:
         assert "total_clusters" in s
         assert "total_relations" in s
         assert "total_synonyms" not in s
+
+
+# ============================================
+# 授权脚本的静态契约
+# ============================================
+class TestGrantStatements:
+    """
+    GRANT 里的库名必须转义下划线。
+
+    MySQL 的 GRANT 用 `_` 作**单字符通配符**（与 LIKE 同规则），所以
+
+        GRANT ALL PRIVILEGES ON web_word_db.* TO 'someone'@'%';
+
+    实际授予的是「web_<任意字符>_word_<任意字符>_db」这个**模式**，同机上名字相像的
+    无关库（如 `webXwordYdb`）会被一并授权。这是实测确认过的行为差异：
+    未转义时该用户能 SELECT 别的库，写成 `web\\_word\\_db` 后被拒（1142）。
+
+    这类问题不会报错、不会测试失败，只会安静地多给权限，所以用静态检查钉住。
+    """
+
+    # 也扫文档：README / config/README 里给的授权片段会被用户直接复制粘贴执行，
+    # 漏在这里同样会真的多授权。
+    SQL_FILES = [
+        "scripts/init_db.sql",
+        "scripts/grant_local_mysql.sql",
+        "README.md",
+        "config/README.md",
+    ]
+
+    def _statements(self):
+        import re
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parent.parent
+        out = []
+        for rel in self.SQL_FILES:
+            path = root / rel
+            text = path.read_text(encoding="utf-8")
+            for line in text.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("--"):
+                    continue
+                if re.match(r"^GRANT\b", stripped, re.IGNORECASE):
+                    out.append((rel, stripped))
+        return out
+
+    def test_grant_statements_found(self):
+        """先确认真的扫到了语句 —— 否则下面的断言会因为「没扫到」而空过。"""
+        stmts = self._statements()
+        assert stmts, "没有在 SQL 文件里扫到任何 GRANT 语句，检查逻辑已失效"
+
+    def test_every_granted_database_escapes_underscores(self):
+        import re
+
+        offenders = []
+        for rel, stmt in self._statements():
+            # 抓 GRANT ... ON <db>.* 里的库名部分
+            m = re.search(r"ON\s+(`[^`]+`|[^\s.]+)\s*\.", stmt, re.IGNORECASE)
+            if not m:
+                continue
+            dbref = m.group(1).strip("`")
+            # 允许的形式：全局 *.*（无库名）或库名里每个 _ 都写成 \_
+            if dbref == "*":
+                continue
+            if "_" in dbref.replace("\\_", ""):
+                offenders.append((rel, dbref, stmt))
+
+        assert not offenders, (
+            "以下 GRANT 的库名含未转义的下划线，会被当成通配模式，"
+            f"请改写成 \\\\_ 形式：{offenders}"
+        )
+
+    def test_escaped_form_is_present(self):
+        """确认确实用了 `\\_` 写法，而不是所有库名恰好都没有下划线。"""
+        joined = "\n".join(stmt for _, stmt in self._statements())
+        assert "\\_" in joined

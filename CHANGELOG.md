@@ -40,6 +40,15 @@
 - `tests/test_schema.py`（21 个用例）：DDL 约束契约、迁移幂等性、完全图查询与 SVG 渲染。
 
 ### 修正
+- **授权语句里的库名现在转义下划线**（`scripts/grant_local_mysql.sql` 新增，
+  `scripts/init_db.sql` / README / config/README 同步修正）。GRANT 中的 `_` 是
+  **单字符通配符**（与 LIKE 同规则），`GRANT ... ON web_word_db.*` 授予的实际是
+  「web_任意字符_word_任意字符_db」这个**模式** —— 同机上名字相像的无关库会被一并授权。
+  实测确认：未转义时 `web_word_user` 能 `SELECT` 另一个库的表，改成 `web\_word\_db`
+  后被拒（1142）。这类问题不报错、不失败，只会安静多给权限，因此另加静态测试
+  （`tests/test_schema.py: TestGrantStatements`）扫描所有 SQL 与文档里的 GRANT 语句。
+- **新增 `scripts/grant_local_mysql.sql`**：一体化、幂等的本地授权脚本，覆盖应用库
+  与迁移集成测试所需库，并说明为何要同时授权 `@'localhost'` / `@'127.0.0.1'` / `@'%'`。
 
 - **`scripts/init_db.sql` 不再复制建表语句**。它以前有一份完整的 CREATE TABLE 副本，
   且以 root 身份**先于**应用执行 —— 一旦建出旧结构的表，应用启动时的
