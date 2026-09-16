@@ -7,6 +7,7 @@
 #      graphify-out/graph.html     浏览器里点击浏览的可视化图
 #
 # 2) 词间关系图谱（本项目自己的领域图谱：节点=动词，边=近义关系）
+#      簇内**完全图** —— 同一次语义范畴内任意两词都有边（155 词 / 25 簇 / 2143 边）
 #      data/word_graph.json
 #
 # 前置：graphify CLI。安装一次即可：
@@ -53,7 +54,7 @@ fi
 if [ "$build_words" = 1 ]; then
     echo "==> 构建词间关系图谱（离线，读 data/motion_verbs_extracted.json）"
     python3 scripts/load_word_library.py --dry-run
-    echo "    data/word_graph.json           节点=动词，边=近义关系"
+    echo "    data/word_graph.json           节点=动词，边=簇内近义完全图"
 fi
 
 cat <<'EOF'
