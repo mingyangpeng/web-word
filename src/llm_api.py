@@ -365,33 +365,6 @@ def generate_batch_definitions(verbs: List[str]) -> Dict[str, Any]:
 
 
 # ============================================
-# Synonym Query
-# ============================================
-def get_synonyms_for_verb(verb: str) -> List[str]:
-    """
-    Get synonyms for a verb from LLM or cache.
-
-    Args:
-        verb: The verb to get synonyms for
-
-    Returns:
-        List of synonym verbs
-    """
-    try:
-        result = get_definition(verb)
-
-        if result and result.get("synonyms"):
-            return result["synonyms"]
-        else:
-            logger.info(f"No synonyms found for '{verb}'")
-            return []
-
-    except Exception as e:
-        logger.error(f"Error getting synonyms for '{verb}': {e}")
-        return []
-
-
-# ============================================
 # Fallback Definitions
 # ============================================
 def get_fallback_definition(verb: str) -> Optional[Dict[str, Any]]:
