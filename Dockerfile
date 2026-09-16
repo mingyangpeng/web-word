@@ -18,7 +18,14 @@ RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple && \
 COPY src/ ./src/
 COPY config/ ./config/
 COPY scripts/wait_for_mysql.py ./scripts/wait_for_mysql.py
+COPY scripts/load_word_library.py ./scripts/load_word_library.py
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
+
+# 词库种子：容器首启由 entrypoint.sh 调 load_word_library.py --if-empty 灌入。
+# 只拷这两个 JSON（约 110KB），不拷 data/ 其余内容（dictionary.db 有 197MB、
+# data/mysql 是本机数据库目录，都不该进镜像）。
+COPY data/motion_verbs_extracted.json ./data/motion_verbs_extracted.json
+COPY data/oxford_cache.json ./data/oxford_cache.json
 
 RUN chmod +x ./scripts/entrypoint.sh
 

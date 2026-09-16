@@ -9,7 +9,7 @@ import json
 import logging
 import hashlib
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Optional, Dict, Any, List
 
 # Try to import ZhipuAI SDK
 try:
@@ -21,7 +21,7 @@ except ImportError:
 
 # Try to import MySQL for caching
 try:
-    from src.mysql_db import get_definition_by_verb, insert_definition, get_db_cursor
+    from src.mysql_db import get_definition_by_verb, insert_definition
     MYSQL_AVAILABLE = True
 except ImportError:
     MYSQL_AVAILABLE = False

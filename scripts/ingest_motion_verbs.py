@@ -19,7 +19,6 @@ Requires: docx, pymysql, requests
 import os
 import re
 import sys
-import time
 import json
 import sqlite3
 import logging
@@ -356,7 +355,6 @@ def build_semantic_table(meta, oxford):
 # 5. Build chinese_ndef
 # ----------------------------------------------------------------------------
 def build_chinese_ndef(verb, meta, db_def, oxford):
-    main = meta.get("main_cat") or ""
     sub = meta.get("sub_cat") or ""
     feat = meta.get("feat") or ""
     feat_cn = features_to_cn(feat)

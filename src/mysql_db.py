@@ -10,7 +10,6 @@ import json
 import logging
 from contextlib import contextmanager
 from typing import Optional, Dict, List, Any
-from datetime import datetime
 
 # Try to import PyMySQL, provide fallback to SQLite
 try:
@@ -787,73 +786,3 @@ def clear_old_usage_logs(days: int = 30) -> int:
     except pymysql.Error as e:
         logger.error(f"Failed to clear old usage logs: {e}")
         return 0
-
-
-# ============================================
-# Data Migration from SQLite (Optional)
-# ============================================
-def migrate_from_sqlite(sqlite_db_path: str) -> Dict[str, int]:
-    """
-    Migrate data from SQLite database to MySQL.
-
-    Args:
-        sqlite_db_path: Path to SQLite database
-
-    Returns:
-        Dictionary with migration statistics
-    """
-    if not PYMYSQL_AVAILABLE:
-        return {"error": "PyMySQL not available"}
-
-    try:
-        import sqlite3
-
-        sqlite_conn = sqlite3.connect(sqlite_db_path)
-        sqlite_conn.row_factory = sqlite3.Row
-        sqlite_cursor = sqlite_conn.cursor()
-
-        stats = {
-            "queries_migrated": 0,
-            "feedbacks_migrated": 0,
-            "errors": 0
-        }
-
-        # Migrate queries
-        sqlite_cursor.execute("SELECT * FROM queries")
-        for row in sqlite_cursor.fetchall():
-            try:
-                semantic_table = json.loads(row['semantic_table']) if row['semantic_table'] else []
-
-                insert_definition(
-                    verb=row['verb'],
-                    chinese_ndef=row['traditional_text'] or row['optimized_text'] or "",
-                    semantic_table=semantic_table,
-                    model_version=row.get('model_version', 'sqlite-migrated')
-                )
-                stats["queries_migrated"] += 1
-            except Exception as e:
-                logger.error(f"Failed to migrate query {row['id']}: {e}")
-                stats["errors"] += 1
-
-        # Migrate feedbacks
-        sqlite_cursor.execute("SELECT * FROM feedbacks")
-        for row in sqlite_cursor.fetchall():
-            try:
-                insert_feedback(
-                    verb=row['verb'],
-                    rating=row['rating'],
-                    feedback_text=row.get('feedback_text')
-                )
-                stats["feedbacks_migrated"] += 1
-            except Exception as e:
-                logger.error(f"Failed to migrate feedback {row['id']}: {e}")
-                stats["errors"] += 1
-
-        sqlite_conn.close()
-
-        logger.info(f"Migration complete: {stats}")
-        return stats
-
-    except Exception as e:
-        logger.error(f"Migration failed: {e}")
-        return {"error": str(e)}

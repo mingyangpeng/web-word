@@ -55,8 +55,10 @@ pytest tests/test_phase5.py -k degradation
 | `tests/test_phase4.py` | Phase 4 界面打磨：侧边栏折叠、统计区、热门动词前端筛选（AppTest） |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
 | `tests/test_security.py` | 输入校验（SQL 注入 / XSS）、密钥掩码 |
-| `tests/test_api.py` | 旧版 `src/api.py` 的 LLM 封装（该模块主流程未使用，见 README「已知遗留」） |
-| `tests/conftest.py` | 共享 fixture；其 `test_db` 目前是空实现 |
+
+> 2026-09 清理：`tests/test_api.py`（测试旧版 `src/api.py`，该模块已删除）与
+> `tests/conftest.py`（`test_db` fixture 是无人使用的空实现）已一并移除，
+> 测试总数从 41 降至 34，剩余用例全部为当前主流程的真实覆盖。
 
 ## 静态检查
 

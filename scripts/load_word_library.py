@@ -199,9 +199,54 @@ def build_word_graph(entries, clusters, pairs):
     }
 
 
+def seed_database(entries, oxford_cache, pairs) -> tuple:
+    """
+    把词库与词间关系写入 MySQL。
+
+    与 main() 拆开是为了让容器入口（scripts/entrypoint.sh）也能调用，
+    从而做到「docker compose up 之后自动就有词库」，无需人工执行灌库脚本。
+
+    Returns:
+        (ok_defs, ok_syn) 成功写入的条数
+    """
+    ok_defs = 0
+    for entry in entries:
+        verb, chinese, semantic_table, example, model_version = build_definition_row(
+            entry, oxford_cache
+        )
+        if insert_definition(verb, chinese, semantic_table, example, model_version):
+            ok_defs += 1
+
+    ok_syn = 0
+    for a, b, _sub_cat in pairs:
+        # synonyms 表是有向的（original_verb_id -> synonym_verb），
+        # 双向各写一条，才能从任一词查到同簇其他词。
+        if insert_synonym(a, b):
+            ok_syn += 1
+        if insert_synonym(b, a):
+            ok_syn += 1
+
+    return ok_defs, ok_syn
+
+
+def definitions_count() -> int:
+    """当前 definitions 表行数；库不可用时返回 -1。"""
+    try:
+        with get_db_cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS n FROM definitions")
+            return int(cur.fetchone()["n"] or 0)
+    except Exception:
+        return -1
+
+
 def main():
     parser = argparse.ArgumentParser(description="把词库与词间关系灌入 MySQL")
     parser.add_argument("--dry-run", action="store_true", help="只解析与构建图谱，不写数据库")
+    parser.add_argument(
+        "--if-empty",
+        action="store_true",
+        help="仅当 definitions 表为空时才写入（容器首启自动灌库用，可重复执行）",
+    )
     args = parser.parse_args()
 
     entries = load_library()
@@ -228,23 +273,15 @@ def main():
         print("❌ MySQL 不可用，无法导入。请检查 MYSQL_HOST / config/config.yaml", file=sys.stderr)
         return 1
 
-    ok_defs = 0
-    for entry in entries:
-        verb, chinese, semantic_table, example, model_version = build_definition_row(
-            entry, oxford_cache
-        )
-        if insert_definition(verb, chinese, semantic_table, example, model_version):
-            ok_defs += 1
-    print(f"definitions: 写入/更新 {ok_defs}/{len(entries)}")
+    if args.if_empty:
+        existing = definitions_count()
+        if existing > 0:
+            print(f"definitions 已有 {existing} 行，--if-empty 跳过写入")
+            return 0
+        print("definitions 为空，开始首次灌库")
 
-    ok_syn = 0
-    for a, b, _sub_cat in pairs:
-        # synonyms 表是有向的（original_verb_id -> synonym_verb），
-        # 双向各写一条，才能从任一词查到同簇其他词。
-        if insert_synonym(a, b):
-            ok_syn += 1
-        if insert_synonym(b, a):
-            ok_syn += 1
+    ok_defs, ok_syn = seed_database(entries, oxford_cache, pairs)
+    print(f"definitions: 写入/更新 {ok_defs}/{len(entries)}")
     print(f"synonyms:    写入 {ok_syn} 条（{len(pairs)} 对 × 双向）")
 
     # 校验

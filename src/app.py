@@ -17,20 +17,20 @@ from src.mysql_db import (
     insert_feedback, get_definition_by_verb, insert_definition,
     log_usage, get_synonyms,
 )
-from typing import Optional, Dict, List, Any, Tuple
-from src.llm_api import get_definition, is_cache_available, get_fallback_definition
+from typing import Optional, Dict, List, Any
+from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator
 
 # ============================================
 # 设计系统导入
 # ============================================
 from src.design_system import (
-    HEADER_H1, HEADER_H2, HEADER_H3, HEADER_H4,
+    HEADER_H1, HEADER_H2, HEADER_H3,
     BODY_BASE,
-    PRIMARY_COLOR, SECONDARY_COLOR, SUCCESS_COLOR, ERROR_COLOR, WARNING_COLOR,
-    BACKGROUND_COLOR, CARD_COLOR, TEXT_COLOR, TEXT_SECONDARY,
-    BORDER_COLOR, SPACE_XS, SPACE_SM, SPACE_MD, SPACE_LG, SPACE_XL,
-    get_button_primary_style, get_button_outline_style, get_card_style,
+    SUCCESS_COLOR,
+    BACKGROUND_COLOR,
+    SPACE_SM, SPACE_LG,
+    get_card_style,
     get_section_spacing, get_badge_style, hex_to_rgba
 )
 
@@ -1140,7 +1140,7 @@ def render_main_area():
     with st.container(key="search_bar"):
         # 搜索输入框 — 使用 key 让 Streamlit 自动管理 session_state
         # 不设置 value（由 key 管理），on_change 在值变化时触发搜索
-        verb_input = st.text_input(
+        st.text_input(
             label="搜索动词",
             placeholder="搜索动词 (例如：跑进来、冲进来、滑进来...)",
             label_visibility="collapsed",
@@ -1252,6 +1252,7 @@ def render_main_area():
                 st.markdown(
                     f"""
                     <div style='{get_card_style()}'>
+                        <span style='{badge_style}'>已提交</span>
                         <p style='{BODY_BASE}'><strong>动词:</strong> {fb['verb']}</p>
                         <p style='{BODY_BASE}'><strong>评分:</strong> {'⭐' * fb['rating']} ({fb['rating']}/5)</p>
                         <p style='{BODY_BASE}'><strong>反馈:</strong> {fb['feedback']}</p>
