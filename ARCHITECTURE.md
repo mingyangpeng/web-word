@@ -1,93 +1,139 @@
-# 目录结构说明
+# 架构说明
 
-## 📁 项目结构
+本文件描述**当前代码**的分层、模块职责与数据流，与 `README.md` 的快速开始互补。
+阶段性的设计讨论与决策记录不在这里，而在 `.planning/`（尤其是 `.planning/codebase/`
+与各 phase 的 CONTEXT / DISCUSSION-LOG）。
+
+## 一句话架构
+
+Streamlit 单进程应用：界面层（`src/app.py`）在渲染过程中同步调用「释义适配层」，适配层
+依次尝试数据库（MySQL 8.0）、大模型（智谱 AI）、内置示例，任一环节不可用即降级，因此
+**数据库或 API key 缺失都不会让页面崩溃**。
 
 ```
-web-word/
-├── data/                    # 数据目录
-│   ├── web_word.db         # SQLite 数据库文件（备用）
-│   └── *.docx              # 文档文件
-│
-├── config/                  # 配置目录
-│   └── database.env        # MySQL 数据库配置文件
-│
-├── src/                     # 源代码目录
-│   ├── app.py              # Streamlit 主应用
-│   ├── mysql_db.py         # MySQL 数据库模块
-│   └── database.py         # SQLite 数据库模块
-│
-├── scripts/                 # 脚本目录
-├── docs/                    # 文档目录
-└── .planning/               # GSD 规划文件
+用户（浏览器）
+    │
+    ▼
+Streamlit 界面       src/app.py
+    │                搜索栏（固定置顶）/ 四张结果卡片 / 示例库 / 反馈表单 / 侧边栏
+    │
+    ▼
+释义适配层            src/app.py: get_display_definition()
+    │                优先级：数据库 → 实时大模型 → 内置示例 → 兜底骨架
+    │
+    ├──────────────► 数据访问层   src/mysql_db.py     MySQL 8.0
+    │                连接池、建表、CRUD、统计、查询日志
+    │
+    └──────────────► 大模型封装   src/llm_api.py      智谱 AI (GLM)
+                     提示词、调用、JSON 解析、MySQL 缓存、兜底释义
+
+横切  src/security.py（输入校验 / HTML 转义 / 密钥掩码）
+      src/design_system.py（颜色、间距、字体、组件样式）
 ```
 
-## 🗄️ 数据库配置
+## 分层与模块职责
 
-### MySQL 配置（主要）
-- **配置文件**: `config/database.env`
-- **数据库模块**: `src/mysql_db.py`
-- **配置项**:
-  - `MYSQL_HOST`: 数据库主机地址
-  - `MYSQL_PORT`: 数据库端口
-  - `MYSQL_DATABASE`: 数据库名称
-  - `MYSQL_USER`: 数据库用户名
-  - `MYSQL_PASSWORD`: 数据库密码
-  - `MYSQL_POOL_SIZE`: 连接池大小
-  - `MYSQL_POOL_MAX_OVERFLOW`: 连接池最大溢出数
+### 界面层 — `src/app.py`
 
-### SQLite 配置（备用）
-- **数据库文件**: `data/web_word.db`
-- **数据库模块**: `src/database.py`
+- 页面配置与 `session_state` 初始化（卡片折叠状态、侧边栏折叠状态）。
+- 启动时调用 `init_database()`；失败则置 `DB_AVAILABLE = False` 并在页面提示
+  「MySQL 数据库不可用，使用离线模式」，随后统计 / 导出 / 反馈写入全部走空数据分支。
+- 界面组成：
+  - **固定置顶搜索栏**（`st.container(key="search_bar")` + CSS `position: sticky`）；
+  - **结果四卡片**：原型与位移事件分析 / 范畴锚定 / 核心释义与多维辨异 / 图式示例，各自可折叠；
+  - **示例库**：三个分类标签页（方式聚焦类 / 路径聚焦类 / 体相聚焦类），点击动词回调
+    `select_example_verb()`；
+  - **反馈表单**：1–5 星 `select_slider` + 文字 `text_area`，提交写入 `feedbacks` 表；
+  - **侧边栏**：实验统计、热门动词（本地子串筛选 + 点击查询）、反馈 CSV 导出，可折叠为窄图标栏。
+- `MOCK_DEFINITIONS`、`EXAMPLE_VERBS`、`CATEGORY_*`、`SEMANTIC_COLORS`、`THEORY_DESCRIPTION`
+  等常量集中在文件内，供离线路径与示例库使用。
 
-## 📋 数据库表结构
+### 释义适配层 — `get_display_definition()`（同在 `src/app.py`）
 
-MySQL 数据库包含以下表：
+统一出口，返回规范化的 `{traditional, optimized, semantic_table, example}`。取数顺序：
 
-1. **definitions** - 动词定义表
-   - `verb`: 动词名称
-   - `chinese_ndef`: 中文释义
-   - `semantic_table`: 语义分解表格（JSON 格式）
-   - `example_sentence`: 例句
-   - `model_version`: 模型版本
-   - `created_at`: 创建时间
-   - `updated_at`: 更新时间
+1. **输入校验** — `InputValidator.validate_string(verb, max_length=50)` 不通过则直接兜底，
+   非法输入不进入提示词。
+2. **数据库命中** — `get_definition_by_verb()`；命中即返回（`chinese_ndef` 中若同时存了传统与
+   优化两段，由 `_restore_trad_opt()` 拆回）。
+3. **实时大模型** — `llm_api.get_definition()`；成功后立刻 `mysql_db_persist()` 回写数据库作为
+   缓存，下次查询走第 2 步。
+4. **内置示例** — `MOCK_DEFINITIONS`。
+5. **兜底骨架** — `llm_api.get_fallback_definition()`，五元字段显示「待生成」。
 
-2. **synonyms** - 同义词表
-   - `original_verb_id`: 原动词 ID（外键）
-   - `synonym_verb`: 同义词
+第 3 步被包在 `st.spinner` 与 `try/except` 中，异常只提示「实时生成暂不可用，已显示离线释义」。
 
-3. **feedbacks** - 用户反馈表
-   - `verb`: 动词名称
-   - `rating`: 评分（1-5）
-   - `feedback_text`: 反馈文本
-   - `created_at`: 创建时间
+### 数据访问层 — `src/mysql_db.py`
 
-4. **usage_logs** - 使用日志表
-   - `verb`: 动词名称
-   - `query_time`: 查询时间
-   - `device_info`: 设备信息
+- 配置：启动时读 `config/config.yaml`，**环境变量优先于 YAML**，再退回内置默认值
+  （`_setting(env_key, yaml_key, default)`）。变量名见 `config/README.md`。
+- 连接：`get_connection_pool()` / `get_db_cursor()`（上下文管理器）；`init_database(max_retries=3,
+  retry_delay=2.0)` 启动时带重试建表，以适配 Docker 中 MySQL 尚未就绪的情况。
+- 表（`CREATE_TABLES_SQL`，与 `scripts/init_db.sql` 一致）：
 
-5. **statistics** - 统计数据表
-   - `stat_name`: 统计名称
-   - `stat_value`: 统计值
-   - `last_updated`: 最后更新时间
+  | 表 | 用途 | 关键字段 |
+  |----|------|----------|
+  | `definitions` | 动词释义 | `verb`(唯一) / `chinese_ndef` / `semantic_table`(JSON) / `example_sentence` / `model_version` |
+  | `synonyms` | 近义关系 | `original_verb_id`(外键) / `synonym_verb` |
+  | `feedbacks` | 用户反馈 | `verb` / `rating`(1–5) / `feedback_text` |
+  | `usage_logs` | 查询日志 | `verb` / `query_time` / `device_info` |
+  | `statistics` | 统计 | `stat_name`(唯一) / `stat_value` |
 
-## 🔧 使用说明
+- 主要函数：`insert_definition` / `get_definition_by_verb` / `get_all_definitions`；
+  `insert_synonym` / `get_synonyms`；`insert_feedback` / `get_feedback_by_verb` /
+  `get_feedback_data`；`get_stats` / `get_hot_verbs`；`log_usage` / `clear_old_usage_logs`；
+  以及历史迁移入口 `migrate_from_sqlite()`。
+- 统计口径：`total_queries` 来自 `usage_logs`（真实查询次数），`total_definitions` 是已收录
+  词条数，两者分开统计，不互相冒充。
 
-1. **配置数据库连接**
-   - 编辑 `config/database.env` 文件
-   - 修改数据库连接信息（主机、端口、用户名、密码等）
+### 大模型封装 — `src/llm_api.py`
 
-2. **初始化数据库**
-   - 运行应用时会自动创建数据库和表
-   - 如果 PyMySQL 未安装，会跳过 MySQL 初始化
+- 唯一提供商是**智谱 AI**（`from zhipuai import ZhipuAI`），key 取自环境变量
+  `ZHIPUAI_API_KEY`；`LLM_MODEL`（默认 `glm-4`）、`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、
+  `LLM_TIMEOUT`、`CACHE_TTL_HOURS` 均可由环境变量调整。
+- 提示词 `PROMPT_TEMPLATE` 要求模型返回 JSON，字段含 `traditional` / `optimized` /
+  `chinese_ndef` / `semantic_table`（五键：`manner` 方式、`path` 路径、`direction` 方向、
+  `aspect` 体相、`scope` 范围）/ `example` / `synonyms`。
+- `_parse_llm_response()` 从可能带 Markdown 代码块的回复中提取 JSON。
+- 缓存：命中 `get_definition_from_cache()` 直接返回；成功后 `save_definition_to_cache()` 写回
+  `definitions` 表，TTL 由 `CACHE_TTL_HOURS` 控制。
+- 关键点：`get_zhipuai_client()` 在 `ZHIPUAI_API_KEY` 为空时返回 `None`，`get_definition()`
+  随之返回 `None`，适配层自动降级，应用照常运行。
+- 另提供 `generate_batch_definitions()`、`get_synonyms_for_verb()`、
+  `get_fallback_definition()` 与异常体系（`LLMError` / `APIKeyError` / `RateLimitError`）。
 
-3. **备份数据**
-   - SQLite 数据库位于 `data/web_word.db`
-   - MySQL 数据库需要手动备份
+### 横切模块
 
-## 📝 注意事项
+- `src/security.py` — `InputValidator`（SQL 注入与 XSS 模式正则校验、`sanitize_html`）与
+  `KeyManager`（读取 / 掩码 `ZHIPU_API_KEY` 等旧名环境变量）。主应用只用 `InputValidator`。
+- `src/design_system.py` — 颜色、间距、字体常量与样式生成函数（卡片、按钮、徽章等），由
+  `src/app.py` 统一引用以保持视觉一致。
 
-- `config/` 目录存放所有配置文件，不应包含敏感信息
-- `data/` 目录存放数据库文件和临时数据
-- 生产环境应使用环境变量或密钥管理服务
+### 遗留模块（未接入主流程）
+
+- `src/database.py` — 旧版 SQLite 模块。`src/` 内无任何文件导入；仅 `tests/conftest.py`
+  导入其 `init_db`，且 `test_db` fixture 是空实现。
+- `src/api.py` — 早期多提供商（智谱 / OpenAI / DeepSeek）LLM 封装。`src/app.py` 不导入；
+  `tests/test_api.py` 覆盖它，故保留。
+- `src/mysql_db.py: migrate_from_sqlite()` — 旧 SQLite → MySQL 迁移入口。
+
+## 数据流
+
+1. 用户在搜索栏输入动词（或点击示例库 / 热门动词）。
+2. `get_display_definition(verb)` 按上述优先级取数。
+3. `render_semantic_table()` 把 `semantic_table` 渲染为五元彩色表格，其余字段填入四张卡片。
+4. 用户提交反馈 → `insert_feedback()` → `feedbacks` 表。
+5. 侧边栏调用 `get_stats()` / `get_hot_verbs()` 读取实时统计；导出按钮把 `get_feedback_data()`
+   转成 UTF-8-BOM 的 CSV 供下载。
+
+## 部署形态
+
+- **Docker Compose**：`mysql:8.0` 服务 + web 镜像（`python:3.11-slim`）。
+  `scripts/entrypoint.sh` 先用 `scripts/wait_for_mysql.py` 探活 `$MYSQL_HOST:$MYSQL_PORT`
+  （30 次 × 2 秒），超时也以离线模式启动；数据落命名卷 `web-word-mysql-data` /
+  `web-word-app-data`。
+- **本地**：本机 MySQL 8.0 + `streamlit run src/app.py`，用 `MYSQL_HOST=127.0.0.1` 覆盖
+  `config.yaml` 里的 Docker 主机名。
+
+两种形态共用同一份被跟踪的 `config/config.yaml`，靠环境变量优先级区分 —— 详见
+[`config/README.md`](config/README.md)。
