@@ -68,7 +68,7 @@ CREATE DATABASE IF NOT EXISTS web_word_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'web_word_user'@'localhost'
   IDENTIFIED BY 'webword123';
-GRANT ALL PRIVILEGES ON web_word_db.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_db`.* TO 'web_word_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -318,10 +318,13 @@ pytest tests/test_security.py
 （不是 fail）—— 这是环境能力问题，不是代码缺陷。本地要跑它，先授权：
 
 ```bash
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS web_word_migration_test; \
-                  GRANT ALL ON web_word_migration_test.* TO 'web_word_user'@'%';"
+mysql -u root -p < scripts/grant_local_mysql.sql      # 一次性授权（幂等）
 MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
 ```
+
+> 脚本里的库名写成 `web\_word\_db` 这种带 `\_` 的形式，不是笔误：GRANT 语句中 `_`
+> 是**单字符通配符**（与 LIKE 同规则），不转义的话授予的是「web_任意字符_word_任意字符_db」
+> 这个模式，同机上 `webXwordYdb` 之类无关库会被一并授权。这一点已实测确认过。
 
 无数据库时：`60 passed, 12 skipped`；有数据库时：`72 passed`。
 
@@ -332,7 +335,7 @@ MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
 | `tests/test_phase5.py` | 释义分级策略（DB → LLM → 兜底）、LLM 结果持久化、缺 key 不崩溃 |
 | `tests/test_phase4.py` | 侧边栏折叠 / 统计 / 热门动词筛选 |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
-| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询（含按簇 id 取图与切换簇）与 SVG 渲染 |
+| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询（含按簇 id 取图与切换簇）、SVG 渲染、GRANT 下划线转义 |
 | `tests/test_migration_integration.py` | **真实 MySQL** 上的 v1→v2 迁移：业务数据一行不丢、旧表删除、新表建立、连跑三次幂等 |
 | `tests/test_security.py` | 输入校验与密钥掩码 |
 

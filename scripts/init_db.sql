@@ -24,5 +24,10 @@ CREATE DATABASE IF NOT EXISTS web_word_db
 CREATE USER IF NOT EXISTS 'web_word_user'@'%' IDENTIFIED BY 'webword123';
 
 -- 补上它对业务库的权限（'%' 覆盖容器网络内的连接来源）
-GRANT ALL PRIVILEGES ON web_word_db.* TO 'web_word_user'@'%';
+--
+-- 库名写成 `web\_word\_db` 而不是 web_word_db：GRANT 里的 `_` 是**单字符通配符**
+-- （与 LIKE 同规则）。不转义的话授予的是「web_任意字符_word_任意字符_db」这个模式，
+-- 同机上的 webXwordYdb 之类无关库会被一并授权。已实测确认过差异：
+-- 未转义时该用户能 SELECT 别的库，转义后被拒（1142）。
+GRANT ALL PRIVILEGES ON `web\_word\_db`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;

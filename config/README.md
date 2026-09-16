@@ -92,10 +92,17 @@ CREATE DATABASE IF NOT EXISTS web_word_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'web_word_user'@'localhost'
   IDENTIFIED BY 'webword123';
-GRANT ALL PRIVILEGES ON web_word_db.* TO 'web_word_user'@'localhost';
+-- 库名里的下划线要写成 \_ ：GRANT 中 `_` 是单字符通配符，
+-- 不转义会连带授权给 webXwordYdb 之类的无关库。
+GRANT ALL PRIVILEGES ON `web\_word\_db`.* TO 'web_word_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
+
+> 更省事的做法：直接跑仓库内的一体化授权脚本（幂等，含迁移测试所需库）：
+> ```bash
+> mysql -u root -p < scripts/grant_local_mysql.sql
+> ```
 
 macOS（Homebrew）如刚装完 MySQL：
 
