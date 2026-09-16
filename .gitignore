@@ -35,3 +35,7 @@ data/
 
 # Generated output
 graphify-out/
+
+# GSD runtime state (machine-local: PIDs, session ids, worktree sentinels)
+.gsd/
+.planning/milestone.lock
