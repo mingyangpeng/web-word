@@ -31,12 +31,19 @@ services:
     ports:
       - "8501:8501"
     environment:
+      # 应用读的是 ZHIPUAI_API_KEY（见 src/llm_api.py:37）。旧名 ZHIPU_API_KEY
+      # 也一并透传，兼容只配置了旧名的 .env —— 但主应用只用前者。
+      - ZHIPUAI_API_KEY=${ZHIPUAI_API_KEY:-}
       - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-glm-4}
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=web_word_db
       - MYSQL_USER=web_word_user
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-webword123}
+    extra_hosts:
+      # 让容器内的 host.docker.internal 指向宿主机，便于连宿主机的 MySQL
+      - "host.docker.internal:host-gateway"
     volumes:
       - app_data:/app/data
     depends_on:
