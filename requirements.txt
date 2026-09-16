@@ -1,17 +1,39 @@
-# Web Application Dependencies
+# ============================================
+# 应用运行时依赖（streamlit run src/app.py 所需）
+# ============================================
+# src/app.py 直接导入：streamlit, pandas；经 src/mysql_db.py 使用 pymysql, pyyaml；
+# 经 src/llm_api.py 使用 zhipuai。
 streamlit>=1.28.0
 pymysql>=1.1.0
 pyyaml>=6.0
 pandas>=2.0.0
 
-# LLM Integration
+# LLM 客户端：src/llm_api.py 只使用智谱 AI（from zhipuai import ZhipuAI）。
+# 缺少该包时应用仍能启动，会降级为离线释义（见 src/app.py 的分级策略）。
 zhipuai>=2.0.0
 
-# Testing
+# 可选：仅当改用旧版多提供商封装 src/api.py（openai/deepseek 分支）时需要。
+# 应用主流程 src/app.py 不导入此模块，故默认不安装。
+# openai>=1.0.0
+
+# ============================================
+# 数据导入脚本依赖（不在应用运行时路径上）
+# ============================================
+# 仅 scripts/ingest_motion_verbs.py 使用；src/ 下没有任何文件导入它们。
+# 该脚本解析 data/docs/*.docx 并联网抓取释义，故需要 docx + requests。
+# 离线灌库请改用 scripts/load_word_library.py，它不依赖这两者。
+python-docx>=1.1.0
+requests>=2.31.0
+
+# ============================================
+# 测试依赖
+# ============================================
 pytest>=7.4.0
 pytest-cov>=4.1.0
 
-# Development
+# ============================================
+# 开发工具
+# ============================================
 black>=23.7.0
 flake8>=6.1.0
 mypy>=1.5.0
