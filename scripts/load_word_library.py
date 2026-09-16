@@ -35,9 +35,11 @@ if ROOT not in sys.path:
 
 from src.mysql_db import (  # noqa: E402
     get_db_cursor,
+    get_or_create_cluster,
     init_database,
     insert_definition,
-    insert_synonym,
+    refresh_cluster_sizes,
+    replace_word_relations,
 )
 
 LIBRARY_PATH = os.path.join(ROOT, "data", "motion_verbs_extracted.json")
@@ -90,61 +92,37 @@ def build_definition_row(entry, oxford_cache):
     )
 
 
-def build_synonym_pairs(entries, neighbors_per_side=3, complete_graph_max=6):
+def build_synonym_pairs(entries):
     """
-    从 sub_cat 近义簇推导词与词的关系。
+    从次语义范畴（sub_cat）推导词间关系的**簇内完全图**。
 
-    规则：同一次范畴（sub_cat）内的动词语义相近，构成近义簇。例如
-    「奔跑行进」= bolt / canter / charge / dart / dash / gallop / hasten ...
-    「处所脱离」= abandon / desert / leave。
+    规则：同一次范畴内的动词语义相近，构成一个词义簇；簇内**任意两词**都建立一条
+    近义边（完全图）。例如「处所脱离」= abandon/desert/leave 三词两两相连；
+    「常态行走」56 词则产生 C(56,2)=1540 条边。
 
-    连边策略（避免噪声边）：
-      * 小簇（<= complete_graph_max 个词，如 3 词的「处所脱离」）：完全图，
-        任意两词都互为近义 —— 这也正是用户最需要对比的场景。
-      * 大簇（如 56 词的「常态行走」）：不做完全图。C(56,2)=1540 条边会把
-        每个词连成 55 度枢纽，对「显示近义动词」毫无用处。改为把簇内词按
-        字母序排成环，每个词只连左右各 neighbors_per_side 个邻居，使每个词
-        的度上限为 2*neighbors_per_side（默认 6）。
+    为什么坚持完全图（早期版本为了「避免枢纽」改成了环邻，每个词只连左右 3 个
+    邻居）：环邻会让用户查到 amble 时看不到 walk，只看到 clump/dodder —— 那是人为
+    截断，不是语义事实。用户要的是「查一个词就能看到它整个词簇」，完全图才是对的
+    表达。边数增长的问题交给**展示层**解决：页面只画当前簇且设上限，DB 里存完整
+    真值。二者职责分开后，数据正确、界面也不糊。
 
-    之所以按字母序而不是语义相似度排序：词库里没有词对之间的相似度分数，
-    唯一可用的分组信息就是 sub_cat。按字母序取邻居是确定性做法，至少保证
-    结果可复现；真正精细的近义程度排序应由大模型生成后再替换此处。
+    完全图总边数（155 词 / 25 簇）实测为 2143 条。
 
     Returns:
         (pairs, clusters)
-        pairs: [(verb_a, verb_b, sub_cat), ...]，a<b 去重后的无序对
+        pairs:    [(verb_a, verb_b, sub_cat), ...]，a<b 的无向去重对
         clusters: {(main_cat, sub_cat): [verb, ...]}
     """
     clusters = defaultdict(list)
     for e in entries:
         clusters[(e.get("main_cat") or "", e.get("sub_cat") or "")].append(e["verb"])
 
-    seen = set()
     pairs = []
-
-    def add(a, b, sub_cat):
-        if a == b:
-            return
-        key = (a, b) if a < b else (b, a)
-        if key in seen:
-            return
-        seen.add(key)
-        pairs.append((key[0], key[1], sub_cat))
-
     for (_main_cat, sub_cat), verbs in clusters.items():
         members = sorted(set(verbs))
-        n = len(members)
-        if n < 2:
-            continue
-
-        if n <= complete_graph_max:
-            for i, a in enumerate(members):
-                for b in members[i + 1:]:
-                    add(a, b, sub_cat)
-        else:
-            for i, a in enumerate(members):
-                for offset in range(1, neighbors_per_side + 1):
-                    add(a, members[(i + offset) % n], sub_cat)
+        for i, a in enumerate(members):
+            for b in members[i + 1:]:
+                pairs.append((a, b, sub_cat))
 
     pairs.sort()
     return pairs, clusters
@@ -199,34 +177,52 @@ def build_word_graph(entries, clusters, pairs):
     }
 
 
-def seed_database(entries, oxford_cache, pairs) -> tuple:
+def seed_database(entries, oxford_cache, pairs, clusters) -> dict:
     """
-    把词库与词间关系写入 MySQL。
+    把词库、词义簇与词间关系写入 MySQL。
+
+    顺序很重要：先建簇（definitions 的 cluster_id 有外键指向它），再灌定义
+    （带上 cluster_id），最后写完全图边（word_relations 的两个外键指向 definitions）。
 
     与 main() 拆开是为了让容器入口（scripts/entrypoint.sh）也能调用，
     从而做到「docker compose up 之后自动就有词库」，无需人工执行灌库脚本。
 
     Returns:
-        (ok_defs, ok_syn) 成功写入的条数
+        {"definitions": n, "clusters": n, "relations": n}
     """
+    # 1) 词义簇
+    cluster_id_by_key = {}
+    for (main_cat, sub_cat), verbs in clusters.items():
+        cid = get_or_create_cluster(main_cat, sub_cat)
+        if cid is not None:
+            cluster_id_by_key[(main_cat, sub_cat)] = cid
+
+    # 2) 定义（带簇归属）
+    sub_cat_to_cluster = {
+        sc: cluster_id_by_key.get((mc, sc))
+        for (mc, sc) in clusters
+    }
     ok_defs = 0
     for entry in entries:
         verb, chinese, semantic_table, example, model_version = build_definition_row(
             entry, oxford_cache
         )
-        if insert_definition(verb, chinese, semantic_table, example, model_version):
+        cid = sub_cat_to_cluster.get(entry.get("sub_cat"))
+        if insert_definition(verb, chinese, semantic_table, example, model_version, cid):
             ok_defs += 1
 
-    ok_syn = 0
-    for a, b, _sub_cat in pairs:
-        # synonyms 表是有向的（original_verb_id -> synonym_verb），
-        # 双向各写一条，才能从任一词查到同簇其他词。
-        if insert_synonym(a, b):
-            ok_syn += 1
-        if insert_synonym(b, a):
-            ok_syn += 1
+    # 3) 词间关系（簇内完全图，整批替换）
+    relations = [
+        (a, b, "近义", f"{_mc} / {sub_cat}")
+        for a, b, sub_cat in pairs
+        for _mc in [next(mc for (mc, sc) in clusters if sc == sub_cat)]
+    ]
+    ok_rel = replace_word_relations(relations)
 
-    return ok_defs, ok_syn
+    # 4) 回填簇规模
+    refresh_cluster_sizes()
+
+    return {"definitions": ok_defs, "clusters": len(cluster_id_by_key), "relations": ok_rel}
 
 
 def definitions_count() -> int:
@@ -280,27 +276,43 @@ def main():
             return 0
         print("definitions 为空，开始首次灌库")
 
-    ok_defs, ok_syn = seed_database(entries, oxford_cache, pairs)
-    print(f"definitions: 写入/更新 {ok_defs}/{len(entries)}")
-    print(f"synonyms:    写入 {ok_syn} 条（{len(pairs)} 对 × 双向）")
+    stats = seed_database(entries, oxford_cache, pairs, clusters)
+    print(f"word_clusters:  {stats['clusters']} 个")
+    print(f"definitions:    写入/更新 {stats['definitions']}/{len(entries)}")
+    print(f"word_relations: {stats['relations']} 条（{len(pairs)} 对簇内完全图边）")
 
-    # 校验
+    # 校验：DB 里的边数应与完全图理论值一致
     with get_db_cursor() as cur:
         cur.execute("SELECT COUNT(*) AS n FROM definitions")
         n_defs = cur.fetchone()["n"]
-        cur.execute("SELECT COUNT(*) AS n FROM synonyms")
-        n_syn = cur.fetchone()["n"]
-    print(f"库内合计: definitions={n_defs}, synonyms={n_syn}")
+        cur.execute("SELECT COUNT(*) AS n FROM word_clusters")
+        n_clusters = cur.fetchone()["n"]
+        cur.execute("SELECT COUNT(*) AS n FROM word_relations")
+        n_rel = cur.fetchone()["n"]
+        cur.execute("SELECT COUNT(*) AS n FROM v_cluster_complete_graph")
+        n_view = cur.fetchone()["n"]
+    print(f"库内合计: definitions={n_defs}, word_clusters={n_clusters}, "
+          f"word_relations={n_rel}")
+    print(f"一致性核对: 视图推导的完全图边数={n_view} "
+          f"({'一致 ✅' if n_view == n_rel else '不一致 ❌'})")
 
-    # 抽样确认词间关系可查
+    # 抽样确认词间关系可查（度数应等于 簇大小-1）
     with get_db_cursor() as cur:
         cur.execute("""
-            SELECT d.verb, COUNT(s.id) AS relatives
+            SELECT d.verb, c.label AS cluster_label, c.size AS cluster_size,
+                   COUNT(r.id) AS relatives
             FROM definitions d
-            LEFT JOIN synonyms s ON s.original_verb_id = d.id
-            GROUP BY d.id ORDER BY relatives DESC LIMIT 5
+            LEFT JOIN word_clusters c ON c.id = d.cluster_id
+            LEFT JOIN word_relations r
+                   ON r.verb_a_id = d.id OR r.verb_b_id = d.id
+            GROUP BY d.id
+            ORDER BY relatives DESC
+            LIMIT 5
         """)
-        print("近义关系最多的词:", [(r["verb"], r["relatives"]) for r in cur.fetchall()])
+        print("关系最多的词 (度数应 = 簇大小-1):")
+        for r in cur.fetchall():
+            print(f"    {r['verb']:<12} 簇={r['cluster_label']:<28} "
+                  f"size={r['cluster_size']:>3} 度数={r['relatives']:>3}")
 
     return 0
 

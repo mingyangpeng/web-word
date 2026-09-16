@@ -109,6 +109,31 @@ Streamlit 界面       src/app.py
 - `src/design_system.py` — 颜色、间距、字体常量与样式生成函数（卡片、按钮、徽章等），由
   `src/app.py` 统一引用以保持视觉一致。
 
+### 数据库表结构（MySQL 8.0）
+
+结构权威是 `src/mysql_db.py: CREATE_TABLES_SQL`；`scripts/init_db.sql` 只负责建库与授权，
+不再复制建表语句（否则两份 DDL 会漂移，且它以 root 身份先于应用执行，会静默锁死旧结构）。
+
+```
+word_clusters ──1:N──► definitions ──N:M(物化)──► word_relations
+   (main_cat, sub_cat)      cluster_id                 无向：a<b 且 pair 唯一
+        │                        │
+        └────────────────────────┴──► v_cluster_complete_graph（视图：由簇推导完全图）
+
+feedbacks    用户评分/反馈（CHECK rating 1..5）
+usage_logs   查询日志 —— 「热门动词」「总查询次数」的唯一数据来源
+schema_migrations  结构版本，供 init_database() 决定是否迁移
+```
+
+**词间关系 = 簇内完全图**：同一次语义范畴内的两两动词都有一条边，物化进
+`word_relations`（155 词 / 25 簇 → 2143 条边），`definitions.cluster_id` 是它的推导依据，
+视图 `v_cluster_complete_graph` 提供「从簇推导」的对照实现，两者边数必须相等。
+
+**迁移自动且幂等**：`init_database()` 每次启动调用 `_migrate_schema()`，用
+`information_schema` 探测后按需 ALTER / DROP（补 `cluster_id`、删旧 `synonyms` 与死表
+`statistics`、写版本号）。业务表行原地保留，只有 `synonyms` 的旧环邻边被丢弃
+（它是新完全图的错误子集，跑一次灌库脚本即重建）。
+
 ### 知识图谱（两张，均可离线重建）
 
 | 图谱 | 产物 | 内容 |
