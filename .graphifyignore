@@ -1,0 +1,42 @@
+# graphify 索引忽略清单
+# 目的：只把「源码 + 项目文档」纳入图谱，排除数据、构建产物与历史垃圾，
+# 让节点数与社区划分反映真实架构而不是磁盘噪声。
+
+# --- 数据库与数据（体积大、非源码）---
+data/
+*.db
+*.db-journal
+*.ibd
+*.dblwr
+*.pem
+graphify-out/
+
+# --- 构建/缓存产物 ---
+__pycache__/
+.pytest_cache/
+htmlcov/
+.coverage
+*.pyc
+
+# --- 历史归档文档（不是当前架构的一部分）---
+.planning/
+.claude/workflows/
+docs/design-system.md
+
+# --- 一次性交付/清理报告（v1.0 交付期产物，已过期）---
+ARCHITECTURE.md
+CHANGELOG.md
+CLEANUP_REPORT.md
+CONFIG.md
+DATABASE_MIGRATION.md
+DOCS_INDEX.md
+FINAL_DELIVERY_REPORT.md
+FINAL_TEST_REPORT.md
+INDEX.md
+PROJECT_DELIVERY_SUMMARY.md
+TESTING.md
+
+# --- 编辑器/系统 ---
+.DS_Store
+.vscode/
+.idea/

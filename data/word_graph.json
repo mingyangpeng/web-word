@@ -1,0 +1,5094 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "description": "英语移动动词词间关系图：节点=动词，边=同一次范畴近义关系",
+  "nodes": [
+    {
+      "id": "abandon",
+      "label": "abandon",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "处所脱离",
+      "chinese_ndef": "〔某人〕舍弃〔汽车；房子等〕；离弃〔某地〕",
+      "semantic_table": {
+        "manner": "处所脱离",
+        "path": "NP V NP",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 脱离类 / 处所脱离"
+      }
+    },
+    {
+      "id": "accompany",
+      "label": "accompany",
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "协同随行",
+      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。（Oxford: To go with or attend as a companion or associate; to keep company with; to go along with.）",
+      "semantic_table": {
+        "manner": "协同随行",
+        "path": "NP V NP PP (to, into)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（参与者） / 陪同类 / 协同随行"
+      }
+    },
+    {
+      "id": "advance",
+      "label": "advance",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "水平前行",
+      "chinese_ndef": "〔人群；士兵〕向〔某地；某人〕行进，前进；进攻",
+      "semantic_table": {
+        "manner": "水平前行",
+        "path": "NP V PP (to, toward)",
+        "direction": "路径/方向为词汇核心；前进",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 前进类 / 水平前行"
+      }
+    },
+    {
+      "id": "amble",
+      "label": "amble",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To stroll or walk slowly and leisurely.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "arrive",
+      "label": "arrive",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "不及物到达",
+      "chinese_ndef": "〔人或车辆〕抵达〔某地〕；到达〔某地〕（尤指旅途的终点)",
+      "semantic_table": {
+        "manner": "不及物到达",
+        "path": "NP V PP (at, in)",
+        "direction": "路径/方向为词汇核心；终点",
+        "aspect": "不及物，范畴原型",
+        "scope": "路径聚焦类 / 到达类 / 不及物到达"
+      }
+    },
+    {
+      "id": "ascend",
+      "label": "ascend",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直上行",
+      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To move upward, to fly, to soar.）",
+      "semantic_table": {
+        "manner": "垂直上行",
+        "path": "NP V PP (up, to)",
+        "direction": "路径/方向为词汇核心；上升",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 上升类 / 垂直上行"
+      }
+    },
+    {
+      "id": "backpack",
+      "label": "backpack",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "长途跋涉",
+      "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To engage in low-cost, generally urban, travel with minimal luggage and frugal accommodations）",
+      "semantic_table": {
+        "manner": "长途跋涉",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+      }
+    },
+    {
+      "id": "bolt",
+      "label": "bolt",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "bounce",
+      "label": "bounce",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、弹跳。（Oxford: To leap or spring suddenly or unceremoniously; to bound.）",
+      "semantic_table": {
+        "manner": "轴向滚动滑移；弹跳前进",
+        "path": "NP V PP (across, into)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "bound",
+      "label": "bound",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "canter",
+      "label": "canter",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "cavort",
+      "label": "cavort",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To move about carelessly, playfully or boisterously.）",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "charge",
+      "label": "charge",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "〔某人向他人〕要价，收费",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "chase",
+      "label": "chase",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "主动追逐",
+      "chinese_ndef": "追逐；追赶；追击〔某人或某物〕",
+      "semantic_table": {
+        "manner": "主动追逐",
+        "path": "NP V NP / after NP",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "互动聚焦类（目的） / 追赶类 / 主动追逐"
+      }
+    },
+    {
+      "id": "clamber",
+      "label": "clamber",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "攀爬匍匐",
+      "chinese_ndef": "攀爬匍匐位移；移动、以特定方式。（Oxford: To climb (something) with some difficulty, or in a haphazard fashion.）",
+      "semantic_table": {
+        "manner": "攀爬匍匐",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+      }
+    },
+    {
+      "id": "climb",
+      "label": "climb",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直上行",
+      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To ascend; rise; to go up.）",
+      "semantic_table": {
+        "manner": "垂直上行",
+        "path": "NP V NP / PP (up)",
+        "direction": "路径/方向为词汇核心；上升",
+        "aspect": "方向主导，方式附带",
+        "scope": "路径聚焦类 / 上升类 / 垂直上行"
+      }
+    },
+    {
+      "id": "clump",
+      "label": "clump",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with heavy footfalls.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "come",
+      "label": "come",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "趋近参照点",
+      "chinese_ndef": "来到；到达",
+      "semantic_table": {
+        "manner": "趋近参照点",
+        "path": "NP V PP (to)",
+        "direction": "路径/方向为词汇核心；趋近",
+        "aspect": "指示路径动词",
+        "scope": "路径聚焦类 / 来类 / 趋近参照点"
+      }
+    },
+    {
+      "id": "conduct",
+      "label": "conduct",
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "协同随行",
+      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同、正式地。",
+      "semantic_table": {
+        "manner": "协同随行",
+        "path": "NP V NP PP (to, into)",
+        "direction": "依构式补语确定",
+        "aspect": "姿态正式",
+        "scope": "互动聚焦类（参与者） / 陪同类 / 协同随行"
+      }
+    },
+    {
+      "id": "crawl",
+      "label": "crawl",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "攀爬匍匐",
+      "chinese_ndef": "攀爬匍匐位移；移动、以特定方式、爬行。",
+      "semantic_table": {
+        "manner": "攀爬匍匐；爬行前进",
+        "path": "NP V PP (across, through)",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+      }
+    },
+    {
+      "id": "creep",
+      "label": "creep",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "攀爬匍匐",
+      "chinese_ndef": "攀爬匍匐位移；移动、以特定方式、爬行。（Oxford: To have a sensation as of insects creeping on the skin of the body; to crawl.）",
+      "semantic_table": {
+        "manner": "攀爬匍匐；爬行前进",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+      }
+    },
+    {
+      "id": "dart",
+      "label": "dart",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "dash",
+      "label": "dash",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "depart",
+      "label": "depart",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "逃离来源",
+      "chinese_ndef": "逃离来源位移；移动、离开、出发。",
+      "semantic_table": {
+        "manner": "逃离来源",
+        "path": "NP V PP (from, for)",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "语义焦点为脱离来源地",
+        "scope": "路径聚焦类 / 逃离类 / 逃离来源"
+      }
+    },
+    {
+      "id": "descend",
+      "label": "descend",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直下行",
+      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To pass from a higher to a lower place; to move downwards; to come or go down in any way, for example by falling, flowing, walking, climbing etc.）",
+      "semantic_table": {
+        "manner": "垂直下行",
+        "path": "NP V NP / PP (down)",
+        "direction": "路径/方向为词汇核心；下降",
+        "aspect": "可及物",
+        "scope": "路径聚焦类 / 下降类 / 垂直下行"
+      }
+    },
+    {
+      "id": "desert",
+      "label": "desert",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "处所脱离",
+      "chinese_ndef": "处所脱离位移；移动、离开。（Oxford: To leave one's duty or post, especially to leave a military or naval unit without permission.）",
+      "semantic_table": {
+        "manner": "处所脱离",
+        "path": "NP V NP",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 脱离类 / 处所脱离"
+      }
+    },
+    {
+      "id": "dodder",
+      "label": "dodder",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To shake or tremble as one moves, especially as of old age or childhood; to totter.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "drift",
+      "label": "drift",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、飘移。",
+      "semantic_table": {
+        "manner": "轴向滚动滑移；飘移前进",
+        "path": "NP V PP (across, into)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "drive",
+      "label": "drive",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "工具位移",
+      "chinese_ndef": "工具位移位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "工具位移",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "核心代表",
+        "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+      }
+    },
+    {
+      "id": "enter",
+      "label": "enter",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "空间移入",
+      "chinese_ndef": "〔某人〕进入，进去〔某处〕",
+      "semantic_table": {
+        "manner": "空间移入",
+        "path": "NP V NP / PP (into)",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "及物/不及物均可",
+        "scope": "路径聚焦类 / 进入类 / 空间移入"
+      }
+    },
+    {
+      "id": "escape",
+      "label": "escape",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "逃离来源",
+      "chinese_ndef": "〔某人从某地或某处〕逃离；溜走；逃脱〔监禁；搜查等〕",
+      "semantic_table": {
+        "manner": "逃离来源",
+        "path": "NP V PP (from) / NP V NP",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 逃离类 / 逃离来源"
+      }
+    },
+    {
+      "id": "escort",
+      "label": "escort",
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "协同随行",
+      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。",
+      "semantic_table": {
+        "manner": "协同随行",
+        "path": "NP V NP PP (to, from)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（参与者） / 陪同类 / 协同随行"
+      }
+    },
+    {
+      "id": "exit",
+      "label": "exit",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "空间移出",
+      "chinese_ndef": "空间移出位移；移动。（Oxford: To go out or go away from a place or situation; to depart, to leave.）",
+      "semantic_table": {
+        "manner": "空间移出",
+        "path": "NP V NP / PP (from)",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "及物/不及物均可",
+        "scope": "路径聚焦类 / 外出离场类 / 空间移出"
+      }
+    },
+    {
+      "id": "fall",
+      "label": "fall",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直下行",
+      "chinese_ndef": "〔从高处〕落下；往下掉；降落",
+      "semantic_table": {
+        "manner": "垂直下行",
+        "path": "NP V PP (down, into)",
+        "direction": "路径/方向为词汇核心；下降",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 下降类 / 垂直下行"
+      }
+    },
+    {
+      "id": "file",
+      "label": "file",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "文件；档案；卷宗",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "flee",
+      "label": "flee",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "逃离来源",
+      "chinese_ndef": "逃离来源位移；移动、离开、逃离。（Oxford: To run away; to escape.）",
+      "semantic_table": {
+        "manner": "逃离来源",
+        "path": "NP V PP (from) / NP V NP",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 逃离类 / 逃离来源"
+      }
+    },
+    {
+      "id": "float",
+      "label": "float",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、飘浮。",
+      "semantic_table": {
+        "manner": "轴向滚动滑移；飘浮前进",
+        "path": "NP V PP (across, into)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "fly",
+      "label": "fly",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "空中飞行/水中",
+      "chinese_ndef": "〔飞行器；鸟或昆虫等〕飞，飞行；飞翔",
+      "semantic_table": {
+        "manner": "空中飞行/水中；飞行前进",
+        "path": "NP V PP (across, over)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 飞行游动类 / 空中飞行/水中"
+      }
+    },
+    {
+      "id": "follow",
+      "label": "follow",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "跟随潜伏",
+      "chinese_ndef": "跟随〔某人〕；跟着",
+      "semantic_table": {
+        "manner": "跟随潜伏",
+        "path": "NP V NP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+      }
+    },
+    {
+      "id": "frolic",
+      "label": "frolic",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To cause to be merry.）",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "gallop",
+      "label": "gallop",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To ride at a galloping pace.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "gambol",
+      "label": "gambol",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To do a forward roll.）",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "glide",
+      "label": "glide",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式。（Oxford: To pass with a glide, as the voice.）",
+      "semantic_table": {
+        "manner": "轴向滚动滑移",
+        "path": "NP V PP (across, through)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "go",
+      "label": "go",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "远离参照点",
+      "chinese_ndef": "去，走",
+      "semantic_table": {
+        "manner": "远离参照点",
+        "path": "NP V PP (to)",
+        "direction": "路径/方向为词汇核心；远离",
+        "aspect": "指示路径动词",
+        "scope": "路径聚焦类 / 去类 / 远离参照点"
+      }
+    },
+    {
+      "id": "goosestep",
+      "label": "goosestep",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "guide",
+      "label": "guide",
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "引路带领",
+      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。（Oxford: To act as a guide.）",
+      "semantic_table": {
+        "manner": "引路带领",
+        "path": "NP V NP PP (to, through)",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "互动聚焦类（参与者） / 引导类 / 引路带领"
+      }
+    },
+    {
+      "id": "hasten",
+      "label": "hasten",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "hike",
+      "label": "hike",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To take a long walk for pleasure or exercise.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "hobble",
+      "label": "hobble",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk lame, or unevenly.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "hop",
+      "label": "hop",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To jump on one foot.）",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "hurry",
+      "label": "hurry",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To hasten; to impel to greater speed; to urge on.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "hurtle",
+      "label": "hurtle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "inch",
+      "label": "inch",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: (followed by a preposition) To advance very slowly, or by a small amount (in a particular direction).）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "jog",
+      "label": "jog",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: (exercise) To move at a pace between walking and running, to run at a leisurely pace.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "journey",
+      "label": "journey",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "长途跋涉",
+      "chinese_ndef": "长途跋涉位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "长途跋涉",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+      }
+    },
+    {
+      "id": "jump",
+      "label": "jump",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To flee; to make one's escape.）",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP (across, over)",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "lead",
+      "label": "lead",
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "引路带领",
+      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。",
+      "semantic_table": {
+        "manner": "引路带领",
+        "path": "NP V NP PP (to, through)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（参与者） / 引导类 / 引路带领"
+      }
+    },
+    {
+      "id": "leap",
+      "label": "leap",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To pass over by a leap or jump.）",
+      "semantic_table": {
+        "manner": "跳跃动作",
+        "path": "NP V PP (across, over)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "leave",
+      "label": "leave",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "处所脱离",
+      "chinese_ndef": "离去；离开",
+      "semantic_table": {
+        "manner": "处所脱离",
+        "path": "NP V NP / PP (from)",
+        "direction": "路径/方向为词汇核心",
+        "aspect": "范畴原型",
+        "scope": "路径聚焦类 / 脱离类 / 处所脱离"
+      }
+    },
+    {
+      "id": "limp",
+      "label": "limp",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move or proceed irregularly.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "lollop",
+      "label": "lollop",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk or move with a bouncing or undulating motion and at an unhurried pace.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "lope",
+      "label": "lope",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "lumber",
+      "label": "lumber",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move clumsily and heavily; to move slowly.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "lurch",
+      "label": "lurch",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To make such a sudden, unsteady movement.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "march",
+      "label": "march",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go to war; to make military advances.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "meander",
+      "label": "meander",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "mince",
+      "label": "mince",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with short steps; to walk in a prim, affected manner.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "mosey",
+      "label": "mosey",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go off quickly: to hurry up.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "nip",
+      "label": "nip",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To make a quick, short journey or errand, usually a round trip.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "pad",
+      "label": "pad",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To travel on foot.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "parade",
+      "label": "parade",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To assemble (soldiers, sailors) for inspection, to receive orders, etc.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "perambulate",
+      "label": "perambulate",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk about, roam or stroll.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "plod",
+      "label": "plod",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk or move slowly and heavily or laboriously (+ on, through, over).）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "plunge",
+      "label": "plunge",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直下行",
+      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To fall or rush headlong into some thing, action, state or condition.）",
+      "semantic_table": {
+        "manner": "垂直下行",
+        "path": "NP V PP (into, down)",
+        "direction": "路径/方向为词汇核心；下降",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 下降类 / 垂直下行"
+      }
+    },
+    {
+      "id": "prance",
+      "label": "prance",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "跳跃动作",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "promenade",
+      "label": "promenade",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk for amusement, show, or exercise.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "prowl",
+      "label": "prowl",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To idle; to go about aimlessly.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "pursue",
+      "label": "pursue",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "主动追逐",
+      "chinese_ndef": "追求〔目标〕",
+      "semantic_table": {
+        "manner": "主动追逐",
+        "path": "NP V NP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（目的） / 追赶类 / 主动追逐"
+      }
+    },
+    {
+      "id": "race",
+      "label": "race",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "赛跑；速度竞赛",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "ramble",
+      "label": "ramble",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk for pleasure; to amble or saunter.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "reach",
+      "label": "reach",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "及物到达",
+      "chinese_ndef": "到达；抵达",
+      "semantic_table": {
+        "manner": "及物到达",
+        "path": "NP V NP",
+        "direction": "路径/方向为词汇核心；终点",
+        "aspect": "及物到达，构式变体",
+        "scope": "路径聚焦类 / 到达类 / 及物到达"
+      }
+    },
+    {
+      "id": "recede",
+      "label": "recede",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "水平后退",
+      "chinese_ndef": "水平后退位移；移动、向后移动。",
+      "semantic_table": {
+        "manner": "水平后退",
+        "path": "NP V PP (from)",
+        "direction": "路径/方向为词汇核心；后退",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 后退类 / 水平后退"
+      }
+    },
+    {
+      "id": "return",
+      "label": "return",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "折返原位",
+      "chinese_ndef": "〔某人〕〔从某处〕返回〔另一处〕",
+      "semantic_table": {
+        "manner": "折返原位",
+        "path": "NP V PP (to)",
+        "direction": "路径/方向为词汇核心；终点；返回",
+        "aspect": "终点为起始点，图式特殊",
+        "scope": "路径聚焦类 / 返回类 / 折返原位"
+      }
+    },
+    {
+      "id": "ride",
+      "label": "ride",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "工具位移",
+      "chinese_ndef": "工具位移位移；移动、以特定方式。（Oxford: To be transported in a vehicle; to travel as a passenger.）",
+      "semantic_table": {
+        "manner": "工具位移",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+      }
+    },
+    {
+      "id": "rise",
+      "label": "rise",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直上行",
+      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To go up; to ascend; to climb.）",
+      "semantic_table": {
+        "manner": "垂直上行",
+        "path": "NP V PP (up, to)",
+        "direction": "路径/方向为词汇核心；上升",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 上升类 / 垂直上行"
+      }
+    },
+    {
+      "id": "roam",
+      "label": "roam",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To wander or travel freely and with no specific destination.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, around)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "roll",
+      "label": "roll",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、滚动。（Oxford: To leave or begin a journey.）",
+      "semantic_table": {
+        "manner": "轴向滚动滑移；滚动前进",
+        "path": "NP V PP (across, down)",
+        "direction": "依构式补语确定",
+        "aspect": "51.3.1与51.3.2重叠，归入本类",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "romp",
+      "label": "romp",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To win easily.）",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "rove",
+      "label": "rove",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To pierce or cleave with a weapon.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "run",
+      "label": "run",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "跑；奔跑",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "rush",
+      "label": "rush",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To flow or move forward rapidly or noisily.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "sail",
+      "label": "sail",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "工具位移",
+      "chinese_ndef": "工具位移位移；移动、以特定方式。（Oxford: To ride in a boat, especially a sailboat.）",
+      "semantic_table": {
+        "manner": "工具位移",
+        "path": "NP V PP (across, into)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+      }
+    },
+    {
+      "id": "sashay",
+      "label": "sashay",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "saunter",
+      "label": "saunter",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "scamper",
+      "label": "scamper",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "scoot",
+      "label": "scoot",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "scram",
+      "label": "scram",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: Leave in a hurry, go away.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "scramble",
+      "label": "scramble",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "攀爬匍匐",
+      "chinese_ndef": "攀爬匍匐位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "攀爬匍匐",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+      }
+    },
+    {
+      "id": "scud",
+      "label": "scud",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、滑行、奔跑。（Oxford: To run, or be driven, before a high wind with no sails set.）",
+      "semantic_table": {
+        "manner": "奔跑行进；滑行前进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "scurry",
+      "label": "scurry",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To run with quick light steps, to scamper.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "scutter",
+      "label": "scutter",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "scuttle",
+      "label": "scuttle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move hastily, to scurry.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "shadow",
+      "label": "shadow",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "跟随潜伏",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随、隐秘地。",
+      "semantic_table": {
+        "manner": "跟随潜伏",
+        "path": "NP V NP",
+        "direction": "依构式补语确定",
+        "aspect": "动作隐秘",
+        "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+      }
+    },
+    {
+      "id": "shamble",
+      "label": "shamble",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "shepherd",
+      "label": "shepherd",
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "引路带领",
+      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领、引导。",
+      "semantic_table": {
+        "manner": "引路带领",
+        "path": "NP V NP PP (to, through)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（参与者） / 引导类 / 引路带领"
+      }
+    },
+    {
+      "id": "shuffle",
+      "label": "shuffle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move in a slovenly, dragging manner; to drag or scrape the feet in walking or dancing.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "sidle",
+      "label": "sidle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To (cause something to) move sideways.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "skedaddle",
+      "label": "skedaddle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move or run away quickly.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "ski",
+      "label": "ski",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "工具位移",
+      "chinese_ndef": "工具位移位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "工具位移",
+        "path": "NP V PP (across, down)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+      }
+    },
+    {
+      "id": "skip",
+      "label": "skip",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To jump rope.）",
+      "semantic_table": {
+        "manner": "跳跃动作",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "skitter",
+      "label": "skitter",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、滑行、奔跑。",
+      "semantic_table": {
+        "manner": "奔跑行进；滑行前进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "skulk",
+      "label": "skulk",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "sleepwalk",
+      "label": "sleepwalk",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "slide",
+      "label": "slide",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、滑行。（Oxford: To pass along smoothly or unobservedly; to move gently onward without friction or hindrance.）",
+      "semantic_table": {
+        "manner": "轴向滚动滑移；滑行前进",
+        "path": "NP V PP (across, down)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "slink",
+      "label": "slink",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "slog",
+      "label": "slog",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "sneak",
+      "label": "sneak",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To creep or go stealthily; to come or go while trying to avoid detection, as a person who does not wish to be seen.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "somersault",
+      "label": "somersault",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To perform a somersault.）",
+      "semantic_table": {
+        "manner": "跳跃动作",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "speed",
+      "label": "speed",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To cause to make haste; to dispatch with celerity; to drive at full speed; hence, to hasten; to hurry.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "sprint",
+      "label": "sprint",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To run, cycle, etc. at top speed for a short period,）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "stagger",
+      "label": "stagger",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "stomp",
+      "label": "stomp",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "stray",
+      "label": "stray",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "stride",
+      "label": "stride",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with long steps.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "stroll",
+      "label": "stroll",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go somewhere with ease.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "strut",
+      "label": "strut",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "stumble",
+      "label": "stumble",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "swagger",
+      "label": "swagger",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "sweep",
+      "label": "sweep",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move something in a long sweeping motion, as a broom.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "swim",
+      "label": "swim",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "空中飞行/水中",
+      "chinese_ndef": "空中飞行/水中位移；移动、以特定方式、游动。",
+      "semantic_table": {
+        "manner": "空中飞行/水中；游动前进",
+        "path": "NP V PP (across, through)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 飞行游动类 / 空中飞行/水中"
+      }
+    },
+    {
+      "id": "swing",
+      "label": "swing",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式。（Oxford: To ride on a swing.）",
+      "semantic_table": {
+        "manner": "轴向滚动滑移",
+        "path": "NP V PP (across, into)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+      }
+    },
+    {
+      "id": "tack",
+      "label": "tack",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "tail",
+      "label": "tail",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "跟随潜伏",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+      "semantic_table": {
+        "manner": "跟随潜伏",
+        "path": "NP V NP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+      }
+    },
+    {
+      "id": "tear",
+      "label": "tear",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move or act with great speed, energy, or violence.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "tiptoe",
+      "label": "tiptoe",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "toddle",
+      "label": "toddle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk in a carefree manner.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "totter",
+      "label": "totter",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "track",
+      "label": "track",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "跟随潜伏",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+      "semantic_table": {
+        "manner": "跟随潜伏",
+        "path": "NP V NP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+      }
+    },
+    {
+      "id": "trail",
+      "label": "trail",
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "跟随潜伏",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+      "semantic_table": {
+        "manner": "跟随潜伏",
+        "path": "NP V NP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+      }
+    },
+    {
+      "id": "traipse",
+      "label": "traipse",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "tramp",
+      "label": "tramp",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "travel",
+      "label": "travel",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "长途跋涉",
+      "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To move illegally by walking or running without dribbling the ball.）",
+      "semantic_table": {
+        "manner": "长途跋涉",
+        "path": "NP V PP (across, through)",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+      }
+    },
+    {
+      "id": "trek",
+      "label": "trek",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "长途跋涉",
+      "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To travel by ox wagon.）",
+      "semantic_table": {
+        "manner": "长途跋涉",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+      }
+    },
+    {
+      "id": "troop",
+      "label": "troop",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "trot",
+      "label": "trot",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To cause to move, as a horse or other animal, in the pace called a trot; to cause to run without galloping or cantering.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "trudge",
+      "label": "trudge",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "tumble",
+      "label": "tumble",
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直下行",
+      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To move or rush in a headlong or uncontrolled way.）",
+      "semantic_table": {
+        "manner": "垂直下行",
+        "path": "NP V PP (down, into)",
+        "direction": "路径/方向为词汇核心；下降",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "路径聚焦类 / 下降类 / 垂直下行"
+      }
+    },
+    {
+      "id": "vault",
+      "label": "vault",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。",
+      "semantic_table": {
+        "manner": "跳跃动作；跳跃前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+      }
+    },
+    {
+      "id": "waddle",
+      "label": "waddle",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "wade",
+      "label": "wade",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk through water or something that impedes progress.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "walk",
+      "label": "walk",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, along)",
+        "direction": "依构式补语确定",
+        "aspect": "范畴原型",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "wander",
+      "label": "wander",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go somewhere indirectly or at varying speeds; to move in a curved path.）",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP (across, around)",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "whiz",
+      "label": "whiz",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To rush or move swiftly with such a sound.）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    },
+    {
+      "id": "zigzag",
+      "label": "zigzag",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "chinese_ndef": "常态行走位移；移动、以特定方式。",
+      "semantic_table": {
+        "manner": "常态行走",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+      }
+    },
+    {
+      "id": "zoom",
+      "label": "zoom",
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move rapidly）",
+      "semantic_table": {
+        "manner": "奔跑行进；奔跑前进",
+        "path": "NP V PP",
+        "direction": "依构式补语确定",
+        "aspect": "通常体现该运动类型的典型身体姿态",
+        "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+      }
+    }
+  ],
+  "links": [
+    {
+      "source": "abandon",
+      "target": "desert",
+      "relation": "近义",
+      "sub_cat": "处所脱离",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "abandon",
+      "target": "leave",
+      "relation": "近义",
+      "sub_cat": "处所脱离",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "accompany",
+      "target": "conduct",
+      "relation": "近义",
+      "sub_cat": "协同随行",
+      "main_cat": "互动聚焦类（参与者）"
+    },
+    {
+      "source": "accompany",
+      "target": "escort",
+      "relation": "近义",
+      "sub_cat": "协同随行",
+      "main_cat": "互动聚焦类（参与者）"
+    },
+    {
+      "source": "amble",
+      "target": "clump",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "amble",
+      "target": "dodder",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "amble",
+      "target": "file",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "amble",
+      "target": "walk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "amble",
+      "target": "wander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "amble",
+      "target": "zigzag",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "ascend",
+      "target": "climb",
+      "relation": "近义",
+      "sub_cat": "垂直上行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "ascend",
+      "target": "rise",
+      "relation": "近义",
+      "sub_cat": "垂直上行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "backpack",
+      "target": "journey",
+      "relation": "近义",
+      "sub_cat": "长途跋涉",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "backpack",
+      "target": "travel",
+      "relation": "近义",
+      "sub_cat": "长途跋涉",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "backpack",
+      "target": "trek",
+      "relation": "近义",
+      "sub_cat": "长途跋涉",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bolt",
+      "target": "canter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bolt",
+      "target": "charge",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bolt",
+      "target": "dart",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bolt",
+      "target": "trot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bolt",
+      "target": "whiz",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bolt",
+      "target": "zoom",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bounce",
+      "target": "drift",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bounce",
+      "target": "float",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bounce",
+      "target": "glide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bounce",
+      "target": "roll",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bounce",
+      "target": "slide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bounce",
+      "target": "swing",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bound",
+      "target": "cavort",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bound",
+      "target": "frolic",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bound",
+      "target": "gambol",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bound",
+      "target": "skip",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bound",
+      "target": "somersault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "bound",
+      "target": "vault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "canter",
+      "target": "charge",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "canter",
+      "target": "dart",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "canter",
+      "target": "dash",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "canter",
+      "target": "whiz",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "canter",
+      "target": "zoom",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "cavort",
+      "target": "frolic",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "cavort",
+      "target": "gambol",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "cavort",
+      "target": "hop",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "cavort",
+      "target": "somersault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "cavort",
+      "target": "vault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "charge",
+      "target": "dart",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "charge",
+      "target": "dash",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "charge",
+      "target": "gallop",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "charge",
+      "target": "zoom",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "chase",
+      "target": "pursue",
+      "relation": "近义",
+      "sub_cat": "主动追逐",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "clamber",
+      "target": "crawl",
+      "relation": "近义",
+      "sub_cat": "攀爬匍匐",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "clamber",
+      "target": "creep",
+      "relation": "近义",
+      "sub_cat": "攀爬匍匐",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "clamber",
+      "target": "scramble",
+      "relation": "近义",
+      "sub_cat": "攀爬匍匐",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "climb",
+      "target": "rise",
+      "relation": "近义",
+      "sub_cat": "垂直上行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "clump",
+      "target": "dodder",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "clump",
+      "target": "file",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "clump",
+      "target": "goosestep",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "clump",
+      "target": "wander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "clump",
+      "target": "zigzag",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "conduct",
+      "target": "escort",
+      "relation": "近义",
+      "sub_cat": "协同随行",
+      "main_cat": "互动聚焦类（参与者）"
+    },
+    {
+      "source": "crawl",
+      "target": "creep",
+      "relation": "近义",
+      "sub_cat": "攀爬匍匐",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "crawl",
+      "target": "scramble",
+      "relation": "近义",
+      "sub_cat": "攀爬匍匐",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "creep",
+      "target": "scramble",
+      "relation": "近义",
+      "sub_cat": "攀爬匍匐",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dart",
+      "target": "dash",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dart",
+      "target": "gallop",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dart",
+      "target": "hasten",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dash",
+      "target": "gallop",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dash",
+      "target": "hasten",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dash",
+      "target": "hurry",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "depart",
+      "target": "escape",
+      "relation": "近义",
+      "sub_cat": "逃离来源",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "depart",
+      "target": "flee",
+      "relation": "近义",
+      "sub_cat": "逃离来源",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "descend",
+      "target": "fall",
+      "relation": "近义",
+      "sub_cat": "垂直下行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "descend",
+      "target": "plunge",
+      "relation": "近义",
+      "sub_cat": "垂直下行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "descend",
+      "target": "tumble",
+      "relation": "近义",
+      "sub_cat": "垂直下行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "desert",
+      "target": "leave",
+      "relation": "近义",
+      "sub_cat": "处所脱离",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "dodder",
+      "target": "file",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dodder",
+      "target": "goosestep",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dodder",
+      "target": "hike",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "dodder",
+      "target": "zigzag",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drift",
+      "target": "float",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drift",
+      "target": "glide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drift",
+      "target": "roll",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drift",
+      "target": "slide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drift",
+      "target": "swing",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drive",
+      "target": "ride",
+      "relation": "近义",
+      "sub_cat": "工具位移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drive",
+      "target": "sail",
+      "relation": "近义",
+      "sub_cat": "工具位移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "drive",
+      "target": "ski",
+      "relation": "近义",
+      "sub_cat": "工具位移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "escape",
+      "target": "flee",
+      "relation": "近义",
+      "sub_cat": "逃离来源",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "fall",
+      "target": "plunge",
+      "relation": "近义",
+      "sub_cat": "垂直下行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "fall",
+      "target": "tumble",
+      "relation": "近义",
+      "sub_cat": "垂直下行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "file",
+      "target": "goosestep",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "file",
+      "target": "hike",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "file",
+      "target": "hobble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "float",
+      "target": "glide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "float",
+      "target": "roll",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "float",
+      "target": "slide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "float",
+      "target": "swing",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "fly",
+      "target": "swim",
+      "relation": "近义",
+      "sub_cat": "空中飞行/水中",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "follow",
+      "target": "shadow",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "follow",
+      "target": "tail",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "follow",
+      "target": "track",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "follow",
+      "target": "trail",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "frolic",
+      "target": "gambol",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "frolic",
+      "target": "hop",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "frolic",
+      "target": "jump",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "frolic",
+      "target": "vault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "gallop",
+      "target": "hasten",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "gallop",
+      "target": "hurry",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "gallop",
+      "target": "hurtle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "gambol",
+      "target": "hop",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "gambol",
+      "target": "jump",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "gambol",
+      "target": "leap",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "glide",
+      "target": "roll",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "glide",
+      "target": "slide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "glide",
+      "target": "swing",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "goosestep",
+      "target": "hike",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "goosestep",
+      "target": "hobble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "goosestep",
+      "target": "inch",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "guide",
+      "target": "lead",
+      "relation": "近义",
+      "sub_cat": "引路带领",
+      "main_cat": "互动聚焦类（参与者）"
+    },
+    {
+      "source": "guide",
+      "target": "shepherd",
+      "relation": "近义",
+      "sub_cat": "引路带领",
+      "main_cat": "互动聚焦类（参与者）"
+    },
+    {
+      "source": "hasten",
+      "target": "hurry",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hasten",
+      "target": "hurtle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hasten",
+      "target": "jog",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hike",
+      "target": "hobble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hike",
+      "target": "inch",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hike",
+      "target": "limp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hobble",
+      "target": "inch",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hobble",
+      "target": "limp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hobble",
+      "target": "lollop",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hop",
+      "target": "jump",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hop",
+      "target": "leap",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hop",
+      "target": "prance",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hurry",
+      "target": "hurtle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hurry",
+      "target": "jog",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hurry",
+      "target": "lope",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hurtle",
+      "target": "jog",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hurtle",
+      "target": "lope",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "hurtle",
+      "target": "nip",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "inch",
+      "target": "limp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "inch",
+      "target": "lollop",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "inch",
+      "target": "lumber",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "jog",
+      "target": "lope",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "jog",
+      "target": "nip",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "jog",
+      "target": "race",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "journey",
+      "target": "travel",
+      "relation": "近义",
+      "sub_cat": "长途跋涉",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "journey",
+      "target": "trek",
+      "relation": "近义",
+      "sub_cat": "长途跋涉",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "jump",
+      "target": "leap",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "jump",
+      "target": "prance",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "jump",
+      "target": "romp",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lead",
+      "target": "shepherd",
+      "relation": "近义",
+      "sub_cat": "引路带领",
+      "main_cat": "互动聚焦类（参与者）"
+    },
+    {
+      "source": "leap",
+      "target": "prance",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "leap",
+      "target": "romp",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "leap",
+      "target": "skip",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "limp",
+      "target": "lollop",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "limp",
+      "target": "lumber",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "limp",
+      "target": "lurch",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lollop",
+      "target": "lumber",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lollop",
+      "target": "lurch",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lollop",
+      "target": "march",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lope",
+      "target": "nip",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lope",
+      "target": "race",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lope",
+      "target": "run",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lumber",
+      "target": "lurch",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lumber",
+      "target": "march",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lumber",
+      "target": "meander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lurch",
+      "target": "march",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lurch",
+      "target": "meander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "lurch",
+      "target": "mince",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "march",
+      "target": "meander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "march",
+      "target": "mince",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "march",
+      "target": "mosey",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "meander",
+      "target": "mince",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "meander",
+      "target": "mosey",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "meander",
+      "target": "pad",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "mince",
+      "target": "mosey",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "mince",
+      "target": "pad",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "mince",
+      "target": "parade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "mosey",
+      "target": "pad",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "mosey",
+      "target": "parade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "mosey",
+      "target": "perambulate",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "nip",
+      "target": "race",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "nip",
+      "target": "run",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "nip",
+      "target": "rush",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "pad",
+      "target": "parade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "pad",
+      "target": "perambulate",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "pad",
+      "target": "plod",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "parade",
+      "target": "perambulate",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "parade",
+      "target": "plod",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "parade",
+      "target": "promenade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "perambulate",
+      "target": "plod",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "perambulate",
+      "target": "promenade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "perambulate",
+      "target": "prowl",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "plod",
+      "target": "promenade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "plod",
+      "target": "prowl",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "plod",
+      "target": "ramble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "plunge",
+      "target": "tumble",
+      "relation": "近义",
+      "sub_cat": "垂直下行",
+      "main_cat": "路径聚焦类"
+    },
+    {
+      "source": "prance",
+      "target": "romp",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "prance",
+      "target": "skip",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "prance",
+      "target": "somersault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "promenade",
+      "target": "prowl",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "promenade",
+      "target": "ramble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "promenade",
+      "target": "roam",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "prowl",
+      "target": "ramble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "prowl",
+      "target": "roam",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "prowl",
+      "target": "rove",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "race",
+      "target": "run",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "race",
+      "target": "rush",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "race",
+      "target": "scamper",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "ramble",
+      "target": "roam",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "ramble",
+      "target": "rove",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "ramble",
+      "target": "sashay",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "ride",
+      "target": "sail",
+      "relation": "近义",
+      "sub_cat": "工具位移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "ride",
+      "target": "ski",
+      "relation": "近义",
+      "sub_cat": "工具位移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "roam",
+      "target": "rove",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "roam",
+      "target": "sashay",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "roam",
+      "target": "saunter",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "roll",
+      "target": "slide",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "roll",
+      "target": "swing",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "romp",
+      "target": "skip",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "romp",
+      "target": "somersault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "romp",
+      "target": "vault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "rove",
+      "target": "sashay",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "rove",
+      "target": "saunter",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "rove",
+      "target": "shamble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "run",
+      "target": "rush",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "run",
+      "target": "scamper",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "run",
+      "target": "scoot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "rush",
+      "target": "scamper",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "rush",
+      "target": "scoot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "rush",
+      "target": "scram",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sail",
+      "target": "ski",
+      "relation": "近义",
+      "sub_cat": "工具位移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sashay",
+      "target": "saunter",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sashay",
+      "target": "shamble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sashay",
+      "target": "shuffle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "saunter",
+      "target": "shamble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "saunter",
+      "target": "shuffle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "saunter",
+      "target": "sidle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scamper",
+      "target": "scoot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scamper",
+      "target": "scram",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scamper",
+      "target": "scud",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scoot",
+      "target": "scram",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scoot",
+      "target": "scud",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scoot",
+      "target": "scurry",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scram",
+      "target": "scud",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scram",
+      "target": "scurry",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scram",
+      "target": "scutter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scud",
+      "target": "scurry",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scud",
+      "target": "scutter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scud",
+      "target": "scuttle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scurry",
+      "target": "scutter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scurry",
+      "target": "scuttle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scurry",
+      "target": "skedaddle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scutter",
+      "target": "scuttle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scutter",
+      "target": "skedaddle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scutter",
+      "target": "skitter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scuttle",
+      "target": "skedaddle",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scuttle",
+      "target": "skitter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "scuttle",
+      "target": "speed",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "shadow",
+      "target": "tail",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "shadow",
+      "target": "track",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "shadow",
+      "target": "trail",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "shamble",
+      "target": "shuffle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "shamble",
+      "target": "sidle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "shamble",
+      "target": "skulk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "shuffle",
+      "target": "sidle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "shuffle",
+      "target": "skulk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "shuffle",
+      "target": "sleepwalk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sidle",
+      "target": "skulk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sidle",
+      "target": "sleepwalk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sidle",
+      "target": "slink",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skedaddle",
+      "target": "skitter",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skedaddle",
+      "target": "speed",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skedaddle",
+      "target": "sprint",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skip",
+      "target": "somersault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skip",
+      "target": "vault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skitter",
+      "target": "speed",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skitter",
+      "target": "sprint",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skitter",
+      "target": "sweep",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skulk",
+      "target": "sleepwalk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skulk",
+      "target": "slink",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "skulk",
+      "target": "slog",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sleepwalk",
+      "target": "slink",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sleepwalk",
+      "target": "slog",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sleepwalk",
+      "target": "sneak",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slide",
+      "target": "swing",
+      "relation": "近义",
+      "sub_cat": "轴向滚动滑移",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slink",
+      "target": "slog",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slink",
+      "target": "sneak",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slink",
+      "target": "stagger",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slog",
+      "target": "sneak",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slog",
+      "target": "stagger",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "slog",
+      "target": "stomp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sneak",
+      "target": "stagger",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sneak",
+      "target": "stomp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sneak",
+      "target": "stray",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "somersault",
+      "target": "vault",
+      "relation": "近义",
+      "sub_cat": "跳跃动作",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "speed",
+      "target": "sprint",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "speed",
+      "target": "sweep",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "speed",
+      "target": "tear",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sprint",
+      "target": "sweep",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sprint",
+      "target": "tear",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sprint",
+      "target": "trot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stagger",
+      "target": "stomp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stagger",
+      "target": "stray",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stagger",
+      "target": "stride",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stomp",
+      "target": "stray",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stomp",
+      "target": "stride",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stomp",
+      "target": "stroll",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stray",
+      "target": "stride",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stray",
+      "target": "stroll",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stray",
+      "target": "strut",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stride",
+      "target": "stroll",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stride",
+      "target": "strut",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stride",
+      "target": "stumble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stroll",
+      "target": "strut",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stroll",
+      "target": "stumble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stroll",
+      "target": "swagger",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "strut",
+      "target": "stumble",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "strut",
+      "target": "swagger",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "strut",
+      "target": "tack",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stumble",
+      "target": "swagger",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stumble",
+      "target": "tack",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "stumble",
+      "target": "tiptoe",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "swagger",
+      "target": "tack",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "swagger",
+      "target": "tiptoe",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "swagger",
+      "target": "toddle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sweep",
+      "target": "tear",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sweep",
+      "target": "trot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "sweep",
+      "target": "whiz",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tack",
+      "target": "tiptoe",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tack",
+      "target": "toddle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tack",
+      "target": "totter",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tail",
+      "target": "track",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "tail",
+      "target": "trail",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "tear",
+      "target": "trot",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tear",
+      "target": "whiz",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tear",
+      "target": "zoom",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tiptoe",
+      "target": "toddle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tiptoe",
+      "target": "totter",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tiptoe",
+      "target": "traipse",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "toddle",
+      "target": "totter",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "toddle",
+      "target": "traipse",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "toddle",
+      "target": "tramp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "totter",
+      "target": "traipse",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "totter",
+      "target": "tramp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "totter",
+      "target": "troop",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "track",
+      "target": "trail",
+      "relation": "近义",
+      "sub_cat": "跟随潜伏",
+      "main_cat": "互动聚焦类（目的）"
+    },
+    {
+      "source": "traipse",
+      "target": "tramp",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "traipse",
+      "target": "troop",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "traipse",
+      "target": "trudge",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tramp",
+      "target": "troop",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tramp",
+      "target": "trudge",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "tramp",
+      "target": "waddle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "travel",
+      "target": "trek",
+      "relation": "近义",
+      "sub_cat": "长途跋涉",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "troop",
+      "target": "trudge",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "troop",
+      "target": "waddle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "troop",
+      "target": "wade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "trot",
+      "target": "whiz",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "trot",
+      "target": "zoom",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "trudge",
+      "target": "waddle",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "trudge",
+      "target": "wade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "trudge",
+      "target": "walk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "waddle",
+      "target": "wade",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "waddle",
+      "target": "walk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "waddle",
+      "target": "wander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "wade",
+      "target": "walk",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "wade",
+      "target": "wander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "wade",
+      "target": "zigzag",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "walk",
+      "target": "wander",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "walk",
+      "target": "zigzag",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "wander",
+      "target": "zigzag",
+      "relation": "近义",
+      "sub_cat": "常态行走",
+      "main_cat": "方式聚焦类"
+    },
+    {
+      "source": "whiz",
+      "target": "zoom",
+      "relation": "近义",
+      "sub_cat": "奔跑行进",
+      "main_cat": "方式聚焦类"
+    }
+  ],
+  "clusters": [
+    {
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "协同随行",
+      "size": 3,
+      "verbs": [
+        "accompany",
+        "conduct",
+        "escort"
+      ]
+    },
+    {
+      "main_cat": "互动聚焦类（参与者）",
+      "sub_cat": "引路带领",
+      "size": 3,
+      "verbs": [
+        "guide",
+        "lead",
+        "shepherd"
+      ]
+    },
+    {
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "主动追逐",
+      "size": 2,
+      "verbs": [
+        "chase",
+        "pursue"
+      ]
+    },
+    {
+      "main_cat": "互动聚焦类（目的）",
+      "sub_cat": "跟随潜伏",
+      "size": 5,
+      "verbs": [
+        "follow",
+        "shadow",
+        "tail",
+        "track",
+        "trail"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "奔跑行进",
+      "size": 31,
+      "verbs": [
+        "bolt",
+        "canter",
+        "charge",
+        "dart",
+        "dash",
+        "gallop",
+        "hasten",
+        "hurry",
+        "hurtle",
+        "jog",
+        "lope",
+        "nip",
+        "race",
+        "run",
+        "rush",
+        "scamper",
+        "scoot",
+        "scram",
+        "scud",
+        "scurry",
+        "scutter",
+        "scuttle",
+        "skedaddle",
+        "skitter",
+        "speed",
+        "sprint",
+        "sweep",
+        "tear",
+        "trot",
+        "whiz",
+        "zoom"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "工具位移",
+      "size": 4,
+      "verbs": [
+        "drive",
+        "ride",
+        "sail",
+        "ski"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "常态行走",
+      "size": 56,
+      "verbs": [
+        "amble",
+        "clump",
+        "dodder",
+        "file",
+        "goosestep",
+        "hike",
+        "hobble",
+        "inch",
+        "limp",
+        "lollop",
+        "lumber",
+        "lurch",
+        "march",
+        "meander",
+        "mince",
+        "mosey",
+        "pad",
+        "parade",
+        "perambulate",
+        "plod",
+        "promenade",
+        "prowl",
+        "ramble",
+        "roam",
+        "rove",
+        "sashay",
+        "saunter",
+        "shamble",
+        "shuffle",
+        "sidle",
+        "skulk",
+        "sleepwalk",
+        "slink",
+        "slog",
+        "sneak",
+        "stagger",
+        "stomp",
+        "stray",
+        "stride",
+        "stroll",
+        "strut",
+        "stumble",
+        "swagger",
+        "tack",
+        "tiptoe",
+        "toddle",
+        "totter",
+        "traipse",
+        "tramp",
+        "troop",
+        "trudge",
+        "waddle",
+        "wade",
+        "walk",
+        "wander",
+        "zigzag"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "攀爬匍匐",
+      "size": 4,
+      "verbs": [
+        "clamber",
+        "crawl",
+        "creep",
+        "scramble"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "空中飞行/水中",
+      "size": 2,
+      "verbs": [
+        "fly",
+        "swim"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "跳跃动作",
+      "size": 12,
+      "verbs": [
+        "bound",
+        "cavort",
+        "frolic",
+        "gambol",
+        "hop",
+        "jump",
+        "leap",
+        "prance",
+        "romp",
+        "skip",
+        "somersault",
+        "vault"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "轴向滚动滑移",
+      "size": 7,
+      "verbs": [
+        "bounce",
+        "drift",
+        "float",
+        "glide",
+        "roll",
+        "slide",
+        "swing"
+      ]
+    },
+    {
+      "main_cat": "方式聚焦类",
+      "sub_cat": "长途跋涉",
+      "size": 4,
+      "verbs": [
+        "backpack",
+        "journey",
+        "travel",
+        "trek"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "不及物到达",
+      "size": 1,
+      "verbs": [
+        "arrive"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "及物到达",
+      "size": 1,
+      "verbs": [
+        "reach"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直上行",
+      "size": 3,
+      "verbs": [
+        "ascend",
+        "climb",
+        "rise"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "垂直下行",
+      "size": 4,
+      "verbs": [
+        "descend",
+        "fall",
+        "plunge",
+        "tumble"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "处所脱离",
+      "size": 3,
+      "verbs": [
+        "abandon",
+        "desert",
+        "leave"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "折返原位",
+      "size": 1,
+      "verbs": [
+        "return"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "水平前行",
+      "size": 1,
+      "verbs": [
+        "advance"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "水平后退",
+      "size": 1,
+      "verbs": [
+        "recede"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "空间移入",
+      "size": 1,
+      "verbs": [
+        "enter"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "空间移出",
+      "size": 1,
+      "verbs": [
+        "exit"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "趋近参照点",
+      "size": 1,
+      "verbs": [
+        "come"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "远离参照点",
+      "size": 1,
+      "verbs": [
+        "go"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦类",
+      "sub_cat": "逃离来源",
+      "size": 3,
+      "verbs": [
+        "depart",
+        "escape",
+        "flee"
+      ]
+    }
+  ]
+}

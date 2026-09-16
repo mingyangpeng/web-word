@@ -1,0 +1,2792 @@
+[
+  {
+    "verb": "abandon",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "处所脱离",
+    "chinese_ndef": "〔某人〕舍弃〔汽车；房子等〕；离弃〔某地〕",
+    "semantic_table": {
+      "manner": "处所脱离",
+      "path": "NP V NP",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 脱离类 / 处所脱离"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "accompany",
+    "main_cat": "互动聚焦类（参与者）",
+    "sub_cat": "协同随行",
+    "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。（Oxford: To go with or attend as a companion or associate; to keep company with; to go along with.）",
+    "semantic_table": {
+      "manner": "协同随行",
+      "path": "NP V NP PP (to, into)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（参与者） / 陪同类 / 协同随行"
+    },
+    "example_sentence": "Geoffrey accompanied the group on their pilgrimage.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "advance",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "水平前行",
+    "chinese_ndef": "〔人群；士兵〕向〔某地；某人〕行进，前进；进攻",
+    "semantic_table": {
+      "manner": "水平前行",
+      "path": "NP V PP (to, toward)",
+      "direction": "路径/方向为词汇核心；前进",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 前进类 / 水平前行"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "amble",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To stroll or walk slowly and leisurely.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "arrive",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "不及物到达",
+    "chinese_ndef": "〔人或车辆〕抵达〔某地〕；到达〔某地〕（尤指旅途的终点)",
+    "semantic_table": {
+      "manner": "不及物到达",
+      "path": "NP V PP (at, in)",
+      "direction": "路径/方向为词汇核心；终点",
+      "aspect": "不及物，范畴原型",
+      "scope": "路径聚焦类 / 到达类 / 不及物到达"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "ascend",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直上行",
+    "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To move upward, to fly, to soar.）",
+    "semantic_table": {
+      "manner": "垂直上行",
+      "path": "NP V PP (up, to)",
+      "direction": "路径/方向为词汇核心；上升",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 上升类 / 垂直上行"
+    },
+    "example_sentence": "He ascended to heaven upon a cloud.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "backpack",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "长途跋涉",
+    "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To engage in low-cost, generally urban, travel with minimal luggage and frugal accommodations）",
+    "semantic_table": {
+      "manner": "长途跋涉",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "bolt",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "bounce",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、弹跳。（Oxford: To leap or spring suddenly or unceremoniously; to bound.）",
+    "semantic_table": {
+      "manner": "轴向滚动滑移；弹跳前进",
+      "path": "NP V PP (across, into)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": "She bounced happily into the room.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "bound",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": true,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "canter",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "cavort",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To move about carelessly, playfully or boisterously.）",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "charge",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "〔某人向他人〕要价，收费",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "chase",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "主动追逐",
+    "chinese_ndef": "追逐；追赶；追击〔某人或某物〕",
+    "semantic_table": {
+      "manner": "主动追逐",
+      "path": "NP V NP / after NP",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "互动聚焦类（目的） / 追赶类 / 主动追逐"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "clamber",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "攀爬匍匐",
+    "chinese_ndef": "攀爬匍匐位移；移动、以特定方式。（Oxford: To climb (something) with some difficulty, or in a haphazard fashion.）",
+    "semantic_table": {
+      "manner": "攀爬匍匐",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+    },
+    "example_sentence": "The children clambered over the jungle gym.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "climb",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直上行",
+    "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To ascend; rise; to go up.）",
+    "semantic_table": {
+      "manner": "垂直上行",
+      "path": "NP V NP / PP (up)",
+      "direction": "路径/方向为词汇核心；上升",
+      "aspect": "方向主导，方式附带",
+      "scope": "路径聚焦类 / 上升类 / 垂直上行"
+    },
+    "example_sentence": "Prices climbed steeply.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "clump",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with heavy footfalls.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "come",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "趋近参照点",
+    "chinese_ndef": "来到；到达",
+    "semantic_table": {
+      "manner": "趋近参照点",
+      "path": "NP V PP (to)",
+      "direction": "路径/方向为词汇核心；趋近",
+      "aspect": "指示路径动词",
+      "scope": "路径聚焦类 / 来类 / 趋近参照点"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "conduct",
+    "main_cat": "互动聚焦类（参与者）",
+    "sub_cat": "协同随行",
+    "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同、正式地。",
+    "semantic_table": {
+      "manner": "协同随行",
+      "path": "NP V NP PP (to, into)",
+      "direction": "依构式补语确定",
+      "aspect": "姿态正式",
+      "scope": "互动聚焦类（参与者） / 陪同类 / 协同随行"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "crawl",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "攀爬匍匐",
+    "chinese_ndef": "攀爬匍匐位移；移动、以特定方式、爬行。",
+    "semantic_table": {
+      "manner": "攀爬匍匐；爬行前进",
+      "path": "NP V PP (across, through)",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "creep",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "攀爬匍匐",
+    "chinese_ndef": "攀爬匍匐位移；移动、以特定方式、爬行。（Oxford: To have a sensation as of insects creeping on the skin of the body; to crawl.）",
+    "semantic_table": {
+      "manner": "攀爬匍匐；爬行前进",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "dart",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "dash",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "depart",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "逃离来源",
+    "chinese_ndef": "逃离来源位移；移动、离开、出发。",
+    "semantic_table": {
+      "manner": "逃离来源",
+      "path": "NP V PP (from, for)",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "语义焦点为脱离来源地",
+      "scope": "路径聚焦类 / 逃离类 / 逃离来源"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": true,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "descend",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直下行",
+    "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To pass from a higher to a lower place; to move downwards; to come or go down in any way, for example by falling, flowing, walking, climbing etc.）",
+    "semantic_table": {
+      "manner": "垂直下行",
+      "path": "NP V NP / PP (down)",
+      "direction": "路径/方向为词汇核心；下降",
+      "aspect": "可及物",
+      "scope": "路径聚焦类 / 下降类 / 垂直下行"
+    },
+    "example_sentence": "The rain descended, and the floods came.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "desert",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "处所脱离",
+    "chinese_ndef": "处所脱离位移；移动、离开。（Oxford: To leave one's duty or post, especially to leave a military or naval unit without permission.）",
+    "semantic_table": {
+      "manner": "处所脱离",
+      "path": "NP V NP",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 脱离类 / 处所脱离"
+    },
+    "example_sentence": "Anyone found deserting will be punished.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "dodder",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To shake or tremble as one moves, especially as of old age or childhood; to totter.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "drift",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、飘移。",
+    "semantic_table": {
+      "manner": "轴向滚动滑移；飘移前进",
+      "path": "NP V PP (across, into)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": true,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "drive",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "工具位移",
+    "chinese_ndef": "工具位移位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "工具位移",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "核心代表",
+      "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": true,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "enter",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "空间移入",
+    "chinese_ndef": "〔某人〕进入，进去〔某处〕",
+    "semantic_table": {
+      "manner": "空间移入",
+      "path": "NP V NP / PP (into)",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "及物/不及物均可",
+      "scope": "路径聚焦类 / 进入类 / 空间移入"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "escape",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "逃离来源",
+    "chinese_ndef": "〔某人从某地或某处〕逃离；溜走；逃脱〔监禁；搜查等〕",
+    "semantic_table": {
+      "manner": "逃离来源",
+      "path": "NP V PP (from) / NP V NP",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 逃离类 / 逃离来源"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "escort",
+    "main_cat": "互动聚焦类（参与者）",
+    "sub_cat": "协同随行",
+    "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。",
+    "semantic_table": {
+      "manner": "协同随行",
+      "path": "NP V NP PP (to, from)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（参与者） / 陪同类 / 协同随行"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "exit",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "空间移出",
+    "chinese_ndef": "空间移出位移；移动。（Oxford: To go out or go away from a place or situation; to depart, to leave.）",
+    "semantic_table": {
+      "manner": "空间移出",
+      "path": "NP V NP / PP (from)",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "及物/不及物均可",
+      "scope": "路径聚焦类 / 外出离场类 / 空间移出"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "fall",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直下行",
+    "chinese_ndef": "〔从高处〕落下；往下掉；降落",
+    "semantic_table": {
+      "manner": "垂直下行",
+      "path": "NP V PP (down, into)",
+      "direction": "路径/方向为词汇核心；下降",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 下降类 / 垂直下行"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "file",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "文件；档案；卷宗",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "flee",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "逃离来源",
+    "chinese_ndef": "逃离来源位移；移动、离开、逃离。（Oxford: To run away; to escape.）",
+    "semantic_table": {
+      "manner": "逃离来源",
+      "path": "NP V PP (from) / NP V NP",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 逃离类 / 逃离来源"
+    },
+    "example_sentence": "The prisoner tried to flee, but was caught by the guards.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "float",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、飘浮。",
+    "semantic_table": {
+      "manner": "轴向滚动滑移；飘浮前进",
+      "path": "NP V PP (across, into)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "fly",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "空中飞行/水中",
+    "chinese_ndef": "〔飞行器；鸟或昆虫等〕飞，飞行；飞翔",
+    "semantic_table": {
+      "manner": "空中飞行/水中；飞行前进",
+      "path": "NP V PP (across, over)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 飞行游动类 / 空中飞行/水中"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "follow",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "跟随潜伏",
+    "chinese_ndef": "跟随〔某人〕；跟着",
+    "semantic_table": {
+      "manner": "跟随潜伏",
+      "path": "NP V NP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "frolic",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To cause to be merry.）",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "gallop",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To ride at a galloping pace.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "gambol",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To do a forward roll.）",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "glide",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式。（Oxford: To pass with a glide, as the voice.）",
+    "semantic_table": {
+      "manner": "轴向滚动滑移",
+      "path": "NP V PP (across, through)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "go",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "远离参照点",
+    "chinese_ndef": "去，走",
+    "semantic_table": {
+      "manner": "远离参照点",
+      "path": "NP V PP (to)",
+      "direction": "路径/方向为词汇核心；远离",
+      "aspect": "指示路径动词",
+      "scope": "路径聚焦类 / 去类 / 远离参照点"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "goosestep",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "guide",
+    "main_cat": "互动聚焦类（参与者）",
+    "sub_cat": "引路带领",
+    "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。（Oxford: To act as a guide.）",
+    "semantic_table": {
+      "manner": "引路带领",
+      "path": "NP V NP PP (to, through)",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "互动聚焦类（参与者） / 引导类 / 引路带领"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "hasten",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "hike",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To take a long walk for pleasure or exercise.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "Don't forget to bring the map when we go hiking tomorrow.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "hobble",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk lame, or unevenly.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "hop",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To jump on one foot.）",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "hurry",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To hasten; to impel to greater speed; to urge on.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "hurtle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "inch",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: (followed by a preposition) To advance very slowly, or by a small amount (in a particular direction).）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "Fearful of falling, he inched along the window ledge.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "jog",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: (exercise) To move at a pace between walking and running, to run at a leisurely pace.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "journey",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "长途跋涉",
+    "chinese_ndef": "长途跋涉位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "长途跋涉",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": true,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "jump",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To flee; to make one's escape.）",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP (across, over)",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "lead",
+    "main_cat": "互动聚焦类（参与者）",
+    "sub_cat": "引路带领",
+    "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。",
+    "semantic_table": {
+      "manner": "引路带领",
+      "path": "NP V NP PP (to, through)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（参与者） / 引导类 / 引路带领"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "leap",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To pass over by a leap or jump.）",
+    "semantic_table": {
+      "manner": "跳跃动作",
+      "path": "NP V PP (across, over)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": "to leap a wall or a ditch",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "leave",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "处所脱离",
+    "chinese_ndef": "离去；离开",
+    "semantic_table": {
+      "manner": "处所脱离",
+      "path": "NP V NP / PP (from)",
+      "direction": "路径/方向为词汇核心",
+      "aspect": "范畴原型",
+      "scope": "路径聚焦类 / 脱离类 / 处所脱离"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "limp",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move or proceed irregularly.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "The business limped through the recession",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "lollop",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk or move with a bouncing or undulating motion and at an unhurried pace.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "lope",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "lumber",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move clumsily and heavily; to move slowly.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "lurch",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To make such a sudden, unsteady movement.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "march",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go to war; to make military advances.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "meander",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "mince",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with short steps; to walk in a prim, affected manner.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "mosey",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go off quickly: to hurry up.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "nip",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To make a quick, short journey or errand, usually a round trip.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": "Why don’t you nip down to the grocer’s for some milk?",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "pad",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To travel on foot.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "parade",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To assemble (soldiers, sailors) for inspection, to receive orders, etc.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "perambulate",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk about, roam or stroll.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "plod",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk or move slowly and heavily or laboriously (+ on, through, over).）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "plunge",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直下行",
+    "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To fall or rush headlong into some thing, action, state or condition.）",
+    "semantic_table": {
+      "manner": "垂直下行",
+      "path": "NP V PP (into, down)",
+      "direction": "路径/方向为词汇核心；下降",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 下降类 / 垂直下行"
+    },
+    "example_sentence": "to plunge into debt;   to plunge into controversy",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "prance",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "跳跃动作",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "promenade",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk for amusement, show, or exercise.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "prowl",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To idle; to go about aimlessly.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "That dandy has nothing better to do than prowl around town all day in his pinstripe suit.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "pursue",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "主动追逐",
+    "chinese_ndef": "追求〔目标〕",
+    "semantic_table": {
+      "manner": "主动追逐",
+      "path": "NP V NP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（目的） / 追赶类 / 主动追逐"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "race",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "赛跑；速度竞赛",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "ramble",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk for pleasure; to amble or saunter.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "reach",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "及物到达",
+    "chinese_ndef": "到达；抵达",
+    "semantic_table": {
+      "manner": "及物到达",
+      "path": "NP V NP",
+      "direction": "路径/方向为词汇核心；终点",
+      "aspect": "及物到达，构式变体",
+      "scope": "路径聚焦类 / 到达类 / 及物到达"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "recede",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "水平后退",
+    "chinese_ndef": "水平后退位移；移动、向后移动。",
+    "semantic_table": {
+      "manner": "水平后退",
+      "path": "NP V PP (from)",
+      "direction": "路径/方向为词汇核心；后退",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 后退类 / 水平后退"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "return",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "折返原位",
+    "chinese_ndef": "〔某人〕〔从某处〕返回〔另一处〕",
+    "semantic_table": {
+      "manner": "折返原位",
+      "path": "NP V PP (to)",
+      "direction": "路径/方向为词汇核心；终点；返回",
+      "aspect": "终点为起始点，图式特殊",
+      "scope": "路径聚焦类 / 返回类 / 折返原位"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "ride",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "工具位移",
+    "chinese_ndef": "工具位移位移；移动、以特定方式。（Oxford: To be transported in a vehicle; to travel as a passenger.）",
+    "semantic_table": {
+      "manner": "工具位移",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "rise",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直上行",
+    "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To go up; to ascend; to climb.）",
+    "semantic_table": {
+      "manner": "垂直上行",
+      "path": "NP V PP (up, to)",
+      "direction": "路径/方向为词汇核心；上升",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 上升类 / 垂直上行"
+    },
+    "example_sentence": "to rise a hill",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "roam",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To wander or travel freely and with no specific destination.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, around)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "roll",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、滚动。（Oxford: To leave or begin a journey.）",
+    "semantic_table": {
+      "manner": "轴向滚动滑移；滚动前进",
+      "path": "NP V PP (across, down)",
+      "direction": "依构式补语确定",
+      "aspect": "51.3.1与51.3.2重叠，归入本类",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": "I want to get there early; let's roll.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "romp",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To win easily.）",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": "England romped to an easy win over Australia.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "rove",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To pierce or cleave with a weapon.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "run",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "跑；奔跑",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "dictionary.db",
+    "in_db": true,
+    "has_ch": true,
+    "oxford": false
+  },
+  {
+    "verb": "rush",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To flow or move forward rapidly or noisily.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": "armies rush to battle;   waters rush down a precipice.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "sail",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "工具位移",
+    "chinese_ndef": "工具位移位移；移动、以特定方式。（Oxford: To ride in a boat, especially a sailboat.）",
+    "semantic_table": {
+      "manner": "工具位移",
+      "path": "NP V PP (across, into)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "sashay",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "saunter",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "scamper",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "scoot",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "scram",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: Leave in a hurry, go away.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": "What are you kids doing on my lawn? Scram!",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "scramble",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "攀爬匍匐",
+    "chinese_ndef": "攀爬匍匐位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "攀爬匍匐",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 匍匐爬行类 / 攀爬匍匐"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "scud",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、滑行、奔跑。（Oxford: To run, or be driven, before a high wind with no sails set.）",
+    "semantic_table": {
+      "manner": "奔跑行进；滑行前进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "scurry",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To run with quick light steps, to scamper.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "scutter",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "scuttle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move hastily, to scurry.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "shadow",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "跟随潜伏",
+    "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随、隐秘地。",
+    "semantic_table": {
+      "manner": "跟随潜伏",
+      "path": "NP V NP",
+      "direction": "依构式补语确定",
+      "aspect": "动作隐秘",
+      "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "shamble",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "shepherd",
+    "main_cat": "互动聚焦类（参与者）",
+    "sub_cat": "引路带领",
+    "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领、引导。",
+    "semantic_table": {
+      "manner": "引路带领",
+      "path": "NP V NP PP (to, through)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（参与者） / 引导类 / 引路带领"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "shuffle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move in a slovenly, dragging manner; to drag or scrape the feet in walking or dancing.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "He shuffled out of the room.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "sidle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To (cause something to) move sideways.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "skedaddle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move or run away quickly.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "ski",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "工具位移",
+    "chinese_ndef": "工具位移位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "工具位移",
+      "path": "NP V PP (across, down)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 运载工具类 / 工具位移"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "skip",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To jump rope.）",
+    "semantic_table": {
+      "manner": "跳跃动作",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": "The girls were skipping in the playground.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "skitter",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、滑行、奔跑。",
+    "semantic_table": {
+      "manner": "奔跑行进；滑行前进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "skulk",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "sleepwalk",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "slide",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、滑行。（Oxford: To pass along smoothly or unobservedly; to move gently onward without friction or hindrance.）",
+    "semantic_table": {
+      "manner": "轴向滚动滑移；滑行前进",
+      "path": "NP V PP (across, down)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": "A ship or boat slides through the water.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "slink",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "slog",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "sneak",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To creep or go stealthily; to come or go while trying to avoid detection, as a person who does not wish to be seen.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "He decided to sneak into the kitchen for a second cookie while his mom was on the phone.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "somersault",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To perform a somersault.）",
+    "semantic_table": {
+      "manner": "跳跃动作",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": "The performer somersaulted all the way across the stage.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "speed",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To cause to make haste; to dispatch with celerity; to drive at full speed; hence, to hasten; to hurry.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "sprint",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To run, cycle, etc. at top speed for a short period,）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "stagger",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "stomp",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "stray",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "stride",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with long steps.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "stroll",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go somewhere with ease.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "strut",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "stumble",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "swagger",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "sweep",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move something in a long sweeping motion, as a broom.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "swim",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "空中飞行/水中",
+    "chinese_ndef": "空中飞行/水中位移；移动、以特定方式、游动。",
+    "semantic_table": {
+      "manner": "空中飞行/水中；游动前进",
+      "path": "NP V PP (across, through)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 飞行游动类 / 空中飞行/水中"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "swing",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "轴向滚动滑移",
+    "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式。（Oxford: To ride on a swing.）",
+    "semantic_table": {
+      "manner": "轴向滚动滑移",
+      "path": "NP V PP (across, into)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 滚动滑行类 / 轴向滚动滑移"
+    },
+    "example_sentence": "The children laughed as they swung.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "tack",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "tail",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "跟随潜伏",
+    "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+    "semantic_table": {
+      "manner": "跟随潜伏",
+      "path": "NP V NP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "tear",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move or act with great speed, energy, or violence.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": "He tore into the backlog of complaints.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "tiptoe",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "toddle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk in a carefree manner.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": "There he was, just toddling along.",
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "totter",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "track",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "跟随潜伏",
+    "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+    "semantic_table": {
+      "manner": "跟随潜伏",
+      "path": "NP V NP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "trail",
+    "main_cat": "互动聚焦类（目的）",
+    "sub_cat": "跟随潜伏",
+    "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+    "semantic_table": {
+      "manner": "跟随潜伏",
+      "path": "NP V NP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "互动聚焦类（目的） / 尾随类 / 跟随潜伏"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "traipse",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "tramp",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "travel",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "长途跋涉",
+    "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To move illegally by walking or running without dribbling the ball.）",
+    "semantic_table": {
+      "manner": "长途跋涉",
+      "path": "NP V PP (across, through)",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "trek",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "长途跋涉",
+    "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To travel by ox wagon.）",
+    "semantic_table": {
+      "manner": "长途跋涉",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 长途行进类 / 长途跋涉"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "troop",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "trot",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To cause to move, as a horse or other animal, in the pace called a trot; to cause to run without galloping or cantering.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "trudge",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "tumble",
+    "main_cat": "路径聚焦类",
+    "sub_cat": "垂直下行",
+    "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To move or rush in a headlong or uncontrolled way.）",
+    "semantic_table": {
+      "manner": "垂直下行",
+      "path": "NP V PP (down, into)",
+      "direction": "路径/方向为词汇核心；下降",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "路径聚焦类 / 下降类 / 垂直下行"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "vault",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "跳跃动作",
+    "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。",
+    "semantic_table": {
+      "manner": "跳跃动作；跳跃前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 腾空跳跃类 / 跳跃动作"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "waddle",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "wade",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk through water or something that impedes progress.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "walk",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, along)",
+      "direction": "依构式补语确定",
+      "aspect": "范畴原型",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": true,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "wander",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go somewhere indirectly or at varying speeds; to move in a curved path.）",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP (across, around)",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "whiz",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To rush or move swiftly with such a sound.）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  },
+  {
+    "verb": "zigzag",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "常态行走",
+    "chinese_ndef": "常态行走位移；移动、以特定方式。",
+    "semantic_table": {
+      "manner": "常态行走",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 常态行走"
+    },
+    "example_sentence": null,
+    "model_version": "docx-features",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": false
+  },
+  {
+    "verb": "zoom",
+    "main_cat": "方式聚焦类",
+    "sub_cat": "奔跑行进",
+    "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move rapidly）",
+    "semantic_table": {
+      "manner": "奔跑行进；奔跑前进",
+      "path": "NP V PP",
+      "direction": "依构式补语确定",
+      "aspect": "通常体现该运动类型的典型身体姿态",
+      "scope": "方式聚焦类 / 陆地行进类 / 奔跑行进"
+    },
+    "example_sentence": null,
+    "model_version": "oxford-combined",
+    "in_db": false,
+    "has_ch": false,
+    "oxford": true
+  }
+]

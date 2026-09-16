@@ -1,0 +1,369 @@
+{
+  "exit": {
+    "en_def": "To go out or go away from a place or situation; to depart, to leave.",
+    "en_example": null
+  },
+  "ascend": {
+    "en_def": "To move upward, to fly, to soar.",
+    "en_example": "He ascended to heaven upon a cloud."
+  },
+  "flee": {
+    "en_def": "To run away; to escape.",
+    "en_example": "The prisoner tried to flee, but was caught by the guards."
+  },
+  "rise": {
+    "en_def": "To go up; to ascend; to climb.",
+    "en_example": "to rise a hill"
+  },
+  "tumble": {
+    "en_def": "To move or rush in a headlong or uncontrolled way.",
+    "en_example": null
+  },
+  "climb": {
+    "en_def": "To ascend; rise; to go up.",
+    "en_example": "Prices climbed steeply."
+  },
+  "roll": {
+    "en_def": "To leave or begin a journey.",
+    "en_example": "I want to get there early; let's roll."
+  },
+  "slide": {
+    "en_def": "To pass along smoothly or unobservedly; to move gently onward without friction or hindrance.",
+    "en_example": "A ship or boat slides through the water."
+  },
+  "desert": {
+    "en_def": "To leave one's duty or post, especially to leave a military or naval unit without permission.",
+    "en_example": "Anyone found deserting will be punished."
+  },
+  "descend": {
+    "en_def": "To pass from a higher to a lower place; to move downwards; to come or go down in any way, for example by falling, flowing, walking, climbing etc.",
+    "en_example": "The rain descended, and the floods came."
+  },
+  "plunge": {
+    "en_def": "To fall or rush headlong into some thing, action, state or condition.",
+    "en_example": "to plunge into debt;   to plunge into controversy"
+  },
+  "glide": {
+    "en_def": "To pass with a glide, as the voice.",
+    "en_example": null
+  },
+  "swing": {
+    "en_def": "To ride on a swing.",
+    "en_example": "The children laughed as they swung."
+  },
+  "stroll": {
+    "en_def": "To go somewhere with ease.",
+    "en_example": null
+  },
+  "stride": {
+    "en_def": "To walk with long steps.",
+    "en_example": null
+  },
+  "recede": null,
+  "bounce": {
+    "en_def": "To leap or spring suddenly or unceremoniously; to bound.",
+    "en_example": "She bounced happily into the room."
+  },
+  "float": null,
+  "clump": {
+    "en_def": "To walk with heavy footfalls.",
+    "en_example": null
+  },
+  "hike": {
+    "en_def": "To take a long walk for pleasure or exercise.",
+    "en_example": "Don't forget to bring the map when we go hiking tomorrow."
+  },
+  "roam": {
+    "en_def": "To wander or travel freely and with no specific destination.",
+    "en_example": null
+  },
+  "dodder": {
+    "en_def": "To shake or tremble as one moves, especially as of old age or childhood; to totter.",
+    "en_example": null
+  },
+  "wander": {
+    "en_def": "To go somewhere indirectly or at varying speeds; to move in a curved path.",
+    "en_example": null
+  },
+  "march": {
+    "en_def": "To go to war; to make military advances.",
+    "en_example": null
+  },
+  "amble": {
+    "en_def": "To stroll or walk slowly and leisurely.",
+    "en_example": null
+  },
+  "lollop": {
+    "en_def": "To walk or move with a bouncing or undulating motion and at an unhurried pace.",
+    "en_example": null
+  },
+  "limp": {
+    "en_def": "To move or proceed irregularly.",
+    "en_example": "The business limped through the recession"
+  },
+  "inch": {
+    "en_def": "(followed by a preposition) To advance very slowly, or by a small amount (in a particular direction).",
+    "en_example": "Fearful of falling, he inched along the window ledge."
+  },
+  "lurch": {
+    "en_def": "To make such a sudden, unsteady movement.",
+    "en_example": null
+  },
+  "lumber": {
+    "en_def": "To move clumsily and heavily; to move slowly.",
+    "en_example": null
+  },
+  "goosestep": null,
+  "hobble": {
+    "en_def": "To walk lame, or unevenly.",
+    "en_example": null
+  },
+  "mince": {
+    "en_def": "To walk with short steps; to walk in a prim, affected manner.",
+    "en_example": null
+  },
+  "mosey": {
+    "en_def": "To go off quickly: to hurry up.",
+    "en_example": null
+  },
+  "parade": {
+    "en_def": "To assemble (soldiers, sailors) for inspection, to receive orders, etc.",
+    "en_example": null
+  },
+  "plod": {
+    "en_def": "To walk or move slowly and heavily or laboriously (+ on, through, over).",
+    "en_example": null
+  },
+  "promenade": {
+    "en_def": "To walk for amusement, show, or exercise.",
+    "en_example": null
+  },
+  "prowl": {
+    "en_def": "To idle; to go about aimlessly.",
+    "en_example": "That dandy has nothing better to do than prowl around town all day in his pinstripe suit."
+  },
+  "rove": {
+    "en_def": "To pierce or cleave with a weapon.",
+    "en_example": null
+  },
+  "ramble": {
+    "en_def": "To walk for pleasure; to amble or saunter.",
+    "en_example": null
+  },
+  "meander": null,
+  "pad": {
+    "en_def": "To travel on foot.",
+    "en_example": null
+  },
+  "shamble": null,
+  "perambulate": {
+    "en_def": "To walk about, roam or stroll.",
+    "en_example": null
+  },
+  "prance": null,
+  "sashay": null,
+  "sleepwalk": null,
+  "shuffle": {
+    "en_def": "To move in a slovenly, dragging manner; to drag or scrape the feet in walking or dancing.",
+    "en_example": "He shuffled out of the room."
+  },
+  "skulk": null,
+  "saunter": null,
+  "sidle": {
+    "en_def": "To (cause something to) move sideways.",
+    "en_example": null
+  },
+  "stomp": null,
+  "stagger": null,
+  "swagger": null,
+  "slog": null,
+  "slink": null,
+  "sneak": {
+    "en_def": "To creep or go stealthily; to come or go while trying to avoid detection, as a person who does not wish to be seen.",
+    "en_example": "He decided to sneak into the kitchen for a second cookie while his mom was on the phone."
+  },
+  "strut": null,
+  "stray": null,
+  "totter": null,
+  "tiptoe": null,
+  "traipse": null,
+  "tack": null,
+  "tramp": null,
+  "stumble": null,
+  "trudge": null,
+  "toddle": {
+    "en_def": "To walk in a carefree manner.",
+    "en_example": "There he was, just toddling along."
+  },
+  "dart": null,
+  "troop": null,
+  "waddle": null,
+  "zigzag": null,
+  "canter": null,
+  "wade": {
+    "en_def": "To walk through water or something that impedes progress.",
+    "en_example": null
+  },
+  "gallop": {
+    "en_def": "To ride at a galloping pace.",
+    "en_example": null
+  },
+  "dash": null,
+  "hasten": null,
+  "bolt": null,
+  "lope": null,
+  "hurtle": null,
+  "scamper": null,
+  "rush": {
+    "en_def": "To flow or move forward rapidly or noisily.",
+    "en_example": "armies rush to battle;   waters rush down a precipice."
+  },
+  "scoot": null,
+  "nip": {
+    "en_def": "To make a quick, short journey or errand, usually a round trip.",
+    "en_example": "Why don’t you nip down to the grocer’s for some milk?"
+  },
+  "scud": {
+    "en_def": "To run, or be driven, before a high wind with no sails set.",
+    "en_example": null
+  },
+  "hurry": {
+    "en_def": "To hasten; to impel to greater speed; to urge on.",
+    "en_example": null
+  },
+  "scuttle": {
+    "en_def": "To move hastily, to scurry.",
+    "en_example": null
+  },
+  "jog": {
+    "en_def": "(exercise) To move at a pace between walking and running, to run at a leisurely pace.",
+    "en_example": null
+  },
+  "scurry": {
+    "en_def": "To run with quick light steps, to scamper.",
+    "en_example": null
+  },
+  "speed": {
+    "en_def": "To cause to make haste; to dispatch with celerity; to drive at full speed; hence, to hasten; to hurry.",
+    "en_example": null
+  },
+  "skitter": null,
+  "sprint": {
+    "en_def": "To run, cycle, etc. at top speed for a short period,",
+    "en_example": null
+  },
+  "skedaddle": {
+    "en_def": "To move or run away quickly.",
+    "en_example": null
+  },
+  "scram": {
+    "en_def": "Leave in a hurry, go away.",
+    "en_example": "What are you kids doing on my lawn? Scram!"
+  },
+  "tear": {
+    "en_def": "To move or act with great speed, energy, or violence.",
+    "en_example": "He tore into the backlog of complaints."
+  },
+  "scutter": null,
+  "trot": {
+    "en_def": "To cause to move, as a horse or other animal, in the pace called a trot; to cause to run without galloping or cantering.",
+    "en_example": null
+  },
+  "zoom": {
+    "en_def": "To move rapidly",
+    "en_example": null
+  },
+  "sweep": {
+    "en_def": "To move something in a long sweeping motion, as a broom.",
+    "en_example": null
+  },
+  "cavort": {
+    "en_def": "To move about carelessly, playfully or boisterously.",
+    "en_example": null
+  },
+  "gambol": {
+    "en_def": "To do a forward roll.",
+    "en_example": null
+  },
+  "jump": {
+    "en_def": "To flee; to make one's escape.",
+    "en_example": null
+  },
+  "frolic": {
+    "en_def": "To cause to be merry.",
+    "en_example": null
+  },
+  "skip": {
+    "en_def": "To jump rope.",
+    "en_example": "The girls were skipping in the playground."
+  },
+  "somersault": {
+    "en_def": "To perform a somersault.",
+    "en_example": "The performer somersaulted all the way across the stage."
+  },
+  "romp": {
+    "en_def": "To win easily.",
+    "en_example": "England romped to an easy win over Australia."
+  },
+  "leap": {
+    "en_def": "To pass over by a leap or jump.",
+    "en_example": "to leap a wall or a ditch"
+  },
+  "hop": {
+    "en_def": "To jump on one foot.",
+    "en_example": null
+  },
+  "whiz": {
+    "en_def": "To rush or move swiftly with such a sound.",
+    "en_example": null
+  },
+  "vault": null,
+  "creep": {
+    "en_def": "To have a sensation as of insects creeping on the skin of the body; to crawl.",
+    "en_example": null
+  },
+  "clamber": {
+    "en_def": "To climb (something) with some difficulty, or in a haphazard fashion.",
+    "en_example": "The children clambered over the jungle gym."
+  },
+  "travel": {
+    "en_def": "To move illegally by walking or running without dribbling the ball.",
+    "en_example": null
+  },
+  "trek": {
+    "en_def": "To travel by ox wagon.",
+    "en_example": null
+  },
+  "ride": {
+    "en_def": "To be transported in a vehicle; to travel as a passenger.",
+    "en_example": null
+  },
+  "backpack": {
+    "en_def": "To engage in low-cost, generally urban, travel with minimal luggage and frugal accommodations",
+    "en_example": null
+  },
+  "crawl": null,
+  "shadow": null,
+  "ski": null,
+  "scramble": null,
+  "swim": null,
+  "sail": {
+    "en_def": "To ride in a boat, especially a sailboat.",
+    "en_example": null
+  },
+  "track": null,
+  "conduct": null,
+  "guide": {
+    "en_def": "To act as a guide.",
+    "en_example": null
+  },
+  "accompany": {
+    "en_def": "To go with or attend as a companion or associate; to keep company with; to go along with.",
+    "en_example": "Geoffrey accompanied the group on their pilgrimage."
+  },
+  "trail": null,
+  "tail": null,
+  "lead": null,
+  "shepherd": null,
+  "escort": null
+}
