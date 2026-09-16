@@ -72,26 +72,36 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ============================================
-# 数据库配置（从 YAML 配置加载）
+# 数据库配置
 # ============================================
-_mysql_config = get_mysql_config()
-if _mysql_config:
-    MYSQL_HOST = _mysql_config.get('host', 'localhost')
-    MYSQL_PORT = _mysql_config.get('port', 3306)
-    MYSQL_DATABASE = _mysql_config.get('database', 'web_word_db')
-    MYSQL_USER = _mysql_config.get('user', 'web_word_user')
-    MYSQL_PASSWORD = _mysql_config.get('password', '')
-    MYSQL_CHARSET = _mysql_config.get('charset', 'utf8mb4')
-    MYSQL_COLLATION = _mysql_config.get('collation', 'utf8mb4_unicode_ci')
-else:
-    # Fallback to environment variables
-    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-    MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "web_word_db")
-    MYSQL_USER = os.getenv("MYSQL_USER", "web_word_user")
-    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-    MYSQL_CHARSET = "utf8mb4"
-    MYSQL_COLLATION = "utf8mb4_unicode_ci"
+# 优先级：环境变量 > config/config.yaml > 内置默认值。
+#
+# 为什么环境变量优先：同一份 config.yaml 要能在两种环境下工作 ——
+#   * Docker Compose：MySQL 主机名是 compose 服务名 "mysql"
+#   * 本地开发：MySQL 主机名是 "127.0.0.1"
+# 若 YAML 固定优先级最高，本地开发者必须改被 git 跟踪的配置才能启动。
+# 环境变量优先让部署方无需改动仓库内的任何文件。
+_mysql_config = get_mysql_config() or {}
+
+
+def _setting(env_key: str, yaml_key: str, default: Any) -> Any:
+    """读取一项数据库设置：环境变量优先，其次 YAML，最后默认值。"""
+    env_value = os.getenv(env_key)
+    if env_value is not None and env_value != "":
+        return env_value
+    if _mysql_config.get(yaml_key) not in (None, ""):
+        return _mysql_config[yaml_key]
+    return default
+
+
+MYSQL_HOST = _setting("MYSQL_HOST", "host", "127.0.0.1")
+MYSQL_PORT = int(_setting("MYSQL_PORT", "port", 3306))
+MYSQL_DATABASE = _setting("MYSQL_DATABASE", "database", "web_word_db")
+MYSQL_USER = _setting("MYSQL_USER", "user", "web_word_user")
+MYSQL_PASSWORD = _setting("MYSQL_PASSWORD", "password", "")
+MYSQL_CHARSET = _setting("MYSQL_CHARSET", "charset", "utf8mb4")
+MYSQL_COLLATION = _setting("MYSQL_COLLATION", "collation", "utf8mb4_unicode_ci")
+
 
 # Connection pool configuration
 _pool_config = get_pool_config()
@@ -622,29 +632,56 @@ def get_stats() -> Dict[str, Any]:
     """
     Get database statistics.
 
+    统计口径（2026-09 修正）：
+      * total_queries  —— 真实查询次数，来自 usage_logs 表（每次用户搜索都会
+        log_usage 记一笔）。修正前这里统计的是 definitions 表的行数，也就是
+        「已收录词条数」，被当成「总查询次数」显示，属于口径错误。
+      * total_definitions —— 已收录词条数，单独返回，不再冒充查询数。
+      * queries_today —— 今天的查询次数，用于侧边栏的当日增量。
+
     Returns:
         Dictionary containing statistics
     """
+    empty = {
+        "total_queries": 0,
+        "queries_today": 0,
+        "total_definitions": 0,
+        "avg_rating": 0.0,
+        "total_feedbacks": 0,
+        "total_synonyms": 0,
+    }
     try:
         with get_db_cursor() as cursor:
-            # Total queries (from definitions table)
-            cursor.execute("SELECT COUNT(*) AS total_queries FROM definitions")
-            total_queries = cursor.fetchone()['total_queries'] or 0
+            # 真实查询次数（来自查询日志）
+            cursor.execute("SELECT COUNT(*) AS n FROM usage_logs")
+            total_queries = int(cursor.fetchone()['n'] or 0)
+
+            # 今日查询次数
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM usage_logs WHERE DATE(query_time) = CURDATE()"
+            )
+            queries_today = int(cursor.fetchone()['n'] or 0)
+
+            # 已收录词条数（与查询次数分开，避免口径混淆）
+            cursor.execute("SELECT COUNT(*) AS n FROM definitions")
+            total_definitions = int(cursor.fetchone()['n'] or 0)
 
             # Average rating
             cursor.execute("SELECT COALESCE(AVG(rating), 0) AS avg_rating FROM feedbacks")
             avg_rating = round(float(cursor.fetchone()['avg_rating']), 1)
 
             # Total feedbacks
-            cursor.execute("SELECT COUNT(*) AS total_feedbacks FROM feedbacks")
-            total_feedbacks = cursor.fetchone()['total_feedbacks'] or 0
+            cursor.execute("SELECT COUNT(*) AS n FROM feedbacks")
+            total_feedbacks = int(cursor.fetchone()['n'] or 0)
 
             # Total synonyms
-            cursor.execute("SELECT COUNT(*) AS total_synonyms FROM synonyms")
-            total_synonyms = cursor.fetchone()['total_synonyms'] or 0
+            cursor.execute("SELECT COUNT(*) AS n FROM synonyms")
+            total_synonyms = int(cursor.fetchone()['n'] or 0)
 
             return {
                 "total_queries": total_queries,
+                "queries_today": queries_today,
+                "total_definitions": total_definitions,
                 "avg_rating": avg_rating,
                 "total_feedbacks": total_feedbacks,
                 "total_synonyms": total_synonyms,
@@ -652,25 +689,20 @@ def get_stats() -> Dict[str, Any]:
 
     except pymysql.Error as e:
         logger.error(f"Failed to get statistics: {e}")
-        return {
-            "total_queries": 0,
-            "avg_rating": 0.0,
-            "total_feedbacks": 0,
-            "total_synonyms": 0,
-        }
+        return empty
     except Exception as e:
         logger.error(f"Unexpected error getting statistics: {e}")
-        return {
-            "total_queries": 0,
-            "avg_rating": 0.0,
-            "total_feedbacks": 0,
-            "total_synonyms": 0,
-        }
+        return empty
 
 
 def get_hot_verbs(limit: int = 5) -> List[Dict[str, Any]]:
     """
-    Get hot verbs based on query frequency.
+    Get hot verbs based on **real query frequency**.
+
+    修正前这里按 definitions 表的行数排序（d.verb, COUNT(d.id)），definitions
+    每个动词只有一行，所以「热度」恒等于 1，排序实际由 LIMIT 前的物理顺序决定，
+    根本不是热门查询。现在以 usage_logs 的查询次数为准，并用待查词的原词形
+    关联 definitions/feedbacks 取评分。
 
     Args:
         limit: Maximum number of verbs to return
@@ -681,12 +713,14 @@ def get_hot_verbs(limit: int = 5) -> List[Dict[str, Any]]:
     try:
         with get_db_cursor() as cursor:
             cursor.execute("""
-                SELECT d.verb, COUNT(d.id) AS count,
-                       COALESCE(AVG(f.rating), 0) AS avg_rating
-                FROM definitions d
-                LEFT JOIN feedbacks f ON d.verb = f.verb
-                GROUP BY d.verb
-                ORDER BY count DESC
+                SELECT u.verb,
+                       COUNT(*) AS count,
+                       COALESCE((
+                           SELECT AVG(f.rating) FROM feedbacks f WHERE f.verb = u.verb
+                       ), 0) AS avg_rating
+                FROM usage_logs u
+                GROUP BY u.verb
+                ORDER BY count DESC, u.verb ASC
                 LIMIT %s
             """, (limit,))
 
