@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 from src.mysql_db import (
     init_database, get_stats, get_hot_verbs, get_feedback_data,
     insert_feedback, get_definition_by_verb, insert_definition,
-    log_usage, get_synonyms,
+    log_usage, get_synonyms, get_cluster_graph,
 )
+from src.cluster_graph import render_cluster_graph_svg
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator
@@ -466,6 +467,102 @@ def render_card_example(verb):
 
     html += '</div>'
     return html
+
+# ============================================
+# 词簇关系图谱（graphify 风格的词与词关系可视化）
+# ============================================
+def render_cluster_graph_section(verb: str) -> None:
+    """
+    渲染「当前查询词 + 其所属词簇」的完全图。
+
+    这是 graphify 那套「词与词关系」在**页面上的接口** —— 之前只有命令行
+    （graphify query / explain，读 graphify-out/graph.json）和文件产物
+    （data/word_graph.json），页面上看不到任何一张图，用户无从感知词间关系。
+
+    三个视图开关都有默认值，且用的是 st.radio/st.checkbox 的 session_state key，
+    所以切换不会触发整页重跑丢失状态。
+
+    Args:
+        verb: 当前查询的动词
+    """
+    st.markdown(f"<h3 style='{HEADER_H3}'>🕸️ 词与词关系图谱</h3>", unsafe_allow_html=True)
+
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，无法展示词簇图谱（离线模式下仅提供释义）。")
+        return
+
+    try:
+        graph = get_cluster_graph(verb)
+    except Exception as e:
+        logger.error(f"构建词簇图谱失败 for '{verb}': {e}")
+        graph = None
+
+    if not graph or not graph.get("nodes"):
+        st.info(
+            f"「{verb}」暂无词簇数据。词簇来自词库的次语义范畴划分；"
+            "运行 `python scripts/load_word_library.py` 可载入 155 词词库及其词间关系。"
+        )
+        return
+
+    cluster = graph.get("cluster") or {}
+    size = cluster.get("size", len(graph["nodes"]))
+    edges = graph.get("complete_edge_count", 0)
+
+    st.markdown(
+        f"<p style='{BODY_BASE}'>「<strong>{verb}</strong>」属于词簇 "
+        f"<strong>{cluster.get('label', '未分组')}</strong> —— 簇内 {size} 个动词语义相近，"
+        f"两两互为近义（完全图，共 {edges} 条边）。</p>",
+        unsafe_allow_html=True,
+    )
+
+    # --- 视图控制 ---
+    c1, c2, c3 = st.columns([2, 1, 1])
+    with c1:
+        mode = st.radio(
+            "图谱视图",
+            options=["完整簇完全图", "只显示中心词连线"],
+            index=0,
+            horizontal=True,
+            key="cluster_graph_mode",
+            help="完整簇显示簇内所有词两两相连；只显示中心词连线则突出当前词与谁相关。",
+        )
+    with c2:
+        st.metric("簇大小", size)
+    with c3:
+        st.metric("完全图边数", edges)
+
+    highlight_only = mode == "只显示中心词连线"
+
+    # 大簇（>SMALL_CLUSTER）默认只标中心词名，这里给个开关让用户自己决定
+    if size > 18:
+        st.caption(
+            f"该簇有 {size} 个词、{edges} 条边，全部标名会互相压盖；"
+            "当前只标注中心词，其余节点可用鼠标悬停查看词名。"
+            f"{'（已切换为只显示中心词连线）' if highlight_only else ''}"
+        )
+
+    svg = render_cluster_graph_svg(graph, highlight_only_center=highlight_only)
+    st.markdown(f"<div style='margin:8px 0;'>{svg}</div>", unsafe_allow_html=True)
+
+    with st.expander(f"查看簇内全部 {size} 个动词（点击可直接查询）", expanded=size <= 12):
+        members = [n["id"] for n in graph["nodes"]]
+        # 按每行 6 个铺按钮，点击即切换查询词
+        per_row = 6
+        for i in range(0, len(members), per_row):
+            row = members[i:i + per_row]
+            cols = st.columns(per_row)
+            for col, member in zip(cols, row):
+                with col:
+                    label = f"📍 {member}" if member == verb else member
+                    if st.button(
+                        label,
+                        key=f"cluster_member_{member}",
+                        use_container_width=True,
+                        on_click=select_example_verb,
+                        args=(member,),
+                    ):
+                        pass
+
 
 # ============================================
 # 示例库渲染函数
@@ -1032,7 +1129,8 @@ def _empty_stats() -> Dict[str, Any]:
         "total_definitions": 0,
         "avg_rating": 0.0,
         "total_feedbacks": 0,
-        "total_synonyms": 0,
+        "total_clusters": 0,
+        "total_relations": 0,
     }
 
 
@@ -1078,6 +1176,9 @@ def render_sidebar():
         delta=f"+{stats['queries_today']} 今天" if stats.get("queries_today") else None,
     )
     st.sidebar.metric("已收录词条", stats.get("total_definitions", 0))
+    # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
+    st.sidebar.metric("词义簇", stats.get("total_clusters", 0))
+    st.sidebar.metric("词间关系", stats.get("total_relations", 0))
     st.sidebar.metric("平均评分", f"{stats['avg_rating']:.1f}/5.0")
     st.sidebar.metric("总反馈数", stats["total_feedbacks"])
 
@@ -1187,6 +1288,10 @@ def render_main_area():
             if st.session_state.card_expanded.get(card_key, True):
                 st.markdown(body_renderer(verb), unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
+
+        # 词簇关系图谱（graphify 风格的词与词关系可视化）
+        st.markdown(get_section_spacing(), unsafe_allow_html=True)
+        render_cluster_graph_section(verb)
 
         # 示例库
         st.markdown(get_section_spacing(), unsafe_allow_html=True)

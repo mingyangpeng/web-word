@@ -6,6 +6,51 @@
 
 > 早期版本（2026-05-30 之前）没有独立版本号，条目按实际完成时间归入 v1.0。
 
+## 2026-09 — 表结构重构与词簇图谱接口
+
+### 破坏性变更（自动迁移，无需手工干预）
+
+- **`synonyms` 表已删除**，取而代之的是 `word_clusters` + `word_relations` + `definitions.cluster_id`。
+  旧表的边是「环邻」（每词只连同簇左右各 3 个邻居），新语义是「簇内**完全图**」
+  （同簇任意两词都有边）。两者不能共存 —— 混在一起会得到自相矛盾的图。旧边被丢弃，
+  跑一次 `python scripts/load_word_library.py` 即重建为 2143 条正确边。
+- **`statistics` 表已删除**：v1 设计里的键值统计表，全仓库无任何代码读写，实际是死表。
+- `init_database()` 现在会自动执行结构迁移（`_migrate_schema()`），用 `information_schema`
+  探测后按需 ALTER / DROP，幂等可重复。`definitions` / `feedbacks` / `usage_logs` 的行**原地保留**。
+
+### 新增
+
+- **`word_clusters` 表**：词义簇，唯一键 `(main_cat, sub_cat)`，共 25 个簇。
+- **`word_relations` 表**：词间关系，物化簇内完全图，共 2143 条边。
+  `CHECK(verb_a_id < verb_b_id)` 保证无向边只存一份（旧表双向各存一行），
+  `uq_word_relations_pair` 保证重复灌库幂等，两个端点均有外键（旧表的 `synonym_verb`
+  是裸字符串，无法保证词真的存在）。
+- **`schema_migrations` 表**：结构版本记录。
+- **视图 `v_cluster_complete_graph`**：由簇成员推导完全图，作为物化表的对照实现，
+  灌库脚本每次都会核对两者边数是否相等。
+- **页面上的词与词关系图谱**（`src/cluster_graph.py` + `app.py: render_cluster_graph_section`）：
+  搜索结果页新增 🕸️ 区块，把「查询词 + 其所属词簇」的完全图画成内联 SVG。
+  支持切换「完整簇 / 只显示中心词连线」、显示簇大小与 C(n,2) 边数、
+  展开簇内成员列表并点击直接切词。
+- 侧边栏新增 **词义簇** 与 **词间关系** 两个结构指标。
+- `tests/test_schema.py`（21 个用例）：DDL 约束契约、迁移幂等性、完全图查询与 SVG 渲染。
+
+### 修正
+
+- **`scripts/init_db.sql` 不再复制建表语句**。它以前有一份完整的 CREATE TABLE 副本，
+  且以 root 身份**先于**应用执行 —— 一旦建出旧结构的表，应用启动时的
+  `CREATE TABLE IF NOT EXISTS` 会**静默跳过**，库就永久停在旧结构上。现在它只建库与授权，
+  建表统一由 `src/mysql_db.py` 负责。同时补了 `CREATE USER IF NOT EXISTS`：
+  MySQL 8 的 GRANT 不再隐式建用户，用户不存在时整行 GRANT 会以 ERROR 1410 中断脚本。
+- **`insert_definition()` 的 `cluster_id` 用 `COALESCE(VALUES(cluster_id), cluster_id)`**：
+  传 None 时保留库中现值。否则 LLM 实时生成释义（它不知道簇划分）会把灌库脚本建立的
+  簇归属抹成 NULL。
+- **建视图的时机移到迁移之后**：视图引用 `definitions.cluster_id`，而旧库要等迁移才补上该列。
+- **词簇图谱的小簇布局**：3 个词时改用左右布局，原先的上下布局会让「两个环上节点之间的边」
+  与中心词标签叠在同一竖直线上。
+- `get_synonyms()` 改为按 `cluster_id` 取同簇其他成员（不再依赖已删除的 `synonyms` 表）。
+
+
 ## Unreleased（仓库清理与部署可用性）
 
 ### 部署可用性

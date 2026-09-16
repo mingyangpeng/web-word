@@ -60,10 +60,11 @@ scripts/get-stats.sh
     优先级：数据库命中 → 实时大模型 → 内置示例 → 兜底骨架
     ↓
 后端层
-    ├── src/mysql_db.py   MySQL 8.0 数据访问（连接池、建表、CRUD、统计）
+    ├── src/mysql_db.py   MySQL 8.0 数据访问（连接池、建表、结构迁移、CRUD、统计、词簇图谱）
     └── src/llm_api.py    智谱 AI 封装（提示词、调用、JSON 解析、MySQL 缓存、兜底）
     ↓
-横切：src/security.py（输入校验 / HTML 转义）、src/design_system.py（视觉常量与样式）
+横切：src/security.py（输入校验 / HTML 转义）、src/design_system.py（视觉常量与样式）、
+      src/cluster_graph.py（词簇完全图的内联 SVG 渲染）
 ```
 
 ### 核心组件
@@ -82,6 +83,22 @@ scripts/get-stats.sh
 - MySQL 不可用 → `DB_AVAILABLE = False`，统计 / 导出 / 反馈走空数据分支，页面照常渲染
 - 任何一级失败都不得抛到界面层
 
+### 数据库表结构
+
+`src/mysql_db.py: CREATE_TABLES_SQL` 是**唯一的结构权威**；`scripts/init_db.sql` 只建库与授权。
+启动时 `init_database()` 会跑 `_migrate_schema()`，幂等地把旧库升级到 `SCHEMA_VERSION`。
+
+- `word_clusters` — 词义簇，唯一键 `(main_cat, sub_cat)`
+- `definitions` — 释义 + `cluster_id`（FK 到 word_clusters）
+- `word_relations` — 词间关系，**簇内完全图**；`CHECK(verb_a_id < verb_b_id)` +
+  `uq_word_relations_pair`，无向边只存一份
+- `feedbacks` / `usage_logs` — 反馈与查询日志
+- `v_cluster_complete_graph` — 视图，由簇推导完全图，与物化表互为校验
+- `schema_migrations` — 版本记录
+
+> `insert_definition()` 对 `cluster_id` 用 `COALESCE(VALUES(cluster_id), cluster_id)`：
+> 传 None 时保留库中现值，所以 LLM 实时生成不会抹掉灌库脚本建立的簇归属。
+
 ### 目录结构
 
 ```
@@ -92,6 +109,7 @@ web-word/
 │   ├── llm_api.py          # 智谱 AI 封装
 │   ├── design_system.py    # 设计系统
 │   ├── security.py         # 输入校验与密钥掩码
+│   ├── cluster_graph.py    # 词簇完全图的内联 SVG 渲染
 │   └── .streamlit/config.toml
 ├── config/
 │   ├── config.yaml         # 应用实际读取的配置（已跟踪）
@@ -105,20 +123,21 @@ web-word/
 └── .planning/              # GSD 规划与归档
 ```
 
-## 代码位置参考（`src/app.py`，共约 1263 行）
+## 代码位置参考（`src/app.py`，共约 1430 行）
 
 | 内容 | 位置 |
 |------|------|
-| 固定搜索栏 CSS 与 `st.container(key="search_bar")` | 第 98-115 行 / 第 1079 行 |
-| `THEORY_DESCRIPTION`（理论说明） | 第 152 行 |
-| 热门动词前端筛选 `filter_hot_verbs()` | 第 193 行 |
-| `render_semantic_table()`（五元表格渲染） | 第 211 行 |
-| `render_example_library()`（示例库三标签页） | 第 412 行 |
-| `get_display_definition()`（释义适配层，核心） | 第 548 行 |
-| `MOCK_DEFINITIONS`（内置示例） | 第 708 行 |
-| `SEMANTIC_COLORS` / `CATEGORY_*` / `EXAMPLE_VERBS` | 第 943-975 行 |
-| `render_sidebar()`（统计 / 热门 / 导出） | 第 978 行 |
-| `render_main_area()`（卡片与反馈表单） | 第 1069 行 |
+| 固定搜索栏 CSS 与 `st.container(key="search_bar")` | 第 99 行 / 第 1245 行 |
+| `THEORY_DESCRIPTION`（理论说明） | 第 157 行 |
+| 热门动词前端筛选 `filter_hot_verbs()` | 第 223 行 |
+| `render_semantic_table()`（五元表格渲染） | 第 241 行 |
+| `render_cluster_graph_section()`（词与词关系图谱） | 第 474 行 |
+| `render_example_library()`（示例库三标签页） | 第 570 行 |
+| `get_display_definition()`（释义适配层，核心） | 第 706 行 |
+| `MOCK_DEFINITIONS`（内置示例） | 第 866 行 |
+| `SEMANTIC_COLORS` / `CATEGORY_*` / `EXAMPLE_VERBS` | 第 1101 行 |
+| `render_sidebar()`（统计 / 热门 / 导出） | 第 1137 行 |
+| `render_main_area()`（卡片与反馈表单） | 第 1231 行 |
 
 > 行号会随编辑漂移，用 `grep -n` 复核，不要直接相信上表。
 

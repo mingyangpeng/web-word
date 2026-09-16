@@ -99,9 +99,10 @@ set -a; source .env; set +a      # 本项目没有 python-dotenv，必须手动�
 python scripts/load_word_library.py
 ```
 
-脚本会建表、写入 155 个动词的释义与语义分解，并把词间近义关系双向写入 `synonyms`
-表（实测 `definitions=155, synonyms=738`）。它只读仓库内的 JSON，**不需要联网**。
-可重复执行；已有数据时加 `--if-empty` 可跳过写入。
+脚本会建表、写入 155 个动词的释义与语义分解、建立 25 个词义簇
+（`word_clusters`），并把簇内完全图写入 `word_relations` 表
+（实测 `definitions=155, word_clusters=25, word_relations=2143`）。
+它只读仓库内的 JSON，**不需要联网**。可重复执行；已有数据时加 `--if-empty` 可跳过写入。
 
 **4）启动应用**
 
@@ -125,6 +126,7 @@ web-word/
 │   ├── llm_api.py              # 智谱 AI 封装（调用、解析、MySQL 缓存、兜底释义）
 │   ├── design_system.py        # 设计系统常量与样式生成
 │   ├── security.py             # 输入校验（SQL 注入 / XSS）与密钥掩码
+│   ├── cluster_graph.py        # 词簇完全图的内联 SVG 渲染
 │   └── .streamlit/config.toml  # Streamlit 运行配置
 ├── config/
 │   ├── config.yaml             # 应用实际读取的数据库配置（已提交）
@@ -195,12 +197,15 @@ web-word/
 | 攀爬匍匐 | clamber · crawl · creep · scramble |
 | 同行随行 | accompany · conduct · escort |
 
-小簇（≤6 词）连成完全图——任意两词互为近义；大簇（如 56 词的「常态行走」）
-每个词只连左右各 3 个邻居，避免每个词都变成 55 度的枢纽。当前共 155 节点、
-369 条边、25 个簇，最大度 6。
+簇内**任意两词**都建立一条近义边，即**完全图**：3 词的「处所脱离」有 3 条边，
+56 词的「常态行走」有 C(56,2)=1540 条边。当前共 **155 节点 / 2143 条边 / 25 个簇**。
 
-这张图同时灌进 MySQL 的 `synonyms` 表（双向写入 738 行），应用里「图式示例」
-卡片展示的近义动词就来自它。重建：
+> 早期版本为了「避免枢纽」把 56 词的大簇改成了环邻（每词只连左右各 3 个邻居），
+> 结果查 `amble` 只能看到 `clump`/`dodder`，看不到 `walk` —— 那是人为截断，不是
+> 语义事实。现在数据层存完整真值，规模问题交给展示层（页面只画当前簇并设上限）。
+
+这张图同时灌进 MySQL 的 `word_relations` 表（无向，`verb_a_id < verb_b_id` 唯一约束），
+应用里「图式示例」卡片和「词与词关系图谱」区块都取自它。重建：
 
 ```bash
 python scripts/load_word_library.py --dry-run   # 只重建图谱文件，不写库
@@ -213,6 +218,19 @@ python scripts/load_word_library.py             # 重建图谱 + 灌入 MySQL
 graphify explain "abandon" --graph data/word_graph.json   # 看它的近义邻居
 graphify path "abandon" "leave" --graph data/word_graph.json
 ```
+
+### 1b. 页面上查看：词与词关系图谱
+
+搜索结果页（四张卡片下方）有一块 **🕸️ 词与词关系图谱**：查询任意动词，页面直接把
+「该词 + 其所属词簇」的完全图画出来 —— 簇内每个词一个节点，两两之间的近义边全部画出，
+当前查询词用紫色大圆标出。旁边可以：
+
+* 切换 **完整簇完全图 / 只显示中心词连线**（大簇下看清「这个词和谁相关」）；
+* 查看 **簇大小** 与 **完全图边数 C(n,2)**；
+* 点开 **簇内全部动词** 展开面板，点任一词即可直接切换查询。
+
+实现见 `src/cluster_graph.py`（内联 SVG，不依赖 CDN）：56 词大簇会画出全部 1540 条边，
+但只标注中心词，其余节点靠鼠标悬停看词名 —— 否则标签互相压盖成一团。
 
 ### 2. 代码结构图谱：`graphify-out/`
 
@@ -246,6 +264,35 @@ graphify god-nodes --top 10                # 架构枢纽节点
 忽略（属生成物），后者随 `data/word_graph.json` 一并入库。图谱构建范围由仓库根目录的
 `.graphifyignore` 控制（排除数据目录、历史归档文档等，只索引源码与当前文档）。
 
+## 🗄️ 数据库表结构
+
+MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权威是
+`src/mysql_db.py` 的 `CREATE_TABLES_SQL`（`init_db.sql` **不再复制建表语句**，只建库与授权，
+避免两份会漂移的 DDL）。
+
+| 表 / 视图 | 作用 | 关键约束 |
+|-----------|------|----------|
+| `word_clusters` | **词义簇**。来自词库的 (main_cat, sub_cat)，是「词与词关系」的第一性数据 | `uq_word_clusters_cats (main_cat, sub_cat)` |
+| `definitions` | 动词释义：中文释义、五元语义表、例句、所属簇 | `uq_definitions_verb`、`fk_definitions_cluster` |
+| `word_relations` | **词间关系边表**，物化的是簇内**完全图** | `uq_word_relations_pair` 保证幂等、`CHECK(verb_a_id < verb_b_id)` 保证无向边只存一份、两个端点均有外键 |
+| `feedbacks` | 用户评分与文字反馈 | `CHECK(rating BETWEEN 1 AND 5)` |
+| `usage_logs` | 查询日志，「热门动词」与「总查询次数」的唯一数据来源 | `idx_usage_logs_verb`、`idx_usage_logs_query_time` |
+| `v_cluster_complete_graph` | 视图：由簇成员**推导**完全图，作为物化表的对照实现 | 二者边数必须相等 |
+| `schema_migrations` | 结构版本记录，供 `init_database()` 判断是否需要迁移 | — |
+
+**迁移是自动且幂等的**：`init_database()` 每次启动都会调用 `_migrate_schema()`，
+它用 `information_schema` 探测后按需 ALTER / DROP，可重复执行：
+
+1. `definitions` 补 `cluster_id` 列 + 索引 + 外键；
+2. 删除旧 `synonyms` 表（派生数据，由词库重建，不迁移行）；
+3. 删除死表 `statistics`（v1 设计里的键值统计表，全仓库无任何代码读写）；
+4. 写入 `schema_migrations` 版本号。
+
+> 升级时不丢业务数据：`definitions` / `feedbacks` / `usage_logs` 的行原地保留。
+> 只有 `synonyms` 的旧边被丢弃 —— 它的内容是新完全图的一个错误子集（环邻边），
+> 留着只会得到自相矛盾的图；跑一次 `python scripts/load_word_library.py` 即重建为
+> 2143 条正确边。
+
 ## 🧪 测试
 
 ```bash
@@ -271,6 +318,7 @@ pytest tests/test_security.py
 | `tests/test_phase5.py` | 释义分级策略（DB → LLM → 兜底）、LLM 结果持久化、缺 key 不崩溃 |
 | `tests/test_phase4.py` | 侧边栏折叠 / 统计 / 热门动词筛选 |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
+| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询与 SVG 渲染 |
 | `tests/test_security.py` | 输入校验与密钥掩码 |
 
 ## ❓ 常见问题
@@ -361,9 +409,10 @@ docker compose down            # 停止
 - `data/dictionary.db`（197MB 第三方词典）**不在仓库**，也不需要它：155 词的释义已固化进
   `data/motion_verbs_extracted.json`，`scripts/load_word_library.py` 离线即可建库。
   只有重跑 `scripts/ingest_motion_verbs.py`（从词典/联网补释义）时才需要它。
-- `scripts/ingest_motion_verbs.py` 会**覆盖** `definitions` 表中的行（UPSERT），
-  并且它不写 `synonyms`。若跑过它，记得再跑一次 `python scripts/load_word_library.py`
-  恢复词间近义关系。
+- `scripts/ingest_motion_verbs.py` 会 UPSERT `definitions` 表的行。它不设置 `cluster_id`，
+  而 `insert_definition()` 对该列用 `COALESCE(VALUES(cluster_id), cluster_id)` ——
+  传 None 时**保留库中现值**，所以重跑它不会抹掉已有的簇归属。
+  但它不写 `word_relations`；若要重建词间关系，跑 `python scripts/load_word_library.py`。
 - 生成物不入库：`graphify-out/`、`.gsd/`、`.planning/milestone.lock`、`data/mysql/`。
 
 > 已清理的历史包袱：`src/database.py`（旧 SQLite 模块）、`src/api.py`（第二套 LLM 封装，
