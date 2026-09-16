@@ -25,13 +25,20 @@ jobs:
     - name: Run mypy
       run: mypy src/
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    steps:
-    - uses: actions/checkout@v3
-    - name: Deploy to Hugging Face Spaces
-      uses: ./.github/actions/deploy-hf
-      with:
-        HF_TOKEN: \${{ secrets.HF_TOKEN }}
+  # TODO(deploy): 该任务当前无法工作，暂时禁用。
+  #   * 原写法 `HF_TOKEN: \${{ secrets.HF_TOKEN }}` 多了一个反斜杠，GitHub 不会
+  #     做表达式展开，会把字面量 "\${{ secrets.HF_TOKEN }}" 当成 token 传下去。
+  #   * 即便修正转义，.github/actions/deploy-hf/action.yml 目前也只是跑一段
+  #     echo 占位逻辑（其自身 on: workflow_dispatch 与 composite 用例并不匹配），
+  #     并没有真正推送 Hugging Face Spaces 的步骤。
+  # 待补齐真实部署逻辑后再启用。
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: test
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Deploy to Hugging Face Spaces
+  #     uses: ./.github/actions/deploy-hf
+  #     with:
+  #       HF_TOKEN: ${{ secrets.HF_TOKEN }}
