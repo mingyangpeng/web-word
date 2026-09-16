@@ -407,15 +407,19 @@ def get_fallback_definition(verb: str) -> Optional[Dict[str, Any]]:
     return {
         "verb": verb,
         "chinese_ndef": f"动词「{verb}」的释义",
+        # 五元模型必须齐全。修正前这里缺 "path"，而 app.py 的
+        # get_semantic_table_for_verb 会读 semantic_table["path"]，
+        # 缺失时该行永远显示「待生成」，误导用户以为路径要素无法解析。
         "semantic_table": {
             "manner": "待生成",
+            "path": "待生成",
             "direction": "待生成",
             "aspect": "待生成",
-            "scope": "待生成"
+            "scope": "待生成",
         },
-        "example": f"例如：{verb}表示...（需要接入大模型API获取详细释义）",
+        "example": "",
         "synonyms": [],
-        "raw_response": f"Fallback definition for '{verb}'"
+        "raw_response": f"Fallback definition for '{verb}'",
     }
 
 
