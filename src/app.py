@@ -423,7 +423,7 @@ def render_card_example(verb):
     "与类似动词"跑进来"的区别在于..." —— 无论查询哪个词都显示"跑进来"，
     对 155 词词库里的其它动词是明确错误的。现在改为：
       * 例句取自语料（LLM 生成的 example / 词库的 example_sentence）
-      * 近义动词来自 synonyms 表的真实词间关系
+      * 近义动词来自词簇（word_relations / definitions.cluster_id）的真实词间关系
       * 数据缺失时如实说明，不再编造占位句
 
     Args:
