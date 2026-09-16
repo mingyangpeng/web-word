@@ -22,7 +22,20 @@ env/
 .DS_Store
 
 # Data
+# data/ 是运行期目录，但其中的「种子输入」必须入库：否则新机器 clone 后没有
+# 词库，scripts/load_word_library.py 无从运行 —— 这是可移植性的一环。
+# 规则：先忽略 data/ 下全部内容，再显式放行种子文件与原始研究材料。
+data/*
+!data/motion_verbs_extracted.json
+!data/oxford_cache.json
+!data/word_graph.json
+!data/docs/
+
+# MySQL 数据目录（本机运行态，数百 MB，绝不应入库）
 data/mysql/
+# 第三方大词典（197MB，无法入库；且它本就是 *.db，词库已把所需释义固化
+# 进 data/motion_verbs_extracted.json，因此新机器无需它即可建库）
+data/dictionary.db
 *.db
 
 # Temp
@@ -31,7 +44,8 @@ browser_screenshot.png
 screenshots/
 
 # Docker (data managed by named volumes)
-data/
+# 注意：上方的 data/* 已经覆盖 data/ 下的内容，这里不再写 "data/"
+# 否则会连带忽略掉下面用 ! 放行的种子文件（gitignore 后写的规则优先）。
 
 # Generated output
 graphify-out/
