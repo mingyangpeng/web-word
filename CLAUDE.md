@@ -4,129 +4,139 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个基于 Streamlit 的**中文动词释义**项目，旨在通过运动事件类型学理论，为中文动词提供带语义分解（方式/路径/方向/体相）的优化释义。
+这是一个基于 Streamlit 的**英文移动动词中文释义**项目：通过运动事件类型学（Talmy, 1985）
+为动词提供带五元语义分解（方式 / 路径 / 方向 / 体相 / 范围）的优化释义，并收集用户评分反馈。
 
-- **核心价值**：将传统词典释义转化为基于语义要素分解的优化释义，帮助用户更准确地理解和学习中文动词
-- **当前状态**：前端界面完成（含模拟数据），后端 API 和数据库待接入
-- **技术栈**：Streamlit (前端) + Python 3.11 + Pandas + SQLite，计划接入大模型 API
+- **核心价值**：把传统词典释义转化为结构化语义分解释义，便于对比与检索
+- **当前状态**：界面、MySQL 8.0 数据层、智谱 AI 实时生成、反馈与统计均已接入；缺 API key 或
+  数据库时自动降级为离线释义
+- **技术栈**：Streamlit + Python 3.11 + Pandas + **MySQL 8.0** + 智谱 AI（`zhipuai` SDK）+ Docker Compose
 
 ## 常用命令
 
 ```bash
-# 运行 Streamlit 应用
-cd /Users/jhon/pmy/web-word
+# 运行 Streamlit 应用（详见 README.md 的两条快速开始路径）
 streamlit run src/app.py
 
-# 查看项目统计（GSD 状态）
+# 本地连本机 MySQL（覆盖 config.yaml 里的 Docker 主机名）
+MYSQL_HOST=127.0.0.1 streamlit run src/app.py
+
+# 测试（pytest.ini 默认带覆盖率）
+pytest
+python -m pytest -q -p no:cacheprovider --no-cov   # 快速跑，不带覆盖率
+
+# 静态检查
+flake8 src/    # 配置见 .flake8
+mypy src/      # 配置见 mypy.ini
+
+# 灌词库（离线，无网络依赖）
+python scripts/load_word_library.py
+
+# GSD 项目统计（需要 node）
 scripts/get-stats.sh
-# 或直接运行
-node scripts/get-stats.js
 ```
 
 ## 架构设计
 
-### 分层架构
+分层、模块职责、数据流与遗留模块的完整说明见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。
+配置与环境变量的完整清单见 [`CONFIG.md`](CONFIG.md) 与 [`config/README.md`](config/README.md)。
+
+### 分层
 
 ```
 用户（浏览器）
     ↓
-部署层：Hugging Face Spaces（免费托管）
+界面层：Streamlit — src/app.py
+    ├── 固定置顶搜索栏
+    ├── 结果四卡片：原型与位移事件分析 / 范畴锚定 / 核心释义与多维辨异 / 图式示例
+    ├── 示例库（三分类标签页）
+    ├── 评分与文字反馈
+    └── 侧边栏统计、热门动词、CSV 导出
     ↓
-前端层：Streamlit
-    ├── Sticky 搜索栏（固定定位）
-    ├── 语义分解展示（表格形式）
-    ├── 用户评分与反馈（1-5分 + 文字）
-    └── 数据导出（CSV）
+释义适配层：get_display_definition()（同在 src/app.py）
+    优先级：数据库命中 → 实时大模型 → 内置示例 → 兜底骨架
     ↓
-后端层：Python
-    ├── 提示词工程（语义要素分解：方式/路径/方向/体相）
-    ├── 大模型 API 调用（OpenAI SDK → DeepSeek/智谱）
-    └── 结果解析
+后端层
+    ├── src/mysql_db.py   MySQL 8.0 数据访问（连接池、建表、CRUD、统计）
+    └── src/llm_api.py    智谱 AI 封装（提示词、调用、JSON 解析、MySQL 缓存、兜底）
     ↓
-数据层：SQLite + Pandas
-    ├── 查询日志（动词、释义、模型版本、时间戳）
-    ├── 用户评分收集（1-5分 + 文字反馈）
-    └── 统计数据导出（CSV）
-    ↓ 数据库文件路径：data/web_word.db
-    ↓
-外部服务：大模型 API（DeepSeek/智谱/OpenAI）
+横切：src/security.py（输入校验 / HTML 转义）、src/design_system.py（视觉常量与样式）
 ```
 
 ### 核心组件
 
-**语义要素分解**（基于 Talmy, 1985 运动事件类型学）：
-- 【方式】- 运动采用的姿势/手段（如：跑步、滑行）
-- 【路径】- 运动经过的空间轨迹（如：直线进入、环绕）
-- 【方向】- 运动朝向的终点/目标（如：朝向内部、向上）
-- 【体相】- 运动时身体的姿态/状态（如：前倾、紧绷）
+**五元语义分解**（`semantic_table` 五个键）：
+
+- `manner`【方式】- 运动采用的姿势 / 手段
+- `path`【路径】- 运动经过的空间轨迹
+- `direction`【方向】- 运动朝向的终点 / 目标
+- `aspect`【体相】- 运动时身体的姿态 / 状态
+- `scope`【范围】- 运动的范围 / 程度
+
+**降级策略**（改代码时务必保持）：
+
+- 无 `ZHIPUAI_API_KEY` → `get_zhipuai_client()` 返回 `None`，跳过实时生成，页面照常渲染
+- MySQL 不可用 → `DB_AVAILABLE = False`，统计 / 导出 / 反馈走空数据分支，页面照常渲染
+- 任何一级失败都不得抛到界面层
 
 ### 目录结构
 
 ```
 web-word/
 ├── src/
-│   ├── app.py              # Streamlit 主应用
-│   ├── database.py         # MySQL 8.0 数据库模块
-│   └── .streamlit/
-│       └── config.toml     # Streamlit 配置
-├── scripts/
-│   ├── get-stats.js        # GSD 项目统计脚本
-│   └── get-stats.sh        # Bash 包装脚本
-├── data/                   # 数据文件（待填充）
-├── docs/                   # 文档（待填充）
-├── temp/                   # 临时文件
-└── .planning/              # GSD 规划文件
-    ├── STATE.md            # 项目状态跟踪
-    └── phases/             # 阶段规划
+│   ├── app.py              # Streamlit 主应用（界面 + 释义适配层）
+│   ├── mysql_db.py         # MySQL 8.0 数据访问层
+│   ├── llm_api.py          # 智谱 AI 封装
+│   ├── design_system.py    # 设计系统
+│   ├── security.py         # 输入校验与密钥掩码
+│   ├── api.py              # 遗留：第二套 LLM 封装，主流程未用
+│   ├── database.py         # 遗留：SQLite 模块，主流程未用
+│   └── .streamlit/config.toml
+├── config/
+│   ├── config.yaml         # 应用实际读取的配置（已跟踪）
+│   ├── config.example.yaml # 模板
+│   └── README.md
+├── scripts/                # entrypoint / wait_for_mysql / init_db.sql / 灌库与迁移脚本
+├── tests/                  # pytest 测试
+├── data/                   # 运行期数据（gitignored）
+├── docs/                   # 设计系统文档
+├── screenshots_final/      # 界面截图
+└── .planning/              # GSD 规划与归档
 ```
 
-## 待实现功能
+## 代码位置参考（`src/app.py`，共约 1263 行）
 
-### 必须接入
+| 内容 | 位置 |
+|------|------|
+| 固定搜索栏 CSS 与 `st.container(key="search_bar")` | 第 98-115 行 / 第 1079 行 |
+| `THEORY_DESCRIPTION`（理论说明） | 第 152 行 |
+| 热门动词前端筛选 `filter_hot_verbs()` | 第 193 行 |
+| `render_semantic_table()`（五元表格渲染） | 第 211 行 |
+| `render_example_library()`（示例库三标签页） | 第 412 行 |
+| `get_display_definition()`（释义适配层，核心） | 第 548 行 |
+| `MOCK_DEFINITIONS`（内置示例） | 第 708 行 |
+| `SEMANTIC_COLORS` / `CATEGORY_*` / `EXAMPLE_VERBS` | 第 943-975 行 |
+| `render_sidebar()`（统计 / 热门 / 导出） | 第 978 行 |
+| `render_main_area()`（卡片与反馈表单） | 第 1069 行 |
 
-1. **大模型 API 调用**
-   - 输入：动词（如"跑进来"）
-   - 输出：传统释义 + 优化释义（带语义分解表格）
-   - 当前位置：`app.py` 第 221-251 行的模拟数据部分
-   - 模型选择：优先使用 DeepSeek/智谱 API（比 OpenAI 更经济）
+> 行号会随编辑漂移，用 `grep -n` 复核，不要直接相信上表。
 
-2. **SQLite 数据库**（已实现，见 `src/database.py`，数据存储在 `data/web_word.db`）
-   - `queries` 表：记录查询日志
-   - `feedbacks` 表：记录用户反馈
-   - 统计查询：热门动词、平均评分
+## 配置要点
 
-3. **用户反馈提交**（已实现）
-   - 接收：评分 + 文字反馈
-   - 存储：MySQL 插入
+**优先级：环境变量 > `config/config.yaml` > 代码内置默认值。**
 
-4. **统计 API**（已实现）
-   - 从 MySQL 查询：总查询次数、平均评分、热门动词
-
-### 优化改进
-
-1. **API 密钥管理**：使用环境变量存储大模型 API 密钥
-2. **错误处理**：API 调用失败时的降级方案
-3. **缓存机制**：避免重复调用相同动词
-4. **Markdown 渲染优化**：语义分解表格的样式美化
-
-## 数据流
-
-1. 用户输入动词 → Streamlit 表单
-2. 点击生成按钮 → 触发大模型 API 调用
-3. 模型返回释义 → 解析并渲染
-4. 用户评分反馈 → 提交到数据库
-5. 侧边栏统计 → 从数据库实时查询
+- 同一份被跟踪的 `config.yaml` 要同时服务 Docker（MySQL 主机名 `mysql`）与本地（`127.0.0.1`），
+  所以环境变量必须能覆盖 YAML —— 改 `src/mysql_db.py` 的配置读取时不要颠倒这个顺序。
+- 应用真正读取的 key 变量名是 **`ZHIPUAI_API_KEY`**（`src/llm_api.py`）。旧名 `ZHIPU_API_KEY`
+  只被遗留的 `src/api.py` / `src/security.py` 读取。
+- `.env` **不会**被自动加载（仓库无 python-dotenv），需 `set -a; source .env; set +a`。
 
 ## GSD 工作流
 
-项目使用 GSD（GSD planning system）进行阶段规划：
-- `.planning/STATE.md` - 项目状态跟踪
-- `.planning/phases/` - 各阶段规划文件
-- 使用 `scripts/get-stats.sh` 查看进度
+- `.planning/STATE.md` — 项目状态跟踪
+- `.planning/phases/` — 当前里程碑的阶段规划
+- `.planning/milestones/` — 已归档里程碑
+- `.planning/codebase/` — 代码库映射（架构 / 技术栈 / 规范 / 集成 / 结构 / 测试）
+- `scripts/get-stats.sh` — 查看进度（需要 node）
 
-## 代码位置参考
-
-- **语义分解模板**：`app.py` 第 83-141 行（MOCK_DEFINITIONS 结构）
-- **用户反馈 UI**：`app.py` 第 264-318 行
-- **侧边栏统计**：`app.py` 第 153-184 行
-- **固定搜索栏**：`app.py` 第 20-35 行（CSS）+ 320-403 行（JS）
+> `.planning/milestone.lock` 是本机运行态（含 session id 与 PID），已加入 `.gitignore`，不要提交。
