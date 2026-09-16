@@ -12,7 +12,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Backend integration imports
-from src.mysql_db import init_database, get_stats, get_hot_verbs, get_feedback_data, insert_feedback, get_definition_by_verb, insert_definition
+from src.mysql_db import (
+    init_database, get_stats, get_hot_verbs, get_feedback_data,
+    insert_feedback, get_definition_by_verb, insert_definition,
+    log_usage, get_synonyms,
+)
 from typing import Optional, Dict, List, Any, Tuple
 from src.llm_api import get_definition, is_cache_available, get_fallback_definition
 from src.security import InputValidator
@@ -116,6 +120,37 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================
+# 卡片头样式：把折叠按钮做成渐变标题条
+# ============================================
+# render_card_header 用真实的 st.button 实现折叠（可点、有状态），
+# 这里把它还原成旧版视觉：全宽、渐变背景、白字。
+# 按钮 label 形如 "🧬|原型与位移事件分析|▼"，本样式只做外观，不改行为。
+st.markdown("""
+<style>
+[class*="st-key-card_toggle_"] button {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+[class*="st-key-card_toggle_"] button:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4194 100%);
+    color: #ffffff;
+    border: none;
+}
+[class*="st-key-card_toggle_"] button p {
+    font-weight: 600;
+    font-size: 1.05em;
+    color: #ffffff;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # 核心理论说明
 # ============================================
 THEORY_DESCRIPTION = """
@@ -144,19 +179,44 @@ THEORY_DESCRIPTION = """
 # ============================================
 # 搜索函数：带 300ms 防抖延迟
 # ============================================
+def _record_query(verb: str) -> None:
+    """
+    记录一次真实查询到 usage_logs 表。
+
+    这是「查询次数」与「热门动词」两个统计口径的唯一数据来源 ——
+    修正前 log_usage() 虽然早已实现，但应用从未调用过，导致侧边栏的
+    「总查询次数」实为已收录词条数、「热门查询动词」实为 definitions 表
+    的物理顺序。现在每次用户提交搜索都记一笔。
+
+    只应在「用户主动提交查询」处调用（搜索框回车 / 点击热门词 / 点击示例词），
+    不要放进 get_display_definition() —— 那个函数每次渲染会被四张卡片各调一次，
+    放在那里会把一次查询记成多次。
+
+    失败只记日志，绝不影响界面。
+    """
+    if not DB_AVAILABLE or not verb:
+        return
+    try:
+        log_usage(str(verb)[:100])
+    except Exception as e:
+        logger.error(f"查询日志写入失败 for '{verb}': {e}")
+
+
 def search_verb() -> None:
     """on_change 回调：当搜索框值变化时触发搜索。"""
     value = st.session_state.get("搜索动词", "")
     if value and 1 <= len(value) <= 50:
         st.session_state.verb_result = value
         st.session_state.show_result = True
+        _record_query(value)
 
 
 def select_example_verb(verb: str) -> None:
-    """点击示例库动词时触发搜索。"""
+    """点击示例库 / 热门动词时触发搜索。"""
     st.session_state.verb_result = verb
     st.session_state.show_result = True
     st.session_state["搜索动词"] = verb
+    _record_query(verb)
 
 
 def filter_hot_verbs(hot_verbs: List[dict], query: str) -> List[dict]:
@@ -221,40 +281,37 @@ def render_semantic_table(semantic_data):
 # ============================================
 # 卡片渲染函数
 # ============================================
-def render_card_header(title, icon, expandable=True, collapsed=False):
+def _toggle_card(card_key: str) -> None:
+    """切换某张卡片的展开/折叠状态（供卡片头按钮的 on_click 调用）。"""
+    st.session_state.card_expanded[card_key] = not st.session_state.card_expanded.get(card_key, True)
+
+
+def render_card_header(card_key: str, title: str, icon: str) -> None:
     """
-    渲染可折叠卡片头部。
+    渲染卡片头部（可点击的展开/折叠按钮）。
+
+    修正历史缺陷：旧实现用 st.markdown 输出一段带 `cursor: pointer` 和 ▼/▶ 箭头的
+    HTML，看起来能点，但既没有事件处理器、`card_expanded` 也从未被写入过 ——
+    点击毫无反应。现在改用真正的 st.button，通过 on_click 回调写入
+    session_state.card_expanded[card_key]，折叠/展开才真的生效。
+
+    外观（渐变背景、圆角、箭头左右对齐）由文件顶部的 CSS 通过
+    `[class*="st-key-card_toggle_"]` 前缀选择器还原，视觉与旧版一致。
 
     Args:
+        card_key: card_expanded 中的键（prototype / anchor / core / example）
         title: 卡片标题
         icon: 图标
-        expandable: 是否可折叠
-        collapsed: 是否处于折叠状态
-
-    Returns:
-        HTML 格式的卡片头部
     """
-    expanded = not collapsed
-
-    if expandable:
-        arrow = "▼" if expanded else "▶"
-    else:
-        arrow = "▪"
-
-    style = f"""
-    <div style="display: flex; justify-content: space-between; align-items: center;
-                padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white; border-radius: 8px 8px 0 0; cursor: pointer;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.5em;">{icon}</span>
-            <span style="font-weight: 600; font-size: 1.1em;">{title}</span>
-        </div>
-        <span style="font-size: 0.9em; opacity: 0.9;">{arrow}</span>
-    </div>
-    """
-
-    return style
+    expanded = st.session_state.card_expanded.get(card_key, True)
+    arrow = "▼" if expanded else "▶"
+    st.button(
+        f"{icon}|{title}|{arrow}",
+        key=f"card_toggle_{card_key}",
+        use_container_width=True,
+        on_click=_toggle_card,
+        args=(card_key,),
+    )
 
 def render_card_prototype(verb):
     """
@@ -355,7 +412,14 @@ def render_card_core(verb):
 
 def render_card_example(verb):
     """
-    渲染图式示例卡片。
+    渲染图式示例卡片：真实例句 + 近义动词对比。
+
+    修正历史缺陷：旧实现三条要点全是硬编码占位文案，其中一句还写死了
+    "与类似动词"跑进来"的区别在于..." —— 无论查询哪个词都显示"跑进来"，
+    对 155 词词库里的其它动词是明确错误的。现在改为：
+      * 例句取自语料（LLM 生成的 example / 词库的 example_sentence）
+      * 近义动词来自 synonyms 表的真实词间关系
+      * 数据缺失时如实说明，不再编造占位句
 
     Args:
         verb: 动词
@@ -363,17 +427,42 @@ def render_card_example(verb):
     Returns:
         卡片内容 HTML
     """
+    display = get_display_definition(verb)
+    example = (display.get("example") or "").strip()
+
+    relatives: List[str] = []
+    if DB_AVAILABLE:
+        try:
+            relatives = get_synonyms(verb)[:6]
+        except Exception as e:
+            logger.error(f"近义词查询失败 for '{verb}': {e}")
+            relatives = []
+
     html = '''
     <div style="padding: 20px;">
         <h4 style="color: #9f7aea; font-weight: 600; margin: 0 0 16px 0;">🖼️ 图式示例</h4>
     '''
 
-    html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>示例场景:</strong></p>'
-    html += '<ul style="color: #4a5568; line-height: 1.8;">'
-    html += '<li>用户看到"{' + verb + '}"时，会联想到...</li>'
-    html += '<li>在具体语境中，该动词通常出现在...</li>'
-    html += '<li>与类似动词"跑进来"的区别在于...</li>'
-    html += '</ul>'
+    if example:
+        html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>例句:</strong></p>'
+        html += (f'<div style="background-color: #faf5ff; padding: 12px; border-radius: 8px; '
+                 f'margin-bottom: 16px; color: #4a5568; line-height: 1.8;">{example}</div>')
+    else:
+        html += ('<p style="color: #718096; margin-bottom: 16px;">'
+                 '该动词暂无例句数据（可用管理员录入或等待大模型生成）</p>')
+
+    if relatives:
+        html += '<p style="color: #2d3748; margin-bottom: 8px;"><strong>近义动词（同语义范畴）:</strong></p>'
+        html += '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">'
+        for rel in relatives:
+            html += (f'<span style="background-color: #9f7aea; color: white; padding: 4px 12px; '
+                     f'border-radius: 12px; font-size: 0.9em;">{rel}</span>')
+        html += '</div>'
+        html += ('<p style="color: #718096; font-size: 0.9em;">'
+                 '这些动词同属一个次语义范畴，可点击示例库或在搜索框输入词名逐一对比差异。</p>')
+    else:
+        html += ('<p style="color: #718096;">尚无近义动词数据。'
+                 '运行 <code>python scripts/load_word_library.py</code> 可载入 155 词词库及其词间关系。</p>')
 
     html += '</div>'
     return html
@@ -935,6 +1024,18 @@ EXAMPLE_VERBS = {
 # ============================================
 # 侧边栏组件
 # ============================================
+def _empty_stats() -> Dict[str, Any]:
+    """数据库不可用时的空统计（键与 mysql_db.get_stats 保持一致）。"""
+    return {
+        "total_queries": 0,
+        "queries_today": 0,
+        "total_definitions": 0,
+        "avg_rating": 0.0,
+        "total_feedbacks": 0,
+        "total_synonyms": 0,
+    }
+
+
 def render_sidebar():
     """渲染侧边栏组件（折叠/展开双分支，D-01）"""
     collapsed = st.session_state.get("sidebar_collapsed", False)
@@ -961,14 +1062,22 @@ def render_sidebar():
         try:
             stats = get_stats()
             hot_verbs = get_hot_verbs(limit=5)
-        except Exception:
-            stats = {"total_queries": 0, "avg_rating": 0.0, "total_feedbacks": 0}
+        except Exception as e:
+            logger.error(f"侧边栏统计读取失败: {e}")
+            stats = _empty_stats()
             hot_verbs = []
     else:
-        stats = {"total_queries": 0, "avg_rating": 0.0, "total_feedbacks": 0}
+        stats = _empty_stats()
         hot_verbs = []
 
-    st.sidebar.metric("总查询次数", stats["total_queries"], delta="+0 今天")
+    # 口径说明：total_queries 来自 usage_logs（真实查询次数），
+    # total_definitions 是已收录词条数 —— 两者含义不同，分开展示。
+    st.sidebar.metric(
+        "总查询次数",
+        stats["total_queries"],
+        delta=f"+{stats['queries_today']} 今天" if stats.get("queries_today") else None,
+    )
+    st.sidebar.metric("已收录词条", stats.get("total_definitions", 0))
     st.sidebar.metric("平均评分", f"{stats['avg_rating']:.1f}/5.0")
     st.sidebar.metric("总反馈数", stats["total_feedbacks"])
 
@@ -1065,33 +1174,19 @@ def render_main_area():
         # 显示四张卡片布局
         st.markdown(f"<h2 style='{HEADER_H2}'>结果展示</h2>", unsafe_allow_html=True)
 
-        # 卡片 1: 原型与位移事件分析
-        st.markdown(get_card_style(), unsafe_allow_html=True)
-        st.markdown(render_card_header("原型与位移事件分析", "🧬", expandable=True, collapsed=not st.session_state.card_expanded['prototype']), unsafe_allow_html=True)
-        if st.session_state.card_expanded['prototype']:
-            st.markdown(render_card_prototype(verb), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 卡片 2: 范畴锚定
-        st.markdown(get_card_style(), unsafe_allow_html=True)
-        st.markdown(render_card_header("范畴锚定", "🎯", expandable=True, collapsed=not st.session_state.card_expanded['anchor']), unsafe_allow_html=True)
-        if st.session_state.card_expanded['anchor']:
-            st.markdown(render_card_anchor(verb), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 卡片 3: 核心释义与多维辨异
-        st.markdown(get_card_style(), unsafe_allow_html=True)
-        st.markdown(render_card_header("核心释义与多维辨异", "📚", expandable=True, collapsed=not st.session_state.card_expanded['core']), unsafe_allow_html=True)
-        if st.session_state.card_expanded['core']:
-            st.markdown(render_card_core(verb), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 卡片 4: 图式示例
-        st.markdown(get_card_style(), unsafe_allow_html=True)
-        st.markdown(render_card_header("图式示例", "🖼️", expandable=True, collapsed=not st.session_state.card_expanded['example']), unsafe_allow_html=True)
-        if st.session_state.card_expanded['example']:
-            st.markdown(render_card_example(verb), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 四卡布局：头部是真正可点击的折叠按钮（render_card_header 内部用
+        # st.button + on_click 写入 session_state.card_expanded）
+        for card_key, title, icon, body_renderer in (
+            ("prototype", "原型与位移事件分析", "🧬", render_card_prototype),
+            ("anchor", "范畴锚定", "🎯", render_card_anchor),
+            ("core", "核心释义与多维辨异", "📚", render_card_core),
+            ("example", "图式示例", "🖼️", render_card_example),
+        ):
+            st.markdown(get_card_style(), unsafe_allow_html=True)
+            render_card_header(card_key, title, icon)
+            if st.session_state.card_expanded.get(card_key, True):
+                st.markdown(body_renderer(verb), unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # 示例库
         st.markdown(get_section_spacing(), unsafe_allow_html=True)

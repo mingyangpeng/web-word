@@ -190,7 +190,12 @@ def test_adapter_final_fallback(monkeypatch):
 
     assert set(result) == {"traditional", "optimized", "semantic_table", "example"}
     assert isinstance(result["semantic_table"], dict)
-    assert verb in result["example"]
+    # 五元模型必须齐全：缺任意一键都会让对应语义行永远显示「待生成」。
+    assert set(result["semantic_table"]) == {
+        "manner", "path", "direction", "aspect", "scope",
+    }
+    # 兜底释义要能表明是该动词的释义（而不是别的词的残留内容）。
+    assert verb in result["traditional"]
 
 
 def test_adapter_no_crash_on_llm_exception(monkeypatch):
