@@ -1029,6 +1029,113 @@ def list_clusters(limit: int = 500) -> List[Dict[str, Any]]:
 # ============================================
 # Feedbacks CRUD Operations
 # ============================================
+def get_full_word_graph() -> Dict[str, Any]:
+    """
+    取全库词间关系图：所有词 + 所有关系边（各簇完全图的并集）。
+
+    这是给页面上的**交互式图谱**用的数据源 —— 形状刻意对齐 graphify 的
+    graph.json（nodes / links + 每个节点的社区归属），这样前端的力导向渲染器
+    可以直接套用同一套配置。
+
+    与 get_cluster_graph 的区别：
+      * get_cluster_graph —— 单个词的簇，节点几十个，用于「看清这个词跟谁近义」；
+      * get_full_word_graph —— 整库 155 词 / 2143 边，用于「浏览全局语义地图」。
+
+    nodes 里带 degree（度数），前端据此决定节点大小；带 cluster_label/sub_cat
+    供图例分组与信息面板展示。
+
+    Returns:
+        {
+          "nodes": [{"id","label","cluster_id","cluster_label","sub_cat",
+                     "main_cat","degree"}],
+          "links": [{"source","target","relation"}],
+          "clusters": [{"id","label","sub_cat","size","edge_count"}],
+          "stats": {"node_count","edge_count","cluster_count"},
+        }
+    """
+    empty = {"nodes": [], "links": [], "clusters": [],
+             "stats": {"node_count": 0, "edge_count": 0, "cluster_count": 0}}
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT d.verb, d.cluster_id,
+                          c.label AS cluster_label, c.sub_cat AS sub_cat,
+                          c.main_cat AS main_cat
+                   FROM definitions d
+                   LEFT JOIN word_clusters c ON c.id = d.cluster_id
+                   ORDER BY d.verb"""
+            )
+            node_rows = cursor.fetchall()
+
+            cursor.execute(
+                """SELECT a.verb AS source, b.verb AS target, r.relation
+                   FROM word_relations r
+                   JOIN definitions a ON a.id = r.verb_a_id
+                   JOIN definitions b ON b.id = r.verb_b_id"""
+            )
+            link_rows = cursor.fetchall()
+
+            cursor.execute(
+                "SELECT id, label, sub_cat, size FROM word_clusters ORDER BY size DESC, label"
+            )
+            cluster_rows = cursor.fetchall()
+    except pymysql.Error as e:
+        logger.error(f"Failed to build full word graph: {e}")
+        return empty
+    except Exception as e:
+        logger.error(f"Unexpected error building full word graph: {e}")
+        return empty
+
+    links = [
+        {"source": r["source"], "target": r["target"], "relation": r["relation"]}
+        for r in link_rows
+    ]
+
+    # 度数 = 该词在图上的连边数。簇内完全图下它恒等于 (簇大小-1)，
+    # 所以节点大小实际表达的是「这个词的语义簇有多大」。
+    degree = {r["verb"]: 0 for r in node_rows}
+    for link in links:
+        if link["source"] in degree:
+            degree[link["source"]] += 1
+        if link["target"] in degree:
+            degree[link["target"]] += 1
+
+    nodes = [
+        {
+            "id": r["verb"],
+            "label": r["verb"],
+            "cluster_id": r["cluster_id"],
+            "cluster_label": r["cluster_label"] or "未分组",
+            "sub_cat": r["sub_cat"] or "未分组",
+            "main_cat": r["main_cat"] or "",
+            "degree": degree.get(r["verb"], 0),
+        }
+        for r in node_rows
+    ]
+
+    clusters = []
+    for r in cluster_rows:
+        size = int(r["size"] or 0)
+        clusters.append({
+            "id": r["id"],
+            "label": r["label"],
+            "sub_cat": r["sub_cat"],
+            "size": size,
+            "edge_count": size * (size - 1) // 2,
+        })
+
+    return {
+        "nodes": nodes,
+        "links": links,
+        "clusters": clusters,
+        "stats": {
+            "node_count": len(nodes),
+            "edge_count": len(links),
+            "cluster_count": len(clusters),
+        },
+    }
+
+
 def insert_feedback(verb: str, rating: int, feedback_text: Optional[str] = None) -> bool:
     """
     Insert user feedback.

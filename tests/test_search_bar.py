@@ -202,9 +202,13 @@ def test_appearance_is_on_container_not_wrapper(app_source):
 
 
 def test_no_dead_marker_js(app_source):
-    """回归：等待 .search-bar-start 的 JS 注入已删除，且无残留引用。"""
+    """回归：等待 .search-bar-start 的 JS 注入已删除，且无残留引用。
+
+    这里用 _code_only 而非全文：文档字符串里为了说明「为什么不用
+    components.html」会提到它，那是解释而不是代码。
+    """
     assert "search-bar-start" not in app_source
-    assert "components.html" not in app_source
+    assert "components.html" not in _code_only(app_source)
 
 
 # ============================================

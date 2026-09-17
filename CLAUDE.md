@@ -64,7 +64,8 @@ scripts/get-stats.sh
     └── src/llm_api.py    智谱 AI 封装（提示词、调用、JSON 解析、MySQL 缓存、兜底）
     ↓
 横切：src/security.py（输入校验 / HTML 转义）、src/design_system.py（视觉常量与样式）、
-      src/cluster_graph.py（词簇完全图的内联 SVG 渲染）
+      src/cluster_graph.py（词簇完全图的内联 SVG 渲染）、
+      src/graph_export.py（交互式图谱 HTML 导出，供 iframe 引用）
 ```
 
 ### 核心组件
@@ -110,6 +111,8 @@ web-word/
 │   ├── design_system.py    # 设计系统
 │   ├── security.py         # 输入校验与密钥掩码
 │   ├── cluster_graph.py    # 词簇完全图的内联 SVG 渲染
+│   ├── graph_export.py     # 交互式图谱（vis-network）的 HTML 导出
+│   ├── static/             # vendored vis-network + 生成的图谱 HTML
 │   └── .streamlit/config.toml
 ├── config/
 │   ├── config.yaml         # 应用实际读取的配置（已跟踪）
@@ -123,7 +126,7 @@ web-word/
 └── .planning/              # GSD 规划与归档
 ```
 
-## 代码位置参考（`src/app.py`，共约 1479 行）
+## 代码位置参考（`src/app.py`，共约 1589 行）
 
 | 内容 | 位置 |
 |------|------|
@@ -131,13 +134,14 @@ web-word/
 | `THEORY_DESCRIPTION`（理论说明） | 第 157 行 |
 | 热门动词前端筛选 `filter_hot_verbs()` | 第 223 行 |
 | `render_semantic_table()`（五元表格渲染） | 第 245 行 |
-| `render_cluster_graph_section()`（词与词关系图谱 + 切换簇） | 第 478 行 |
+| `render_cluster_graph_section()`（词与词关系图谱 + 切换簇） | 第 480 行 |
 | `render_example_library()`（示例库三标签页） | 第 619 行 |
 | `get_display_definition()`（释义适配层，核心） | 第 755 行 |
 | `MOCK_DEFINITIONS`（内置示例） | 第 915 行 |
 | `SEMANTIC_COLORS` / `CATEGORY_*` / `EXAMPLE_VERBS` | 第 1150 行 |
-| `render_sidebar()`（统计 / 热门 / 导出） | 第 1186 行 |
-| `render_main_area()`（卡片与反馈表单） | 第 1280 行 |
+| `render_sidebar()`（统计 / 热门 / 导出 / 页面切换） | 第 1188 行 |
+| `render_main_area()`（卡片与反馈表单） | 第 1294 行 |
+| `render_interactive_graph_page()`（全库交互式图谱页） | 第 1437 行 |
 
 > 行号会随编辑漂移，用 `grep -n` 复核，不要直接相信上表。
 

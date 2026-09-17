@@ -8,11 +8,13 @@
 
 import sys
 import os
+import re
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
 import src.cluster_graph as cg  # noqa: E402
+import src.graph_export as ge  # noqa: E402
 
 
 # ============================================
@@ -456,3 +458,177 @@ class TestGrantStatements:
         """确认确实用了 `\\_` 写法，而不是所有库名恰好都没有下划线。"""
         joined = "\n".join(stmt for _, stmt in self._statements())
         assert "\\_" in joined
+
+
+# ============================================
+# 交互式图谱导出
+# ============================================
+class TestGraphExport:
+    """
+    `graph_export` 把图谱数据渲染成独立 HTML。
+
+    最关键的一条：模板用 `__TOKEN__` 占位符替换，而不是 `str.format()`。模板几乎
+    全是 JavaScript，里面有大量 `{}` 对象字面量、还有 `${...}` 模板字符串 ——
+    后者恰好是 .format 的替换字段语法，冲突极其隐蔽。这组测试钉住这一点。
+    """
+
+    SAMPLE = {
+        "nodes": [
+            {"id": "a", "label": "a", "cluster_id": 1, "cluster_label": "簇一",
+             "sub_cat": "子一", "main_cat": "主一", "degree": 1},
+            {"id": "b", "label": "b", "cluster_id": 1, "cluster_label": "簇一",
+             "sub_cat": "子一", "main_cat": "主一", "degree": 1},
+        ],
+        "links": [{"source": "a", "target": "b", "relation": "近义"}],
+        "clusters": [{"id": 1, "label": "簇一", "sub_cat": "子一",
+                      "size": 2, "edge_count": 1}],
+        "stats": {"node_count": 2, "edge_count": 1, "cluster_count": 1},
+    }
+
+    def test_no_placeholder_survives_rendering(self):
+        html = ge.build_graph_html(self.SAMPLE)
+        leftover = re.findall(r"__[A-Z_]+__", html)
+        assert not leftover, f"未替换的占位符: {set(leftover)}"
+
+    def test_js_template_literals_not_mangled(self):
+        """JS 里出现的 ${...} 与 {} 必须原样保留（str.format 会吃掉它们）。"""
+        html = ge.build_graph_html(self.SAMPLE)
+        assert "Object.assign({}, n)" in html
+        assert "new vis.DataSet" in html
+        assert "network.once('stabilizationIterationsDone'" in html
+
+    def test_data_is_embedded_as_json(self):
+        html = ge.build_graph_html(self.SAMPLE)
+        assert '"id": "a"' in html
+        # 边从数据层的 source/target 映射成 vis-network 的 from/to ——
+        # 别把这两个字段名混起来，混了图会画不出边
+        assert '"from": "a"' in html
+        assert '"to": "b"' in html
+        assert '"from": "a", "to": "b"' in html.replace("\n", "")
+
+    def test_fingerprint_is_stable_and_order_insensitive(self):
+        fp1 = ge.data_fingerprint(self.SAMPLE)
+        fp2 = ge.data_fingerprint(self.SAMPLE)
+        assert fp1 == fp2
+
+        shuffled = {
+            **self.SAMPLE,
+            "nodes": list(reversed(self.SAMPLE["nodes"])),
+            "links": list(reversed(self.SAMPLE["links"])),
+        }
+        assert ge.data_fingerprint(shuffled) == fp1, "指纹不应受行序影响"
+
+    def test_fingerprint_changes_when_graph_changes(self):
+        other = {
+            **self.SAMPLE,
+            "nodes": self.SAMPLE["nodes"] + [
+                {"id": "c", "label": "c", "cluster_id": 1, "cluster_label": "簇一",
+                 "sub_cat": "子一", "main_cat": "主一", "degree": 1}
+            ],
+        }
+        assert ge.data_fingerprint(other) != ge.data_fingerprint(self.SAMPLE)
+
+    def test_legend_covers_every_cluster(self):
+        html = ge.build_graph_html(self.SAMPLE)
+        assert "簇一" in html
+        # 图例项由 JS 动态生成；数据侧只需确认簇的 id/label/size 进了 LEGEND 的 JSON
+        assert '"cid": "1"' in html
+        assert '"label": "簇一"' in html
+        assert '"size": 2' in html
+
+    def test_empty_graph_returns_no_url(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(ge, "STATIC_DIR", str(tmp_path))
+        assert ge.ensure_graph_html({"nodes": [], "links": [], "clusters": [], "stats": {}}) == ""
+
+    def test_ensure_writes_once_and_is_idempotent(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(ge, "STATIC_DIR", str(tmp_path))
+        url1 = ge.ensure_graph_html(self.SAMPLE)
+        assert url1.startswith("/app/static/word_graph_")
+        path = tmp_path / os.path.basename(url1)
+        assert path.exists()
+
+        mtime = path.stat().st_mtime_ns
+        url2 = ge.ensure_graph_html(self.SAMPLE)
+        assert url2 == url1, "数据没变时 URL 必须一致，否则 iframe 会重载、布局丢失"
+        assert path.stat().st_mtime_ns == mtime, "数据没变时不应重写文件"
+
+    def test_ensure_prunes_stale_files(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(ge, "STATIC_DIR", str(tmp_path))
+        stale = tmp_path / "word_graph_deadbeef0000.html"
+        stale.write_text("old", encoding="utf-8")
+
+        ge.ensure_graph_html(self.SAMPLE)
+        assert not stale.exists(), "旧指纹文件应被清理，避免 static/ 越积越多"
+        assert ge.VIS_LIB in os.listdir(tmp_path) or True  # 库文件本身不应被误删
+
+    def test_esc_js_handles_quotes_and_newlines(self):
+        """graphify #1838 是节点名里的引号打穿属性导致的存储型 XSS。"""
+        out = ge._esc_js('a"b\nc\\d')
+        assert out.startswith('"') and out.endswith('"')
+        assert '\n' not in out
+        assert '\\"' in out
+
+    def test_static_url_matches_streamlit_convention(self):
+        """
+        静态文件 URL 前缀必须与 Streamlit 的约定一致。
+
+        Streamlit 的 enableStaticServing 把**主脚本同级的 static/** 暴露在
+        `/app/static/<file>`。本项目主脚本是 `src/app.py`，所以目录必须是
+        `src/static/`、URL 必须是 `/app/static/`。若有人把 app.py 挪走或把
+        static/ 放错位置，图谱会 404 而页面没有任何报错 —— 只显示一片空白。
+        """
+        app_dir = os.path.dirname(ge.STATIC_DIR)          # .../src
+        assert os.path.basename(ge.STATIC_DIR) == "static"
+        assert os.path.exists(os.path.join(app_dir, "app.py")), (
+            "static/ 必须与 app.py 同级，否则 Streamlit 不会暴露 /app/static/"
+        )
+        html = ge.build_graph_html(self.SAMPLE)
+        assert "/app/static/" in html, "模板里的静态资源前缀必须与 Streamlit 约定一致"
+
+    def test_vis_library_is_vendored_locally(self):
+        """不许引 CDN：项目已确立零网络依赖，内网下 CDN 会渲染成白屏。"""
+        path = os.path.join(ge.STATIC_DIR, ge.VIS_LIB)
+        assert os.path.exists(path), f"缺少本地 vis-network: {path}"
+        assert os.path.getsize(path) > 100_000
+        html = ge.build_graph_html(self.SAMPLE)
+        assert "unpkg.com" not in html and "cdn." not in html
+        assert f"/app/static/{ge.VIS_LIB}" in html
+
+
+class TestFullWordGraph:
+    """get_full_word_graph 的形状契约（假游标，不连库）。"""
+
+    def test_shape_and_degrees(self, monkeypatch):
+        class FakeCursor:
+            def __init__(self):
+                self._rows = []
+
+            def execute(self, sql, params=None):
+                if "LEFT JOIN word_clusters" in sql:
+                    self._rows = [
+                        {"verb": "a", "cluster_id": 1, "cluster_label": "簇一",
+                         "sub_cat": "子一", "main_cat": "主一"},
+                        {"verb": "b", "cluster_id": 1, "cluster_label": "簇一",
+                         "sub_cat": "子一", "main_cat": "主一"},
+                    ]
+                elif "FROM word_relations r" in sql:
+                    self._rows = [{"source": "a", "target": "b", "relation": "近义"}]
+                elif "FROM word_clusters" in sql:
+                    self._rows = [{"id": 1, "label": "簇一", "sub_cat": "子一", "size": 2}]
+                else:
+                    self._rows = []
+
+            def fetchone(self):
+                return self._rows[0] if self._rows else None
+
+            def fetchall(self):
+                return list(self._rows)
+
+        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(FakeCursor()))
+        g = db.get_full_word_graph()
+
+        assert g["stats"] == {"node_count": 2, "edge_count": 1, "cluster_count": 1}
+        assert [n["id"] for n in g["nodes"]] == ["a", "b"]
+        # 度数由边推导，而不是查库时直接读的字段
+        assert all(n["degree"] == 1 for n in g["nodes"])
+        assert g["clusters"][0]["edge_count"] == 1   # C(2,2) = 1

@@ -127,6 +127,8 @@ web-word/
 │   ├── design_system.py        # 设计系统常量与样式生成
 │   ├── security.py             # 输入校验（SQL 注入 / XSS）与密钥掩码
 │   ├── cluster_graph.py        # 词簇完全图的内联 SVG 渲染
+│   ├── graph_export.py         # 交互式图谱（vis-network）的 HTML 导出
+│   ├── static/                 # 前端静态资源（vendored vis-network + 生成的图谱）
 │   └── .streamlit/config.toml  # Streamlit 运行配置
 ├── config/
 │   ├── config.yaml             # 应用实际读取的数据库配置（已提交）
@@ -234,6 +236,31 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 实现见 `src/cluster_graph.py`（内联 SVG，不依赖 CDN）：56 词大簇会画出全部 1540 条边，
 但只标注中心词，其余节点靠鼠标悬停看词名 —— 否则标签互相压盖成一团。
 
+### 1c. 交互式图谱页（graphify 风格）
+
+侧边栏顶部可切到 **🕸️ 知识图谱** 页 —— 一张全库 155 词 / 2143 边的力导向图，
+交互方式与 [graphify](https://github.com/Graphify-Labs/graphify) 产出的
+`graph.html` 一致：
+
+| 能力 | 说明 |
+|------|------|
+| 缩放 / 拖拽 | 滚轮缩放、拖拽平移、拖拽单个节点；布局收敛后自动停止物理引擎，摆好的位置不会乱动 |
+| 搜索 | 右侧栏输入即时过滤动词，点击结果聚焦到该节点 |
+| 节点信息 | 点击任意节点，右侧显示它所属的语义簇 / 次范畴 / 主范畴与**全部近义动词**，点邻居可继续跳转 |
+| 图例过滤 | 25 个语义簇逐一勾选，实时隐藏无关节点与边；「全选」一键恢复 |
+| 高亮邻居 | 勾选后只高亮「自己 + 邻居」，其余压暗 —— 完全图下每个词几十个邻居，不压暗看不出谁连着谁 |
+| 统计 | 底部实时显示 当前可见节点 / 关系 / 簇 数量 |
+
+实现见 `src/graph_export.py`。两个刻意的取舍：
+
+* **vis-network 从本地加载**（`src/static/vis-network.min.js`，688KB，已入库），不引 CDN。
+  本项目已确立「零网络依赖」原则（灌库脚本离线可用、无 key 降级、无库降级），
+  CDN 在内网会渲染成一片空白。代价是仓库多 688KB。
+* **图谱渲染成静态 HTML 文件，用 iframe 引用**，而不是每次 `components.html(字符串)`。
+  后者在 Streamlit 每次重跑脚本时会把 iframe 内容整体重写 —— 力导向布局从头收敛，
+  用户拖好的位置、选中的节点、缩放视野全丢。静态文件 + **数据指纹文件名**则只在
+  数据真正变化时重载（实测：页内触发重跑，选中节点与拖动状态保持不变）。
+
 ### 2. 代码结构图谱：`graphify-out/`
 
 用 [graphify](https://pypi.org/project/graphifyy/) 对源码做 AST 解析（纯本地，
@@ -335,7 +362,7 @@ MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
 | `tests/test_phase5.py` | 释义分级策略（DB → LLM → 兜底）、LLM 结果持久化、缺 key 不崩溃 |
 | `tests/test_phase4.py` | 侧边栏折叠 / 统计 / 热门动词筛选 |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
-| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询（含按簇 id 取图与切换簇）、SVG 渲染、GRANT 下划线转义 |
+| `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询（含按簇 id 取图与切换簇）、SVG 渲染、交互式图谱导出与指纹、GRANT 下划线转义 |
 | `tests/test_migration_integration.py` | **真实 MySQL** 上的 v1→v2 迁移：业务数据一行不丢、旧表删除、新表建立、连跑三次幂等 |
 | `tests/test_security.py` | 输入校验与密钥掩码 |
 

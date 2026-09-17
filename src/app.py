@@ -16,8 +16,10 @@ from src.mysql_db import (
     init_database, get_stats, get_hot_verbs, get_feedback_data,
     insert_feedback, get_definition_by_verb, insert_definition,
     log_usage, get_synonyms, get_cluster_graph, get_cluster_graph_by_id, list_clusters,
+    get_full_word_graph,
 )
 from src.cluster_graph import render_cluster_graph_svg
+from src.graph_export import ensure_graph_html
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator
@@ -1203,6 +1205,18 @@ def render_sidebar():
     st.sidebar.button("◀", key="collapse_sidebar", help="折叠侧边栏",
                       on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", True))
 
+    # 页面切换：搜索页 ↔ 交互式知识图谱页
+    _page = st.session_state.get("page", "search")
+    st.sidebar.radio(
+        "页面",
+        options=["search", "graph"],
+        index=0 if _page != "graph" else 1,
+        format_func=lambda v: "🔍 搜索释义" if v == "search" else "🕸️ 知识图谱",
+        key="page",
+        horizontal=True,
+    )
+    st.sidebar.divider()
+
     st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 实验统计</h2>", unsafe_allow_html=True)
 
     if DB_AVAILABLE:
@@ -1418,12 +1432,108 @@ def render_main_area():
 
 
 # ============================================
+# 交互式知识图谱页面
+# ============================================
+def render_interactive_graph_page() -> None:
+    """
+    全屏交互式词间关系图谱页（graphify 风格的力导向图）。
+
+    与 render_cluster_graph_section 的分工：
+      * 区块内的 SVG —— 跟着当前查询词走，几十个节点，一眼看清谁连谁；
+      * 本页 —— 全库 155 词 / 2143 边的语义地图，可搜索、可点选、可按簇过滤。
+
+    实现要点：图谱渲染成**静态 HTML 文件**放进 src/static/，用 iframe 引用。
+    不用 components.html(html_string) 的原因是 Streamlit 每次交互重跑脚本时，
+    内联的 iframe 会被整体重写 —— 力导向布局从头收敛，用户拖好的位置、
+    选中的节点、缩放视野全丢。静态文件 + 内容指纹 URL 则只在数据变化时重载。
+    """
+    st.markdown(f"<h1 style='{HEADER_H1}'>🕸️ 词间关系知识图谱</h1>", unsafe_allow_html=True)
+
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，无法展示知识图谱（离线模式下仅提供释义）。")
+        return
+
+    try:
+        graph = get_full_word_graph()
+    except Exception as e:
+        logger.error(f"读取全库图谱失败: {e}")
+        graph = None
+
+    if not graph or not graph.get("nodes"):
+        st.info(
+            "暂无词间关系数据。运行 `python scripts/load_word_library.py` "
+            "可载入 155 词词库及其 2143 条词间关系。"
+        )
+        return
+
+    stats = graph["stats"]
+    c1, c2, c3 = st.columns(3)
+    c1.metric("动词节点", stats["node_count"])
+    c2.metric("近义关系", stats["edge_count"])
+    c3.metric("语义簇", stats["cluster_count"])
+
+    url = ensure_graph_html(graph)
+    if not url:
+        st.warning("图谱文件生成失败，请检查 `src/static/` 是否可写。")
+        return
+
+    st.caption(
+        "左侧力导向图可直接缩放拖拽；右侧栏可搜索动词、查看节点邻居、"
+        "按语义簇勾选过滤。每个节点的连线数等于它所在词簇的大小减一"
+        "（同一簇内两两互为近义，即完全图）。"
+    )
+
+    # 直接嵌本地静态文件（不是内联 HTML 字符串）—— 这样 Streamlit 重跑脚本时
+    # iframe 的 src 不变，浏览器不会重载，图谱的布局与交互状态得以保留。
+    st.iframe(url, height=820)
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>按词簇浏览</h3>", unsafe_allow_html=True)
+    st.caption("点击任一词即切换搜索词，并在结果页展示该词所在簇的完全图。")
+    clusters = graph.get("clusters", [])
+    per_row = 4
+    for i in range(0, len(clusters), per_row):
+        row = clusters[i:i + per_row]
+        cols = st.columns(per_row)
+        for col, cluster in zip(cols, row):
+            with col:
+                st.button(
+                    f"{cluster['sub_cat']}（{cluster['size']} 词 / {cluster['edge_count']} 边）",
+                    key=f"graph_cluster_{cluster['id']}",
+                    use_container_width=True,
+                    on_click=_pick_cluster_verb,
+                    args=(cluster["id"],),
+                )
+
+
+def _pick_cluster_verb(cluster_id: int) -> None:
+    """点击「按词簇浏览」按钮：跳到该簇的第一个词（图谱随之打开该簇）。"""
+    try:
+        g = get_cluster_graph_by_id(cluster_id)
+    except Exception as e:
+        logger.error(f"读取词簇 {cluster_id} 失败: {e}")
+        return
+    nodes = g.get("nodes") or []
+    if not nodes:
+        return
+    verb = g.get("center") or nodes[0]["id"]
+    st.session_state.verb_result = verb
+    st.session_state.show_result = True
+    st.session_state["搜索动词"] = verb
+    st.session_state.pop("cluster_selector", None)
+    st.session_state["page"] = "search"
+    _record_query(verb)
+
+
+# ============================================
 # 主函数
 # ============================================
 def main():
-    """主函数"""
+    """主函数：按 session_state["page"] 分派到搜索页或图谱页。"""
     render_sidebar()
-    render_main_area()
+    if st.session_state.get("page") == "graph":
+        render_interactive_graph_page()
+    else:
+        render_main_area()
 
 # ============================================
 # 启动应用

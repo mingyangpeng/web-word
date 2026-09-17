@@ -50,6 +50,11 @@ screenshots/
 # Generated output
 graphify-out/
 
+# 交互式图谱的运行时产物（数据指纹命名，会随灌库变化；
+# 但 src/static/vis-network.min.js 是**源码依赖**，必须提交 ——
+# 它让图谱在断网/内网环境下也能渲染，这是刻意 vendored 的）
+src/static/word_graph_*.html
+
 # GSD runtime state (machine-local: PIDs, session ids, worktree sentinels)
 .gsd/
 .planning/milestone.lock
