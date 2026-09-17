@@ -2,6 +2,12 @@
 headless = true
 port = 8501
 
+# 让主脚本同级的 src/static/ 目录可通过 /app/static/<file> 访问。
+# 交互式知识图谱要加载 vis-network（约 700KB），把它放进 static/ 从本地服务，
+# 而不是引 CDN —— 本项目已确立「零网络依赖」原则（灌库脚本、离线降级同理），
+# 内网或断网环境下 CDN 会渲染成一片空白。
+enableStaticServing = true
+
 [client]
 showErrorDetails = true
 
