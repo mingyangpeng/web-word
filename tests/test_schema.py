@@ -518,6 +518,23 @@ class TestGraphExport:
         }
         assert ge.data_fingerprint(shuffled) == fp1, "指纹不应受行序影响"
 
+    def test_fingerprint_includes_template_version(self):
+        """
+        模板版本必须参与指纹。
+
+        否则「改了模板但数据没变」时 URL 不变 —— 浏览器和 Streamlit 都认为文件
+        没换，页面继续跑旧渲染逻辑，改前端却看不到任何变化（重启进程也没用，
+        磁盘上还是旧文件）。这个坑本轮真踩到了。
+        """
+        fp_before = ge.data_fingerprint(self.SAMPLE)
+        original = ge.TEMPLATE_VERSION
+        try:
+            ge.TEMPLATE_VERSION = original + 1
+            assert ge.data_fingerprint(self.SAMPLE) != fp_before
+        finally:
+            ge.TEMPLATE_VERSION = original
+        assert ge.data_fingerprint(self.SAMPLE) == fp_before
+
     def test_fingerprint_changes_when_graph_changes(self):
         other = {
             **self.SAMPLE,
@@ -632,3 +649,89 @@ class TestFullWordGraph:
         # 度数由边推导，而不是查库时直接读的字段
         assert all(n["degree"] == 1 for n in g["nodes"])
         assert g["clusters"][0]["edge_count"] == 1   # C(2,2) = 1
+
+
+class TestParticleAndFullscreen:
+    """
+    粒子动效与全屏能力的静态契约。
+
+    这两项都是前端行为，"能不能跑"只能在浏览器里验证（已实测）。这里钉住的是
+    那些一旦被改坏就**不会报错、只会静默失效**的点 —— 比如有人把 iframe 换回
+    components.html 导致全屏权限丢失，或把粒子预算写死成"按度数取前 N"导致
+    整张图只有一处发光。
+    """
+
+    def _html(self):
+        return ge.build_graph_html(TestGraphExport.SAMPLE)
+
+    def test_particle_layer_exists(self):
+        html = self._html()
+        assert '<canvas id="particles"' in html, "缺少粒子覆盖层"
+        # 覆盖层必须不吃鼠标事件，否则会挡住 vis-network 的拖拽与点击
+        assert "#particles { position: absolute; inset: 0; pointer-events: none" in html
+
+    def test_particle_cap_is_two_hundred(self):
+        assert ge.PARTICLE_MAX == 200
+        html = self._html()
+        assert f"const PARTICLE_MAX = {ge.PARTICLE_MAX};" in html
+
+    def test_particles_prefer_selected_cluster(self):
+        """用户明确要求：有被选中的词簇时，优先给该簇粒子。"""
+        html = self._html()
+        assert "focusClusterIds" in html
+        assert "focusClusters.has(a) ? 1 : 0" in html, "排序里必须体现选中簇优先"
+
+    def test_focus_cluster_gets_a_real_quota(self):
+        """
+        选中簇必须有**独立配额**，而不只是"排在最前"。
+
+        轮转下 3 个词的小簇 3 轮就被塞满，再轮也涨不上去，选中与不选中的粒子数
+        完全一样。所以要有一个专门的阶段把它喂到 FOCUS_SHARE 的预算。
+        """
+        html = self._html()
+        assert "FOCUS_SHARE" in html
+        assert "第一阶段" in html and "第二阶段" in html
+        assert "const quota = Math.floor(PARTICLE_MAX * FOCUS_SHARE)" in html
+
+    def test_particle_allocation_round_robins_clusters(self):
+        """
+        必须按簇轮转分配，不能按度数排序取前 N。
+
+        实测过：按度数取前 N 时，200 个预算会被 56 词的「常态行走」独占
+        （25 个簇里只有 1 个有粒子），整张图只有一处发光。
+        """
+        html = self._html()
+        assert "轮转分配" in html
+        assert "for (const cid of clusterIds)" in html, "缺少按簇轮转的分配循环"
+
+    def test_fullscreen_button_and_handler(self):
+        html = self._html()
+        assert 'id="btn-fullscreen"' in html
+        assert "requestFullscreen" in html
+        assert "exitFullscreen" in html
+        assert "fullscreenchange" in html
+
+    def test_fullscreen_targets_body_not_just_graph(self):
+        """全屏要连侧边栏一起放大，只放大画布就没法用搜索与图例了。"""
+        html = self._html()
+        assert "document.body.requestFullscreen()" in html
+        assert "document.documentElement.requestFullscreen" not in html
+
+    def test_app_embeds_via_iframe_for_fullscreen_permission(self):
+        """
+        页面必须用 st.iframe（而不是 components.html 内联字符串）嵌图谱。
+
+        两个后果绑在一起：内联 iframe 会被 Streamlit 每次重跑重写（布局丢失），
+        而且内联 HTML 走的是 srcdoc，没有 allow="fullscreen"，全屏会被浏览器拒绝。
+        """
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "src", "app.py"), encoding="utf-8") as f:
+            src = f.read()
+
+        # 去掉注释与三引号块再断言：app.py 的 docstring 里正解释「为什么不用
+        # components.html」，那是说明文字而不是代码。
+        code = "\n".join(line.split("#", 1)[0] for line in src.splitlines())
+        code = re.sub(r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'', "", code)
+
+        assert "st.iframe(url" in code
+        assert "components.html(" not in code
