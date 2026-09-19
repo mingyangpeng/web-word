@@ -670,39 +670,98 @@ class TestParticleAndFullscreen:
         # 覆盖层必须不吃鼠标事件，否则会挡住 vis-network 的拖拽与点击
         assert "#particles { position: absolute; inset: 0; pointer-events: none" in html
 
-    def test_particle_cap_is_two_hundred(self):
-        assert ge.PARTICLE_MAX == 200
-        html = self._html()
-        assert f"const PARTICLE_MAX = {ge.PARTICLE_MAX};" in html
-
-    def test_particles_prefer_selected_cluster(self):
-        """用户明确要求：有被选中的词簇时，优先给该簇粒子。"""
-        html = self._html()
-        assert "focusClusterIds" in html
-        assert "focusClusters.has(a) ? 1 : 0" in html, "排序里必须体现选中簇优先"
-
-    def test_focus_cluster_gets_a_real_quota(self):
+    def test_every_visible_node_is_a_particle_no_cap(self):
         """
-        选中簇必须有**独立配额**，而不只是"排在最前"。
+        每个可见节点都是一个粒子，**没有数量上限**。
 
-        轮转下 3 个词的小簇 3 轮就被塞满，再轮也涨不上去，选中与不选中的粒子数
-        完全一样。所以要有一个专门的阶段把它喂到 FOCUS_SHARE 的预算。
+        曾经的实现有 200 上限，还要按「选中簇优先 + 按簇轮转」分配预算；
+        改成「节点即粒子」后上限失去意义（粒子数恒等于可见节点数），那套分配
+        代码整体删除。这里钉住它没有以任何形式回潮 —— 半个上限比没有上限更糟，
+        因为它会让一部分节点不动，而用户看不出来为什么。
         """
         html = self._html()
-        assert "FOCUS_SHARE" in html
-        assert "第一阶段" in html and "第二阶段" in html
-        assert "const quota = Math.floor(PARTICLE_MAX * FOCUS_SHARE)" in html
+        assert "PARTICLE_MAX" not in html, "不应再有任何粒子数量上限"
+        assert "FOCUS_SHARE" not in html, "预算分配代码应已删除"
+        assert "particlesPerNode" not in html
+        # 没有上限 ⇒ 重建时直接按可见节点生成，不经过任何筛选或配额
+        assert "const visible = RAW_NODES.filter(n => !nodesDS.get(n.id).hidden);" in html
+        assert "particles = visible.map(" in html
 
-    def test_particle_allocation_round_robins_clusters(self):
+    def test_particle_physics_present(self):
+        """节点即粒子之后，运动靠自写的引力/斥力/阻尼，而不是 vis 的布局求解器。"""
+        html = self._html()
+        for token in ("stepPhysics", "PHYS.DAMPING", "PHYS.REPULSE_K", "PHYS.SPRING_K",
+                      "PHYS.SPEED_SCALE", "PHYS.ANCHOR_K", "liveEdges"):
+            assert token in html, f"缺少 {token}"
+
+    def test_search_auto_enables_the_cluster(self):
         """
-        必须按簇轮转分配，不能按度数排序取前 N。
+        用户要求：**搜到的词，即使它所在的词簇当前没勾选，也要自动勾选上**。
 
-        实测过：按度数取前 N 时，200 个预算会被 56 词的「常态行走」独占
-        （25 个簇里只有 1 个有粒子），整张图只有一处发光。
+        否则会「搜到了这个词，图上却看不到它」—— 搜索给了一条导航路径，
+        却因为一个隐藏状态通向空处。
         """
         html = self._html()
-        assert "轮转分配" in html
-        assert "for (const cid of clusterIds)" in html, "缺少按簇轮转的分配循环"
+        assert "function ensureClusterEnabled" in html
+        assert "ensureClusterEnabled(nodeId);" in html, "focusNode 必须调用它"
+
+        # 必须在 focus 之前解锁，否则会聚焦到一个还 hidden 的坐标上
+        fn = html[html.index("function focusNode(nodeId, doFocus) {"):]
+        fn = fn[:fn.index("network.selectNodes")]
+        # 用调用形式而不是 "network.focus"：上面的注释里也提到了它，
+        # 用裸字符串会在注释里先命中，断言就失去意义
+        assert fn.index("ensureClusterEnabled(nodeId);") < fn.index("network.focus(nodeId"), (
+            "ensureClusterEnabled 必须在 network.focus 之前调用"
+        )
+
+    def test_auto_enable_only_acts_when_unchecked(self):
+        """
+        已勾选时不得重复 applyFilter。
+
+        applyFilter 会重建粒子集合；每次点节点都触发就会不断打断正在进行的运动，
+        看起来像「图一直在抖」。
+        """
+        html = self._html()
+        fn = html[html.index("function ensureClusterEnabled(nodeId) {"):]
+        fn = fn[:fn.index(chr(10) + "}" + chr(10))]
+        assert "if (enabled.has(cid)) return false;" in fn
+        assert fn.index("return false") < fn.index("applyFilter(")
+
+
+    def test_particle_radius_follows_network_zoom(self):
+        """
+        粒子半径必须跟着 vis 的缩放走。
+
+        这是一个**静默失效**的 bug：vis 把节点画成 size*scale 个屏幕像素，粒子层
+        如果按 canvas 单位画，缩小的视野里就会比节点大出好几倍。不报错、不崩溃，
+        只是整张图糊成一团。实测过（视野缩放 0.268）：节点 4~9px，粒子 14~31px，
+        大 3.4 倍，171 个半透明光晕在 'lighter' 下叠加，17.1% 的已绘制像素变成
+        近纯白 —— 用户的原话是「一团光晕，啥也看不清」。
+        """
+        html = self._html()
+        assert "const scale = network.getScale();" in html, "粒子半径必须乘上缩放"
+        assert "a.size * scale" in html
+        # 半径还要有上下限：缩到极小不能消失，放到极大不能糊满屏
+        assert "Math.max(a.size * scale, 2.5)" in html
+        assert "Math.min(Math.max(a.size * scale, 2.5), 26)" in html
+
+    def test_low_zoom_skips_glow_and_trail(self):
+        """
+        缩放很小时只画实心点。
+
+        光晕和拖尾都是「放大后才看得见」的细节；在小缩放下它们只是纯粹的成本，
+        叠加起来还会盖掉唯一重要的东西 —— 词的标签。
+        """
+        html = self._html()
+        assert "const small = r < 4;" in html
+        assert "if (!small) {" in html, "光晕必须被 small 守卫"
+        assert "if (!small && sp > 0.05)" in html, "拖尾必须被 small 守卫"
+
+    def test_glow_is_smaller_than_the_node_halo(self):
+        """光晕不该比节点大太多：3.2 倍时是「节点旁边一团雾」，不是「节点在发光」。"""
+        html = self._html()
+        assert "const glowR = r * 1.9;" in html
+        assert "const glowR = r * 3.2;" not in html, "旧的 3.2 倍光晕会把邻居的词一起盖掉"
 
     def test_fullscreen_button_and_handler(self):
         html = self._html()
