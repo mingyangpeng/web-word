@@ -126,7 +126,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 「词间关系」成为可直接查询 / 导出 / 喂给图谱工具的一等数据，而不是每次现场 JOIN 生成。
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -143,10 +143,14 @@ CREATE_TABLES_SQL = [
         sub_cat VARCHAR(64) NOT NULL,
         label VARCHAR(160) NOT NULL,
         size INT NOT NULL DEFAULT 0,
+        image_schema VARCHAR(32) DEFAULT NULL,
+        cn_syntax VARCHAR(255) DEFAULT NULL,
+        translation_strategy VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY uq_word_clusters_cats (main_cat, sub_cat),
-        INDEX idx_word_clusters_size (size)
+        INDEX idx_word_clusters_size (size),
+        INDEX idx_word_clusters_schema (image_schema)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
     # --- 动词释义（含所属簇）---
@@ -158,13 +162,62 @@ CREATE_TABLES_SQL = [
         example_sentence TEXT,
         model_version VARCHAR(50) DEFAULT 'zhipu-glm-4',
         cluster_id INT DEFAULT NULL,
+        en_ndef TEXT,
+        levin_source VARCHAR(64) DEFAULT NULL,
+        cross_subclass VARCHAR(8) DEFAULT NULL,
+        sense_brief VARCHAR(255) DEFAULT NULL,
+        judge_reason VARCHAR(600) DEFAULT NULL,
+        image_schema VARCHAR(32) DEFAULT NULL,
+        prototype_level VARCHAR(16) DEFAULT NULL,
+        alignment VARCHAR(16) DEFAULT NULL,
+        cn_syntax VARCHAR(255) DEFAULT NULL,
+        translation_strategy VARCHAR(255) DEFAULT NULL,
+        definition_source VARCHAR(32) DEFAULT NULL,
+        source_rank TINYINT DEFAULT NULL,
+        sense_count INT NOT NULL DEFAULT 0,
+        needs_review TINYINT(1) NOT NULL DEFAULT 0,
+        prototype_is_first TINYINT(1) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY uq_definitions_verb (verb),
         INDEX idx_definitions_cluster (cluster_id),
         INDEX idx_definitions_created_at (created_at),
+        INDEX idx_definitions_source (definition_source),
+        INDEX idx_definitions_schema (image_schema),
+        INDEX idx_definitions_review (needs_review),
         CONSTRAINT fk_definitions_cluster FOREIGN KEY (cluster_id)
             REFERENCES word_clusters(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 义位（sense）明细 ---
+    # 判定标准文档明确「分析单元是义位（sense），而非词目 lemma」，所以义位必须独立成表。
+    # 一个动词可以有多个义位（go 在 dictionary.db 里有 38 个），每个义位单独标注
+    # 意象图式 / 原型层级 / 对齐等级；词目层的 definitions 行则是「主导原型义」的摘要。
+    """CREATE TABLE IF NOT EXISTS word_senses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        definition_id INT NOT NULL,
+        sense_index INT NOT NULL,
+        en_ndef TEXT,
+        ch_ndef TEXT,
+        construction VARCHAR(255) DEFAULT NULL,
+        examples JSON,
+        ch_examples JSON,
+        synonyms JSON,
+        antonyms JSON,
+        prototype_level VARCHAR(16) DEFAULT NULL,
+        image_schema VARCHAR(32) DEFAULT NULL,
+        alignment VARCHAR(16) DEFAULT NULL,
+        cn_syntax VARCHAR(255) DEFAULT NULL,
+        translation_strategy VARCHAR(255) DEFAULT NULL,
+        source VARCHAR(32) DEFAULT NULL,
+        needs_review TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_word_senses_index (definition_id, sense_index),
+        INDEX idx_word_senses_definition (definition_id),
+        INDEX idx_word_senses_prototype (prototype_level),
+        INDEX idx_word_senses_source (source),
+        CONSTRAINT fk_word_senses_definition FOREIGN KEY (definition_id)
+            REFERENCES definitions(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
     # --- 词间关系（无向，簇内完全图）---
@@ -286,6 +339,18 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
       3. 丢弃 ``statistics`` 表：v1 设计里的键值统计表，全仓库无任何代码读写，实际是死表。
       4. 记录版本到 ``schema_migrations``。
 
+    从 v2 → v3 做的事：
+
+      5. 依据 `docs/义项判定标准.docx`，给 ``definitions`` 加义位层面的标注字段
+         （意象图式 / 原型层级 / 英汉对齐等级 / 汉语句法特征 / 译义转化策略 / 释义来源…），
+         给 ``word_clusters`` 加簇层面的图式与句法特征，并新建 ``word_senses`` 明细表。
+
+         文档明确「分析单元是义位（sense），而非词目 lemma」，所以义位必须独立成表；
+         词目层的 ``definitions`` 行退化为「主导原型义」的摘要。
+
+         迁移**只做结构**：词簇与词间关系是派生数据，由灌库脚本按新的 Levin 分类重建。
+         不在迁移里 DELETE 是有意的 —— 迁移每次启动都会跑，让它删业务数据太危险。
+
     Args:
         cursor: 已 USE 到目标库的 DictCursor。
 
@@ -338,11 +403,70 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
         cursor.execute("DROP TABLE statistics")
         summary["actions"].append(f"statistics dropped (had {n_stat} rows, unused)")
 
-    # --- 4. 记录版本 ---
+    # --- 4. v3：义位层面的标注字段（依据 docs/义项判定标准.docx）---
+    #
+    # 这些列全部可空：已有的 155 行不该因为加列而失败，灌库脚本随后会填上真实值。
+    # 用 ADD COLUMN 而不是重建表，是为了不丢 feedback 与 usage_logs 引用的 verb 数据。
+    new_definition_columns = [
+        ("en_ndef", "TEXT"),
+        ("levin_source", "VARCHAR(64)"),
+        ("cross_subclass", "VARCHAR(8)"),
+        ("sense_brief", "VARCHAR(255)"),
+        ("judge_reason", "VARCHAR(600)"),
+        ("image_schema", "VARCHAR(32)"),
+        ("prototype_level", "VARCHAR(16)"),
+        ("alignment", "VARCHAR(16)"),
+        ("cn_syntax", "VARCHAR(255)"),
+        ("translation_strategy", "VARCHAR(255)"),
+        ("definition_source", "VARCHAR(32)"),
+        ("source_rank", "TINYINT"),
+        ("sense_count", "INT NOT NULL DEFAULT 0"),
+        ("needs_review", "TINYINT(1) NOT NULL DEFAULT 0"),
+        # 原型义位是否就是词典首条。0 = 被选择器修正过，复核时优先看
+        ("prototype_is_first", "TINYINT(1) DEFAULT NULL"),
+    ]
+    for col, ddl in new_definition_columns:
+        if not _column_exists(cursor, "definitions", col):
+            cursor.execute(f"ALTER TABLE definitions ADD COLUMN {col} {ddl}")
+            summary["actions"].append(f"definitions.{col} added")
+
+    for idx_col, idx_name in [
+        ("definition_source", "idx_definitions_source"),
+        ("image_schema", "idx_definitions_schema"),
+        ("needs_review", "idx_definitions_review"),
+    ]:
+        if not _index_exists(cursor, "definitions", idx_name):
+            cursor.execute(
+                f"ALTER TABLE definitions ADD INDEX {idx_name} ({idx_col})"
+            )
+            summary["actions"].append(f"{idx_name} added")
+
+    new_cluster_columns = [
+        ("image_schema", "VARCHAR(32)"),
+        ("cn_syntax", "VARCHAR(255)"),
+        ("translation_strategy", "VARCHAR(255)"),
+    ]
+    for col, ddl in new_cluster_columns:
+        if not _column_exists(cursor, "word_clusters", col):
+            cursor.execute(f"ALTER TABLE word_clusters ADD COLUMN {col} {ddl}")
+            summary["actions"].append(f"word_clusters.{col} added")
+
+    if not _index_exists(cursor, "word_clusters", "idx_word_clusters_schema"):
+        cursor.execute(
+            "ALTER TABLE word_clusters ADD INDEX idx_word_clusters_schema (image_schema)"
+        )
+        summary["actions"].append("idx_word_clusters_schema added")
+
+    # 迁移只做**结构**改造；词簇与关系是派生数据，由灌库脚本按新的 Levin 分类重建。
+    # 不在迁移里 DELETE 是刻意的：迁移在每次应用启动时都会跑，让它删业务数据太危险。
+    if not _table_exists(cursor, "word_senses"):
+        summary["actions"].append("word_senses will be created by CREATE_TABLES_SQL")
+
+    # --- 5. 记录版本 ---
     cursor.execute(
         """INSERT INTO schema_migrations (version, name) VALUES (%s, %s)
            ON DUPLICATE KEY UPDATE name = VALUES(name)""",
-        (SCHEMA_VERSION, "cluster and relation tables"),
+        (SCHEMA_VERSION, "sense-level annotation fields"),
     )
     return summary
 
@@ -523,10 +647,36 @@ def get_db_cursor():
 # ============================================
 # Definitions CRUD Operations
 # ============================================
+# insert_definition 里允许由调用方写入的**标注字段**。
+#
+# 为什么用白名单 + 动态拼列名：这些字段（意象图式、对齐等级、释义来源…）只有灌库脚本
+# 会传，而 LLM 实时生成路径一个都不传。若把它们写成固定的 `VALUES(col)`，实时生成时
+# 会拿 NULL 去覆盖灌库建立的标注 —— 与 cluster_id 当初踩的是同一个坑。
+# 白名单同时挡住了列名注入（列名无法参数化，只能拼接）。
+_ANNOTATION_COLUMNS = (
+    "en_ndef",
+    "levin_source",
+    "cross_subclass",
+    "sense_brief",
+    "judge_reason",
+    "image_schema",
+    "prototype_level",
+    "alignment",
+    "cn_syntax",
+    "translation_strategy",
+    "definition_source",
+    "source_rank",
+    "sense_count",
+    "needs_review",
+    "prototype_is_first",
+)
+
+
 def insert_definition(verb: str, chinese_ndef: str, semantic_table: Dict[str, str],
                        example_sentence: Optional[str] = None,
                        model_version: str = "zhipu-glm-4",
-                       cluster_id: Optional[int] = None) -> bool:
+                       cluster_id: Optional[int] = None,
+                       annotations: Optional[Dict[str, Any]] = None) -> bool:
     """
     Insert or update a verb definition.
 
@@ -539,6 +689,9 @@ def insert_definition(verb: str, chinese_ndef: str, semantic_table: Dict[str, st
         cluster_id: 所属词义簇 id（见 word_clusters）。为 None 时不覆盖已有值 ——
             LLM 实时生成释义时并不知道词库的簇划分，若把它写成 NULL 会把灌库
             脚本已经建立的簇归属抹掉。
+        annotations: 义位层面的标注字段（见 ``_ANNOTATION_COLUMNS``）。
+            同样的语义：**只更新显式传入的键，未传的键保持库中现值**。
+            LLM 实时生成时不传，于是不会抹掉灌库脚本写入的标注。
 
     Returns:
         bool: True if successful
@@ -547,20 +700,37 @@ def insert_definition(verb: str, chinese_ndef: str, semantic_table: Dict[str, st
         with get_db_cursor() as cursor:
             semantic_json = json.dumps(semantic_table, ensure_ascii=False)
 
-            # Insert or update (ON DUPLICATE KEY UPDATE)
-            # cluster_id 用 COALESCE：显式传入才更新，传 None 则保留库中现值。
-            cursor.execute("""
-                INSERT INTO definitions
-                    (verb, chinese_ndef, semantic_table, example_sentence, model_version, cluster_id)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    chinese_ndef = VALUES(chinese_ndef),
-                    semantic_table = VALUES(semantic_table),
-                    example_sentence = VALUES(example_sentence),
-                    model_version = VALUES(model_version),
-                    cluster_id = COALESCE(VALUES(cluster_id), cluster_id),
-                    updated_at = CURRENT_TIMESTAMP
-            """, (verb, chinese_ndef, semantic_json, example_sentence, model_version, cluster_id))
+            cols = ["verb", "chinese_ndef", "semantic_table",
+                    "example_sentence", "model_version", "cluster_id"]
+            params: List[Any] = [verb, chinese_ndef, semantic_json,
+                                 example_sentence, model_version, cluster_id]
+
+            updates = [
+                "chinese_ndef = VALUES(chinese_ndef)",
+                "semantic_table = VALUES(semantic_table)",
+                "example_sentence = VALUES(example_sentence)",
+                "model_version = VALUES(model_version)",
+                "cluster_id = COALESCE(VALUES(cluster_id), cluster_id)",
+            ]
+
+            for key, value in (annotations or {}).items():
+                if key not in _ANNOTATION_COLUMNS:
+                    logger.warning(f"忽略未知标注字段: {key}")
+                    continue
+                cols.append(key)
+                params.append(value)
+                # 只更新显式传入的键
+                updates.append(f"{key} = VALUES({key})")
+
+            updates.append("updated_at = CURRENT_TIMESTAMP")
+
+            placeholders = ", ".join(["%s"] * len(cols))
+            cursor.execute(
+                f"""INSERT INTO definitions ({", ".join(cols)})
+                    VALUES ({placeholders})
+                    ON DUPLICATE KEY UPDATE {", ".join(updates)}""",
+                tuple(params),
+            )
 
             logger.info(f"Definition inserted/updated for verb: {verb}")
             return True
@@ -571,6 +741,102 @@ def insert_definition(verb: str, chinese_ndef: str, semantic_table: Dict[str, st
     except Exception as e:
         logger.error(f"Unexpected error inserting definition: {e}")
         return False
+
+
+def replace_word_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int:
+    """
+    整体替换某个动词的义位明细（先删后插，幂等）。
+
+    与 ``replace_word_relations`` 同样的取舍：义位是**派生数据**（由 dictionary.db 现场
+    解析而来），整表替换比逐行 diff 简单且绝不会留下孤儿行。用 DELETE-all 而不是
+    TRUNCATE，因为事务里 TRUNCATE 会隐式提交。
+
+    Args:
+        definition_id: ``definitions.id``
+        senses: 义位列表，每项含 sense_index / ch_ndef / prototype_level 等
+
+    Returns:
+        实际写入的行数；失败返回 0
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM word_senses WHERE definition_id = %s", (definition_id,)
+            )
+            if not senses:
+                return 0
+
+            rows = [
+                (
+                    definition_id,
+                    s.get("sense_index", i + 1),
+                    s.get("en_ndef"),
+                    s.get("ch_ndef"),
+                    s.get("construction"),
+                    json.dumps(s.get("examples") or [], ensure_ascii=False),
+                    json.dumps(s.get("ch_examples") or [], ensure_ascii=False),
+                    json.dumps(s.get("synonyms") or [], ensure_ascii=False),
+                    json.dumps(s.get("antonyms") or [], ensure_ascii=False),
+                    s.get("prototype_level"),
+                    s.get("image_schema"),
+                    s.get("alignment"),
+                    s.get("cn_syntax"),
+                    s.get("translation_strategy"),
+                    s.get("source"),
+                    int(s.get("needs_review") or 0),
+                )
+                for i, s in enumerate(senses)
+            ]
+
+            cursor.executemany(
+                """INSERT INTO word_senses
+                       (definition_id, sense_index, en_ndef, ch_ndef, construction,
+                        examples, ch_examples, synonyms, antonyms,
+                        prototype_level, image_schema, alignment,
+                        cn_syntax, translation_strategy, source, needs_review)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s,
+                           %s, %s, %s, %s, %s, %s, %s)""",
+                rows,
+            )
+            return len(rows)
+
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace senses for definition {definition_id}: {e}")
+        return 0
+    except Exception as e:
+        logger.error(f"Unexpected error replacing senses: {e}")
+        return 0
+
+
+def get_senses(verb: str, limit: int = 50) -> List[Dict[str, Any]]:
+    """取某个动词的义位明细，供页面展示与文档生成。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT s.* FROM word_senses s
+                   JOIN definitions d ON d.id = s.definition_id
+                   WHERE d.verb = %s
+                   ORDER BY s.sense_index
+                   LIMIT %s""",
+                (verb, limit),
+            )
+            rows = cursor.fetchall()
+    except pymysql.Error as e:
+        logger.error(f"Failed to fetch senses for '{verb}': {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error fetching senses: {e}")
+        return []
+
+    for row in rows:
+        for field in ("examples", "ch_examples", "synonyms", "antonyms"):
+            value = row.get(field)
+            if isinstance(value, str):
+                try:
+                    row[field] = json.loads(value)
+                except json.JSONDecodeError:
+                    row[field] = []
+    return rows
 
 
 def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
@@ -591,7 +857,8 @@ def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
                        c.label AS cluster_label,
                        c.main_cat AS cluster_main_cat,
                        c.sub_cat AS cluster_sub_cat,
-                       c.size AS cluster_size
+                       c.size AS cluster_size,
+                       c.image_schema AS cluster_image_schema
                 FROM definitions d
                 LEFT JOIN word_clusters c ON c.id = d.cluster_id
                 WHERE d.verb = %s
@@ -613,6 +880,22 @@ def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
                     'cluster_label': row['cluster_label'],
                     'cluster_sub_cat': row['cluster_sub_cat'],
                     'cluster_size': row['cluster_size'],
+                    'cluster_image_schema': row.get('cluster_image_schema'),
+                    # --- v3 义位标注字段（来源见 docs/义项判定标准.docx）---
+                    'en_ndef': row.get('en_ndef'),
+                    'levin_source': row.get('levin_source'),
+                    'cross_subclass': row.get('cross_subclass'),
+                    'sense_brief': row.get('sense_brief'),
+                    'judge_reason': row.get('judge_reason'),
+                    'image_schema': row.get('image_schema'),
+                    'prototype_level': row.get('prototype_level'),
+                    'alignment': row.get('alignment'),
+                    'cn_syntax': row.get('cn_syntax'),
+                    'translation_strategy': row.get('translation_strategy'),
+                    'definition_source': row.get('definition_source'),
+                    'source_rank': row.get('source_rank'),
+                    'sense_count': row.get('sense_count'),
+                    'needs_review': row.get('needs_review'),
                     'created_at': row['created_at'],
                     'updated_at': row['updated_at']
                 }
@@ -670,16 +953,26 @@ def get_all_definitions(limit: int = 100) -> List[Dict[str, Any]]:
 # ============================================
 # 词义簇与词间关系
 # ============================================
-def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None) -> Optional[int]:
+def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None,
+                           image_schema: str = None, cn_syntax: str = None,
+                           translation_strategy: str = None) -> Optional[int]:
     """
     取回词义簇 id，不存在则创建。
 
-    簇的唯一键是 (main_cat, sub_cat) —— 这就是词库里天然的语义分组。
+    簇的唯一键是 (main_cat, sub_cat)，对应 `docs/Levin移动动词候选词筛选表.xlsx`
+    的「主范畴 / 次类」两列。
+
+    簇层面的 `image_schema` / `cn_syntax` / `translation_strategy` **只在非空时覆盖**：
+    这里跟 definitions 的标注字段同一个取舍 —— 同一簇的所有成员共享一套图式与句法
+    特征，但调用方不传时不该把已有值抹成 NULL。
 
     Args:
-        main_cat: 主范畴，如「方式聚焦类」
-        sub_cat: 次范畴，如「奔跑行进」
+        main_cat: 主范畴，如「方式聚焦型」
+        sub_cat: 次类，如「陆地行进类」
         label: 展示名，默认 "main_cat / sub_cat"
+        image_schema: 该簇的意象图式（取值见标准 2 的四类）
+        cn_syntax: 该簇的汉语句法特征
+        translation_strategy: 该簇的译义转化策略
 
     Returns:
         簇 id；数据库不可用时返回 None
@@ -687,13 +980,24 @@ def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None) -> Opt
     if not main_cat or not sub_cat:
         return None
     label = label or f"{main_cat} / {sub_cat}"
+
+    updates = ["label = VALUES(label)", "id = LAST_INSERT_ID(id)"]
+    params: List[Any] = [main_cat, sub_cat, label,
+                         image_schema, cn_syntax, translation_strategy]
+    for col, value in (("image_schema", image_schema),
+                       ("cn_syntax", cn_syntax),
+                       ("translation_strategy", translation_strategy)):
+        if value:
+            updates.append(f"{col} = VALUES({col})")
+
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
-                """INSERT INTO word_clusters (main_cat, sub_cat, label)
-                   VALUES (%s, %s, %s)
-                   ON DUPLICATE KEY UPDATE label = VALUES(label), id = LAST_INSERT_ID(id)""",
-                (main_cat, sub_cat, label),
+                f"""INSERT INTO word_clusters
+                        (main_cat, sub_cat, label, image_schema, cn_syntax, translation_strategy)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE {", ".join(updates)}""",
+                tuple(params),
             )
             cursor.execute(
                 "SELECT id FROM word_clusters WHERE main_cat = %s AND sub_cat = %s",
@@ -704,6 +1008,73 @@ def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None) -> Opt
     except pymysql.Error as e:
         logger.error(f"Failed to get/create cluster {main_cat}/{sub_cat}: {e}")
         return None
+
+
+def prune_empty_clusters() -> int:
+    """
+    删除没有任何成员的词簇，返回删除数量。
+
+    为什么需要：切换分类体系（旧的 25 个 sub_cat → Levin 的 12 个次类）之后，
+    旧簇会全部变成空壳。留着它们会让页面上的「切换词簇」下拉框出现一堆 0 词选项，
+    也会让 get_full_word_graph 报出错误的簇数。
+
+    只删空簇，绝不删有成员的 —— 这个函数的失败模式必须是「少删」而不是「多删」。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT id FROM word_clusters")
+            all_ids = [int(r["id"]) for r in cursor.fetchall()]
+            cursor.execute(
+                "SELECT DISTINCT cluster_id FROM definitions WHERE cluster_id IS NOT NULL"
+            )
+            used = {int(r["cluster_id"]) for r in cursor.fetchall()}
+            stale = [i for i in all_ids if i not in used]
+            if stale:
+                placeholders = ", ".join(["%s"] * len(stale))
+                cursor.execute(
+                    f"DELETE FROM word_clusters WHERE id IN ({placeholders})",
+                    tuple(stale),
+                )
+            return len(stale)
+    except pymysql.Error as e:
+        logger.error(f"Failed to prune empty clusters: {e}")
+        return 0
+
+
+def clear_all_word_data() -> Dict[str, int]:
+    """
+    清空词表相关数据（定义 / 义位 / 关系 / 簇），**保留 feedbacks 与 usage_logs**。
+
+    为什么需要：分类体系变更时，旧的簇归属与由此推导的关系边都是**派生数据**，
+    必须整体重建而不能就地增量 —— 否则新旧两套次类会混在一张图上，得到自相矛盾的
+    结果（旧簇 25 个里有的只剩 1 个成员，新簇 12 个）。
+
+    为什么保留 feedbacks / usage_logs：它们是**用户产生的**，不是派生数据，
+    而且以 verb 字符串而非外键关联，删词表不该连带删掉它们。
+
+    Returns:
+        各表删除行数
+    """
+    removed: Dict[str, int] = {}
+    try:
+        with get_db_cursor() as cursor:
+            for table in ("word_relations", "word_senses"):
+                cursor.execute(f"SELECT COUNT(*) AS n FROM {table}")
+                removed[table] = int(cursor.fetchone()["n"] or 0)
+                cursor.execute(f"DELETE FROM {table}")
+
+            cursor.execute("SELECT COUNT(*) AS n FROM definitions")
+            removed["definitions"] = int(cursor.fetchone()["n"] or 0)
+            cursor.execute("DELETE FROM definitions")
+
+            cursor.execute("SELECT COUNT(*) AS n FROM word_clusters")
+            removed["word_clusters"] = int(cursor.fetchone()["n"] or 0)
+            cursor.execute("DELETE FROM word_clusters")
+    except pymysql.Error as e:
+        logger.error(f"Failed to clear word data: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error clearing word data: {e}")
+    return removed
 
 
 def refresh_cluster_sizes() -> int:
