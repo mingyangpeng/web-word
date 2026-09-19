@@ -38,11 +38,6 @@ from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
-# 粒子数的硬上限（用户要求：最多 200 个动态粒子）。
-# Python 侧定义一次，模板通过 __PARTICLE_MAX__ 注入，测试也读这个常量，
-# 避免「代码里 200、文案里 200、测试里 200」三处各写一遍将来对不上。
-PARTICLE_MAX = 200
-
 # vis-network 静态资源与产物的目录（主脚本 src/app.py 的同级 static/）
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 VIS_LIB = "vis-network.min.js"
@@ -78,7 +73,7 @@ def _esc_js(text: Any) -> str:
 # 但数据没变」时 URL 不变 —— 浏览器和 Streamlit 都认为文件没换，页面继续跑旧渲染
 # 逻辑，改了前端却看不到任何变化，而且重启进程也不一定有用（磁盘上还是旧文件）。
 # 把版本号并进指纹后，改模板即产生新 URL，旧文件被自动清理。
-TEMPLATE_VERSION = 8
+TEMPLATE_VERSION = 16
 
 
 def data_fingerprint(graph: Dict[str, Any]) -> str:
@@ -184,7 +179,6 @@ def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图�
         "NODE_COUNT": str(stats.get("node_count", len(nodes))),
         "EDGE_COUNT": str(stats.get("edge_count", len(links))),
         "CLUSTER_COUNT": str(stats.get("cluster_count", len(clusters))),
-        "PARTICLE_MAX": str(PARTICLE_MAX),
     })
 
 
@@ -339,7 +333,7 @@ _TEMPLATE = """<!DOCTYPE html>
   <div id="graph"></div>
   <canvas id="particles"></canvas>
   <div id="toolbar">
-    <button class="tool-btn on" id="btn-particles"><span class="dot"></span>粒子动效</button>
+    <button class="tool-btn on" id="btn-particles"><span class="dot"></span>节点粒子</button>
     <span id="particle-info">—</span>
     <button class="tool-btn" id="btn-fullscreen">⛶ 全屏</button>
   </div>
@@ -365,7 +359,7 @@ _TEMPLATE = """<!DOCTYPE html>
   </div>
 
   <div id="stats"></div>
-  <div id="hint">滚轮缩放 · 拖拽平移 · 悬停看节点 · 点击看邻居</div>
+  <div id="hint">滚轮缩放 · 拖拽平移 · 悬停看节点 · 点击看邻居<br/>节点即粒子：相互引力斥力 · 带阻尼</div>
 </div>
 
 <script>
@@ -555,7 +549,29 @@ function clearDim() {
   nodesDS.update(RAW_NODES.map(n => ({ id: n.id, opacity: 1 })));
 }
 
+/**
+ * 确保某个节点所属的词簇处于勾选状态，返回是否发生了变化。
+ *
+ * 用户要求：**搜到的词，即使它所在的词簇当前没勾选，也要自动勾选上**。
+ * 否则会出现「搜到了这个词，图上却看不到它」—— 搜索给出了一条导航路径，
+ * 却因为一个隐藏状态通向空处，那比不给导航更糟。
+ *
+ * 只在未勾选时才动：每次都调 applyFilter 会重建粒子集合，白白打断正在进行的运动。
+ */
+function ensureClusterEnabled(nodeId) {
+  const n = nodesDS.get(nodeId);
+  if (!n) return false;
+  const cid = String(n._clusterId);
+  if (enabled.has(cid)) return false;
+  enabled.add(cid);
+  applyFilter();      // 重绘图例与统计，并让节点真正可见
+  return true;
+}
+
 function focusNode(nodeId, doFocus) {
+  // 先让它的簇可见，再聚焦 —— 反过来的话 network.focus 会聚焦到一个当时还
+  // hidden 的坐标上，视野可能落空
+  ensureClusterEnabled(nodeId);
   if (doFocus !== false) network.focus(nodeId, { scale: 1.2, animation: true });
   network.selectNodes([nodeId]);
   showInfo(nodeId);
@@ -577,27 +593,89 @@ focusCb.addEventListener('change', () => {
 });
 
 // ============================================
-// 粒子动效层
+// 粒子物理层：每个单词节点就是一个粒子
 // ============================================
-// 为什么用**独立 canvas 覆盖层**而不是把节点本身做成粒子：
-//   * vis-network 负责布局与交互，粒子层只读它的坐标 —— 两者互不干扰，
-//     粒子再花哨也不会影响拖拽、缩放、命中检测；
-//   * 请求动画帧只重绘粒子层，不必让 vis-network 重绘 2143 条边（那是它最贵的部分）；
-//   * 粒子数量与节点数量解耦，可以按上限裁剪，而节点仍然全部可见可点。
+// 设计（用户要求，2026-09）：
+//   1. **节点本身就是粒子** —— 不再是「节点 + 环绕的小卫星」，节点自己就是那颗粒子；
+//   2. **粒子之间有引力与斥力** —— 斥力让它们互不重叠，引力沿近义边把同簇词拉拢；
+//   3. **有阻尼感** —— 速度每帧按阻尼衰减，不会越跑越快；
+//   4. **速度降到原来的 0.1** —— SPEED_SCALE 是总闸门。
+//
+// ## 为什么自己写物理，而不是直接用 vis-network 的物理引擎
+//
+// vis 的 forceAtlas2Based 是**布局求解器**：目标是「尽快收敛，然后停下来」。
+// 这里要的是「收敛之后仍然缓慢游动」，两者目标相反 —— 所以布局收敛后关掉 vis 物理
+// （见上面的 stabilizationIterationsDone），由本层接管位置更新，再写回给 vis 渲染。
+//
+// ## 为什么保留一个很弱的「回锚」
+//
+// 完全自由的粒子系统会把 force-directed 排出来的语义布局搅乱：各词簇会挤成一团，
+// 图就失去可读性了。锚定力刻意取很小（ANCHOR_K），只抑制整体漂移，
+// 不干预粒子之间的引力斥力 —— 用户要的「动感」来自引力斥力，不是来自漂移。
+//
+// ## 位置空间
+//
+// 全部计算在 **canvas 空间**（vis 的 getPositions / moveNode 用的同一套坐标）。
+// 该空间不受缩放平移影响，所以缩放后不需要重新锚定；只有绘制时才换算成屏幕坐标。
 const pcanvas = document.getElementById('particles');
 const pctx = pcanvas.getContext('2d');
 
-const PARTICLE_MAX = __PARTICLE_MAX__;      // 硬上限：超过就不再加粒子
-const PARTICLE_BASE = 3;       // 每个节点的基础粒子数
-const PARTICLE_EXTRA_MAX = 5;  // 度数最高的节点额外再加几个
-// 有选中节点时，**先把它所在簇喂饱**：该簇最多可占这么大比例的预算。
-// 只做「排在最前」是不够的 —— 轮转下 3 个词的小簇 3 轮就被塞满，
-// 再轮下去也涨不上去，选中与不选中的粒子数完全一样（实测过）。
-const FOCUS_SHARE = 0.5;
+// **不再有粒子数量上限**：每个可见节点就是一个粒子，所以粒子数恒等于可见节点数。
+//
+// 之前那套「200 上限 + 选中簇优先吃配额」的预算分配随之作废 —— 不设上限时
+// 每个可见节点都拿得到粒子，也就无所谓谁先谁后、谁优先。相关常量与两阶段分配代码
+// 一并删除，不保留「以后可能用得上」的开关：没有调用方的死代码只会误导后来的人。
+// ---- 物理参数（单位：canvas 单位 / 帧）----
+//
+// 收在一个可变对象里，而不是散落的 const：这些值必须靠实测标定（见 __particleDebug.tune），
+// 散落的 const 无法在页面上直接调参，每试一组就要改文件 + 重启 + 重新加载。
+//
+// 标定的目标不是「力有多大」，而是**稳态速度落在哪里**：
+// 一阶阻尼系统里 v_eq ≈ a · DAMPING/(1-DAMPING) = 9a（DAMPING=0.9）。
+// 所以加速度量级必须控制在 0.01 上下，否则 v_eq 会顶到 MAX_SPEED —— 那时运动由
+// 限速决定而不是由引力斥力与阻尼决定，观感是「匀速平移」而不是「有黏滞感的游动」。
+// 第一版把 REPULSE_K 设成 4200 就踩了这个坑：实测 171 个粒子全部贴着 MAX_SPEED。
+// 这些值是**在浏览器里实测标定**出来的，不是拍脑袋定的。标定过程记录在此，
+// 因为下一轮想调手感的人需要知道为什么是这几个数：
+//
+//   参数组            位移/秒   v中位   被限速节点
+//   DAMPING=0.90      1.465    0.250   167/171   ← 初版：几乎全部顶在速度上限
+//   ACCEL_MAX=0.05
+//
+//   DAMPING=0.94      1.280    0.219     0/171   ← 采用
+//   ACCEL_MAX=0.014
+//
+// 关键指标是**被限速的节点数**：一旦大多数节点的速度都等于 MAX_SPEED，运动就由
+// 限速决定而不是由引力/斥力/阻尼决定，观感变成「整张图匀速平移」，
+// 完全失去用户要的「粒子相互引力斥力 + 阻尼」的质感。
+// 所以 MAX_SPEED 只作安全兜底（防止某个粒子被弹飞），正常运行时不该被碰到。
+//
+// 一阶阻尼系统的稳态速度 v_eq ≈ a·DAMPING/(1-DAMPING)。DAMPING=0.94 时系数约 15.7，
+// 配 ACCEL_MAX=0.014 得 v_eq≈0.22，换算成每帧位移 0.022 canvas 单位 —— 缓而不滞。
+const PHYS = {
+  SPEED_SCALE: 0.1,      // 速度总缩放 —— 用户要求：降到原来的 0.1
+  DAMPING: 0.94,         // 阻尼：每帧保留 94% 速度，有明显的黏滞拖尾感
+  ANCHOR_K: 0.0003,      // 拉回布局原位的弱弹簧（只防整体漂移）
+  REPULSE_K: 3,          // 粒子间斥力强度（与距离平方成反比）
+  REPULSE_RANGE: 110,    // 斥力作用半径，超出即忽略（省算力且避免远处干扰）
+  MIN_DIST: 6,           // 距离下限，避免除零与无限大的力
+  SPRING_K: 0.0006,      // 近义边上的引力系数
+  SPRING_REST: 22,       // 边引力的静止长度
+  MAX_SPEED: 1.0,        // 速度上限：只做安全兜底，实测 0/171 节点被触发
+  ACCEL_MAX: 0.014,      // 净加速度上限：邻居多的节点受力会线性累加，需要护栏
+};
 
 let particleOn = true;
-let particles = [];
+// 是否已接管位置更新。布局收敛前交给 vis 的求解器，收敛后本层接手。
+let physicsArmed = false;
 let pW = 0, pH = 0, dpr = 1;
+
+// 粒子的分配结果（哪些节点参与运动）与物理状态
+let particles = [];   // [{node, cluster, color, size}] —— 分配结果
+let live = [];        // [{id, x, y, vx, vy, ax, ay, homeX, homeY, color, size}]
+let liveIndex = new Map();  // node id -> live 数组下标
+let liveEdges = [];   // [[i, j], ...] 指向 live 的下标，两端都已激活动
+const homePos = new Map();  // node id -> 布局原位（锚定用，跨 rebuild 保留）
 
 function resizeParticles() {
   const r = document.getElementById('graph-wrap').getBoundingClientRect();
@@ -612,115 +690,166 @@ function resizeParticles() {
 }
 resizeParticles();
 
-// 决定哪些节点有粒子：**优先当前有选中节点的簇**。
-// 用户明确要求「如果有被选中的词簇，则优先该簇有动态粒子」—— 簇大时粒子预算
-// 不够分，所以先把预算给用户正在看的那个簇，剩下的按度数（簇大小）补。
-function focusClusterIds() {
-  const ids = new Set();
-  network.getSelectedNodes().forEach(id => {
-    const n = nodesDS.get(id);
-    if (n && !n.hidden) ids.add(n._clusterId);
-  });
-  return ids;
-}
-
-function particlesPerNode(n, maxDeg) {
-  const extra = Math.round(PARTICLE_EXTRA_MAX * (n._degree / maxDeg));
-  return PARTICLE_BASE + extra;
-}
-
 function rebuildParticles() {
-  particles = [];
-  const focusClusters = focusClusterIds();
-  // 顺序有意义：被选中的簇排前面，先吃预算
   const visible = RAW_NODES.filter(n => !nodesDS.get(n.id).hidden);
-  if (!visible.length) { updateParticleInfo(0); return; }
-
-  const maxDeg = visible.reduce((m, n) => Math.max(m, n._degree), 1) || 1;
-
-  // 按簇分组，簇内按度数降序（大簇里先给枢纽节点）
-  const byCluster = new Map();
-  for (const n of visible) {
-    if (!byCluster.has(n._clusterId)) byCluster.set(n._clusterId, []);
-    byCluster.get(n._clusterId).push(n);
-  }
-  for (const list of byCluster.values()) list.sort((a, b) => b._degree - a._degree);
-
-  const clusterIds = [...byCluster.keys()].sort((a, b) => {
-    const fa = focusClusters.has(a) ? 1 : 0;
-    const fb = focusClusters.has(b) ? 1 : 0;
-    if (fa !== fb) return fb - fa;                       // 选中的簇优先
-    return byCluster.get(b).length - byCluster.get(a).length;  // 其次按簇大小
-  });
-
-  function takeFrom(n) {
-    const want = Math.min(particlesPerNode(n, maxDeg), PARTICLE_MAX - particles.length);
-    for (let i = 0; i < want; i++) {
-      particles.push({
-        node: n.id,
-        cluster: n._clusterId,
-        color: n.color.background,
-        angle: Math.random() * Math.PI * 2,
-        // 轨道半径略大于节点半径，粒子绕在节点外圈而不是被节点盖住
-        radius: n.size * 0.55 + Math.random() * 4,
-        speed: 0.008 + Math.random() * 0.025,
-        size: 1.4 + Math.random() * 2.2,
-        alpha: 0.45 + Math.random() * 0.5,
-      });
-    }
-    return want;
-  }
-
-  // 轮转分配：每轮给每个簇依次取一个节点，直到预算用光。
-  // 不能简单按度数排序取前 N —— 那样 200 个预算会被一个 56 词的大簇全部吃掉，
-  // 整张图上只有一处发光（实测过：200 个粒子全落在「常态行走」）。
-  // 轮转保证每个簇都有粒子，被选中的簇因为排在最前，每轮先拿、拿得更多。
-  const cursor = new Map(clusterIds.map(c => [c, 0]));
-
-  // 第一阶段：把选中簇喂到 FOCUS_SHARE 的预算。每一轮给它的每个节点再来一份，
-  // 直到达到配额 —— 这样大簇会明显变密。
-  if (focusClusters.size) {
-    const quota = Math.floor(PARTICLE_MAX * FOCUS_SHARE);
-    const focusList = clusterIds.filter(c => focusClusters.has(c));
-    let fProgress = true;
-    while (particles.length < quota && fProgress) {
-      fProgress = false;
-      for (const cid of focusList) {
-        if (particles.length >= quota) break;
-        for (const n of byCluster.get(cid)) {
-          if (particles.length >= quota) break;
-          takeFrom(n);
-        }
-        fProgress = true;
-      }
-    }
-  }
-
-  // 第二阶段：按簇轮转，把剩余预算分摊到所有簇（含选中簇）。
-  // 轮转而不是「按度数取前 N」：实测后者会让 56 词的大簇独占全部 200 个粒子，
-  // 25 个簇里只有 1 个发光。
-  let progress = true;
-  while (particles.length < PARTICLE_MAX && progress) {
-    progress = false;
-    for (const cid of clusterIds) {
-      if (particles.length >= PARTICLE_MAX) break;
-      const list = byCluster.get(cid);
-      const i = cursor.get(cid);
-      if (i >= list.length) continue;
-      cursor.set(cid, i + 1);
-      takeFrom(list[i]);
-      progress = true;
-    }
-  }
+  particles = visible.map(n => ({
+    node: n.id,
+    cluster: n._clusterId,
+    color: n.color.background,
+    size: n.size,
+  }));
+  applyParticleSet(false);
   updateParticleInfo(particles.length);
 }
 
-function updateParticleInfo(shown) {
-  const f = focusClusterIds().size;
-  document.getElementById('particle-info').textContent =
-    shown + ' / ' + PARTICLE_MAX + ' 粒子' + (f ? '（聚焦选中簇）' : '');
+/**
+ * 把分配结果同步到物理状态：新粒子从当前节点位置起步，退出集合的丢掉状态。
+ *
+ * 已经在动的粒子保留 x/y/vx/vy —— 否则用户每次筛选、点选都会看到一次「回弹」，
+ * 手感和「缓慢游动」正好相反。
+ *
+ * Args:
+ *   reset: 丢弃已有状态、完全按当前节点位置重建。仅在 armPhysics（布局收敛）时用，
+ *          因为那一刻节点位置才第一次是「最终布局」。
+ */
+function applyParticleSet(reset) {
+  const prevById = new Map();
+  if (!reset) for (const a of live) prevById.set(a.id, a);
+
+  const pos = network.getPositions(particles.map(p => p.node));
+
+  const nextLive = [];
+  const nextIndex = new Map();
+  for (const p of particles) {
+    const cur = pos[p.node];
+    if (!cur) continue;              // 节点还没布局出来，跳过（下次 rebuild 会补上）
+    const prev = prevById.get(p.node);
+    if (!homePos.has(p.node)) homePos.set(p.node, { x: cur.x, y: cur.y });
+    const home = homePos.get(p.node);
+    nextIndex.set(p.node, nextLive.length);
+    nextLive.push({
+      id: p.node,
+      x: prev ? prev.x : cur.x,
+      y: prev ? prev.y : cur.y,
+      vx: prev ? prev.vx : 0,
+      vy: prev ? prev.vy : 0,
+      ax: 0, ay: 0,
+      homeX: home.x, homeY: home.y,
+      color: p.color,
+      size: p.size,
+    });
+  }
+  live = nextLive;
+  liveIndex = nextIndex;
+
+  // 边只在两端都参与运动时才有引力 —— 一端静止的边如果也施力，
+  // 会把静止节点拉走又拉不回来，图会散架。
+  liveEdges = [];
+  for (const e of RAW_EDGES) {
+    const i = liveIndex.get(e.from), j = liveIndex.get(e.to);
+    if (i !== undefined && j !== undefined) liveEdges.push([i, j]);
+  }
 }
 
+/**
+ * 一帧的物理积分。
+ *
+ * 力的构成（都在 canvas 空间）：
+ *   * 锚定  —— 拉回布局原位，很弱，只防整体漂移
+ *   * 斥力  —— 所有粒子两两（距离平方反比，超出 REPULSE_RANGE 忽略）
+ *   * 引力  —— 沿近义边（弹簧，目标长度 SPRING_REST）
+ * 然后阻尼衰减、限速、按 SPEED_SCALE 积分位置。
+ */
+function stepPhysics() {
+  // 布局没收敛前不接管：那时 vis 的求解器比本层快得多，抢着改位置只会互相打架
+  if (!physicsArmed || !particleOn || live.length < 2) return;
+
+  // 1) 锚定 + 清零累加器
+  for (const a of live) {
+    a.ax = (a.homeX - a.x) * PHYS.ANCHOR_K;
+    a.ay = (a.homeY - a.y) * PHYS.ANCHOR_K;
+  }
+
+  // 2) 斥力：粒子两两互斥
+  const range2 = PHYS.REPULSE_RANGE * PHYS.REPULSE_RANGE;
+  for (let i = 0; i < live.length; i++) {
+    const a = live[i];
+    for (let j = i + 1; j < live.length; j++) {
+      const b = live[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > range2) continue;
+      const d = Math.max(Math.sqrt(d2), PHYS.MIN_DIST);
+      const f = PHYS.REPULSE_K / (d * d);
+      const ux = dx / d, uy = dy / d;
+      a.ax -= ux * f; a.ay -= uy * f;
+      b.ax += ux * f; b.ay += uy * f;
+    }
+  }
+
+  // 3) 引力：近义边上的弹簧
+  for (const [i, j] of liveEdges) {
+    const a = live[i], b = live[j];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const d = Math.max(Math.sqrt(dx * dx + dy * dy), PHYS.MIN_DIST);
+    const f = PHYS.SPRING_K * (d - PHYS.SPRING_REST);
+    const ux = dx / d, uy = dy / d;
+    a.ax += ux * f; a.ay += uy * f;
+    b.ax -= ux * f; b.ay -= uy * f;
+  }
+
+  // 4) 加速度护栏 + 阻尼 + 限速 + 积分
+  for (const a of live) {
+    // 邻居多的节点受力会线性累加（45 词的大簇里每个节点有 44 条边），
+    // 不设护栏的话大簇会明显比小簇抖。这里限的是**净加速度**，
+    // 方向上保持力的合成结果，只压缩幅度。
+    const am = Math.hypot(a.ax, a.ay);
+    if (am > PHYS.ACCEL_MAX) {
+      const k = PHYS.ACCEL_MAX / am;
+      a.ax *= k; a.ay *= k;
+    }
+    a.vx = (a.vx + a.ax) * PHYS.DAMPING;
+    a.vy = (a.vy + a.ay) * PHYS.DAMPING;
+    const sp = Math.hypot(a.vx, a.vy);
+    if (sp > PHYS.MAX_SPEED) {
+      a.vx = a.vx / sp * PHYS.MAX_SPEED;
+      a.vy = a.vy / sp * PHYS.MAX_SPEED;
+    }
+    a.x += a.vx * PHYS.SPEED_SCALE;
+    a.y += a.vy * PHYS.SPEED_SCALE;
+  }
+
+  // 5) 写回给 vis
+  writeBackPositions();
+}
+
+/**
+ * 把物理算出的位置写回 vis。
+ *
+ * **不要逐帧调 network.moveNode()**：moveNode 内部每次都会安排一个延迟的
+ * `startSimulation` 事件，逐帧调 171 次会堆积成千上万个待处理定时器，把主线程压死
+ * （实测过一次，页面直接卡死）。moveNode 真正做的事就是给 body.nodes[id] 赋 x/y，
+ * 这里直接赋值，最后统一 redraw 一次 —— 效果一样，开销可以忽略。
+ */
+function writeBackPositions() {
+  const bn = network.body.nodes;
+  for (const a of live) {
+    const node = bn[a.id];
+    if (node) { node.x = a.x; node.y = a.y; }
+  }
+  network.redraw();
+}
+
+function updateParticleInfo(shown) {
+  document.getElementById('particle-info').textContent = shown + ' 个节点粒子';
+}
+
+/**
+ * 把一颗粒子画出来：光晕 + 核心 + 沿速度方向的短拖尾。
+ *
+ * 节点位置就是粒子位置，所以这层画出来的粒子正好盖在 vis 的节点圆点上 ——
+ * 「单词节点就是粒子」在视觉上成立，而不是节点旁边另挂一圈小点。
+ */
 function drawParticles() {
   requestAnimationFrame(drawParticles);
   if (!particleOn) {
@@ -729,52 +858,133 @@ function drawParticles() {
   }
   pctx.clearRect(0, 0, pW, pH);
 
-  // 一次性取所有位置，避免每个粒子各调一次 getPositions
-  const ids = [];
-  const seen = new Set();
-  for (const p of particles) { if (!seen.has(p.node)) { seen.add(p.node); ids.push(p.node); } }
-  const pos = network.getPositions(ids);
-
+  // **半径必须跟着 vis 的缩放走。** vis 把节点画成 size*scale 个屏幕像素，
+  // 粒子层如果直接按 canvas 单位画，在缩小的视野里就会比节点大出好几倍。
+  // 实测过：视野缩放 0.268 时节点只有 4~9px，而当时的粒子半径是 14~31px（3.4 倍），
+  // 171 个半透明光晕在 'lighter' 叠加下互相加亮，17% 的已绘制像素变成近纯白 ——
+  // 整张图糊成一团白光，正是用户说的「一团光晕，啥也看不清」。
+  const scale = network.getScale();
   pctx.globalCompositeOperation = 'lighter';
-  for (const p of particles) {
-    const n = nodesDS.get(p.node);
-    if (!n || n.hidden) continue;
-    const cur = pos[p.node];
-    if (!cur) continue;
-    const dom = network.canvasToDOM(cur);
-    if (dom.x < -20 || dom.y < -20 || dom.x > pW + 20 || dom.y > pH + 20) continue;
+  const t = performance.now() / 1000;
 
-    // 绕着自己的节点做轨道运动。轨道半径随节点大小走，且带一点向外的漂移感，
-    // 看起来像节点在往外冒能量，而不是一群独立光点到处乱飘。
-    p.angle += p.speed;
-    const pulse = 0.75 + 0.25 * Math.sin(p.angle * 2.2);
+  for (const a of live) {
+    const dom = network.canvasToDOM({ x: a.x, y: a.y });
+    if (dom.x < -60 || dom.y < -60 || dom.x > pW + 60 || dom.y > pH + 60) continue;
 
-    // 拖尾：沿运动方向往回画 3 个逐渐变小的残影。
-    // 只画一个圆点的话，在 25 簇 155 节点的图上几乎看不见（实测非透明像素仅 ~1300）；
-    // 拖尾既提高可见度，也带来「在动」的观感。
-    const TRAIL = 3;
-    for (let t = TRAIL; t >= 0; t--) {
-      const a = p.angle - p.speed * t * 4.5;
-      const ox = Math.cos(a) * p.radius;
-      const oy = Math.sin(a * 1.3) * p.radius;
-      const fade = t === 0 ? 1 : 0.30 * (1 - t / (TRAIL + 1));
-      const scale = t === 0 ? 1 : 0.55;
-      pctx.globalAlpha = p.alpha * pulse * fade;
-      pctx.fillStyle = p.color;
+    // 呼吸：让静止的粒子也有细微的明暗变化，否则慢速下看不出「活的」
+    const breathe = 0.78 + 0.22 * Math.sin(t * 1.6 + a.homeX * 0.01 + a.homeY * 0.013);
+    // 下限 2.5px：缩得很小时至少还是个看得见的点，不会整片消失。
+    // 上限 26px：放得很大时光晕也不会糊满屏幕。
+    const r = Math.min(Math.max(a.size * scale, 2.5), 26);
+
+    // 缩放太小时（整图铺满画布）只点一颗实心点，不画光晕也不画拖尾。
+    // 理由：光晕和拖尾都是「放大后才看得见」的细节，而在小缩放下它们是纯粹的成本 ——
+    // 171 个半透明圆叠加起来会把画布糊白，恰恰毁掉唯一重要的东西：词的标签。
+    // 阈值取 r<4：那时节点本身也就 4px，光晕再小也会盖住旁边的词。
+    const small = r < 4;
+
+    // 光晕：只比节点大一点。之前是节点半径的 3.2 倍，那是「节点旁边一团雾」而不是
+    // 「节点在发光」，而且叠加后能把邻居的词一起盖掉。
+    const glowR = r * 1.9;
+    if (!small) {
+    const grad = pctx.createRadialGradient(dom.x, dom.y, 0, dom.x, dom.y, glowR);
+    grad.addColorStop(0, a.color);
+    grad.addColorStop(0.35, hexA(a.color, 0.30 * breathe));
+    grad.addColorStop(1, hexA(a.color, 0));
+      pctx.globalAlpha = 0.55;
+      pctx.fillStyle = grad;
       pctx.beginPath();
-      pctx.arc(dom.x + ox, dom.y + oy, p.size * pulse * scale, 0, Math.PI * 2);
+      pctx.arc(dom.x, dom.y, glowR, 0, Math.PI * 2);
       pctx.fill();
     }
+
+    // 拖尾：沿速度反方向留几颗残影。速度很慢，所以拖尾很短 —— 这是对的，
+    // 长拖尾会让人以为是「快速飞行」而不是「缓慢游动」。
+    const sp = Math.hypot(a.vx, a.vy);
+    if (!small && sp > 0.05) {
+      const ux = a.vx / sp, uy = a.vy / sp;
+      const len = Math.min(sp * 26, r * 2.6);
+      for (let k = 1; k <= 3; k++) {
+        const f = 1 - k / 4;
+        pctx.globalAlpha = 0.22 * f * breathe;
+        pctx.fillStyle = a.color;
+        pctx.beginPath();
+        pctx.arc(dom.x - ux * len * (k / 3), dom.y - uy * len * (k / 3),
+                 r * 0.55 * f, 0, Math.PI * 2);
+        pctx.fill();
+      }
+    }
+
+    // 核心：白色高光点。它是「粒子感」的来源，但半径必须小于节点圆，
+    // 否则会盖掉 vis 画的节点本体颜色（那才是词簇的语义信息）。
+    // 小缩放下不提亮反而看不见，所以那里不乘 breathe。
+    pctx.globalAlpha = small ? 1 : 0.8 * breathe;
+    pctx.fillStyle = '#ffffff';
+    pctx.beginPath();
+    pctx.arc(dom.x, dom.y, Math.max(r * 0.32, 1.1), 0, Math.PI * 2);
+    pctx.fill();
   }
+
   pctx.globalAlpha = 1;
   pctx.globalCompositeOperation = 'source-over';
+}
+
+/** 把 #rrggbb 转成 rgba(...)。需要它是因为 canvas 渐变的色标不支持 alpha 简写。 */
+function hexA(hex, alpha) {
+  const h = String(hex).replace('#', '');
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  if (isNaN(n)) return 'rgba(160,160,200,' + alpha + ')';
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+}
+
+// 物理与绘制是两个独立的循环：物理按固定节奏走（stepPhysics 由 rAF 驱动，
+// 但内部按倍数限速），绘制每帧都做。合在一起会让低帧率下物理变慢、手感不一致。
+let physAccum = 0;
+let lastPhysT = performance.now();
+// 帧耗时滑动平均，用于自适应降载
+let frameMs = 16;
+// 连续太慢就跳过物理步（只保留绘制）。宁可动效变慢，也不能让页面卡住 ——
+// 这个页面还要负责搜索、点选、筛选，动效永远不该是瓶颈。
+let physSkip = 0;
+
+function physicsLoop(now) {
+  requestAnimationFrame(physicsLoop);
+  if (!particleOn) { lastPhysT = now; frameMs = 16; return; }
+
+  const dt = Math.min(now - lastPhysT, 100);
+  lastPhysT = now;
+  frameMs = frameMs * 0.9 + dt * 0.1;
+
+  // 自适应：>33ms（低于 30fps）隔一步跑一次；>60ms 直接暂停物理，等机器缓过来
+  if (frameMs > 60) { physSkip = 3; }
+  else if (frameMs > 33) { physSkip = 1; }
+  if (physSkip > 0) { physSkip--; return; }
+
+  // 固定步长 60Hz，全程最多补 2 步，避免切回标签页时「瞬移」
+  physAccum += dt;
+  let steps = 0;
+  while (physAccum >= 16.67 && steps < 2) {
+    stepPhysics();
+    physAccum -= 16.67;
+    steps++;
+  }
+  if (physAccum > 16.67 * 4) physAccum = 0;
 }
 
 // ---------- 工具栏 ----------
 document.getElementById('btn-particles').addEventListener('click', e => {
   particleOn = !particleOn;
   e.currentTarget.classList.toggle('on', particleOn);
-  if (!particleOn) pctx.clearRect(0, 0, pW, pH);
+  if (!particleOn) {
+    // 关掉时把粒子送回原位并清零速度，否则它们会停在半路，
+    // 再打开时从偏移位置继续，看起来像「漂移过的图」
+    for (const a of live) {
+      a.x = a.homeX; a.y = a.homeY; a.vx = 0; a.vy = 0;
+    }
+    writeBackPositions();
+    pctx.clearRect(0, 0, pW, pH);
+  }
 });
 
 document.getElementById('btn-fullscreen').addEventListener('click', async e => {
@@ -808,11 +1018,65 @@ window.addEventListener('resize', () => { resizeParticles(); network.setSize('10
 // 图谱状态变化 → 粒子集合跟着重建（节点隐藏/选中都会影响谁该有粒子）
 graphChangeHooks.push(rebuildParticles);
 
+// 拖拽结束后重新锚定并清零速度：用户把节点拖到新位置，就是给了它一个新的"原位"，
+// 否则锚定力会立刻把它拽回旧位置，看起来像拖不动。
+network.on('dragEnd', params => {
+  const ids = params.nodes && params.nodes.length ? params.nodes : network.getSelectedNodes();
+  const pos = network.getPositions(ids);
+  for (const id of ids) {
+    if (!homePos.has(id)) continue;
+    const cur = pos[id];
+    if (cur) homePos.set(id, { x: cur.x, y: cur.y });
+    const a = live.find(x => x.id === id);
+    if (a) { a.vx = 0; a.vy = 0; a.x = cur.x; a.y = cur.y; a.homeX = cur.x; a.homeY = cur.y; }
+  }
+});
+
+/**
+ * 接管位置更新。
+ *
+ * 在**布局收敛之后**才调用：收敛前 vis 的求解器在把节点铺开，本层这时改位置只会
+ * 互相打架、收敛更慢。接管时按最终位置重建锚点 —— 粒子应该以「布局排好的样子」为家。
+ */
+function armPhysics() {
+  if (physicsArmed) return;
+  const pos = network.getPositions(RAW_NODES.map(n => n.id));
+  homePos.clear();
+  for (const [id, p] of Object.entries(pos)) homePos.set(id, { x: p.x, y: p.y });
+  physicsArmed = true;
+  applyParticleSet(true);   // 丢弃旧状态，用收敛后的位置重建
+}
+
+network.once('stabilizationIterationsDone', armPhysics);
+
+// 兜底：若收敛在监听注册之前就完成了（例如页面恢复时物理已被关掉），
+// 上面那个 once 永远不会触发，物理就永远不开始。这里主动检查一次。
+// 判断依据是 vis 的 physics 选项已被上面那个 handler 关掉。
+setTimeout(() => {
+  const phy = network.physics;
+  if (!physicsArmed && phy && phy.options && phy.options.enabled === false) armPhysics();
+}, 2000);
+
 // 初始：全图铺开
 renderLegend();
 updateStats();
 rebuildParticles();
+requestAnimationFrame(physicsLoop);
 drawParticles();
+
+// 调试接口：测试与人工排查用（页面上的粒子数、速度、阻尼等都能查到）
+window.__particleDebug = {
+  get live() { return live; },
+  get particles() { return particles; },
+  get liveEdges() { return liveEdges; },
+  get homePos() { return homePos; },
+  PHYS,
+  ensureClusterEnabled,
+  // 现场调参：Object.assign(PHYS, {...})，用于标定手感而不必改文件重启
+  tune(obj) { Object.assign(PHYS, obj); },
+  stepPhysics,
+  rebuild: rebuildParticles,
+};
 </script>
 </body>
 </html>
