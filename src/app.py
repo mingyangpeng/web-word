@@ -16,7 +16,7 @@ from src.mysql_db import (
     init_database, get_stats, get_hot_verbs, get_feedback_data,
     insert_feedback, get_definition_by_verb, insert_definition,
     log_usage, get_synonyms, get_cluster_graph, get_cluster_graph_by_id, list_clusters,
-    get_full_word_graph,
+    get_full_word_graph, get_senses,
 )
 from src.cluster_graph import render_cluster_graph_svg
 from src.graph_export import ensure_graph_html
@@ -149,6 +149,22 @@ st.markdown("""
     font-weight: 600;
     font-size: 1.05em;
     color: #ffffff;
+}
+
+/* 卡片正文容器。
+   这里用带 key 的容器 + CSS，而不是 st.markdown(get_card_style())：
+   后者只是把 CSS **文本**当成 markdown 渲染出来，页面上会出现 5 段
+   「background-color: #f7fafc; padding: 24px; ...」的原始文字（实测可见），
+   而且那对 <div>/</div> 也没有真的包住任何东西 —— Streamlit 把每次
+   st.markdown 渲染成独立兄弟节点，HTML 无法跨调用闭合。
+   与搜索栏（.st-key-search_bar）是同一个模式，见文件顶部说明。 */
+[class*="st-key-card_body_"] {
+    background-color: #f7fafc;
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -347,6 +363,93 @@ def render_card_prototype(verb):
 
     html += '</div>'
     return html
+
+def render_card_annotation(verb):
+    """
+    渲染「义位标注」卡片。
+
+    字段与取值全部来自 `docs/义项判定标准.docx`：
+
+      * 原型层级 —— Y 原型物理位移义 / 拓展 隐喻引申义 / N 剔除
+      * 意象图式 —— 源点脱离 / 终点抵达 / 方式伴随 / 互动位移（四类，不可自增）
+      * 英汉对齐 —— 完全对齐 / 部分对齐 / 零对齐
+      * 汉语句法特征、译义转化策略 —— 配套字段
+
+    卡片刻意把「来源」与「待复核」放在最显眼处：文档要求所有判定可回溯到 OALD 原文，
+    而 dictionary.db 只覆盖了少数词，所以必须让使用者一眼看出这条是词典原文还是
+    二手拼装、是已定稿还是候选值。
+    """
+    definition = get_definition_by_verb(verb) if DB_AVAILABLE else None
+    senses = get_senses(verb) if DB_AVAILABLE else []
+
+    html = '''
+    <div style="padding: 20px;">
+        <h4 style="color: #9f7aea; font-weight: 600; margin: 0 0 16px 0;">🏷️ 义位标注</h4>
+    '''
+
+    if not definition:
+        return html + '<p style="color: #718096;">暂无标注数据（数据库不可用或该词未收录）</p></div>'
+
+    def field(label, value, color="#2d3748"):
+        if not value:
+            return ""
+        return (f'<p style="color: #2d3748; margin-bottom: 8px;">'
+                f'<strong>{label}：</strong><span style="color: {color};">{value}</span></p>')
+
+    html += field("词目主导义", definition.get("sense_brief"))
+    html += field("Levin 来源子类", definition.get("levin_source"))
+    html += field("原型层级", definition.get("prototype_level"), "#805ad5")
+    html += field("意象图式", definition.get("image_schema"), "#3182ce")
+    html += field("英汉对齐等级", definition.get("alignment"), "#dd6b20")
+    html += field("汉语句法特征", definition.get("cn_syntax"))
+    html += field("译义转化策略", definition.get("translation_strategy"))
+    html += field("判定依据", definition.get("judge_reason"))
+
+    # 来源与复核状态 —— 文档要求可回溯，这两项必须显式呈现
+    source = definition.get("definition_source") or "未知"
+    rank = definition.get("source_rank")
+    source_label = {
+        "dictionary.db": "词典原文（OALD，可回溯）",
+        "legacy-library": "既有词库（二手转写，非词典原文）",
+        "levin-brief": "研究者标注的原型义（短语，非完整释义）",
+        "oxford-en": "仅英文释义，中文待补",
+        "pending": "暂无释义",
+    }.get(source, source)
+    badge_color = "#38a169" if rank == 1 else ("#dd6b20" if rank and rank <= 2 else "#e53e3e")
+    html += (f'<p style="color: #2d3748; margin-bottom: 8px;"><strong>释义来源：</strong>'
+             f'<span style="background-color: {badge_color}; color: white; padding: 2px 10px; '
+             f'border-radius: 10px; font-size: 0.85em;">{source_label}</span></p>')
+
+    if definition.get("needs_review"):
+        html += ('<p style="color: #975a16; background-color: #fefcbf; padding: 8px 12px; '
+                 'border-radius: 6px; font-size: 0.9em; margin-top: 12px;">'
+                 '⚠️ 标注为规则推导的<b>候选值</b>，依《义项判定标准》需人工复核确认。</p>')
+
+    # 义位明细表
+    if senses:
+        html += ('<p style="color: #2d3748; margin: 16px 0 8px 0;"><strong>义位明细（'
+                 + str(len(senses)) + ' 条，分析单元为义位而非词目）:</strong></p>')
+        html += '<table style="border-collapse: collapse; width: 100%; font-size: 0.9em;">'
+        html += ('<thead style="background-color: #4a5568; color: white;">'
+                 '<tr><th style="padding: 8px; text-align: left; width: 40px;">#</th>'
+                 '<th style="padding: 8px; text-align: left; width: 70px;">层级</th>'
+                 '<th style="padding: 8px; text-align: left;">释义</th>'
+                 '<th style="padding: 8px; text-align: left; width: 90px;">对齐</th></tr></thead><tbody>')
+        for i, sense in enumerate(senses):
+            bg = "#f7fafc" if i % 2 == 0 else "#ffffff"
+            level = sense.get("prototype_level") or "-"
+            level_color = "#805ad5" if level == "Y" else "#a0aec0"
+            ch = sense.get("ch_ndef") or sense.get("en_ndef") or "（空）"
+            html += (f'<tr style="background-color: {bg}; border-bottom: 1px solid #e2e8f0;">'
+                     f'<td style="padding: 8px;">{sense.get("sense_index", i + 1)}</td>'
+                     f'<td style="padding: 8px; color: {level_color}; font-weight: 600;">{level}</td>'
+                     f'<td style="padding: 8px;">{ch[:160]}</td>'
+                     f'<td style="padding: 8px; color: #718096;">{sense.get("alignment") or "-"}</td></tr>')
+        html += '</tbody></table>'
+
+    html += '</div>'
+    return html
+
 
 def render_card_anchor(verb):
     """
@@ -1343,14 +1446,15 @@ def render_main_area():
         for card_key, title, icon, body_renderer in (
             ("prototype", "原型与位移事件分析", "🧬", render_card_prototype),
             ("anchor", "范畴锚定", "🎯", render_card_anchor),
+            ("annotation", "义位标注", "🏷️", render_card_annotation),
             ("core", "核心释义与多维辨异", "📚", render_card_core),
             ("example", "图式示例", "🖼️", render_card_example),
         ):
-            st.markdown(get_card_style(), unsafe_allow_html=True)
             render_card_header(card_key, title, icon)
             if st.session_state.card_expanded.get(card_key, True):
-                st.markdown(body_renderer(verb), unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+                # 正文放进带 key 的容器，外观由 [class*="st-key-card_body_"] 提供
+                with st.container(key=f"card_body_{card_key}"):
+                    st.markdown(body_renderer(verb), unsafe_allow_html=True)
 
         # 词簇关系图谱（graphify 风格的词与词关系可视化）
         st.markdown(get_section_spacing(), unsafe_allow_html=True)

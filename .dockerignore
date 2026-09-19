@@ -17,7 +17,15 @@ htmlcov/
 *.bak
 screenshots
 data/mysql/
-docs/
+
+# docs/ 里的二进制文档不必进镜像，**但 Levin 筛选表必须进** —— 它现在是词目与
+# 分类（三主范畴 / 十二次类）的权威来源，缺了它 load_word_library.py 会直接抛错。
+#
+# 这里刻意写 `docs/*` 而不是 `docs/`：按 Docker 的规则，
+# 「父目录被整体排除时，无法再用 ! 把它里面的文件加回来」（官方文档明确说明）。
+# 写成 `docs/*` 只排除目录**内容**、不排除目录本身，! 例外才能生效。
+docs/*
+!docs/Levin移动动词候选词筛选表.xlsx
 .planning/
 scripts/get-stats*
 .claude/

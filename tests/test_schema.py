@@ -735,3 +735,354 @@ class TestParticleAndFullscreen:
 
         assert "st.iframe(url" in code
         assert "components.html(" not in code
+
+
+# ============================================
+# v3：义位层面的结构（依据 docs/义项判定标准.docx）
+# ============================================
+class TestSchemaV3:
+    """
+    v3 新增义位表与标注字段。
+
+    文档明确「分析单元是义位（sense），而非词目 lemma」—— 所以义位必须独立成表，
+    而不能塞在 definitions 的一个 JSON 列里。这组测试钉住这个结构决策。
+    """
+
+    def _all_ddl(self):
+        return "\n".join(db.CREATE_TABLES_SQL)
+
+    def test_schema_version_bumped(self):
+        assert db.SCHEMA_VERSION >= 3
+
+    def test_senses_table_exists_with_cascade(self):
+        ddl = self._all_ddl()
+        assert "CREATE TABLE IF NOT EXISTS word_senses" in ddl
+        assert "fk_word_senses_definition" in ddl
+        # 词目被删时义位必须跟着走，否则留下孤儿行
+        assert "ON DELETE CASCADE" in ddl
+        # 同一词目内义位序号唯一，重复灌库才幂等
+        assert "uq_word_senses_index" in ddl
+
+    def test_definitions_has_annotation_columns(self):
+        ddl = self._all_ddl()
+        for col in ("image_schema", "prototype_level", "alignment", "cn_syntax",
+                    "translation_strategy", "definition_source", "source_rank",
+                    "sense_count", "needs_review", "levin_source", "sense_brief",
+                    "judge_reason", "cross_subclass", "en_ndef"):
+            assert col in ddl, f"definitions 缺少标注列 {col}"
+
+    def test_clusters_have_schema_columns(self):
+        ddl = self._all_ddl()
+        for col in ("image_schema", "cn_syntax", "translation_strategy"):
+            assert col in ddl, f"word_clusters 缺少 {col}"
+
+    def test_migration_adds_all_v3_columns_idempotently(self):
+        """迁移必须把 v3 的每一列都补上，且在已存在的库上是空操作。"""
+        executed = []
+
+        class NewDbCursor:
+            """模拟**已经是 v3** 的库：所有列/索引都存在。"""
+
+            def __init__(self):
+                self._last = ""
+
+            def execute(self, sql, params=None):
+                executed.append(sql)
+                self._last = sql
+
+            def fetchone(self):
+                if "information_schema" in self._last:
+                    return {"n": 1}          # 一切都已存在
+                if "MAX(version)" in self._last:
+                    return {"v": 3}
+                return {"n": 1}
+
+        summary = db._migrate_schema(NewDbCursor())
+        joined = "\n".join(executed)
+        assert "ADD COLUMN image_schema" not in joined, "已存在的列不该重复 ADD"
+        assert summary["actions"] == [] or all(
+            "added" not in a for a in summary["actions"]
+        ), f"幂等性被破坏: {summary['actions']}"
+
+    def test_migration_from_v2_adds_columns(self):
+        """从 v2 上来时必须补齐 v3 的列。"""
+        executed = []
+        state = {"defs": set(), "clusters": set()}
+
+        class V2Cursor:
+            def __init__(self):
+                self._last = ""
+                self._params = None
+
+            def execute(self, sql, params=None):
+                executed.append(sql)
+                self._last = sql
+                self._params = params
+                if sql.startswith("ALTER TABLE definitions ADD COLUMN"):
+                    state["defs"].add(sql.split()[5])
+                if sql.startswith("ALTER TABLE word_clusters ADD COLUMN"):
+                    state["clusters"].add(sql.split()[5])
+
+            def fetchone(self):
+                if "information_schema.COLUMNS" in self._last:
+                    table = self._params[1]
+                    col = self._params[2]
+                    # 模拟 v2 的不完整状态：definitions 已有 cluster_id（v2 加的），
+                    # 其余 v3 新列都还没有。这样只有 v3 的 ADD COLUMN 会真的执行。
+                    if table == "definitions" and col == "cluster_id":
+                        return {"n": 1}
+                    return {"n": 0}
+                if "information_schema.TABLES" in self._last:
+                    return {"n": 1 if "schema_migrations" in self._last else 0}
+                if "information_schema.STATISTICS" in self._last:
+                    return {"n": 0}
+                if "information_schema.TABLE_CONSTRAINTS" in self._last:
+                    return {"n": 1}
+                if "MAX(version)" in self._last:
+                    return {"v": 2}
+                return {"n": 0}
+
+        db._migrate_schema(V2Cursor())
+        joined = "\n".join(executed)
+        for col in ("image_schema", "prototype_level", "alignment",
+                    "definition_source", "sense_count", "needs_review"):
+            assert f"ADD COLUMN {col}" in joined, f"迁移没补上 {col}"
+
+    def test_migration_never_deletes_business_data(self):
+        """
+        迁移只做结构改造，**不得** DELETE 业务数据。
+
+        迁移在每次应用启动时都会跑；如果它删数据，一次部署就能清空词表。
+        簇与关系的重建是灌库脚本的职责（那里有显式的 clear_all_word_data）。
+        """
+        executed = []
+
+        class FakeCursor:
+            def __init__(self):
+                self._last = ""
+
+            def execute(self, sql, params=None):
+                executed.append(sql)
+                self._last = sql
+
+            def fetchone(self):
+                if "MAX(version)" in self._last:
+                    return {"v": 3}
+                return {"n": 1}
+
+        db._migrate_schema(FakeCursor())
+        joined = "\n".join(executed).upper()
+        for table in ("DEFINITIONS", "WORD_CLUSTERS", "WORD_RELATIONS", "WORD_SENSES"):
+            assert f"DELETE FROM {table}" not in joined, f"迁移删了 {table} 的数据"
+        assert "TRUNCATE" not in joined
+
+
+class TestAnnotationColumnsWhitelist:
+    """
+    insert_definition 的标注字段白名单。
+
+    列名无法参数化、只能拼进 SQL，所以白名单同时承担两个职责：
+      1. 挡住列名注入；
+      2. 保证 LLM 实时生成路径（不传 annotations）不会抹掉灌库写入的标注 ——
+         与 cluster_id 当初用 COALESCE 防的是同一个坑。
+    """
+
+    def test_whitelist_covers_every_annotation_column(self):
+        ddl = "\n".join(db.CREATE_TABLES_SQL)
+        for col in db._ANNOTATION_COLUMNS:
+            assert col in ddl, f"白名单里的 {col} 在 DDL 中不存在"
+
+    def test_unknown_column_is_rejected(self):
+        executed = []
+
+        class FakeCursor:
+            def execute(self, sql, params=None):
+                executed.append((sql, params))
+
+        class Ctx:
+            def __enter__(self):
+                return FakeCursor()
+
+            def __exit__(self, *a):
+                return False
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: Ctx()
+        try:
+            db.insert_definition("v", "d", {}, None, "m", None,
+                                 {"image_schema": "方式伴随图式",
+                                  "evil` = 1 --": "x"})
+        finally:
+            db.get_db_cursor = orig
+
+        sql = executed[0][0]
+        assert "image_schema" in sql
+        assert "evil" not in sql, "未白名单的列名不该出现在 SQL 里"
+
+    def test_omitted_annotations_are_not_in_update_clause(self):
+        """没传的标注字段不得出现在 UPDATE 子句里（否则会被 NULL 覆盖）。"""
+        executed = []
+
+        class FakeCursor:
+            def execute(self, sql, params=None):
+                executed.append(sql)
+
+        class Ctx:
+            def __enter__(self):
+                return FakeCursor()
+
+            def __exit__(self, *a):
+                return False
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: Ctx()
+        try:
+            db.insert_definition("v", "d", {}, None, "m", None,
+                                 {"image_schema": "方式伴随图式"})
+        finally:
+            db.get_db_cursor = orig
+
+        sql = executed[0]
+        update_part = sql.split("ON DUPLICATE KEY UPDATE")[1]
+        assert "image_schema = VALUES(image_schema)" in update_part
+        assert "alignment = VALUES(alignment)" not in update_part
+
+
+class TestClusterMaintenance:
+    def test_prune_only_deletes_unused_clusters(self):
+        """prune 的失败模式必须是「少删」，绝不能删掉有成员的簇。"""
+        executed = []
+
+        class FakeCursor:
+            def __init__(self):
+                self._rows = []
+                self._last = ""
+
+            def execute(self, sql, params=None):
+                executed.append((sql, params))
+                self._last = sql
+                if "SELECT id FROM word_clusters" in sql:
+                    self._rows = [{"id": 1}, {"id": 2}, {"id": 3}]
+                elif "SELECT DISTINCT cluster_id" in sql:
+                    self._rows = [{"cluster_id": 1}, {"cluster_id": 3}]
+                else:
+                    self._rows = []
+
+            def fetchall(self):
+                return list(self._rows)
+
+            def fetchone(self):
+                return self._rows[0] if self._rows else None
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        try:
+            n = db.prune_empty_clusters()
+        finally:
+            db.get_db_cursor = orig
+
+        assert n == 1
+        deletes = [sql for sql, _ in executed if sql.strip().startswith("DELETE")]
+        assert len(deletes) == 1
+        assert "(2)" in deletes[0] or "2" in str(executed[-1][1])
+
+    def test_prune_deletes_nothing_when_all_used(self):
+        executed = []
+
+        class FakeCursor:
+            def __init__(self):
+                self._rows = []
+
+            def execute(self, sql, params=None):
+                executed.append(sql)
+                if "SELECT id FROM word_clusters" in sql:
+                    self._rows = [{"id": 1}]
+                elif "SELECT DISTINCT cluster_id" in sql:
+                    self._rows = [{"cluster_id": 1}]
+                else:
+                    self._rows = []
+
+            def fetchall(self):
+                return list(self._rows)
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        try:
+            n = db.prune_empty_clusters()
+        finally:
+            db.get_db_cursor = orig
+
+        assert n == 0
+        assert not [s for s in executed if s.strip().startswith("DELETE")]
+
+    def test_clear_preserves_user_tables(self):
+        """清空词表时**不得**动 feedbacks / usage_logs —— 那是用户产生的数据。"""
+        executed = []
+
+        class FakeCursor:
+            def execute(self, sql, params=None):
+                executed.append(sql)
+
+            def fetchone(self):
+                return {"n": 5}
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        try:
+            db.clear_all_word_data()
+        finally:
+            db.get_db_cursor = orig
+
+        joined = "\n".join(executed).upper()
+        assert "DELETE FROM DEFINITIONS" in joined
+        assert "DELETE FROM WORD_CLUSTERS" in joined
+        assert "DELETE FROM WORD_RELATIONS" in joined
+        assert "DELETE FROM WORD_SENSES" in joined
+        assert "FEEDBACKS" not in joined
+        assert "USAGE_LOGS" not in joined
+
+
+class TestSensesReplace:
+    def test_delete_then_insert(self):
+        executed = []
+
+        class FakeCursor:
+            def execute(self, sql, params=None):
+                executed.append((sql, params))
+
+            def executemany(self, sql, rows):
+                executed.append((sql, rows))
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        try:
+            n = db.replace_word_senses(42, [
+                {"sense_index": 1, "ch_ndef": "甲", "prototype_level": "Y"},
+                {"sense_index": 2, "ch_ndef": "乙", "prototype_level": "拓展"},
+            ])
+        finally:
+            db.get_db_cursor = orig
+
+        assert n == 2
+        assert any("DELETE FROM word_senses" in s for s, _ in executed)
+        assert any("INSERT INTO word_senses" in s for s, _ in executed)
+
+    def test_empty_list_clears(self):
+        executed = []
+
+        class FakeCursor:
+            def execute(self, sql, params=None):
+                executed.append(sql)
+
+            def executemany(self, sql, rows):
+                executed.append(sql)
+
+        orig = db.get_db_cursor
+        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        try:
+            n = db.replace_word_senses(42, [])
+        finally:
+            db.get_db_cursor = orig
+
+        assert n == 0
+        assert any("DELETE FROM word_senses" in s for s in executed)

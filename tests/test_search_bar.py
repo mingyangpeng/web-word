@@ -230,3 +230,33 @@ def test_search_bar_style_and_input_render():
     # 这里只钉住「搜索框存在且 key 正确」。
     keys = [t.key for t in at.text_input]
     assert "搜索动词" in keys
+
+
+# ============================================
+# 卡片容器：CSS 不得当文本泄漏
+# ============================================
+def test_card_bodies_use_keyed_containers(app_source):
+    """
+    卡片正文必须放进带 key 的 st.container，而不是 st.markdown(css文本)。
+
+    回归背景：旧写法 `st.markdown(get_card_style(), unsafe_allow_html=True)`
+    把一段 CSS **当文本渲染**出来，页面上真实可见 5 段
+    「background-color: #f7fafc; padding: 24px; border-radius: 12px; ...」，
+    而配对的 `</div>` 也没有包住任何东西（Streamlit 把每次 st.markdown 渲染成
+    独立兄弟节点，HTML 无法跨调用闭合）。搜索栏当初踩的是同一个坑。
+    """
+    code = _code_only(app_source)
+    assert re.search(r'st\.container\(\s*key\s*=\s*f?["\']card_body_', code), (
+        "卡片正文应放在 st.container(key=f\"card_body_{card_key}\") 内"
+    )
+    assert "st.markdown(get_card_style(), unsafe_allow_html=True)" not in code, (
+        "不得再直接把 CSS 文本 st.markdown 出来"
+    )
+    # 游离的闭合标签：没有对应开标签，纯粹是文本噪声
+    assert "st.markdown('</div>', unsafe_allow_html=True)" not in code
+
+
+def test_card_css_targets_keyed_container(app_source):
+    """外观必须由 [class*="st-key-card_body_"] 提供，否则卡片就没有边框背景了。"""
+    assert 'st-key-card_body_' in app_source
+    assert "background-color: #f7fafc" in app_source
