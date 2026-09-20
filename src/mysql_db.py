@@ -126,7 +126,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 「词间关系」成为可直接查询 / 导出 / 喂给图谱工具的一等数据，而不是每次现场 JOIN 生成。
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -163,6 +163,7 @@ CREATE_TABLES_SQL = [
         model_version VARCHAR(50) DEFAULT 'zhipu-glm-4',
         cluster_id INT DEFAULT NULL,
         en_ndef TEXT,
+        phonetic VARCHAR(64) DEFAULT NULL,
         levin_source VARCHAR(64) DEFAULT NULL,
         cross_subclass VARCHAR(8) DEFAULT NULL,
         sense_brief VARCHAR(255) DEFAULT NULL,
@@ -351,6 +352,12 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
          迁移**只做结构**：词簇与词间关系是派生数据，由灌库脚本按新的 Levin 分类重建。
          不在迁移里 DELETE 是有意的 —— 迁移每次启动都会跑，让它删业务数据太危险。
 
+    从 v3 → v4 做的事：
+
+      6. ``definitions`` 增加 ``phonetic``（音标）。数据源是 ``data/dictionary.db``
+         的 ``<pronunciation>``，覆盖不全（171 词里 23 个），所以允许为 NULL，
+         前端据此显示「未收录」而不是编一个音标。
+
     Args:
         cursor: 已 USE 到目标库的 DictCursor。
 
@@ -462,11 +469,22 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
     if not _table_exists(cursor, "word_senses"):
         summary["actions"].append("word_senses will be created by CREATE_TABLES_SQL")
 
+    # --- v3 → v4：definitions.phonetic（音标）---
+    # 音标来自 data/dictionary.db 的 <pronunciation>，只有一部分词条带
+    # （实测 171 词里 23 个）。它是**词目层的固有属性**，所以和别的标注字段一起
+    # 放在 definitions 里，由灌库脚本写入；LLM 实时生成时不传该键，
+    # 因而不会把灌库写入的音标抹成 NULL（与 cluster_id 用 COALESCE 同一个道理）。
+    if not _column_exists(cursor, "definitions", "phonetic"):
+        cursor.execute(
+            "ALTER TABLE definitions ADD COLUMN phonetic VARCHAR(64) DEFAULT NULL"
+        )
+        summary["actions"].append("definitions.phonetic added")
+
     # --- 5. 记录版本 ---
     cursor.execute(
         """INSERT INTO schema_migrations (version, name) VALUES (%s, %s)
            ON DUPLICATE KEY UPDATE name = VALUES(name)""",
-        (SCHEMA_VERSION, "sense-level annotation fields"),
+        (SCHEMA_VERSION, "phonetic column"),
     )
     return summary
 
@@ -655,6 +673,7 @@ def get_db_cursor():
 # 白名单同时挡住了列名注入（列名无法参数化，只能拼接）。
 _ANNOTATION_COLUMNS = (
     "en_ndef",
+    "phonetic",
     "levin_source",
     "cross_subclass",
     "sense_brief",
@@ -1400,6 +1419,36 @@ def list_clusters(limit: int = 500) -> List[Dict[str, Any]]:
 # ============================================
 # Feedbacks CRUD Operations
 # ============================================
+def _json_dict(value: Any) -> Dict[str, Any]:
+    """把 JSON 列归一成 dict。pymysql 视配置返回 str 或已解析对象，两种都要能接。"""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8", "ignore")
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except ValueError:
+            return {}
+    return {}
+
+
+def _json_list(value: Any) -> List[Any]:
+    """把 JSON 列归一成 list；None / 坏值一律给空列表，避免前端拿到 null。"""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8", "ignore")
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except ValueError:
+            return []
+    return []
+
+
 def get_full_word_graph() -> Dict[str, Any]:
     """
     取全库词间关系图：所有词 + 所有关系边（各簇完全图的并集）。
@@ -1430,13 +1479,38 @@ def get_full_word_graph() -> Dict[str, Any]:
         with get_db_cursor() as cursor:
             cursor.execute(
                 """SELECT d.verb, d.cluster_id,
+                          d.chinese_ndef, d.en_ndef, d.phonetic,
+                          d.semantic_table, d.example_sentence,
+                          d.image_schema, d.prototype_level, d.alignment,
+                          d.cn_syntax, d.translation_strategy,
+                          d.definition_source, d.source_rank, d.sense_count,
+                          d.sense_brief, d.judge_reason,
+                          d.levin_source, d.cross_subclass,
+                          d.needs_review, d.prototype_is_first,
                           c.label AS cluster_label, c.sub_cat AS sub_cat,
-                          c.main_cat AS main_cat
+                          c.main_cat AS main_cat,
+                          c.image_schema AS cluster_image_schema,
+                          c.cn_syntax AS cluster_cn_syntax,
+                          c.translation_strategy AS cluster_translation_strategy
                    FROM definitions d
                    LEFT JOIN word_clusters c ON c.id = d.cluster_id
                    ORDER BY d.verb"""
             )
             node_rows = cursor.fetchall()
+
+            # 义位明细：只有一部分词有（实测 246 条覆盖 17 词），所以按 verb 归组后
+            # 缺的词就是空列表 —— 卡片据此显示「该词尚未拆分义位」。
+            cursor.execute(
+                """SELECT d.verb, s.sense_index, s.ch_ndef, s.en_ndef,
+                          s.construction, s.examples, s.ch_examples,
+                          s.synonyms, s.antonyms,
+                          s.image_schema, s.prototype_level, s.alignment,
+                          s.cn_syntax, s.translation_strategy
+                   FROM word_senses s
+                   JOIN definitions d ON d.id = s.definition_id
+                   ORDER BY d.verb, s.sense_index"""
+            )
+            sense_rows = cursor.fetchall()
 
             cursor.execute(
                 """SELECT a.verb AS source, b.verb AS target, r.relation
@@ -1471,6 +1545,23 @@ def get_full_word_graph() -> Dict[str, Any]:
         if link["target"] in degree:
             degree[link["target"]] += 1
 
+    senses_by_verb: Dict[str, List[Dict[str, Any]]] = {}
+    for r in sense_rows:
+        senses_by_verb.setdefault(r["verb"], []).append({
+            "sense_index": r["sense_index"],
+            "ch_ndef": r["ch_ndef"] or "",
+            "en_ndef": r["en_ndef"] or "",
+            "construction": r["construction"] or "",
+            "examples": _json_list(r["examples"]),
+            "ch_examples": _json_list(r["ch_examples"]),
+            "synonyms": _json_list(r["synonyms"]),
+            "antonyms": _json_list(r["antonyms"]),
+            "image_schema": r["image_schema"] or "",
+            "prototype_level": r["prototype_level"] or "",
+            "alignment": r["alignment"] or "",
+            "cn_syntax": r["cn_syntax"] or "",
+        })
+
     nodes = [
         {
             "id": r["verb"],
@@ -1480,6 +1571,30 @@ def get_full_word_graph() -> Dict[str, Any]:
             "sub_cat": r["sub_cat"] or "未分组",
             "main_cat": r["main_cat"] or "",
             "degree": degree.get(r["verb"], 0),
+            # --- 卡片用的明细字段（图谱渲染不读，但信息面板与浮层卡片要）---
+            "chinese_ndef": r["chinese_ndef"] or "",
+            "en_ndef": r["en_ndef"] or "",
+            "phonetic": r["phonetic"] or "",
+            "semantic_table": _json_dict(r["semantic_table"]),
+            "example_sentence": r["example_sentence"] or "",
+            "image_schema": r["image_schema"] or "",
+            "prototype_level": r["prototype_level"] or "",
+            "alignment": r["alignment"] or "",
+            "cn_syntax": r["cn_syntax"] or "",
+            "translation_strategy": r["translation_strategy"] or "",
+            "definition_source": r["definition_source"] or "",
+            "source_rank": r["source_rank"],
+            "sense_count": r["sense_count"] or 0,
+            "sense_brief": r["sense_brief"] or "",
+            "judge_reason": r["judge_reason"] or "",
+            "levin_source": r["levin_source"] or "",
+            "cross_subclass": r["cross_subclass"] or "",
+            "needs_review": int(r["needs_review"] or 0),
+            "prototype_is_first": r["prototype_is_first"],
+            "cluster_image_schema": r["cluster_image_schema"] or "",
+            "cluster_cn_syntax": r["cluster_cn_syntax"] or "",
+            "cluster_translation_strategy": r["cluster_translation_strategy"] or "",
+            "senses": senses_by_verb.get(r["verb"], []),
         }
         for r in node_rows
     ]
