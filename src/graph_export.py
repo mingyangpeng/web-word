@@ -73,7 +73,7 @@ def _esc_js(text: Any) -> str:
 # 但数据没变」时 URL 不变 —— 浏览器和 Streamlit 都认为文件没换，页面继续跑旧渲染
 # 逻辑，改了前端却看不到任何变化，而且重启进程也不一定有用（磁盘上还是旧文件）。
 # 把版本号并进指纹后，改模板即产生新 URL，旧文件被自动清理。
-TEMPLATE_VERSION = 16
+TEMPLATE_VERSION = 21
 
 
 def data_fingerprint(graph: Dict[str, Any]) -> str:
@@ -146,6 +146,34 @@ def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图�
             "_subCat": n.get("sub_cat") or "未分组",
             "_mainCat": n.get("main_cat") or "",
             "_degree": n.get("degree", 0),
+            # 明细：只给右侧信息面板与浮层卡片用，vis 不读这些键。
+            # 缺的字段一律给空值而不是省略 —— 前端靠「有没有这个键」区分
+            # 「确实没有数据」和「payload 忘了带」，省略会让两者看起来一样。
+            "_d": {
+                "pos": n.get("pos") or "v",
+                "phonetic": n.get("phonetic") or "",
+                "chinese_ndef": n.get("chinese_ndef") or "",
+                "en_ndef": n.get("en_ndef") or "",
+                "semantic_table": n.get("semantic_table") or {},
+                "example_sentence": n.get("example_sentence") or "",
+                "image_schema": n.get("image_schema") or "",
+                "prototype_level": n.get("prototype_level") or "",
+                "alignment": n.get("alignment") or "",
+                "cn_syntax": n.get("cn_syntax") or "",
+                "translation_strategy": n.get("translation_strategy") or "",
+                "definition_source": n.get("definition_source") or "",
+                "source_rank": n.get("source_rank"),
+                "sense_count": n.get("sense_count") or 0,
+                "sense_brief": n.get("sense_brief") or "",
+                "judge_reason": n.get("judge_reason") or "",
+                "levin_source": n.get("levin_source") or "",
+                "cross_subclass": n.get("cross_subclass") or "",
+                "needs_review": int(n.get("needs_review") or 0),
+                "cluster_image_schema": n.get("cluster_image_schema") or "",
+                "cluster_cn_syntax": n.get("cluster_cn_syntax") or "",
+                "cluster_translation_strategy": n.get("cluster_translation_strategy") or "",
+                "senses": n.get("senses") or [],
+            },
         })
 
     # 边：完全图边多且密，统一细线 + 低透明度，选中时才凸显
@@ -271,7 +299,8 @@ _TEMPLATE = """<!DOCTYPE html>
   .search-item { padding: 5px 6px; cursor: pointer; border-radius: 4px; font-size: 12px;
                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .search-item:hover { background: #2a2a4e; }
-  #info-panel { padding: 14px; border-bottom: 1px solid #2a2a4e; min-height: 150px; }
+  #info-panel { padding: 14px; border-bottom: 1px solid #2a2a4e; min-height: 150px;
+                max-height: 48vh; overflow-y: auto; }
   #info-panel h3 { font-size: 12px; color: #aaa; margin-bottom: 8px;
                    text-transform: uppercase; letter-spacing: 0.06em; }
   #info-content { font-size: 13px; color: #ccc; line-height: 1.65; }
@@ -322,6 +351,40 @@ _TEMPLATE = """<!DOCTYPE html>
   .tool-btn.on .dot { background: #EDC948; }
   #particle-info { background: rgba(26,26,46,0.92); border: 1px solid #3a3a5e;
                    color: #aaa; padding: 6px 12px; border-radius: 6px; font-size: 11px; }
+  /* ---------- 浮层卡片（词条 / 关系）----------
+     与右侧面板同源：两者都调用同一个渲染函数，所以内容天然一致。
+     卡片是 position:absolute 挂在 #graph-wrap 里，全屏时也跟着图谱一起放大。 */
+  .float-card { position: absolute; z-index: 20; width: 384px; max-height: 78vh;
+                background: rgba(18,18,34,0.985); border: 1px solid #3a3a5e;
+                border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,0.6);
+                display: flex; flex-direction: column; overflow: hidden; }
+  .float-card.hidden { display: none; }
+  .fc-head { display: flex; align-items: center; gap: 7px; padding: 9px 11px;
+             background: #1f1f38; border-bottom: 1px solid #2a2a4e;
+             cursor: move; user-select: none; touch-action: none; }
+  .fc-title { flex: 1; font-size: 13px; color: #fff; font-weight: 600;
+              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fc-btn { background: transparent; border: 1px solid #3a3a5e; color: #aaa;
+            min-width: 22px; height: 22px; border-radius: 5px; cursor: pointer;
+            font-size: 12px; line-height: 1; padding: 0 4px; }
+  .fc-btn:hover { background: #2a2a4e; color: #fff; }
+  .fc-btn.on { background: #EDC948; border-color: #EDC948; color: #1a1a2e; }
+  .fc-body { padding: 12px; overflow-y: auto; font-size: 12.5px; color: #ccc; line-height: 1.7; }
+  .fc-row { margin-bottom: 7px; }
+  .fc-row > .k { color: #7f7fa8; font-size: 11px; display: block; }
+  .fc-row > .v { color: #dcdce8; word-break: break-word; }
+  .fc-sec { border-top: 1px solid #2a2a4e; margin: 11px 0 8px; padding-top: 8px;
+            color: #7f7fa8; font-size: 11px; letter-spacing: 0.06em; }
+  .fc-sec:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .fc-sense { border-left: 3px solid #3a3a5e; padding: 3px 0 3px 8px; margin-bottom: 9px; }
+  .fc-sense .idx { color: #7f7fa8; font-size: 11px; }
+  .fc-ex { color: #9a9ac0; font-style: italic; margin-top: 3px; }
+  .fc-miss { color: #6a6a8a; font-style: italic; }
+  .fc-note { width: 100%; box-sizing: border-box; background: #0f0f1a; color: #dcdce8;
+             border: 1px solid #3a3a5e; border-radius: 6px; padding: 6px 8px;
+             font-size: 12px; resize: vertical; min-height: 54px; font-family: inherit; }
+  .fc-link { color: #8FB8E0; cursor: pointer; border-bottom: 1px dotted #4a6a8a; }
+  .fc-link:hover { color: #fff; }
   /* 全屏时容器由浏览器撑满屏幕，这里只要保证布局跟着变 */
   body:fullscreen #sidebar { width: 320px; }
   /* 360 粒子在 155 节点上，节点本身不需要再发光抢焦点 */
@@ -332,6 +395,24 @@ _TEMPLATE = """<!DOCTYPE html>
 <div id="graph-wrap">
   <div id="graph"></div>
   <canvas id="particles"></canvas>
+  <div class="float-card hidden" id="word-card" style="left:24px; top:64px;">
+    <div class="fc-head" id="word-card-head">
+      <span class="fc-title" id="word-card-title">词条详情</span>
+      <button class="fc-btn" id="word-card-star" title="收藏该词条">★</button>
+      <button class="fc-btn" id="word-card-close" title="关闭">✕</button>
+    </div>
+    <div class="fc-body" id="word-card-body"></div>
+  </div>
+
+  <div class="float-card hidden" id="edge-card" style="left:432px; top:96px;">
+    <div class="fc-head" id="edge-card-head">
+      <span class="fc-title" id="edge-card-title">关系详情</span>
+      <button class="fc-btn" id="edge-card-star" title="收藏该关系">★</button>
+      <button class="fc-btn" id="edge-card-close" title="关闭">✕</button>
+    </div>
+    <div class="fc-body" id="edge-card-body"></div>
+  </div>
+
   <div id="toolbar">
     <button class="tool-btn on" id="btn-particles"><span class="dot"></span>节点粒子</button>
     <span id="particle-info">—</span>
@@ -504,41 +585,382 @@ resultsEl.addEventListener('click', e => {
   focusNode(item.dataset.nid);
 });
 
-// ---------- 信息面板 ----------
-function showInfo(nodeId) {
+// ---------- 收藏 / 备注 ----------
+// 图谱页是 iframe 里的静态 HTML，没有回写服务端的通道，所以收藏与备注存在浏览器
+// 本地（localStorage）。右侧面板与浮层卡片读的是同一份 store，因此天然同步。
+// localStorage 在无痕模式或被沙箱限制时会抛异常 —— 那时退回内存 store，
+// 功能在当前会话内照常可用，只是关掉页面就没了（这是有意的降级，不是静默失败）。
+const STORE_KEY = 'wordgraph.annotations.v1';
+let memStore = {};
+let store = null;
+function loadStore() {
+  if (store) return store;
+  try {
+    store = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {};
+  } catch (e) {
+    store = memStore;
+  }
+  return store;
+}
+function annGet(kind, key) {
+  const bucket = loadStore()[kind] || {};
+  return bucket[key] || { star: false, note: '' };
+}
+function annSet(kind, key, patch) {
+  const st = loadStore();
+  st[kind] = st[kind] || {};
+  st[kind][key] = Object.assign({}, st[kind][key] || { star: false, note: '' }, patch);
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(st));
+  } catch (e) {
+    memStore = st;
+    store = st;
+  }
+  return st[kind][key];
+}
+
+// ---------- 渲染小工具 ----------
+let currentNodeId = null;
+let currentEdgeId = null;
+let renderedWordId = null;    // 卡片当前渲染的是哪个词，用来避免重复重建
+let renderedEdgeId = null;
+
+function sec(t) { return '<div class="fc-sec">' + esc(t) + '</div>'; }
+/** k 是字段名（转义），v 是**纯文本**（转义后输出）。 */
+function plainRow(k, v) {
+  if (v === undefined || v === null || v === '') return '';
+  return '<div class="fc-row"><span class="k">' + esc(k) + '</span>'
+       + '<span class="v">' + esc(v) + '</span></div>';
+}
+function missRow(text) {
+  return '<div class="fc-row"><span class="v fc-miss">' + esc(text) + '</span></div>';
+}
+function neighborChips(ids) {
+  return ids.map(id => {
+    const x = nodesDS.get(id);
+    if (!x) return '';
+    return '<span class="neighbor-link" style="border-left-color:' + esc(x.color.background)
+      + '" data-nid="' + esc(id) + '">' + esc(x.label) + '</span>';
+  }).join('');
+}
+
+// 五元语义分解的键与中文名。aspect / scope 在库中 171 词全为空，所以下面会把
+// 「空的那几项」显式列出来并说明原因 —— 静默省略会让人以为这个词没有体相/范围。
+const SEMA_KEYS = [['manner', '方式'], ['path', '路径'], ['direction', '方向'],
+                   ['aspect', '体相'], ['scope', '范围']];
+
+const ADJ = new Map();
+RAW_EDGES.forEach(e => {
+  if (!ADJ.has(e.from)) ADJ.set(e.from, new Set());
+  if (!ADJ.has(e.to)) ADJ.set(e.to, new Set());
+  ADJ.get(e.from).add(e.to);
+  ADJ.get(e.to).add(e.from);
+});
+
+function senseHTML(s) {
+  let h = '<div class="fc-sense"><span class="idx">义位 ' + s.sense_index + '</span><br/>'
+        + esc(s.ch_ndef || '（无中文释义）');
+  if (s.en_ndef) h += '<div class="fc-ex">' + esc(s.en_ndef) + '</div>';
+  if (s.construction) h += '<div class="fc-ex">句式：' + esc(s.construction) + '</div>';
+  const exs = s.examples || [], chs = s.ch_examples || [];
+  for (let i = 0; i < exs.length; i++) {
+    h += '<div class="fc-ex">· ' + esc(exs[i])
+       + (chs[i] ? '<br/>&nbsp;&nbsp;' + esc(chs[i]) : '') + '</div>';
+  }
+  if (s.synonyms && s.synonyms.length) h += '<div class="fc-ex">近义：' + esc(s.synonyms.join('、')) + '</div>';
+  if (s.antonyms && s.antonyms.length) h += '<div class="fc-ex">反义：' + esc(s.antonyms.join('、')) + '</div>';
+  return h + '</div>';
+}
+
+/**
+ * 词条明细。**右侧面板与浮层卡片共用这一个函数**（compact=true 是面板），
+ * 这样「两处数据一致」不是靠两段代码小心翼翼地对齐，而是结构上只有一份数据。
+ */
+function nodeDetailHTML(n, compact) {
+  const d = n._d || {};
+  const nb = network.getConnectedNodes(n.id).filter(id => !nodesDS.get(id).hidden);
+  let h = '<div class="fc-row"><span class="v" style="font-size:16px;color:#fff;font-weight:600">'
+        + esc(n.label) + '</span></div>';
+  if (d.phonetic) {
+    h += plainRow('音标', '/' + d.phonetic + '/');
+  } else {
+    h += '<div class="fc-row"><span class="k">音标</span>'
+       + '<span class="v fc-miss">未收录</span></div>';
+  }
+  h += plainRow('词性', d.pos === 'v' ? 'v. 动词' : (d.pos || ''));
+  h += plainRow('语义簇', n._clusterLabel + '（次范畴：' + n._subCat + '）');
+  h += plainRow('主范畴', n._mainCat);
+
+  h += sec('释义');
+  h += '<div class="fc-row"><span class="v">' + esc(d.chinese_ndef || '—') + '</span></div>';
+  if (d.en_ndef) h += '<div class="fc-ex">' + esc(d.en_ndef) + '</div>';
+  if (d.sense_brief) h += plainRow('原型义要点', d.sense_brief);
+
+  h += sec('意象与标注');
+  h += plainRow('意象图式', d.image_schema);
+  h += plainRow('原型层级', d.prototype_level === 'Y' ? 'Y（原型义）' : d.prototype_level);
+  h += plainRow('英汉对齐', d.alignment);
+  h += plainRow('汉语句法', d.cn_syntax);
+  h += plainRow('译义策略', d.translation_strategy);
+
+  if (!compact) {
+    const st = d.semantic_table || {};
+    const filled = SEMA_KEYS.filter(kv => String(st[kv[0]] || '').trim());
+    if (filled.length) {
+      h += sec('五元语义分解');
+      filled.forEach(kv => { h += plainRow(kv[1], st[kv[0]]); });
+      const empty = SEMA_KEYS.filter(kv => !String(st[kv[0]] || '').trim()).map(kv => kv[1]);
+      if (empty.length) {
+        h += missRow(empty.join('、') + '：库中 171 词全部为空，暂无数据');
+      }
+    }
+    const senses = d.senses || [];
+    h += sec('义位明细（' + senses.length + '）');
+    if (senses.length) {
+      senses.forEach(x => { h += senseHTML(x); });
+    } else {
+      h += missRow('该词尚未拆分义位（dictionary.db 仅覆盖 17/171 词）');
+      if (d.example_sentence) h += '<div class="fc-ex">· ' + esc(d.example_sentence) + '</div>';
+    }
+    h += sec('关联节点（' + nb.length + '）');
+    h += '<div>' + neighborChips(nb) + '</div>';
+    h += sec('来源与复核');
+    h += plainRow('释义来源', d.definition_source
+      + (d.source_rank ? '（来源优先级 ' + d.source_rank + '）' : ''));
+    h += plainRow('Levin 出处', d.levin_source);
+    h += plainRow('跨类情况', d.cross_subclass);
+    if (d.needs_review) {
+      h += missRow('标注待人工复核 —— 图式/对齐/原型层级都是规则推导的候选标签'
+        + '（《义项判定标准》第 45 段）');
+    }
+    if (d.judge_reason) h += plainRow('判定理由', d.judge_reason);
+  } else {
+    h += sec('关联节点（' + nb.length + '）');
+    h += '<div id="neighbors-list">' + neighborChips(nb) + '</div>';
+  }
+  return h;
+}
+
+
+// ---------- 右侧信息面板 ----------
+function renderPanel(nodeId) {
   const n = nodesDS.get(nodeId);
   if (!n) return;
-  const neighborIds = network.getConnectedNodes(nodeId).filter(id => !nodesDS.get(id).hidden);
-  const items = neighborIds.map(nid => {
-    const nb = nodesDS.get(nid);
-    return '<span class="neighbor-link" style="border-left-color:'
-      + esc(nb.color.background) + '" data-nid="' + esc(nid) + '">' + esc(nb.label) + '</span>';
-  }).join('');
-  let html = '<div class="field"><b>' + esc(n.label) + '</b></div>'
-    + '<div class="field">语义簇: ' + esc(n._clusterLabel) + '</div>'
-    + '<div class="field">次范畴: ' + esc(n._subCat) + '</div>'
-    + '<div class="field">主范畴: ' + esc(n._mainCat || '-') + '</div>'
-    + '<div class="field">近义边数: ' + n._degree + '</div>';
-  if (neighborIds.length) {
-    html += '<div class="field" style="margin-top:8px;color:#aaa;font-size:11px">'
-      + '近义动词（' + neighborIds.length + '）</div>'
-      + '<div id="neighbors-list">' + items + '</div>';
-  }
+  // 与浮层卡片**共用同一个渲染器**（compact 分支）。不另写一套：两套 HTML 靠人工
+  // 对齐，迟早漂移，而漂移的症状是「面板和卡片说的不一样」，最难被发现的那种 bug。
+  let html = nodeDetailHTML(n, true)
+    + '<div class="fc-row"><span class="k">近义边数</span>'
+    + '<span class="v">' + n._degree + '</span></div>'
+    + '<button class="tool-btn" id="btn-word-detail" '
+    + 'style="margin:7px 0 2px;width:100%;justify-content:center">查看详情</button>';
   document.getElementById('info-content').innerHTML = html;
 }
 
+function showInfo(nodeId) {
+  currentNodeId = nodeId;
+  renderPanel(nodeId);
+  syncWordCard();
+}
+
+function syncWordCard() {
+  const card = document.getElementById('word-card');
+  if (card.classList.contains('hidden')) return;
+  if (currentNodeId === null) { card.classList.add('hidden'); return; }
+  renderWordCard();
+}
+
+// ---------- 词条卡片 ----------
+function renderWordCard() {
+  if (renderedWordId === currentNodeId) return;   // 同一个词不重建，免得打断正在输入的备注
+  const n = nodesDS.get(currentNodeId);
+  if (!n) return;
+  renderedWordId = currentNodeId;
+  const ann = annGet('word', currentNodeId);
+  document.getElementById('word-card-title').textContent = n.label;
+  document.getElementById('word-card-star').classList.toggle('on', !!ann.star);
+  document.getElementById('word-card-body').innerHTML = nodeDetailHTML(n, false)
+    + sec('备注 / 收藏')
+    + '<textarea class="fc-note" id="word-note" placeholder="写下你的备注…">'
+    + esc(ann.note || '') + '</textarea>'
+    + '<div style="margin-top:5px" class="fc-miss">收藏与备注保存在本机浏览器</div>';
+  const ta = document.getElementById('word-note');
+  ta.addEventListener('input', () => { annSet('word', currentNodeId, { note: ta.value }); });
+}
+
+function openWordCard(nodeId) {
+  currentNodeId = nodeId;
+  renderedWordId = null;
+  renderPanel(nodeId);
+  renderWordCard();
+  document.getElementById('word-card').classList.remove('hidden');
+}
+
+// ---------- 关系卡片 ----------
+function openEdgeCard(edgeId) {
+  currentEdgeId = edgeId;
+  renderedEdgeId = null;
+  renderEdgeCard();
+  document.getElementById('edge-card').classList.remove('hidden');
+  network.selectEdges([edgeId]);
+}
+
+function renderEdgeCard() {
+  const e = edgesDS.get(currentEdgeId);
+  if (!e) return;
+  const a = nodesDS.get(e.from), b = nodesDS.get(e.to);
+  if (!a || !b) return;
+  renderedEdgeId = currentEdgeId;
+  const ann = annGet('edge', String(currentEdgeId));
+  document.getElementById('edge-card-title').textContent = a.label + ' ↔ ' + b.label;
+  document.getElementById('edge-card-star').classList.toggle('on', !!ann.star);
+
+  const na = ADJ.get(a.id) || new Set(), nb2 = ADJ.get(b.id) || new Set();
+  let common = 0;
+  na.forEach(x => { if (nb2.has(x)) common++; });
+
+  let h = sec('关系');
+  h += plainRow('关系名称', e.relation || '近义');
+  h += '<div class="fc-row"><span class="k">源词条</span><span class="v">'
+     + '<span class="fc-link" data-open-word="' + esc(a.id) + '">' + esc(a.label)
+     + '</span></span></div>';
+  h += '<div class="fc-row"><span class="k">目标词条</span><span class="v">'
+     + '<span class="fc-link" data-open-word="' + esc(b.id) + '">' + esc(b.label)
+     + '</span></span></div>';
+  h += plainRow('关系类型', '同一次类内的近义关系（簇内完全图边）');
+  h += plainRow('关系方向', '无向 —— 近义是对称关系，库里按 verb_a_id < verb_b_id 只存一份');
+  h += '<div class="fc-row"><span class="k">关系说明</span><span class="v">'
+     + esc(a.label + ' 与 ' + b.label + ' 同属「' + a._subCat + '」次类（'
+           + a._clusterLabel + '），在该次类内两两互为近义。') + '</span></div>';
+
+  h += sec('权重 / 强度');
+  h += plainRow('共同邻居', common + ' 个');
+  h += plainRow('两端近义边数', a._degree + ' / ' + b._degree);
+  h += missRow('本图没有边权重字段：次类内是完全图，每条边结构等价，共同邻居数恒等于'
+    + '（次类词数 − 2）。这里只给可验证的结构指标，不编一个相似度分数出来。');
+
+  h += sec('例句');
+  const exA = (a._d && a._d.example_sentence) || '';
+  const exB = (b._d && b._d.example_sentence) || '';
+  if (exA || exB) {
+    if (exA) h += '<div class="fc-ex">' + esc(a.label) + '：' + esc(exA) + '</div>';
+    if (exB) h += '<div class="fc-ex">' + esc(b.label) + '：' + esc(exB) + '</div>';
+  } else {
+    h += missRow('两端词条都没有例句（词目级例句仅覆盖 43/171 词）');
+  }
+
+  h += sec('来源');
+  h += plainRow('关系来源', 'docs/Levin移动动词候选词筛选表.xlsx 的次类归并，脚本据此生成完全图');
+  h += plainRow('所属次类', a._subCat);
+  h += plainRow('所属主范畴', a._mainCat);
+
+  h += sec('备注 / 收藏');
+  h += '<textarea class="fc-note" id="edge-note" placeholder="写下你对这条关系的备注…">'
+     + esc(ann.note || '') + '</textarea>'
+     + '<div style="margin-top:5px" class="fc-miss">收藏与备注保存在本机浏览器</div>';
+
+  document.getElementById('edge-card-body').innerHTML = h;
+  const ta = document.getElementById('edge-note');
+  ta.addEventListener('input', () => { annSet('edge', String(currentEdgeId), { note: ta.value }); });
+}
+
+// ---------- 卡片拖动 ----------
+function makeDraggable(cardId, handleId) {
+  const card = document.getElementById(cardId);
+  const handle = document.getElementById(handleId);
+  let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+  handle.addEventListener('pointerdown', ev => {
+    if (ev.target.closest('.fc-btn')) return;   // 点按钮不该被当成拖动
+    const parent = card.offsetParent || document.body;
+    const cr = card.getBoundingClientRect(), pr = parent.getBoundingClientRect();
+    ox = cr.left - pr.left;
+    oy = cr.top - pr.top;
+    card.style.left = ox + 'px';
+    card.style.top = oy + 'px';
+    sx = ev.clientX; sy = ev.clientY;
+    dragging = true;
+    try { handle.setPointerCapture(ev.pointerId); } catch (e) {}
+    ev.preventDefault();
+  });
+  handle.addEventListener('pointermove', ev => {
+    if (!dragging) return;
+    card.style.left = (ox + ev.clientX - sx) + 'px';
+    card.style.top = (oy + ev.clientY - sy) + 'px';
+  });
+  const stop = ev => {
+    if (!dragging) return;
+    dragging = false;
+    try { handle.releasePointerCapture(ev.pointerId); } catch (e) {}
+  };
+  handle.addEventListener('pointerup', stop);
+  handle.addEventListener('pointercancel', stop);
+}
+makeDraggable('word-card', 'word-card-head');
+makeDraggable('edge-card', 'edge-card-head');
+
+// 仅供截图 / 自动化改写状态用：一次性收起两张卡片
+function hideAllCards() {
+  document.getElementById('word-card').classList.add('hidden');
+  document.getElementById('edge-card').classList.add('hidden');
+  renderedWordId = null; renderedEdgeId = null;
+}
+document.getElementById('word-card-close').addEventListener('click', () => {
+  document.getElementById('word-card').classList.add('hidden');
+  renderedWordId = null;
+});
+document.getElementById('word-card-star').addEventListener('click', () => {
+  if (currentNodeId === null) return;
+  const next = annSet('word', currentNodeId, { star: !annGet('word', currentNodeId).star });
+  document.getElementById('word-card-star').classList.toggle('on', !!next.star);
+});
+document.getElementById('edge-card-close').addEventListener('click', () => {
+  document.getElementById('edge-card').classList.add('hidden');
+  renderedEdgeId = null;
+});
+document.getElementById('edge-card-star').addEventListener('click', () => {
+  if (currentEdgeId === null) return;
+  const key = String(currentEdgeId);
+  const next = annSet('edge', key, { star: !annGet('edge', key).star });
+  document.getElementById('edge-card-star').classList.toggle('on', !!next.star);
+});
+
+// 「查看详情」按钮、面板里的词条名、卡片里的跳转链接，统一在这里代理
+document.addEventListener('click', ev => {
+  if (ev.target.closest('#btn-word-detail')) { openWordCard(currentNodeId); return; }
+  const w = ev.target.closest('[data-open-word]');
+  if (w) openWordCard(w.dataset.openWord);
+});
+
 // hover 比 click 的事件参数更可靠，两者都接上
 let hoveredNodeId = null;
-network.on('hoverNode', p => { hoveredNodeId = p.node; container.style.cursor = 'pointer'; });
+let lastClickHadEdge = false;   // 用来阻止「点了边又被当成点了节点」
+network.on('hoverNode', p => { hoveredNodeId = p.node; lastClickHadEdge = false; container.style.cursor = 'pointer'; });
 network.on('blurNode', () => { hoveredNodeId = null; container.style.cursor = 'default'; });
 container.addEventListener('click', () => {
+  if (lastClickHadEdge) return;
   if (hoveredNodeId !== null) focusNode(hoveredNodeId, false);
 });
 network.on('click', p => {
-  if (p.nodes.length > 0) showInfo(p.nodes[0]);
-  else if (hoveredNodeId === null) {
+  // **节点优先于边**，这一点必须小心：vis 在点到节点时会把「该节点关联的
+  // 所有边」一并塞进 p.edges（实测点一个 44 度的节点会带回 44 条边），
+  // 所以如果先判边，点节点就会随机打开某条关联边的关系卡片。
+  // 用户的要求本身也写明了「点边，而不是点节点」时才看关系。
+  if (p.nodes.length > 0) {
+    lastClickHadEdge = false;
+    showInfo(p.nodes[0]);
+    return;
+  }
+  if (p.edges && p.edges.length > 0) {
+    lastClickHadEdge = true;
+    openEdgeCard(p.edges[0]);
+    return;
+  }
+  lastClickHadEdge = false;
+  if (hoveredNodeId === null) {
+    currentNodeId = null;
     document.getElementById('info-content').innerHTML =
       '<span class="empty">点击任意节点查看详情</span>';
+    const card = document.getElementById('word-card');
+    if (!card.classList.contains('hidden')) { card.classList.add('hidden'); renderedWordId = null; }
   }
 });
 

@@ -259,6 +259,7 @@ def seed_database(entries, pairs, clusters) -> dict:
 
         annotations = {
             "en_ndef": entry.get("en_ndef") or None,
+            "phonetic": entry.get("phonetic") or None,
             "levin_source": entry.get("levin_source") or None,
             "cross_subclass": entry.get("cross_subclass") or None,
             "sense_brief": entry.get("sense_brief") or None,

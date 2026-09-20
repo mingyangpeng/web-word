@@ -95,7 +95,8 @@ scripts/get-stats.sh
 启动时 `init_database()` 会跑 `_migrate_schema()`，幂等地把旧库升级到 `SCHEMA_VERSION`。
 
 - `word_clusters` — 词义簇，唯一键 `(main_cat, sub_cat)`，带簇层面的意象图式/句法特征
-- `definitions` — 词目层，一动词一行；含主导原型义与**义位标注字段**
+- `definitions` — 词目层，一动词一行；含主导原型义、**音标**（`phonetic`，来自
+  `data/dictionary.db`，覆盖 23/171）与**义位标注字段**
   （`image_schema` / `prototype_level` / `alignment` / `cn_syntax` /
   `translation_strategy` / `definition_source` / `source_rank` / `needs_review`）
 - `word_senses` — **义位明细**，一义位一行（FK 到 definitions，CASCADE）。
@@ -106,9 +107,10 @@ scripts/get-stats.sh
 - `v_cluster_complete_graph` — 视图，由簇推导完全图，与物化表互为校验
 - `schema_migrations` — 版本记录
 
-> `SCHEMA_VERSION = 3`。v2→v3 迁移**只做结构**（加列加表），不删任何业务数据 ——
-> 迁移每次启动都会跑，让它删数据太危险。词簇与关系的整体重建由
-> `scripts/load_word_library.py` 负责（那里有显式的 `clear_all_word_data()`）。
+> `SCHEMA_VERSION = 4`。迁移**只做结构**（加列加表），不删任何业务数据 ——
+> 迁移每次启动都会跑，让它删数据太危险。v3→v4 只是给 `definitions` 加 `phonetic`；
+> 词簇与关系的整体重建由 `scripts/load_word_library.py` 负责
+> （那里有显式的 `clear_all_word_data()`）。
 
 > `insert_definition(annotations=...)` 只更新**显式传入**的标注字段（列名白名单见
 > `_ANNOTATION_COLUMNS`）。与 `cluster_id` 用 `COALESCE` 是同一个原因：LLM 实时生成
@@ -158,6 +160,12 @@ web-word/
 | `render_sidebar()`（统计 / 热门 / 导出 / 页面切换） | 第 1291 行 |
 | `render_main_area()`（卡片与反馈表单） | 第 1397 行 |
 | `render_interactive_graph_page()`（全库交互式图谱页） | 第 1541 行 |
+
+> 交互式图谱的前端全在 `src/graph_export.py` 的 `_TEMPLATE` 里（内联 HTML/JS/CSS），
+> **改完必须把 `TEMPLATE_VERSION` 加一** —— 它混进输出文件的数据指纹，不加则浏览器
+> 继续加载旧文件，症状是「改了没反应」。节点/边详情卡片（右侧面板、词条卡片、
+> 关系卡片）都在这个模板里，面板与卡片**共用 `nodeDetailHTML(n, compact)`**，
+> 不要另写一套。
 
 > 行号会随编辑漂移，用 `grep -n` 复核，不要直接相信上表。
 

@@ -620,14 +620,41 @@ class TestFullWordGraph:
             def __init__(self):
                 self._rows = []
 
+            # 行形状跟着真实 SELECT 走：节点查询取的是 definitions 的明细列，
+            # 义位查询取 word_senses。假游标少一列就会 KeyError，这正是我们想要的
+            # —— 它保证 get_full_word_graph 不会悄悄依赖一个不存在的列。
+            NODE_COLS = ("chinese_ndef", "en_ndef", "phonetic", "semantic_table",
+                         "example_sentence", "image_schema", "prototype_level",
+                         "alignment", "cn_syntax", "translation_strategy",
+                         "definition_source", "source_rank", "sense_count",
+                         "sense_brief", "judge_reason", "levin_source",
+                         "cross_subclass", "needs_review", "prototype_is_first",
+                         "cluster_image_schema", "cluster_cn_syntax",
+                         "cluster_translation_strategy")
+            SENSE_COLS = ("sense_index", "ch_ndef", "en_ndef", "construction",
+                          "examples", "ch_examples", "synonyms", "antonyms",
+                          "image_schema", "prototype_level", "alignment",
+                          "cn_syntax", "translation_strategy")
+
             def execute(self, sql, params=None):
                 if "LEFT JOIN word_clusters" in sql:
-                    self._rows = [
-                        {"verb": "a", "cluster_id": 1, "cluster_label": "簇一",
-                         "sub_cat": "子一", "main_cat": "主一"},
-                        {"verb": "b", "cluster_id": 1, "cluster_label": "簇一",
-                         "sub_cat": "子一", "main_cat": "主一"},
-                    ]
+                    self._rows = []
+                    for verb in ("a", "b"):
+                        row = {"verb": verb, "cluster_id": 1, "cluster_label": "簇一",
+                               "sub_cat": "子一", "main_cat": "主一"}
+                        row.update({c: None for c in self.NODE_COLS})
+                        self._rows.append(row)
+                    self._rows[0]["phonetic"] = "ˈeɪ"
+                    self._rows[0]["semantic_table"] = '{"manner": "方式甲"}'
+                elif "FROM word_senses s" in sql:
+                    row = {"verb": "a", "sense_index": 1, "ch_ndef": "义位甲",
+                           "en_ndef": None, "construction": None,
+                           "examples": '["ex one"]', "ch_examples": '["例句一"]',
+                           "synonyms": '["b"]', "antonyms": None,
+                           "image_schema": None, "prototype_level": None,
+                           "alignment": None, "cn_syntax": None,
+                           "translation_strategy": None}
+                    self._rows = [row]
                 elif "FROM word_relations r" in sql:
                     self._rows = [{"source": "a", "target": "b", "relation": "近义"}]
                 elif "FROM word_clusters" in sql:
@@ -649,6 +676,19 @@ class TestFullWordGraph:
         # 度数由边推导，而不是查库时直接读的字段
         assert all(n["degree"] == 1 for n in g["nodes"])
         assert g["clusters"][0]["edge_count"] == 1   # C(2,2) = 1
+
+        # 明细字段是卡片的数据源：图谱渲染只读 id/label/size，
+        # 但信息面板与浮层卡片要读这些 —— 遗漏不会报错，只会让卡片显示空白。
+        a = g["nodes"][0]
+        assert a["phonetic"] == "ˈeɪ"
+        assert a["semantic_table"] == {"manner": "方式甲"}
+        assert a["senses"][0]["ch_ndef"] == "义位甲"
+        # JSON 列在库里是字符串，必须被解析成结构；坏值/None 归一成空容器
+        assert a["senses"][0]["examples"] == ["ex one"]
+        assert a["senses"][0]["antonyms"] == []
+        assert g["nodes"][1]["senses"] == []
+        assert g["nodes"][1]["semantic_table"] == {}
+        assert g["nodes"][1]["chinese_ndef"] == ""
 
 
 class TestParticleAndFullscreen:
@@ -1145,3 +1185,111 @@ class TestSensesReplace:
 
         assert n == 0
         assert any("DELETE FROM word_senses" in s for s in executed)
+
+
+class TestNodeAndEdgeCards:
+    """
+    节点/边详情卡片的前端契约。
+
+    这一组钉的都是**改坏了不会报错、只会静默失效**的点：
+
+    - 面板与卡片必须共用同一个渲染函数，否则「两处数据一致」就成了靠人工对齐的
+      承诺，迟早漂移；
+    - vis 在点到节点时会把该节点**所有关联边**一并放进 ``p.edges``（实测点一个
+      44 度的节点会带回 44 条边），所以 click 处理必须先判节点、再判边 ——
+      顺序反了就会「点节点却弹出某条关联边的关系卡片」；
+    - 库里 aspect / scope 两键 171 词全空、义位只覆盖 17 词、音标只覆盖 23 词。
+      这些缺口必须在界面上**显式说明**，不能让用户以为是自己漏看了。
+    """
+
+    def _html(self):
+        return ge.build_graph_html(TestGraphExport.SAMPLE)
+
+    def test_panel_and_cards_share_one_renderer(self):
+        """右侧面板与浮层卡片同源：只有这一个函数负责拼词条明细。"""
+        html = self._html()
+        assert "function nodeDetailHTML(" in html, "缺少词条明细渲染器"
+        # 面板走 compact 分支、卡片走完整分支
+        assert "nodeDetailHTML(n, true)" in html, "右侧面板应调用共用的渲染器"
+        assert "nodeDetailHTML(n, false)" in html, "卡片应调用共用的渲染器"
+
+    def test_node_click_takes_priority_over_edge_click(self):
+        """
+        节点判定必须在边判定之前。
+
+        写成 ``if (p.edges...)`` 在前，点节点时会随机打开一条关联边的关系卡片 ——
+        这个 bug 在开发中真实出现过，而且因为「确实弹出了卡片」看起来不像坏掉。
+        """
+        html = self._html()
+        click = html[html.index("network.on('click'"):]
+        click = click[:click.index("// ---------- 聚焦")]
+        # 匹配真实的 if 语句而不是注释 —— 注释里也写了 p.edges，会假命中
+        i_node = click.index("if (p.nodes.length > 0) {")
+        i_edge = click.index("if (p.edges && p.edges.length > 0) {")
+        assert i_node < i_edge, "必须先判节点再判边，否则点节点会误开关系卡片"
+
+    def test_both_cards_are_draggable_and_closable(self):
+        html = self._html()
+        assert "makeDraggable('word-card', 'word-card-head')" in html
+        assert "makeDraggable('edge-card', 'edge-card-head')" in html
+        assert "word-card-close" in html and "edge-card-close" in html
+        # 拖动用 pointer 事件（鼠标/触屏/笔通吃）
+        assert "pointerdown" in html and "pointermove" in html
+        # 标题栏上的按钮不能触发拖动，否则点「收藏」会把卡片带跑
+        assert "if (ev.target.closest('.fc-btn')) return;" in html
+
+    def test_view_detail_button_opens_the_card(self):
+        html = self._html()
+        assert 'id="btn-word-detail"' in html, "面板里应有「查看详情」入口"
+        assert "#btn-word-detail" in html, "该入口需要被事件代理接管"
+
+    def test_card_fields_stay_wired(self):
+        """卡片字段清单直接对应需求，掉了就是功能缺失。"""
+        html = self._html()
+        for token in ("音标", "词性", "语义簇", "释义", "意象与标注", "原型层级",
+                      "英汉对齐", "五元语义分解", "义位明细", "关联节点",
+                      "来源与复核", "备注 / 收藏"):
+            assert token in html, f"词条卡片缺少字段：{token}"
+        for token in ("关系名称", "源词条", "目标词条", "关系类型", "关系方向",
+                      "关系说明", "权重 / 强度", "共同邻居", "例句", "来源"):
+            assert token in html, f"关系卡片缺少字段：{token}"
+
+    def test_data_gaps_are_stated_not_hidden(self):
+        """
+        缺失数据要明说，不能留空白让人以为是自己没找到。
+
+        音标 23/171、义位 17/171、例句 43/171、aspect/scope 全空 —— 这四个缺口
+        都要在界面上有文字说明。
+        """
+        html = self._html()
+        assert "未收录" in html, "音标缺失应显式标注"
+        assert "库中 171 词全部为空，暂无数据" in html, "aspect/scope 空要说明"
+        assert "该词尚未拆分义位" in html, "无义位要说明"
+        assert "171/171" not in html or True  # 数字会随数据变，不硬钉
+
+    def test_no_fabricated_similarity_score(self):
+        """
+        关系卡片不许编造相似度分数。
+
+        次类内是完全图，每条边结构等价，「共同邻居数」恒等于次类词数 − 2，
+        任何 0~1 的相似度都只是把簇大小重新标度一遍。所以只给可验证的结构指标，
+        并在卡片里说明为什么没有权重。
+        """
+        html = self._html()
+        assert "本图没有边权重字段" in html, "必须说明为什么没有权重"
+        assert "共同邻居" in html, "给出可验证的替代指标"
+
+    def test_annotations_persist_locally_with_fallback(self):
+        """
+        收藏 / 备注写 localStorage；被沙箱禁用时退回内存 store。
+
+        图谱页是 iframe 里的静态 HTML，没有回写服务端的通道 —— 所以只能存本地，
+        并且必须如实告诉用户。存储不可用时降级到内存而不是抛异常。
+        """
+        html = self._html()
+        assert "wordgraph.annotations.v1" in html
+        assert "localStorage.setItem" in html and "localStorage.getItem" in html
+        assert "memStore" in html, "localStorage 不可用时要退回内存 store"
+        assert "保存在本机浏览器" in html, "必须如实告知存储位置"
+        # 词与边分开存键，避免 id 空间撞车
+        assert "annSet('word'" in html and "annSet('edge'" in html

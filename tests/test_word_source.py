@@ -221,6 +221,9 @@ def test_dictionary_db_wins_over_everything():
         def has_verb(self, v):
             return True
 
+        def phonetic(self, v):
+            return "wɔːk"
+
         def senses(self, v):
             return [{"sense_index": 1, "ch_ndef": "词典原文释义", "en_ndef": "en",
                      "construction": "", "examples": ["ex"], "ch_examples": ["例"],
@@ -245,6 +248,9 @@ def test_legacy_used_when_db_has_no_chinese():
         def senses(self, v):
             return []
 
+        def phonetic(self, v):
+            return ""
+
     entries = ws.build_entries(
         _fake_levin("walk"), {}, EmptyDB(),
         {"walk": {"chinese_ndef": "旧词库释义", "example_sentence": "例句"}},
@@ -252,6 +258,44 @@ def test_legacy_used_when_db_has_no_chinese():
     assert entries[0]["definition_source"] == "legacy-library"
     assert entries[0]["chinese_ndef"] == "旧词库释义"
     assert entries[0]["example_sentence"] == "例句"
+
+
+def test_phonetic_comes_from_dictionary_db():
+    """音标随词目一起进 entry —— 卡片要读它。缺了不会报错，只会让卡片显示「未收录」。"""
+
+    class DB:
+        available = True
+
+        def has_verb(self, v):
+            return True
+
+        def phonetic(self, v):
+            return "əˈbændən"
+
+        def senses(self, v):
+            return []
+
+    entries = ws.build_entries(_fake_levin("abandon"), {}, DB(), {})
+    assert entries[0]["phonetic"] == "əˈbændən"
+
+
+def test_phonetic_is_empty_when_db_absent():
+    """没有 dictionary.db 时给空串而不是 None —— 前端据此显示「未收录」。"""
+
+    class DB:
+        available = False
+
+        def has_verb(self, v):
+            return False
+
+        def phonetic(self, v):
+            raise AssertionError("库不可用就不该去问它要音标")
+
+        def senses(self, v):
+            return []
+
+    entries = ws.build_entries(_fake_levin("walk"), {}, DB(), {})
+    assert entries[0]["phonetic"] == ""
 
 
 def test_levin_brief_used_when_no_other_chinese():
@@ -265,6 +309,9 @@ def test_levin_brief_used_when_no_other_chinese():
 
         def senses(self, v):
             return []
+
+        def phonetic(self, v):
+            return ""
 
     entries = ws.build_entries(_fake_levin("slither", brief="蜿蜒滑行爬行"),
                                {}, EmptyDB(), {})
@@ -282,6 +329,9 @@ def test_oxford_is_last_resort_before_pending():
         def senses(self, v):
             return []
 
+        def phonetic(self, v):
+            return ""
+
     entries = ws.build_entries(
         _fake_levin("x", brief=""), {"x": {"en_def": "to move"}}, EmptyDB(), {},
     )
@@ -297,6 +347,9 @@ def test_pending_when_nothing_available():
 
         def senses(self, v):
             return []
+
+        def phonetic(self, v):
+            return ""
 
     entries = ws.build_entries(_fake_levin("x", brief=""), {}, EmptyDB(), {})
     assert entries[0]["definition_source"] == "pending"

@@ -284,6 +284,36 @@ class DictionaryDB:
         )
         return cur.fetchone() is not None
 
+    def phonetic(self, verb: str) -> str:
+        """
+        取美/英音标，形如 ``əˈbændən``；两者相同只留一个，不同则用 `` | `` 分隔（美 | 英）。
+
+        dictionary.db 只有一部分词条带 ``<pronunciation>``（实测 171 词里 23 个）。
+        没有就返回空串 —— 前端据此显示「未收录」。**不猜、不转写**：音标是发音事实，
+        用规则拼一个出来比留空更糟，因为读者无从分辨哪条是抄的、哪条是编的。
+        """
+        if not self.available:
+            return ""
+        cur = self.connect().cursor()
+        cur.execute(
+            "SELECT xml FROM dictionary WHERE lower(trim(lemma)) = ? AND trim(pos) = 'v' LIMIT 1",
+            (verb.lower(),),
+        )
+        row = cur.fetchone()
+        if not row or not row[0]:
+            return ""
+        try:
+            root = ET.fromstring(row[0])
+        except ET.ParseError:
+            return ""
+        parts: List[str] = []
+        for tag in ("AmE", "BrE"):
+            node = root.find(f"pronunciation/{tag}/IPA")
+            text = _clean(node.text if node is not None else None)
+            if text and text not in parts:
+                parts.append(text)
+        return " | ".join(parts)
+
     def senses(self, verb: str) -> List[Dict[str, Any]]:
         """
         取某个动词的**全部义位**。
@@ -669,6 +699,7 @@ def build_entries(levin_rows: List[Dict[str, Any]],
             "definition_rank": SOURCE_RANK[source],
             "sense_count": sense_count,
             "has_dictionary_verb": db.has_verb(verb) if db.available else False,
+            "phonetic": db.phonetic(verb) if db.available else "",
             "senses": senses,
         })
         out.append(entry)
