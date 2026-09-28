@@ -126,7 +126,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 「词间关系」成为可直接查询 / 导出 / 喂给图谱工具的一等数据，而不是每次现场 JOIN 生成。
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 6
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -218,6 +218,56 @@ CREATE_TABLES_SQL = [
         INDEX idx_word_senses_prototype (prototype_level),
         INDEX idx_word_senses_source (source),
         CONSTRAINT fk_word_senses_definition FOREIGN KEY (definition_id)
+            REFERENCES definitions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- OALD10 义项（与 word_senses 分开成表）---
+    #
+    # 为什么不与 word_senses 合并成一张表加 `source` 列：两个来源的**切分体系不同**，
+    # 无法一一对应，合表会带来三个具体麻烦 ——
+    #
+    #   1. `sense_index` 是「同一个词目下第几条」的序号，两套体系混排后
+    #      `charge` 的 10 条中英义位后面接着 12 条 OALD 义项，序号不再表达任何东西；
+    #   2. OALD 义项有 `grammar` / `sense_group` / `is_idiom` 这些**只有它才有**的字段，
+    #      合表就必须容忍一半的行这些列恒为 NULL；
+    #   3. 两个来源都有各自的「首条义项」，合表后「谁是原型义」要靠外部约定来消歧。
+    #
+    # 代价是「取某词的全部义项」要 UNION 或查两次 —— 这个代价集中在一个地方
+    # （`get_all_senses`），换来的是两张表各自干净、字段都有意义。
+    """CREATE TABLE IF NOT EXISTS oald_senses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        definition_id INT NOT NULL,
+        sense_index INT NOT NULL,
+        -- OALD 原始释义（英文）。已被清洗：开头的语法码剥到 grammar 列，
+        -- 例句拆进 examples，正文里不再残留 `[...]` / `<...>`
+        definition TEXT,
+        -- 剥下来的语法码，如 `transitive, often passive`。**不删**：它决定这个义项
+        -- 能不能带宾语，是判断英汉对齐时必须看的证据
+        grammar VARCHAR(64) DEFAULT NULL,
+        -- 语义分组标签（OALD 的 group_tag），如 `money` / `IDIOMS` / `move fast on foot`
+        sense_group VARCHAR(64) DEFAULT NULL,
+        examples JSON,
+        -- 例句的句法模式，与 examples **按下标一一对应**；不适用处为空串
+        example_patterns JSON,
+        -- 习语义项（group_tag == IDIOMS）标记。保留该义项但标记出来：
+        -- 是否排除应由研究者决定，程序替他们决定等于隐藏了数据
+        is_idiom TINYINT(1) NOT NULL DEFAULT 0,
+        -- 义项来自哪个词条名。同形异义（row1 划船 / row2 争吵、tear1 / tear2）
+        -- 会归并到同一个词目下，靠这一列回溯
+        headword VARCHAR(64) DEFAULT NULL,
+        prototype_level VARCHAR(16) DEFAULT NULL,
+        image_schema VARCHAR(32) DEFAULT NULL,
+        alignment VARCHAR(16) DEFAULT NULL,
+        cn_syntax VARCHAR(255) DEFAULT NULL,
+        translation_strategy VARCHAR(255) DEFAULT NULL,
+        source VARCHAR(32) NOT NULL DEFAULT 'OALD10',
+        needs_review TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_oald_senses_index (definition_id, sense_index),
+        INDEX idx_oald_senses_definition (definition_id),
+        INDEX idx_oald_senses_idiom (is_idiom),
+        INDEX idx_oald_senses_group (sense_group),
+        CONSTRAINT fk_oald_senses_definition FOREIGN KEY (definition_id)
             REFERENCES definitions(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
@@ -355,8 +405,22 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
     从 v3 → v4 做的事：
 
       6. ``definitions`` 增加 ``phonetic``（音标）。数据源是 ``data/dictionary.db``
-         的 ``<pronunciation>``，覆盖不全（171 词里 23 个），所以允许为 NULL，
+         的 ``<pronunciation>``，覆盖不全（136 词里 23 个），所以允许为 NULL，
          前端据此显示「未收录」而不是编一个音标。
+
+    从 v5 → v6 做的事：
+
+      7. 把 OALD10 义项从 ``word_senses`` 拆出来，独立成 ``oald_senses`` 表
+         （表本身由 ``CREATE_TABLES_SQL`` 建，迁移只负责删过渡列）。
+
+         中间那版曾把两个来源合在 ``word_senses`` 里、按 ``source`` 区分，实测下来
+         合表的代价更高：两套切分体系无法一一对应，``sense_index`` 混排后不再表达
+         「同词目下第几条」，并且一半的行 ``grammar`` / ``sense_group`` /
+         ``is_idiom`` 恒为 NULL。分表后两张表各自干净、每列都有意义。
+
+         迁移删掉 v5 新增的那 6 列并清掉已写入的 OALD 过渡行 —— 两者都是派生数据，
+         灌库脚本会重建。代价是「取某词全部义项」要查两次，这个代价集中在
+         ``get_all_senses()`` 一个地方。
 
     Args:
         cursor: 已 USE 到目标库的 DictCursor。
@@ -468,10 +532,12 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
     # 不在迁移里 DELETE 是刻意的：迁移在每次应用启动时都会跑，让它删业务数据太危险。
     if not _table_exists(cursor, "word_senses"):
         summary["actions"].append("word_senses will be created by CREATE_TABLES_SQL")
+    if not _table_exists(cursor, "oald_senses"):
+        summary["actions"].append("oald_senses will be created by CREATE_TABLES_SQL")
 
     # --- v3 → v4：definitions.phonetic（音标）---
     # 音标来自 data/dictionary.db 的 <pronunciation>，只有一部分词条带
-    # （实测 171 词里 23 个）。它是**词目层的固有属性**，所以和别的标注字段一起
+    # （实测 136 词里 9 个）。它是**词目层的固有属性**，所以和别的标注字段一起
     # 放在 definitions 里，由灌库脚本写入；LLM 实时生成时不传该键，
     # 因而不会把灌库写入的音标抹成 NULL（与 cluster_id 用 COALESCE 同一个道理）。
     if not _column_exists(cursor, "definitions", "phonetic"):
@@ -480,11 +546,44 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
         )
         summary["actions"].append("definitions.phonetic added")
 
+    # --- v5 → v6：OALD 义项从 word_senses 拆出，独立成 oald_senses 表 ---
+    #
+    # 中间那版（v5）曾把 OALD 义项塞进 word_senses、按 source 列区分。实测下来
+    # 合表的代价高过收益：两套切分体系无法一一对应，sense_index 混排后不再表达
+    # 「同词目下第几条」，且一半的行 grammar / sense_group / is_idiom 恒为 NULL。
+    # 现在按来源分表，这里把当时的过渡列**删掉**。
+    #
+    # DROP COLUMN 是会丢数据的方向，所以只在「确实存在这些过渡列」时才执行，
+    # 且范围严格限定为 v5 新增的那 6 列 —— 不碰 word_senses 的原有列。
+    # 新表由 CREATE_TABLES_SQL 建（它在迁移之前已跑过），迁移不重复建。
+    for col in ("sense_group", "grammar", "example_patterns", "is_idiom",
+                "headword", "prototype_is_first"):
+        if _column_exists(cursor, "word_senses", col):
+            cursor.execute(f"ALTER TABLE word_senses DROP COLUMN {col}")
+            summary["actions"].append(f"word_senses.{col} dropped (moved to oald_senses)")
+
+    if _index_exists(cursor, "word_senses", "idx_word_senses_idiom"):
+        cursor.execute("ALTER TABLE word_senses DROP INDEX idx_word_senses_idiom")
+        summary["actions"].append("idx_word_senses_idiom dropped")
+
+    # 过渡期若曾把 OALD 行写进 word_senses，这里**不删它们**：迁移只做结构改造，
+    # 不删业务数据 —— 迁移每次启动都跑，让它删数据等于给部署留了一个清库的开关。
+    # 那些行是派生数据，下一次 `scripts/load_word_library.py` 的
+    # `clear_all_word_data()` 会连同两个义项表一起重建，无需迁移代劳。
+    # 只把情况记进 summary，让人从日志里知道「该重跑灌库了」。
+    cursor.execute("SELECT COUNT(*) AS n FROM word_senses WHERE source = %s", ("OALD10",))
+    stale = int(cursor.fetchone()["n"] or 0)
+    if stale:
+        summary["actions"].append(
+            f"word_senses 有 {stale} 条 OALD 过渡行待灌库脚本重建（迁移不动它们）"
+        )
+        summary["stale_oald_rows"] = stale
+
     # --- 5. 记录版本 ---
     cursor.execute(
         """INSERT INTO schema_migrations (version, name) VALUES (%s, %s)
            ON DUPLICATE KEY UPDATE name = VALUES(name)""",
-        (SCHEMA_VERSION, "phonetic column"),
+        (SCHEMA_VERSION, "oald_senses table"),
     )
     return summary
 
@@ -766,9 +865,12 @@ def replace_word_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int
     """
     整体替换某个动词的义位明细（先删后插，幂等）。
 
-    与 ``replace_word_relations`` 同样的取舍：义位是**派生数据**（由 dictionary.db 现场
-    解析而来），整表替换比逐行 diff 简单且绝不会留下孤儿行。用 DELETE-all 而不是
-    TRUNCATE，因为事务里 TRUNCATE 会隐式提交。
+    与 ``replace_word_relations`` 同样的取舍：义位是**派生数据**（由 dictionary.db 或
+    OALD xlsx 现场解析而来），整表替换比逐行 diff 简单且绝不会留下孤儿行。
+    用 DELETE-all 而不是 TRUNCATE，因为事务里 TRUNCATE 会隐式提交。
+
+    本表只装 ``data/dictionary.db`` 的中英对照义位。OALD10 的英文义项粒度不同
+    （带语法码与语义分组），单独放在 ``oald_senses`` 表 —— 理由见该表的建表注释。
 
     Args:
         definition_id: ``definitions.id``
@@ -827,8 +929,139 @@ def replace_word_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int
         return 0
 
 
-def get_senses(verb: str, limit: int = 50) -> List[Dict[str, Any]]:
-    """取某个动词的义位明细，供页面展示与文档生成。"""
+def replace_oald_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int:
+    """
+    整体替换某个动词的 OALD10 义项（先删后插，幂等）。
+
+    与 ``replace_word_senses`` 同样的取舍：义项是派生数据（由 OALD xlsx 现场解析），
+    整表替换比逐行 diff 简单且不会留下孤儿行。用 DELETE-all 而不是 TRUNCATE，
+    因为事务里 TRUNCATE 会隐式提交。
+
+    Returns:
+        实际写入的行数；失败返回 0
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM oald_senses WHERE definition_id = %s", (definition_id,)
+            )
+            if not senses:
+                return 0
+
+            rows = [
+                (
+                    definition_id,
+                    s.get("sense_index", i + 1),
+                    s.get("en_ndef"),
+                    s.get("grammar"),
+                    s.get("sense_group"),
+                    json.dumps(s.get("examples") or [], ensure_ascii=False),
+                    json.dumps(s.get("example_patterns") or [], ensure_ascii=False),
+                    int(s.get("is_idiom") or 0),
+                    s.get("headword"),
+                    s.get("prototype_level"),
+                    s.get("image_schema"),
+                    s.get("alignment"),
+                    s.get("cn_syntax"),
+                    s.get("translation_strategy"),
+                    s.get("source") or "OALD10",
+                    int(s.get("needs_review") or 0),
+                )
+                for i, s in enumerate(senses)
+            ]
+
+            cursor.executemany(
+                """INSERT INTO oald_senses
+                       (definition_id, sense_index, definition, grammar, sense_group,
+                        examples, example_patterns, is_idiom, headword,
+                        prototype_level, image_schema, alignment,
+                        cn_syntax, translation_strategy, source, needs_review)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
+                           %s, %s, %s, %s, %s, %s, %s, %s)""",
+                rows,
+            )
+            return len(rows)
+
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace OALD senses for definition {definition_id}: {e}")
+        return 0
+    except Exception as e:
+        logger.error(f"Unexpected error replacing OALD senses: {e}")
+        return 0
+
+
+def _parse_json_columns(rows: List[Dict[str, Any]], fields: tuple) -> List[Dict[str, Any]]:
+    """把 JSON 列从字符串解析成 Python 对象；坏值归一成空列表而不是 None。"""
+    for row in rows:
+        for field in fields:
+            value = row.get(field)
+            if isinstance(value, str):
+                try:
+                    row[field] = json.loads(value)
+                except json.JSONDecodeError:
+                    row[field] = []
+    return rows
+
+
+def get_oald_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
+    """
+    取某个动词的 OALD10 义项（英文，带语法码与语义分组）。
+
+    Args:
+        verb: 动词原形
+        limit: 上限。默认 200 —— 最多的 run 有 39 条，等于无上限，同时兜住异常数据。
+
+    Returns:
+        义项列表，``examples`` / ``example_patterns`` 已解析成列表。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT s.* FROM oald_senses s
+                   JOIN definitions d ON d.id = s.definition_id
+                   WHERE d.verb = %s
+                   ORDER BY s.sense_index
+                   LIMIT %s""",
+                (verb, limit),
+            )
+            rows = cursor.fetchall()
+    except pymysql.Error as e:
+        logger.error(f"Failed to fetch OALD senses for '{verb}': {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error fetching OALD senses: {e}")
+        return []
+
+    return _parse_json_columns(rows, ("examples", "example_patterns"))
+
+
+def get_all_senses(verb: str) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    一次取回某个动词的**两个来源**的义项。
+
+    分两张表存的代价集中在这里：调用方（页面、文档生成）只要用这一个函数，
+    就不必知道有两个来源、更不必自己 UNION。键名固定为两个来源名。
+    """
+    return {
+        "word_senses": get_senses(verb),
+        "oald_senses": get_oald_senses(verb),
+    }
+
+
+def get_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
+    """
+    取某个动词的 dictionary.db 义位明细（中英对照），供页面展示与文档生成。
+
+    OALD 义项在 ``get_oald_senses``；要两个来源一起取用 ``get_all_senses``。
+
+    Args:
+        verb: 动词原形
+        limit: 上限。默认 200 —— go 的义位有 38 条，历史上默认 50 会**静默截断**
+            而看不出被截了；给到 200 对当前数据（最多 62）等于无上限，同时仍兜住异常数据。
+
+    Returns:
+        义项列表，JSON 列已解析成 Python 对象（坏值归一成空列表）。
+    """
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -847,15 +1080,7 @@ def get_senses(verb: str, limit: int = 50) -> List[Dict[str, Any]]:
         logger.error(f"Unexpected error fetching senses: {e}")
         return []
 
-    for row in rows:
-        for field in ("examples", "ch_examples", "synonyms", "antonyms"):
-            value = row.get(field)
-            if isinstance(value, str):
-                try:
-                    row[field] = json.loads(value)
-                except json.JSONDecodeError:
-                    row[field] = []
-    return rows
+    return _parse_json_columns(rows, ("examples", "ch_examples", "synonyms", "antonyms"))
 
 
 def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
@@ -1077,7 +1302,7 @@ def clear_all_word_data() -> Dict[str, int]:
     removed: Dict[str, int] = {}
     try:
         with get_db_cursor() as cursor:
-            for table in ("word_relations", "word_senses"):
+            for table in ("word_relations", "oald_senses", "word_senses"):
                 cursor.execute(f"SELECT COUNT(*) AS n FROM {table}")
                 removed[table] = int(cursor.fetchone()["n"] or 0)
                 cursor.execute(f"DELETE FROM {table}")
@@ -1498,8 +1723,8 @@ def get_full_word_graph() -> Dict[str, Any]:
             )
             node_rows = cursor.fetchall()
 
-            # 义位明细：只有一部分词有（实测 246 条覆盖 17 词），所以按 verb 归组后
-            # 缺的词就是空列表 —— 卡片据此显示「该词尚未拆分义位」。
+            # 义位明细：只有一部分词有（实测 64 条覆盖 4 词），所以按 verb 归组后
+            # 缺的词就是空列表 —— 卡片据此显示「该词没有中英对照义位」。
             cursor.execute(
                 """SELECT d.verb, s.sense_index, s.ch_ndef, s.en_ndef,
                           s.construction, s.examples, s.ch_examples,
@@ -1511,6 +1736,18 @@ def get_full_word_graph() -> Dict[str, Any]:
                    ORDER BY d.verb, s.sense_index"""
             )
             sense_rows = cursor.fetchall()
+
+            # OALD 义项覆盖 132/136 词，是卡片上义项信息的主力来源。
+            # 与 word_senses 分开查、分开装 —— 两套切分体系不能混成一个列表。
+            cursor.execute(
+                """SELECT d.verb, s.sense_index, s.definition, s.grammar,
+                          s.sense_group, s.examples, s.example_patterns,
+                          s.is_idiom, s.prototype_level
+                   FROM oald_senses s
+                   JOIN definitions d ON d.id = s.definition_id
+                   ORDER BY d.verb, s.sense_index"""
+            )
+            oald_rows = cursor.fetchall()
 
             cursor.execute(
                 """SELECT a.verb AS source, b.verb AS target, r.relation
@@ -1562,6 +1799,19 @@ def get_full_word_graph() -> Dict[str, Any]:
             "cn_syntax": r["cn_syntax"] or "",
         })
 
+    oald_by_verb: Dict[str, List[Dict[str, Any]]] = {}
+    for r in oald_rows:
+        oald_by_verb.setdefault(r["verb"], []).append({
+            "sense_index": r["sense_index"],
+            "definition": r["definition"] or "",
+            "grammar": r["grammar"] or "",
+            "sense_group": r["sense_group"] or "",
+            "examples": _json_list(r["examples"]),
+            "example_patterns": _json_list(r["example_patterns"]),
+            "is_idiom": int(r["is_idiom"] or 0),
+            "prototype_level": r["prototype_level"] or "",
+        })
+
     nodes = [
         {
             "id": r["verb"],
@@ -1595,6 +1845,7 @@ def get_full_word_graph() -> Dict[str, Any]:
             "cluster_cn_syntax": r["cluster_cn_syntax"] or "",
             "cluster_translation_strategy": r["cluster_translation_strategy"] or "",
             "senses": senses_by_verb.get(r["verb"], []),
+            "oald_senses": oald_by_verb.get(r["verb"], []),
         }
         for r in node_rows
     ]

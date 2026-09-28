@@ -73,7 +73,7 @@ def _esc_js(text: Any) -> str:
 # 但数据没变」时 URL 不变 —— 浏览器和 Streamlit 都认为文件没换，页面继续跑旧渲染
 # 逻辑，改了前端却看不到任何变化，而且重启进程也不一定有用（磁盘上还是旧文件）。
 # 把版本号并进指纹后，改模板即产生新 URL，旧文件被自动清理。
-TEMPLATE_VERSION = 21
+TEMPLATE_VERSION = 22
 
 
 def data_fingerprint(graph: Dict[str, Any]) -> str:
@@ -173,6 +173,7 @@ def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图�
                 "cluster_cn_syntax": n.get("cluster_cn_syntax") or "",
                 "cluster_translation_strategy": n.get("cluster_translation_strategy") or "",
                 "senses": n.get("senses") or [],
+                "oald_senses": n.get("oald_senses") or [],
             },
         })
 
@@ -377,6 +378,8 @@ _TEMPLATE = """<!DOCTYPE html>
             color: #7f7fa8; font-size: 11px; letter-spacing: 0.06em; }
   .fc-sec:first-child { border-top: none; margin-top: 0; padding-top: 0; }
   .fc-sense { border-left: 3px solid #3a3a5e; padding: 3px 0 3px 8px; margin-bottom: 9px; }
+  /* 习语义项压暗 + 边框变暖：它们不是该词的位移义，扫一眼就能跳过 */
+  .fc-sense.fc-idiom { border-left-color: #7a6a3a; opacity: 0.78; }
   .fc-sense .idx { color: #7f7fa8; font-size: 11px; }
   .fc-ex { color: #9a9ac0; font-style: italic; margin-top: 3px; }
   .fc-miss { color: #6a6a8a; font-style: italic; }
@@ -644,7 +647,7 @@ function neighborChips(ids) {
   }).join('');
 }
 
-// 五元语义分解的键与中文名。aspect / scope 在库中 171 词全为空，所以下面会把
+// 五元语义分解的键与中文名。aspect / scope 在库中 136 词全为空，所以下面会把
 // 「空的那几项」显式列出来并说明原因 —— 静默省略会让人以为这个词没有体相/范围。
 const SEMA_KEYS = [['manner', '方式'], ['path', '路径'], ['direction', '方向'],
                    ['aspect', '体相'], ['scope', '范围']];
@@ -669,6 +672,28 @@ function senseHTML(s) {
   }
   if (s.synonyms && s.synonyms.length) h += '<div class="fc-ex">近义：' + esc(s.synonyms.join('、')) + '</div>';
   if (s.antonyms && s.antonyms.length) h += '<div class="fc-ex">反义：' + esc(s.antonyms.join('、')) + '</div>';
+  return h + '</div>';
+}
+
+/**
+ * 渲染一条 OALD 义项。
+ *
+ * 语法码（`grammar`）单独一行**不省**：`[transitive]` 决定这个义项能不能带宾语，
+ * 是研究者判断英汉对齐时必须看的证据 —— 它是从释义正文里剥下来的，剥掉不等于丢掉。
+ * 习语义项打标并压暗：OALD 把 IDIOMS 排在最后，它们的「释义」常是整句习语的解释
+ * 而非该词的位移义，混在普通义项里看不出区别。
+ */
+function oaldSenseHTML(s) {
+  let h = '<div class="fc-sense' + (s.is_idiom ? ' fc-idiom' : '') + '">'
+        + '<span class="idx">义项 ' + s.sense_index
+        + (s.sense_group ? ' · ' + esc(s.sense_group) : '')
+        + (s.is_idiom ? ' · 习语' : '') + '</span><br/>'
+        + esc(s.definition || '（无释义）');
+  if (s.grammar) h += '<div class="fc-ex">语法：' + esc(s.grammar) + '</div>';
+  const exs = s.examples || [], pats = s.example_patterns || [];
+  for (let i = 0; i < exs.length; i++) {
+    h += '<div class="fc-ex">· ' + (pats[i] ? '<' + esc(pats[i]) + '> ' : '') + esc(exs[i]) + '</div>';
+  }
   return h + '</div>';
 }
 
@@ -711,16 +736,27 @@ function nodeDetailHTML(n, compact) {
       filled.forEach(kv => { h += plainRow(kv[1], st[kv[0]]); });
       const empty = SEMA_KEYS.filter(kv => !String(st[kv[0]] || '').trim()).map(kv => kv[1]);
       if (empty.length) {
-        h += missRow(empty.join('、') + '：库中 171 词全部为空，暂无数据');
+        h += missRow(empty.join('、') + '：库中 136 词全部为空，暂无数据');
       }
     }
+    // 两个来源的义项**分节展示**，不合并成一个列表：它们的切分体系不同，
+    // 合并后会让人以为「第 1 条」和「第 1 条」是同一个义项。
     const senses = d.senses || [];
-    h += sec('义位明细（' + senses.length + '）');
+    const oald = d.oald_senses || [];
+    h += sec('中英对照义位（' + senses.length + '）');
     if (senses.length) {
       senses.forEach(x => { h += senseHTML(x); });
     } else {
-      h += missRow('该词尚未拆分义位（dictionary.db 仅覆盖 17/171 词）');
+      h += missRow('该词没有中英对照义位（dictionary.db 只有 333 个动词词条，'
+        + '与这 136 词重合 9 个）');
       if (d.example_sentence) h += '<div class="fc-ex">· ' + esc(d.example_sentence) + '</div>';
+    }
+    h += sec('OALD10 义项（' + oald.length + '）');
+    if (oald.length) {
+      oald.forEach(x => { h += oaldSenseHTML(x); });
+    } else {
+      h += missRow('OALD 导出表里查不到该词的动词义项（136 词中有 4 个这样：'
+        + 'dodder / scutter / kayak / oar）');
     }
     h += sec('关联节点（' + nb.length + '）');
     h += '<div>' + neighborChips(nb) + '</div>';
@@ -845,7 +881,7 @@ function renderEdgeCard() {
     if (exA) h += '<div class="fc-ex">' + esc(a.label) + '：' + esc(exA) + '</div>';
     if (exB) h += '<div class="fc-ex">' + esc(b.label) + '：' + esc(exB) + '</div>';
   } else {
-    h += missRow('两端词条都没有例句（词目级例句仅覆盖 43/171 词）');
+    h += missRow('两端词条都没有例句（词目级例句只覆盖 136 词里的 22 个）');
   }
 
   h += sec('来源');
