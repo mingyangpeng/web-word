@@ -10,11 +10,15 @@ import sys
 import os
 import re
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
 import src.cluster_graph as cg  # noqa: E402
 import src.graph_export as ge  # noqa: E402
+import src.oald_senses as oald  # noqa: E402
+import src.word_source as ws  # noqa: E402
 
 
 # ============================================
@@ -1198,7 +1202,7 @@ class TestNodeAndEdgeCards:
     - vis 在点到节点时会把该节点**所有关联边**一并放进 ``p.edges``（实测点一个
       44 度的节点会带回 44 条边），所以 click 处理必须先判节点、再判边 ——
       顺序反了就会「点节点却弹出某条关联边的关系卡片」；
-    - 库里 aspect / scope 两键 171 词全空、义位只覆盖 17 词、音标只覆盖 23 词。
+    - 库里 aspect / scope 两键 136 词全空、中英义位只覆盖 4 词、音标只覆盖 9 词。
       这些缺口必须在界面上**显式说明**，不能让用户以为是自己漏看了。
     """
 
@@ -1247,9 +1251,14 @@ class TestNodeAndEdgeCards:
         """卡片字段清单直接对应需求，掉了就是功能缺失。"""
         html = self._html()
         for token in ("音标", "词性", "语义簇", "释义", "意象与标注", "原型层级",
-                      "英汉对齐", "五元语义分解", "义位明细", "关联节点",
-                      "来源与复核", "备注 / 收藏"):
+                      "英汉对齐", "五元语义分解", "中英对照义位", "OALD10 义项",
+                      "关联节点", "来源与复核", "备注 / 收藏"):
             assert token in html, f"词条卡片缺少字段：{token}"
+        # 两个来源分节，不合并成一个列表：切分体系不同，合并会让人以为
+        # 「第 1 条」和「第 1 条」是同一个义项
+        assert "function oaldSenseHTML(" in html, "缺少 OALD 义项渲染器"
+        assert "语法：" in html, "OALD 的语法码必须显示（它决定义项能否带宾语）"
+        assert "fc-idiom" in html, "习语义项要有视觉区分"
         for token in ("关系名称", "源词条", "目标词条", "关系类型", "关系方向",
                       "关系说明", "权重 / 强度", "共同邻居", "例句", "来源"):
             assert token in html, f"关系卡片缺少字段：{token}"
@@ -1258,14 +1267,16 @@ class TestNodeAndEdgeCards:
         """
         缺失数据要明说，不能留空白让人以为是自己没找到。
 
-        音标 23/171、义位 17/171、例句 43/171、aspect/scope 全空 —— 这四个缺口
-        都要在界面上有文字说明。
+        音标 9/136、dictionary.db 义位 4/136、OALD 义项 132/136、例句 43/136、
+        aspect/scope 全空 —— 这些缺口都要在界面上有文字说明。
         """
         html = self._html()
         assert "未收录" in html, "音标缺失应显式标注"
-        assert "库中 171 词全部为空，暂无数据" in html, "aspect/scope 空要说明"
-        assert "该词尚未拆分义位" in html, "无义位要说明"
-        assert "171/171" not in html or True  # 数字会随数据变，不硬钉
+        assert "库中 136 词全部为空，暂无数据" in html, "aspect/scope 空要说明"
+        # 两个来源各自的缺口都要有说明，且**要说清为什么**而不是只写「暂无」
+        assert "该词没有中英对照义位" in html, "dictionary.db 义位缺失要说明"
+        assert "OALD 导出表里查不到该词的动词义项" in html, "OALD 义项缺失要说明"
+        assert "dodder / scutter / kayak / oar" in html, "要列出具体是哪几个词，便于核对"
 
     def test_no_fabricated_similarity_score(self):
         """
@@ -1293,3 +1304,109 @@ class TestNodeAndEdgeCards:
         assert "保存在本机浏览器" in html, "必须如实告知存储位置"
         # 词与边分开存键，避免 id 空间撞车
         assert "annSet('word'" in html and "annSet('edge'" in html
+
+
+class TestOaldSenseExtraction:
+    """
+    OALD 义项提取的清洗契约（用真表跑，不 mock）。
+
+    这一组钉的是**清洗规则**，不是提取数量 —— 数量会随数据更新而变，
+    但「方括号语法码必须剥到 grammar 列、不能留在释义正文里」这类规则
+    一旦被改坏，症状是释义里混着 `[intransitive]to move...`，
+    看起来只是「有点丑」，实际是释义不再是可读的英文原文。
+    """
+
+    @pytest.fixture(scope="class")
+    def index(self):
+        return oald.load_oald_verb_index()
+
+    def test_grammar_code_stripped_from_definition(self, index):
+        senses, _, _ = oald.senses_for("crawl", index)
+        assert senses, "crawl 应有义项"
+        for s in senses:
+            assert not s["en_ndef"].startswith("["), (
+                f"释义里还残留方括号语法码: {s['en_ndef'][:40]}"
+            )
+        # 剥下来的语法码不能丢 —— 它决定义项能否带宾语
+        assert senses[0]["grammar"] == "intransitive"
+
+    def test_plain_definition_has_no_grammar(self, index):
+        """没有语法码的义项，grammar 应是 None 而不是空串/占位符。"""
+        senses, _, _ = oald.senses_for("clamber", index)
+        assert senses[0]["grammar"] is None
+        assert senses[0]["en_ndef"].startswith("to climb")
+
+    def test_examples_split_and_patterns_propagate(self, index):
+        """
+        例句按行拆开；句法模式向下传播到同组的后续例句。
+
+        OALD 只给每组的首句标 `<...>`，后续例句是继承 —— 解析器若不传播，
+        那些例句的模式就会是空串，看起来像「这几句没有句法信息」。
+        """
+        senses, _, _ = oald.senses_for("run", index)
+        first = senses[0]
+        assert len(first["examples"]) == 8
+        assert all(isinstance(e, str) and e for e in first["examples"])
+        # 模式列表与例句列表等长（按下标一一对应）
+        assert len(first["example_patterns"]) == len(first["examples"])
+        # 存在被继承出模式的例句：数量应不少于显式标注的那些
+        assert any(p for p in first["example_patterns"]), "模式应被解析出来"
+
+    def test_examples_never_keep_the_angle_bracket_prefix(self, index):
+        senses, _, _ = oald.senses_for("charge", index)
+        for s in senses:
+            for e in s["examples"]:
+                assert not e.startswith("<"), f"例句里还留着句法模式前缀: {e[:40]}"
+
+    def test_idiom_senses_are_flagged_not_dropped(self, index):
+        """
+        习语义项**保留但标记**，不能悄悄删掉。
+
+        是否把 IDIOMS 组排除在外是研究判断，程序替研究者决定就等于隐藏数据。
+        """
+        senses, _, _ = oald.senses_for("crawl", index)
+        idioms = [s for s in senses if s["is_idiom"]]
+        assert idioms, "crawl 的 IDIOMS 组义项应被标记出来"
+        assert all(s["sense_group"] == "IDIOMS" for s in idioms)
+        assert len(idioms) < len(senses), "习语不应把普通义项也标上"
+
+    def test_homographs_are_merged_and_traceable(self, index):
+        """
+        同形异义（row1 划船 / row2 争吵）合并到同一个词目下，且能回溯。
+
+        合并是为了让 `row` 这个查询词拿得到全部义项；保留 `headword`
+        是为了「哪个义项是划船」这件事仍然可查。
+        """
+        senses, how, names = oald.senses_for("row", index)
+        assert how == "alias", f"row 应通过 link_to 找到同形词条，实得 {how}"
+        assert set(names) == {"row1", "row2"}
+        assert {s["headword"] for s in senses} == {"row1", "row2"}
+        # 划船的义在 row1 里，争吵的义在 row2 里 —— 两者都必须在
+        joined = " ".join(s["en_ndef"] for s in senses)
+        assert "boat" in joined and "noisy argument" in joined
+
+    def test_spelling_variant_resolves(self, index):
+        """whiz 在表里拼作 whizz，必须能对上，否则会静默少一个词。"""
+        senses, how, names = oald.senses_for("whiz", index)
+        assert how == "alias" and names == ["whizz"]
+        assert senses
+
+    def test_known_missing_words_are_reported_not_skipped(self, index):
+        """
+        表里确实没有的 4 个词必须在报表里出现，而不是被静默跳过。
+
+        静默跳过会让「4 个词完全没有义项」这件事在界面上表现为「点了没反应」。
+        """
+        report = oald.audit_coverage(["amble", "dodder", "scutter", "kayak", "oar"], index)
+        assert report["missing_verbs"] == ["dodder", "scutter", "kayak", "oar"]
+        assert report["per_verb"]["amble"] > 0
+
+    def test_no_definition_is_empty(self, index):
+        """释义为空是静默失效：行数对、外键对，只有打开卡片才发现是空的。"""
+        report = oald.audit_coverage(
+            [r["verb"] for r in ws.load_levin_table()], index
+        )
+        for verb in [r["verb"] for r in ws.load_levin_table()]:
+            for s in oald.senses_for(verb, index)[0]:
+                assert s["en_ndef"], f"{verb} 有一条义项释义为空"
+        assert report["total_senses"] > 600

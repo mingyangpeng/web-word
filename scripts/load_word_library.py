@@ -16,7 +16,7 @@
 
 ## 与旧版本的关键差异
 
-旧版读 `data/motion_verbs_extracted.json` 的 155 词。现在以 Levin 筛选表的 171 词为准，
+旧版读 `data/motion_verbs_extracted.json` 的 155 词。现在以 Levin 筛选表的 136 词为准，
 分类体系也从自定义的 25 个 sub_cat 换成文档规定的 **三主范畴 / 十二次类**。
 
 这意味着**簇与关系必须整体重建**：新旧两套次类混在一张图上会得到自相矛盾的结果。
@@ -49,8 +49,15 @@ from src.mysql_db import (  # noqa: E402
     insert_definition,
     prune_empty_clusters,
     refresh_cluster_sizes,
+    replace_oald_senses,
     replace_word_relations,
     replace_word_senses,
+)
+from src.oald_senses import (  # noqa: E402
+    annotate_oald_senses,
+    audit_coverage as oald_audit,
+    load_oald_verb_index,
+    senses_for as oald_senses_for,
 )
 from src.word_source import (  # noqa: E402
     ALIGNMENT_PARTIAL,
@@ -173,6 +180,10 @@ def build_word_graph(entries, clusters, pairs):
             "chinese_ndef": e.get("chinese_ndef"),
             "definition_source": e.get("definition_source"),
             "sense_count": e.get("sense_count", 0),
+            # dictionary.db 的中英对照义位数 vs OALD 的英文义项数。两者分开报，
+            # 因为它们是两套切分体系，加在一起没有意义。
+            "dict_sense_count": len(e.get("senses") or []),
+            "oald_sense_count": len(e.get("oald_senses") or []),
         }
         for e in entries
     ]
@@ -207,7 +218,9 @@ def build_word_graph(entries, clusters, pairs):
         "directed": False,
         "multigraph": False,
         "description": "英语自移移动动词词间关系图：节点=动词，边=同一次类近义关系（簇内完全图）",
-        "source": "docs/Levin移动动词候选词筛选表.xlsx + data/dictionary.db",
+        "source": ("docs/Levin移动动词候选词筛选表.xlsx（词目与分类）+ "
+               "docs/output-oald10en-for-senselist-1020.xlsx（OALD10 义项）+ "
+               "data/dictionary.db（中英对照义位）"),
         "nodes": nodes,
         "links": links,
         "clusters": cluster_nodes,
@@ -252,6 +265,7 @@ def seed_database(entries, pairs, clusters) -> dict:
 
     ok_defs = 0
     ok_senses = 0
+    ok_oald = 0
     for entry in entries:
         verb = entry["verb"]
         cid = cluster_of.get((entry.get("main_cat"), entry.get("sub_cat")))
@@ -290,13 +304,22 @@ def seed_database(entries, pairs, clusters) -> dict:
             continue
         ok_defs += 1
 
-        senses = annotate_senses(entry.get("senses") or [], entry)
-        if senses:
+        dict_senses = entry.get("senses") or []
+        # 标注器要知道 dictionary.db 是否已经占用了「原型义」这个位置
+        entry["_has_dict_senses"] = bool(dict_senses)
+        senses = annotate_senses(dict_senses, entry)
+        # OALD 义项写自己那张表。两个来源分表存放 —— 切分体系不同，无法一一对应，
+        # 合表的代价见 src/mysql_db.py 里 oald_senses 的建表注释。
+        oald = annotate_oald_senses(entry.get("oald_senses") or [], entry)
+
+        if senses or oald:
             with get_db_cursor() as cur:
                 cur.execute("SELECT id FROM definitions WHERE verb = %s", (verb,))
                 row = cur.fetchone()
             if row:
-                ok_senses += replace_word_senses(int(row["id"]), senses)
+                did = int(row["id"])
+                ok_senses += replace_word_senses(did, senses)
+                ok_oald += replace_oald_senses(did, oald)
 
     # 3) 词间关系（簇内完全图，整批替换）
     relations = [
@@ -310,7 +333,7 @@ def seed_database(entries, pairs, clusters) -> dict:
     refresh_cluster_sizes()
 
     return {"definitions": ok_defs, "clusters": len(cluster_id_by_key),
-            "relations": ok_rel, "senses": ok_senses}
+            "relations": ok_rel, "senses": ok_senses, "oald_senses": ok_oald}
 
 
 def definitions_count() -> int:
@@ -344,6 +367,25 @@ def main():
     legacy = load_legacy_library()
 
     entries = build_entries(levin, oxford, db, legacy)
+
+    # --- OALD10 义项（第二个释义来源，与 dictionary.db 并存）---
+    oald_index = load_oald_verb_index()
+    oald_by_verb = {}
+    for entry in entries:
+        ss, how, names = oald_senses_for(entry["verb"], oald_index)
+        entry["oald_senses"] = ss
+        entry["oald_resolution"] = how
+        entry["oald_headwords"] = names
+        oald_by_verb[entry["verb"]] = len(ss)
+    oald_report = oald_audit([e["verb"] for e in entries], oald_index)
+    print(f"OALD10 义项: {oald_report['total_senses']} 条 / {oald_report['total_verbs']} 词"
+          f"（平均 {oald_report['avg_senses']}），解析方式 {oald_report['by_resolution']}")
+    if oald_report["missing_verbs"]:
+        print(f"  ⚠️  表里查不到动词义项的词（{len(oald_report['missing_verbs'])}）: "
+              f"{oald_report['missing_verbs']}")
+    print(f"  其中带例句 {oald_report['senses_with_examples']} 条、带语法码"
+          f" {oald_report['senses_with_grammar']} 条、习语义项 {oald_report['idiom_senses']} 条")
+
     audit = audit_coverage(entries)
 
     print(f"dictionary.db 命中: {audit['in_dictionary_db']}/{audit['total']} "
@@ -391,7 +433,8 @@ def main():
     stats = seed_database(entries, pairs, clusters)
     print(f"word_clusters:  {stats['clusters']} 个")
     print(f"definitions:    写入/更新 {stats['definitions']}/{len(entries)}")
-    print(f"word_senses:    {stats['senses']} 条义位")
+    print(f"word_senses:    {stats['senses']} 条中英对照义位（来自 dictionary.db）")
+    print(f"oald_senses:    {stats['oald_senses']} 条英文义项（来自 OALD10）")
     print(f"word_relations: {stats['relations']} 条（{len(pairs)} 对簇内完全图边）")
 
     # --- 校验 ---
@@ -404,6 +447,13 @@ def main():
         n_rel = cur.fetchone()["n"]
         cur.execute("SELECT COUNT(*) AS n FROM word_senses")
         n_senses = cur.fetchone()["n"]
+        cur.execute("SELECT COUNT(*) AS n FROM oald_senses")
+        n_oald = cur.fetchone()["n"]
+        # 释义为空的行是**静默失效**：行数、外键、日志全都正常，只有打开界面
+        # 才会发现每条义项都是空的。灌库脚本有责任在结束时自己验一遍。
+        cur.execute("SELECT COUNT(*) AS n FROM oald_senses "
+                    "WHERE definition IS NULL OR definition = ''")
+        n_oald_empty = cur.fetchone()["n"]
         cur.execute("SELECT COUNT(*) AS n FROM v_cluster_complete_graph")
         n_view = cur.fetchone()["n"]
         cur.execute("SELECT COUNT(*) AS n FROM word_clusters WHERE size < 1")
@@ -414,7 +464,12 @@ def main():
         n_log = cur.fetchone()["n"]
 
     print(f"库内合计: definitions={n_defs}, word_clusters={n_clusters}, "
-          f"word_senses={n_senses}, word_relations={n_rel}")
+          f"word_senses={n_senses}, oald_senses={n_oald}, word_relations={n_rel}")
+    if n_oald and n_oald_empty:
+        print(f"❌ oald_senses 里有 {n_oald_empty}/{n_oald} 条释义为空 —— "
+              f"提取器与建表字段对不上，不要当作灌库成功")
+    elif n_oald:
+        print("OALD 义项释义齐全: 无空释义 ✅")
     print(f"一致性核对: 视图推导的完全图边数={n_view} "
           f"({'一致 ✅' if n_view == n_rel else '不一致 ❌'})")
     print(f"空簇: {n_orphan}（应为 0）")

@@ -2,164 +2,8 @@
   "directed": false,
   "multigraph": false,
   "description": "英语自移移动动词词间关系图：节点=动词，边=同一次类近义关系（簇内完全图）",
-  "source": "docs/Levin移动动词候选词筛选表.xlsx + data/dictionary.db",
+  "source": "docs/Levin移动动词候选词筛选表.xlsx（词目与分类）+ docs/output-oald10en-for-senselist-1020.xlsx（OALD10 义项）+ data/dictionary.db（中英对照义位）",
   "nodes": [
-    {
-      "id": "accompany",
-      "label": "accompany",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。（Oxford: To go with or attend as a companion or associate; to keep company with; to go along with.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "conduct",
-      "label": "conduct",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同、正式地。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "escort",
-      "label": "escort",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "guide",
-      "label": "guide",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。（Oxford: To act as a guide.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "lead",
-      "label": "lead",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "shepherd",
-      "label": "shepherd",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领、引导。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "chase",
-      "label": "chase",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "追逐；追赶；追击〔某人或某物〕",
-      "definition_source": "dictionary.db",
-      "sense_count": 5
-    },
-    {
-      "id": "follow",
-      "label": "follow",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "跟随〔某人〕；跟着",
-      "definition_source": "dictionary.db",
-      "sense_count": 16
-    },
-    {
-      "id": "pursue",
-      "label": "pursue",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "追求〔目标〕",
-      "definition_source": "dictionary.db",
-      "sense_count": 3
-    },
-    {
-      "id": "shadow",
-      "label": "shadow",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随、隐秘地。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "tail",
-      "label": "tail",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "track",
-      "label": "track",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "trail",
-      "label": "trail",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "image_schema": "互动位移图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
     {
       "id": "clamber",
       "label": "clamber",
@@ -170,7 +14,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "攀爬匍匐位移；移动、以特定方式。（Oxford: To climb (something) with some difficulty, or in a haphazard fashion.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "crawl",
@@ -182,7 +28,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "攀爬匍匐位移；移动、以特定方式、爬行。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
     },
     {
       "id": "creep",
@@ -194,7 +42,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "攀爬匍匐位移；移动、以特定方式、爬行。（Oxford: To have a sensation as of insects creeping on the skin of the body; to crawl.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
     },
     {
       "id": "scramble",
@@ -206,7 +56,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "攀爬匍匐位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 7
     },
     {
       "id": "slither",
@@ -218,7 +70,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "蜿蜒滑行爬行（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "bolt",
@@ -230,7 +84,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 8
     },
     {
       "id": "canter",
@@ -242,7 +98,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "charge",
@@ -254,7 +112,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "〔某人向他人或某物〕冲锋，进攻；冲进〔某处〕",
       "definition_source": "dictionary.db",
-      "sense_count": 10
+      "sense_count": 10,
+      "dict_sense_count": 10,
+      "oald_sense_count": 12
     },
     {
       "id": "dart",
@@ -266,7 +126,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "dash",
@@ -278,7 +140,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "gallop",
@@ -290,7 +154,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To ride at a galloping pace.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "hasten",
@@ -302,7 +168,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "hurry",
@@ -314,7 +182,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To hasten; to impel to greater speed; to urge on.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "hurtle",
@@ -326,7 +196,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "jog",
@@ -338,7 +210,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: (exercise) To move at a pace between walking and running, to run at a leisurely pace.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "lollop",
@@ -350,7 +224,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk or move with a bouncing or undulating motion and at an unhurried pace.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "lope",
@@ -362,7 +238,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "nip",
@@ -374,7 +252,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To make a quick, short journey or errand, usually a round trip.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "race",
@@ -386,7 +266,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "赛跑；速度竞赛",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "run",
@@ -398,7 +280,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跑；奔跑",
       "definition_source": "dictionary.db",
-      "sense_count": 31
+      "sense_count": 31,
+      "dict_sense_count": 31,
+      "oald_sense_count": 39
     },
     {
       "id": "rush",
@@ -410,7 +294,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To flow or move forward rapidly or noisily.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 10
     },
     {
       "id": "scamper",
@@ -422,7 +308,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "scoot",
@@ -434,7 +322,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "scud",
@@ -446,7 +336,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、滑行、奔跑。（Oxford: To run, or be driven, before a high wind with no sails set.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "scurry",
@@ -458,7 +350,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To run with quick light steps, to scamper.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "scutter",
@@ -470,7 +364,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 0
     },
     {
       "id": "scuttle",
@@ -482,7 +378,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move hastily, to scurry.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "speed",
@@ -494,7 +392,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To cause to make haste; to dispatch with celerity; to drive at full speed; hence, to hasten; to hurry.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "sweep",
@@ -506,7 +406,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move something in a long sweeping motion, as a broom.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 18
     },
     {
       "id": "tear",
@@ -518,7 +420,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move or act with great speed, energy, or violence.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 17
     },
     {
       "id": "trot",
@@ -530,7 +434,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To cause to move, as a horse or other animal, in the pace called a trot; to cause to run without galloping or cantering.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
     },
     {
       "id": "whiz",
@@ -542,7 +448,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To rush or move swiftly with such a sound.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "zoom",
@@ -554,7 +462,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、奔跑。（Oxford: To move rapidly）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "bounce",
@@ -566,7 +476,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、弹跳。（Oxford: To leap or spring suddenly or unceremoniously; to bound.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 12
     },
     {
       "id": "coast",
@@ -578,7 +490,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "惯性滑行前进（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "drift",
@@ -590,7 +504,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、飘移。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
     },
     {
       "id": "drop",
@@ -602,7 +518,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "受重力向下坠落移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 33
     },
     {
       "id": "float",
@@ -614,7 +532,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、飘浮。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 9
     },
     {
       "id": "glide",
@@ -626,7 +546,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式。（Oxford: To pass with a glide, as the voice.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "move",
@@ -638,7 +560,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "〔某人〕（使某物）改变位置；移动",
       "definition_source": "dictionary.db",
-      "sense_count": 10
+      "sense_count": 10,
+      "dict_sense_count": 10,
+      "oald_sense_count": 21
     },
     {
       "id": "roll",
@@ -650,7 +574,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、滚动。（Oxford: To leave or begin a journey.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 28
     },
     {
       "id": "slide",
@@ -662,7 +588,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式、滑行。（Oxford: To pass along smoothly or unobservedly; to move gently onward without friction or hindrance.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "swing",
@@ -674,7 +602,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轴向滚动滑移位移；移动、以特定方式。（Oxford: To ride on a swing.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 15
     },
     {
       "id": "turn",
@@ -686,7 +616,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "转向、调转方向移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 20
     },
     {
       "id": "whirl",
@@ -698,7 +630,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "旋转着快速移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "bound",
@@ -710,7 +644,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "cavort",
@@ -722,7 +658,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To move about carelessly, playfully or boisterously.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "frolic",
@@ -734,7 +672,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To cause to be merry.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "gambol",
@@ -746,7 +686,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To do a forward roll.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "hop",
@@ -758,7 +700,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To jump on one foot.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 7
     },
     {
       "id": "jump",
@@ -770,7 +714,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To flee; to make one's escape.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 29
     },
     {
       "id": "leap",
@@ -782,7 +728,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To pass over by a leap or jump.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
     },
     {
       "id": "prance",
@@ -794,7 +742,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "romp",
@@ -806,7 +756,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。（Oxford: To win easily.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "skip",
@@ -818,7 +770,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式。（Oxford: To jump rope.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 10
     },
     {
       "id": "skitter",
@@ -830,7 +784,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "奔跑行进位移；移动、以特定方式、滑行、奔跑。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "vault",
@@ -842,7 +798,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳跃动作位移；移动、以特定方式、跳跃。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "bike",
@@ -854,7 +812,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "骑行自行车出行（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "canoe",
@@ -866,7 +826,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "划独木舟出行（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "cruise",
@@ -878,7 +840,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "巡航航行移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "cycle",
@@ -890,7 +854,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "骑行自行车（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "drive",
@@ -902,7 +868,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "工具位移位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 22
     },
     {
       "id": "ferry",
@@ -914,7 +882,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "渡船摆渡移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "jet",
@@ -926,7 +896,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "喷气式飞机飞行移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "kayak",
@@ -938,7 +910,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "划皮划艇出行（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 0
     },
     {
       "id": "oar",
@@ -950,7 +924,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "划桨行船（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 0
     },
     {
       "id": "paddle",
@@ -962,7 +938,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "划桨划船（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "parachute",
@@ -974,7 +952,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "跳伞降落移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "pedal",
@@ -986,7 +966,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "踩踏板骑行（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "punt",
@@ -998,7 +980,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "撑平底船航行（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "ride",
@@ -1010,7 +994,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "工具位移位移；移动、以特定方式。（Oxford: To be transported in a vehicle; to travel as a passenger.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 16
     },
     {
       "id": "rocket",
@@ -1022,7 +1008,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "火箭般飞速窜出（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "row",
@@ -1034,7 +1022,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "摇橹划船前进（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "sail",
@@ -1046,7 +1036,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "工具位移位移；移动、以特定方式。（Oxford: To ride in a boat, especially a sailboat.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "skate",
@@ -1058,7 +1050,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "滑冰滑行移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "skateboard",
@@ -1070,7 +1064,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "滑滑板移动（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "ski",
@@ -1082,7 +1078,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "工具位移位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "tack",
@@ -1094,7 +1092,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "taxi",
@@ -1106,7 +1106,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "飞机地面滑行或乘出租车（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "backpack",
@@ -1118,7 +1120,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To engage in low-cost, generally urban, travel with minimal luggage and frugal accommodations）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "hike",
@@ -1130,7 +1134,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To take a long walk for pleasure or exercise.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "ramble",
@@ -1142,7 +1148,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk for pleasure; to amble or saunter.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "roam",
@@ -1154,7 +1162,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To wander or travel freely and with no specific destination.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "rove",
@@ -1166,7 +1176,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To pierce or cleave with a weapon.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "traipse",
@@ -1178,7 +1190,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "travel",
@@ -1190,7 +1204,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To move illegally by walking or running without dribbling the ball.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 7
     },
     {
       "id": "trek",
@@ -1202,7 +1218,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "长途跋涉位移；移动、以特定方式。（Oxford: To travel by ox wagon.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "wander",
@@ -1214,7 +1232,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go somewhere indirectly or at varying speeds; to move in a curved path.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "amble",
@@ -1226,7 +1246,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To stroll or walk slowly and leisurely.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "clump",
@@ -1238,7 +1260,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with heavy footfalls.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "dodder",
@@ -1250,7 +1274,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To shake or tremble as one moves, especially as of old age or childhood; to totter.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 0
     },
     {
       "id": "hobble",
@@ -1262,7 +1288,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk lame, or unevenly.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "inch",
@@ -1274,7 +1302,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: (followed by a preposition) To advance very slowly, or by a small amount (in a particular direction).）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "limp",
@@ -1286,7 +1316,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move or proceed irregularly.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "lumber",
@@ -1298,7 +1330,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move clumsily and heavily; to move slowly.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "lurch",
@@ -1310,7 +1344,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To make such a sudden, unsteady movement.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "march",
@@ -1322,7 +1358,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go to war; to make military advances.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 7
     },
     {
       "id": "meander",
@@ -1334,7 +1372,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "mince",
@@ -1346,7 +1386,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with short steps; to walk in a prim, affected manner.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "mosey",
@@ -1358,7 +1400,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go off quickly: to hurry up.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "pad",
@@ -1370,7 +1414,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To travel on foot.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "parade",
@@ -1382,7 +1428,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To assemble (soldiers, sailors) for inspection, to receive orders, etc.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "plod",
@@ -1394,7 +1442,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk or move slowly and heavily or laboriously (+ on, through, over).）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "promenade",
@@ -1406,7 +1456,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk for amusement, show, or exercise.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "prowl",
@@ -1418,7 +1470,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To idle; to go about aimlessly.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "sashay",
@@ -1430,7 +1484,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "saunter",
@@ -1442,7 +1498,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "shamble",
@@ -1454,7 +1512,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "shuffle",
@@ -1466,7 +1526,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To move in a slovenly, dragging manner; to drag or scrape the feet in walking or dancing.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "sidle",
@@ -1478,7 +1540,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To (cause something to) move sideways.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "skulk",
@@ -1490,7 +1554,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "sleepwalk",
@@ -1502,7 +1568,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "slink",
@@ -1514,7 +1582,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "slog",
@@ -1526,7 +1596,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     },
     {
       "id": "sneak",
@@ -1538,7 +1610,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To creep or go stealthily; to come or go while trying to avoid detection, as a person who does not wish to be seen.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
     },
     {
       "id": "stagger",
@@ -1550,7 +1624,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "stomp",
@@ -1562,7 +1638,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "stray",
@@ -1574,7 +1652,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "stride",
@@ -1586,7 +1666,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk with long steps.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "stroll",
@@ -1598,7 +1680,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To go somewhere with ease.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "strut",
@@ -1610,7 +1694,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "stumble",
@@ -1622,7 +1708,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
     },
     {
       "id": "swagger",
@@ -1634,7 +1722,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "tiptoe",
@@ -1646,7 +1736,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "toddle",
@@ -1658,7 +1750,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk in a carefree manner.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "totter",
@@ -1670,7 +1764,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "tramp",
@@ -1682,7 +1778,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "troop",
@@ -1694,7 +1792,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "trudge",
@@ -1706,7 +1806,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "waddle",
@@ -1718,7 +1820,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "wade",
@@ -1730,7 +1834,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。（Oxford: To walk through water or something that impedes progress.）",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "walk",
@@ -1742,7 +1848,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 24
     },
     {
       "id": "zigzag",
@@ -1754,7 +1862,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "常态行走位移；移动、以特定方式。",
       "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
     },
     {
       "id": "flit",
@@ -1766,7 +1876,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "轻快飞来窜去（研究者标注的原型义简述，完整释义待补）",
       "definition_source": "levin-brief",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
     },
     {
       "id": "fly",
@@ -1778,7 +1890,9 @@
       "alignment": "部分对齐",
       "chinese_ndef": "〔飞行器；鸟或昆虫等〕飞，飞行；飞翔",
       "definition_source": "dictionary.db",
-      "sense_count": 13
+      "sense_count": 13,
+      "dict_sense_count": 13,
+      "oald_sense_count": 35
     },
     {
       "id": "swim",
@@ -1790,449 +1904,12 @@
       "alignment": "部分对齐",
       "chinese_ndef": "空中飞行/水中位移；移动、以特定方式、游动。",
       "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "abandon",
-      "label": "abandon",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔某人〕舍弃〔汽车；房子等〕；离弃〔某地〕",
-      "definition_source": "dictionary.db",
-      "sense_count": 4
-    },
-    {
-      "id": "depart",
-      "label": "depart",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "逃离来源位移；移动、离开、出发。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "desert",
-      "label": "desert",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "处所脱离位移；移动、离开。（Oxford: To leave one's duty or post, especially to leave a military or naval unit without permission.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "escape",
-      "label": "escape",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔某人从某地或某处〕逃离；溜走；逃脱〔监禁；搜查等〕",
-      "definition_source": "dictionary.db",
-      "sense_count": 3
-    },
-    {
-      "id": "exit",
-      "label": "exit",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "空间移出位移；移动。（Oxford: To go out or go away from a place or situation; to depart, to leave.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "flee",
-      "label": "flee",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "逃离来源位移；移动、离开、逃离。（Oxford: To run away; to escape.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "leave",
-      "label": "leave",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "离去；离开",
-      "definition_source": "dictionary.db",
-      "sense_count": 13
-    },
-    {
-      "id": "recede",
-      "label": "recede",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "image_schema": "源点脱离图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "水平后退位移；移动、向后移动。",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "advance",
-      "label": "advance",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔人群；士兵〕向〔某地；某人〕行进，前进；进攻",
-      "definition_source": "dictionary.db",
-      "sense_count": 7
-    },
-    {
-      "id": "arrive",
-      "label": "arrive",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔人或车辆〕抵达〔某地〕；到达〔某地〕（尤指旅途的终点)",
-      "definition_source": "dictionary.db",
-      "sense_count": 6
-    },
-    {
-      "id": "ascend",
-      "label": "ascend",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To move upward, to fly, to soar.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "climb",
-      "label": "climb",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To ascend; rise; to go up.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "come",
-      "label": "come",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "来到；到达",
-      "definition_source": "dictionary.db",
-      "sense_count": 62
-    },
-    {
-      "id": "cross",
-      "label": "cross",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "穿过、跨越空间（研究者标注的原型义简述，完整释义待补）",
-      "definition_source": "levin-brief",
-      "sense_count": 0
-    },
-    {
-      "id": "descend",
-      "label": "descend",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To pass from a higher to a lower place; to move downwards; to come or go down in any way, for example by falling, flowing, walking, climbing etc.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "enter",
-      "label": "enter",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔某人〕进入，进去〔某处〕",
-      "definition_source": "dictionary.db",
-      "sense_count": 5
-    },
-    {
-      "id": "fall",
-      "label": "fall",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔从高处〕落下；往下掉；降落",
-      "definition_source": "dictionary.db",
-      "sense_count": 12
-    },
-    {
-      "id": "go",
-      "label": "go",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "去，走",
-      "definition_source": "dictionary.db",
-      "sense_count": 38
-    },
-    {
-      "id": "plunge",
-      "label": "plunge",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To fall or rush headlong into some thing, action, state or condition.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "return",
-      "label": "return",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "〔某人〕〔从某处〕返回〔另一处〕",
-      "definition_source": "dictionary.db",
-      "sense_count": 8
-    },
-    {
-      "id": "rise",
-      "label": "rise",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To go up; to ascend; to climb.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
-    },
-    {
-      "id": "tumble",
-      "label": "tumble",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "image_schema": "终点抵达图式",
-      "prototype_level": "Y",
-      "alignment": "部分对齐",
-      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To move or rush in a headlong or uncontrolled way.）",
-      "definition_source": "legacy-library",
-      "sense_count": 0
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 7
     }
   ],
   "links": [
-    {
-      "source": "abandon",
-      "target": "depart",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "abandon",
-      "target": "desert",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "abandon",
-      "target": "escape",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "abandon",
-      "target": "exit",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "abandon",
-      "target": "flee",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "abandon",
-      "target": "leave",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "abandon",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "accompany",
-      "target": "conduct",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "accompany",
-      "target": "escort",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "accompany",
-      "target": "guide",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "accompany",
-      "target": "lead",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "accompany",
-      "target": "shepherd",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "advance",
-      "target": "arrive",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "ascend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "climb",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "come",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "cross",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "descend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "advance",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
     {
       "source": "amble",
       "target": "clump",
@@ -2540,167 +2217,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "陆地行进类"
-    },
-    {
-      "source": "arrive",
-      "target": "ascend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "climb",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "come",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "cross",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "descend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "arrive",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "climb",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "come",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "cross",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "descend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "ascend",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
     },
     {
       "source": "backpack",
@@ -3816,48 +3332,6 @@
       "sub_cat": "奔跑行进类"
     },
     {
-      "source": "chase",
-      "target": "follow",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "chase",
-      "target": "pursue",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "chase",
-      "target": "shadow",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "chase",
-      "target": "tail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "chase",
-      "target": "track",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "chase",
-      "target": "trail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
       "source": "clamber",
       "target": "crawl",
       "relation": "近义",
@@ -3884,76 +3358,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "匍匐爬行类"
-    },
-    {
-      "source": "climb",
-      "target": "come",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "cross",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "descend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "climb",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
     },
     {
       "source": "clump",
@@ -4327,97 +3731,6 @@
       "sub_cat": "滚动滑行类"
     },
     {
-      "source": "come",
-      "target": "cross",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "descend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "come",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "conduct",
-      "target": "escort",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "conduct",
-      "target": "guide",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "conduct",
-      "target": "lead",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "conduct",
-      "target": "shepherd",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
       "source": "crawl",
       "target": "creep",
       "relation": "近义",
@@ -4451,62 +3764,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "匍匐爬行类"
-    },
-    {
-      "source": "cross",
-      "target": "descend",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "cross",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
     },
     {
       "source": "cruise",
@@ -5097,132 +4354,6 @@
       "sub_cat": "奔跑行进类"
     },
     {
-      "source": "depart",
-      "target": "desert",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "depart",
-      "target": "escape",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "depart",
-      "target": "exit",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "depart",
-      "target": "flee",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "depart",
-      "target": "leave",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "depart",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "descend",
-      "target": "enter",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "descend",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "descend",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "descend",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "descend",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "descend",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "descend",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "desert",
-      "target": "escape",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "desert",
-      "target": "exit",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "desert",
-      "target": "flee",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "desert",
-      "target": "leave",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "desert",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
       "source": "dodder",
       "target": "hobble",
       "relation": "近义",
@@ -5755,153 +4886,6 @@
       "sub_cat": "滚动滑行类"
     },
     {
-      "source": "enter",
-      "target": "fall",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "enter",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "enter",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "enter",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "enter",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "enter",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "escape",
-      "target": "exit",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "escape",
-      "target": "flee",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "escape",
-      "target": "leave",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "escape",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "escort",
-      "target": "guide",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "escort",
-      "target": "lead",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "escort",
-      "target": "shepherd",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "exit",
-      "target": "flee",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "exit",
-      "target": "leave",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "exit",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "fall",
-      "target": "go",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "fall",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "fall",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "fall",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "fall",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
       "source": "ferry",
       "target": "jet",
       "relation": "近义",
@@ -6014,20 +4998,6 @@
       "sub_cat": "运载工具类"
     },
     {
-      "source": "flee",
-      "target": "leave",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
-      "source": "flee",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
-    },
-    {
       "source": "flit",
       "target": "fly",
       "relation": "近义",
@@ -6096,41 +5066,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "飞行游动类"
-    },
-    {
-      "source": "follow",
-      "target": "pursue",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "follow",
-      "target": "shadow",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "follow",
-      "target": "tail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "follow",
-      "target": "track",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "follow",
-      "target": "trail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
     },
     {
       "source": "frolic",
@@ -6446,48 +5381,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "滚动滑行类"
-    },
-    {
-      "source": "go",
-      "target": "plunge",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "go",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "go",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "go",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "guide",
-      "target": "lead",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
-      "source": "guide",
-      "target": "shepherd",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
     },
     {
       "source": "hasten",
@@ -7946,13 +6839,6 @@
       "sub_cat": "运载工具类"
     },
     {
-      "source": "lead",
-      "target": "shepherd",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类"
-    },
-    {
       "source": "leap",
       "target": "prance",
       "relation": "近义",
@@ -7986,13 +6872,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "腾空跳跃类"
-    },
-    {
-      "source": "leave",
-      "target": "recede",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类"
     },
     {
       "source": "limp",
@@ -11103,27 +9982,6 @@
       "sub_cat": "陆地行进类"
     },
     {
-      "source": "plunge",
-      "target": "return",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "plunge",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "plunge",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
       "source": "prance",
       "target": "romp",
       "relation": "近义",
@@ -11614,34 +10472,6 @@
       "sub_cat": "运载工具类"
     },
     {
-      "source": "pursue",
-      "target": "shadow",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "pursue",
-      "target": "tail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "pursue",
-      "target": "track",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "pursue",
-      "target": "trail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
       "source": "race",
       "target": "run",
       "relation": "近义",
@@ -11782,20 +10612,6 @@
       "sub_cat": "长途行进类"
     },
     {
-      "source": "return",
-      "target": "rise",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
-      "source": "return",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
-    },
-    {
       "source": "ride",
       "target": "rocket",
       "relation": "近义",
@@ -11850,13 +10666,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "运载工具类"
-    },
-    {
-      "source": "rise",
-      "target": "tumble",
-      "relation": "近义",
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类"
     },
     {
       "source": "roam",
@@ -13005,27 +11814,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "奔跑行进类"
-    },
-    {
-      "source": "shadow",
-      "target": "tail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "shadow",
-      "target": "track",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "shadow",
-      "target": "trail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
     },
     {
       "source": "shamble",
@@ -15177,20 +13965,6 @@
       "sub_cat": "运载工具类"
     },
     {
-      "source": "tail",
-      "target": "track",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
-      "source": "tail",
-      "target": "trail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
-    },
-    {
       "source": "tear",
       "target": "trot",
       "relation": "近义",
@@ -15378,13 +14152,6 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "陆地行进类"
-    },
-    {
-      "source": "track",
-      "target": "trail",
-      "relation": "近义",
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类"
     },
     {
       "source": "traipse",
@@ -15605,41 +14372,6 @@
     }
   ],
   "clusters": [
-    {
-      "main_cat": "互动聚焦型",
-      "sub_cat": "参与者类",
-      "size": 6,
-      "edge_count": 15,
-      "image_schema": "互动位移图式",
-      "cn_syntax": "常用连动式（跟着／追着＋V）；需两个参与者共现",
-      "translation_strategy": "重构为汉语连动结构；保留双参与者互动关系",
-      "verbs": [
-        "accompany",
-        "conduct",
-        "escort",
-        "guide",
-        "lead",
-        "shepherd"
-      ]
-    },
-    {
-      "main_cat": "互动聚焦型",
-      "sub_cat": "目的类",
-      "size": 7,
-      "edge_count": 21,
-      "image_schema": "互动位移图式",
-      "cn_syntax": "常用连动式（跟着／追着＋V）；需两个参与者共现",
-      "translation_strategy": "重构为汉语连动结构；保留双参与者互动关系",
-      "verbs": [
-        "chase",
-        "follow",
-        "pursue",
-        "shadow",
-        "tail",
-        "track",
-        "trail"
-      ]
-    },
     {
       "main_cat": "方式聚焦型",
       "sub_cat": "匍匐爬行类",
@@ -15862,50 +14594,6 @@
         "flit",
         "fly",
         "swim"
-      ]
-    },
-    {
-      "main_cat": "路径聚焦型",
-      "sub_cat": "来源类",
-      "size": 8,
-      "edge_count": 28,
-      "image_schema": "源点脱离图式",
-      "cn_syntax": "需趋向补语（离开／出去）；动词可带处所宾语",
-      "translation_strategy": "保留源点脱离图式；汉语以趋向补语显化路径",
-      "verbs": [
-        "abandon",
-        "depart",
-        "desert",
-        "escape",
-        "exit",
-        "flee",
-        "leave",
-        "recede"
-      ]
-    },
-    {
-      "main_cat": "路径聚焦型",
-      "sub_cat": "终点类",
-      "size": 14,
-      "edge_count": 91,
-      "image_schema": "终点抵达图式",
-      "cn_syntax": "需趋向补语（到／进／上来）；常与处所介词短语共现",
-      "translation_strategy": "保留终点抵达图式；汉语补出终点趋向成分",
-      "verbs": [
-        "advance",
-        "arrive",
-        "ascend",
-        "climb",
-        "come",
-        "cross",
-        "descend",
-        "enter",
-        "fall",
-        "go",
-        "plunge",
-        "return",
-        "rise",
-        "tumble"
       ]
     }
   ]

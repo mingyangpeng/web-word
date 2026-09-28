@@ -17,8 +17,8 @@
 
 所以优先级是：dictionary.db 的 Ch-Def → 既有词库 → Oxford 英文释义拼装 → 空。
 
-**覆盖率的诚实说明**：dictionary.db 里 `pos='v'` 的 lemma 只有 333 个，与 Levin 的 171 词
-交集仅 23 个、其中 17 个有实际 Ch-Def。也就是说**约 90% 的词拿不到词典原文**。
+**覆盖率的诚实说明**：dictionary.db 里 `pos='v'` 的 lemma 只有 333 个，与词表的 136 词
+交集仅 9 个、其中 4 个有实际 Ch-Def。也就是说**约 97% 的词拿不到词典原文**。
 这不是可以掩盖的事 —— 每个义位都会记录 `source` 字段，页面与文档里也如实标注来源，
 使用者一眼能看出哪条是词典原文、哪条是二手拼装。
 """
@@ -141,16 +141,28 @@ def _clean(value: Any) -> str:
 # ===============================================================
 # 1. Levin 筛选表
 # ===============================================================
-def load_levin_table(path: str = None) -> List[Dict[str, Any]]:
+#: 三主范畴里代表「自移移动动词」的那一个。词表只收这一类 ——
+#: 见 `load_levin_table` 的 scope 参数说明。
+MAIN_CAT_MANNER = "方式聚焦型"
+
+
+def load_levin_table(path: str = None, scope: str = "manner") -> List[Dict[str, Any]]:
     """
     读 `docs/Levin移动动词候选词筛选表.xlsx` 的「去除不符合的」页。
 
-    用这一页而不是「候选词筛选表」：前者是**筛选后**的 171 词（Talmy 与 Levin 构式
+    用这一页而不是「候选词筛选表」：前者是**筛选后**的词（Talmy 与 Levin 构式
     交替核查均为 Y），后者含 45 个被剔除的词及其剔除原因。两者的词目集合应满足
     「候选 = 保留 ∪ 剔除」，测试里会核对这一点，防止有人只改一页。
 
     Args:
         path: xlsx 路径，默认取仓库内的那份
+        scope: 取词范围。
+            ``"manner"``（默认）只取主范畴为「方式聚焦型」的词 —— 这批词与
+            `docs/output-oald10en-for-senselist-1020.xlsx` 的提取范围一致
+            （实测两边都是 136 词，完全相等），也就是「自移移动动词」这个词表要覆盖的
+            对象。另外两类（路径聚焦型 / 互动聚焦型）不是自移，留在 xlsx 里、
+            不进词表。
+            ``"all"`` 取全部三类的词（171 个），历史行为，供测试与对照使用。
 
     Returns:
         [{verb, levin_source, cross_subclass, main_cat, sub_cat,
@@ -213,6 +225,18 @@ def load_levin_table(path: str = None) -> List[Dict[str, Any]]:
             "cn_syntax_hint": CN_SYNTAX_BY_SCHEMA.get(schema, "") if schema else "",
             "translation_hint": TRANSLATION_STRATEGY_BY_SCHEMA.get(schema, "") if schema else "",
         })
+
+    if scope == "manner":
+        kept = [e for e in out if e["main_cat"] == MAIN_CAT_MANNER]
+        dropped = len(out) - len(kept)
+        if dropped:
+            logger.info(
+                f"按 scope='manner' 只取「{MAIN_CAT_MANNER}」，另有 {dropped} 个"
+                f"路径/互动聚焦型词未进词表（它们不是自移移动动词）"
+            )
+        out = kept
+    elif scope != "all":
+        raise ValueError(f"未知的 scope: {scope!r}（只接受 'manner' / 'all'）")
 
     out.sort(key=lambda e: (e["main_cat"], e["sub_cat"], e["verb"]))
     return out
@@ -288,7 +312,7 @@ class DictionaryDB:
         """
         取美/英音标，形如 ``əˈbændən``；两者相同只留一个，不同则用 `` | `` 分隔（美 | 英）。
 
-        dictionary.db 只有一部分词条带 ``<pronunciation>``（实测 171 词里 23 个）。
+        dictionary.db 只有一部分词条带 ``<pronunciation>``（实测 136 词里 9 个）。
         没有就返回空串 —— 前端据此显示「未收录」。**不猜、不转写**：音标是发音事实，
         用规则拼一个出来比留空更糟，因为读者无从分辨哪条是抄的、哪条是编的。
         """

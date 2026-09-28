@@ -6,7 +6,7 @@
   1. **文档解析** —— xlsx/docx 是外部输入，列名、工作表名、值域都可能被改。
      改了必须让测试红，而不是静默少读几行词。
   2. **释义优先级** —— dictionary.db 是「释义正确性」的首选来源，但它只覆盖
-     171 词里的 23 个。降级链的每一级都不能静默跳过，否则页面会显示空释义。
+     136 词里的 9 个。降级链的每一级都不能静默跳过，否则页面会显示空释义。
 """
 
 import json
@@ -59,10 +59,33 @@ def test_schema_values_are_within_allowed_set():
 # Levin xlsx 解析
 # ============================================
 def test_levin_table_is_readable():
+    """默认只取「方式聚焦型」—— 自移移动动词就是这一类，共 136 词。"""
     rows = ws.load_levin_table()
     assert rows, "没读到任何词 —— 检查工作表名是否被改"
-    # 171 是 2026-09 版筛选表的既定结果，变动必须是有意识的
-    assert len(rows) == 171, f"筛选后应有 171 词，实得 {len(rows)}"
+    assert len(rows) == 136, f"方式聚焦型应有 136 词，实得 {len(rows)}"
+    assert {r["main_cat"] for r in rows} == {ws.MAIN_CAT_MANNER}
+
+
+def test_levin_scope_all_returns_every_kept_word():
+    """
+    ``scope='all'`` 取回全部 171 词（三类），默认的 136 是它的子集。
+
+    两个数都要钉住：136 是词表的范围，171 是筛选表的全部结果。
+    只钉一个的话，「默认范围被改回 171」或「xlsx 悄悄少了词」都发现不了。
+    """
+    allrows = ws.load_levin_table(scope="all")
+    assert len(allrows) == 171, f"筛选后应有 171 词，实得 {len(allrows)}"
+    assert {r["main_cat"] for r in allrows} == {"方式聚焦型", "路径聚焦型", "互动聚焦型"}
+    assert ({r["verb"] for r in ws.load_levin_table()}
+            <= {r["verb"] for r in allrows})
+
+
+def test_levin_rejects_unknown_scope():
+    """非法 scope 必须报错，不能静默返回全部 —— 那会让词表悄悄多出 35 个词。"""
+    import pytest
+
+    with pytest.raises(ValueError):
+        ws.load_levin_table(scope="bogus")
 
 
 def test_levin_rows_have_required_fields():
@@ -75,13 +98,19 @@ def test_levin_rows_have_required_fields():
 
 def test_levin_three_main_categories():
     """文档的「三域」：方式 / 路径 / 互动。"""
-    cats = {r["main_cat"] for r in ws.load_levin_table()}
+    cats = {r["main_cat"] for r in ws.load_levin_table(scope="all")}
     assert cats == {"方式聚焦型", "路径聚焦型", "互动聚焦型"}, cats
+
+
+def test_manner_scope_has_eight_sub_categories():
+    """词表范围内的次类数（8 个）。「十二次类」是整张筛选表的说法。"""
+    subs = {r["sub_cat"] for r in ws.load_levin_table()}
+    assert len(subs) == 8, f"方式聚焦型应有 8 个次类，实得 {len(subs)}: {sorted(subs)}"
 
 
 def test_levin_twelve_sub_categories():
     """文档的「十二次类」—— 数量与内容都钉住。"""
-    subs = {r["sub_cat"] for r in ws.load_levin_table()}
+    subs = {r["sub_cat"] for r in ws.load_levin_table(scope="all")}
     assert len(subs) == 12, f"次类应为 12 个，实得 {len(subs)}: {sorted(subs)}"
 
 
@@ -111,7 +140,9 @@ def test_rejected_sheet_partitions_candidates():
         str(r[i_verb]).strip() for r in rows[1:]
         if r[i_verb] and str(r[i_reason] or "").strip()
     }
-    kept = {r["verb"] for r in ws.load_levin_table()}
+    # 这里比的是**筛选表**的保留集（171），不是词表的取词范围（136）。
+    # 两页是否对得上，跟「词表只收方式聚焦型」是两件事，不能混为一谈。
+    kept = {r["verb"] for r in ws.load_levin_table(scope="all")}
 
     assert kept <= candidates, f"保留词不在候选表里: {kept - candidates}"
     assert rejected <= candidates
@@ -385,15 +416,15 @@ def test_audit_reports_honest_coverage():
     """
     审计必须如实报告 dictionary.db 的低覆盖率。
 
-    这是刻意暴露的事实：171 词里只有 23 个在词典库里。若审计把数字报高了，
-    文档里就会写出与事实不符的「全部来自 OALD 原文」。
+    这是刻意暴露的事实：136 词（方式聚焦型）里只有 9 个在词典库里有动词词条。
+    若审计把数字报高了，文档里就会写出与事实不符的「全部来自 OALD 原文」。
     """
     entries = ws.build_entries(
         ws.load_levin_table(), ws.load_oxford_cache(),
         ws.DictionaryDB(), ws.load_legacy_library(),
     )
     audit = ws.audit_coverage(entries)
-    assert audit["total"] == 171
+    assert audit["total"] == 136
     assert audit["in_dictionary_db"] == sum(
         1 for e in entries if e["has_dictionary_verb"]
     )
@@ -536,10 +567,16 @@ class TestPrototypeSenseSelection:
 
     def test_real_data_only_charge_is_overridden(self):
         """
-        真实数据上的结果：17 个词典源码词里只有 charge 需要修正。
+        真实数据上的结果：能取到中文释义的 4 个词里，只有 charge 需要修正。
 
         这个数字本身是一个断言 —— 如果它突然变大，说明选择器被改得过于激进，
         开始覆盖本来正确的首条了。
+
+        为什么是 4 而不是更多：词表范围收窄到「方式聚焦型」136 词后，与
+        `data/dictionary.db`（只有 333 个动词词条）的交集正好是
+        charge / run / move / fly 四个。这是**覆盖率的真实下降**，不是 bug ——
+        收窄取词范围就必然减少与词典库的重合。库里有多少就是多少，不为了
+        让这个数字好看而放宽词表范围。
         """
         db = ws.DictionaryDB()
         if not db.available:
@@ -556,5 +593,7 @@ class TestPrototypeSenseSelection:
             if ws.select_prototype_index(senses, row["sense_brief"]) != with_ch[0]:
                 overridden.append(verb)
 
-        assert checked >= 15, f"能取到释义的词太少（{checked}），检查 dictionary.db"
+        # 下限钉在 4：低于这个数说明 dictionary.db 读不到了（路径变了 / 库没了），
+        # 而不是「词表变窄了」。上限不钉 —— 将来补词典数据不该让测试变红。
+        assert checked >= 4, f"能取到释义的词太少（{checked}），检查 dictionary.db"
         assert overridden == ["charge"], f"被覆盖的词变了: {overridden}"

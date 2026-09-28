@@ -30,8 +30,11 @@ flake8 src/    # 配置见 .flake8
 mypy src/      # 配置见 mypy.ini
 
 # 灌词库（离线，无网络依赖；会整体重建簇与关系，保留 feedbacks/usage_logs）
-# 词目以 docs/Levin移动动词候选词筛选表.xlsx 的 171 词为准，释义优先取 data/dictionary.db
+# 词目以 Levin 筛选表的「方式聚焦型」为准（136 词），义项取 data/dictionary.db + OALD10
 python scripts/load_word_library.py
+
+# 导出词表义项清单 xlsx（供人工核查：词表概览 / 义项明细 / 中英对照义位 / 问题清单）
+python scripts/export_senses_xlsx.py
 
 # 生成《英语自移移动动词词表》Word 文档
 python scripts/generate_word_doc.py
@@ -96,20 +99,25 @@ scripts/get-stats.sh
 
 - `word_clusters` — 词义簇，唯一键 `(main_cat, sub_cat)`，带簇层面的意象图式/句法特征
 - `definitions` — 词目层，一动词一行；含主导原型义、**音标**（`phonetic`，来自
-  `data/dictionary.db`，覆盖 23/171）与**义位标注字段**
+  `data/dictionary.db`，覆盖 9/136）与**义位标注字段**
   （`image_schema` / `prototype_level` / `alignment` / `cn_syntax` /
   `translation_strategy` / `definition_source` / `source_rank` / `needs_review`）
-- `word_senses` — **义位明细**，一义位一行（FK 到 definitions，CASCADE）。
-  文档规定「分析单元是义位而非词目」，所以义位独立成表而非塞进 JSON 列
+- `word_senses` — **中英对照义位**（`data/dictionary.db`，64 条 / 4 词），一义位一行
+  （FK 到 definitions，CASCADE）。文档规定「分析单元是义位而非词目」，所以义位独立成表
+  而非塞进 JSON 列
+- `oald_senses` — **OALD10 英文义项**（665 条 / 132 词），逐义项含英文释义、语法码
+  （`grammar`）、语义分组（`sense_group`）、例句与句法模式（`example_patterns`）、
+  习语标记（`is_idiom`）。与 `word_senses` **分表**：两套切分体系无法一一对应，
+  合表会让 `sense_index` 失去意义；取某词全部义项用 `get_all_senses()`
 - `word_relations` — 词间关系，**簇内完全图**；`CHECK(verb_a_id < verb_b_id)` +
   `uq_word_relations_pair`，无向边只存一份
 - `feedbacks` / `usage_logs` — 反馈与查询日志（**用户产生，重建词表时不清空**）
 - `v_cluster_complete_graph` — 视图，由簇推导完全图，与物化表互为校验
 - `schema_migrations` — 版本记录
 
-> `SCHEMA_VERSION = 4`。迁移**只做结构**（加列加表），不删任何业务数据 ——
-> 迁移每次启动都会跑，让它删数据太危险。v3→v4 只是给 `definitions` 加 `phonetic`；
-> 词簇与关系的整体重建由 `scripts/load_word_library.py` 负责
+> `SCHEMA_VERSION = 6`。迁移**只做结构**（加列加表），不删任何业务数据 ——
+> 迁移每次启动都会跑，让它删数据太危险。v5→v6 删掉 `word_senses` 那 6 个 OALD 过渡列
+> 并新建 `oald_senses` 表；词簇与义项的整体重建由 `scripts/load_word_library.py` 负责
 > （那里有显式的 `clear_all_word_data()`）。
 
 > `insert_definition(annotations=...)` 只更新**显式传入**的标注字段（列名白名单见
@@ -127,6 +135,7 @@ web-word/
 │   ├── design_system.py    # 设计系统
 │   ├── security.py         # 输入校验与密钥掩码
 │   ├── word_source.py      # 词表数据源解析（Levin xlsx / dictionary.db / oxford / 旧词库）
+│   ├── oald_senses.py      # OALD10 义项提取与清洗（语法码、例句、句法模式、习语标记）
 │   ├── cluster_graph.py    # 词簇完全图的内联 SVG 渲染
 │   ├── graph_export.py     # 交互式图谱（vis-network）的 HTML 导出
 │   ├── static/             # vendored vis-network + 生成的图谱 HTML
