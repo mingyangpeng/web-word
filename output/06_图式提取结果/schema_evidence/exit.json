@@ -1,0 +1,804 @@
+{
+ "verb": "exit",
+ "freq": 703831,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 67,
+   "mean_logdice": 2.624,
+   "prominence_score": 15.973,
+   "top_evidence": [
+    {
+     "word": "rear",
+     "logdice": 9.26,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "Interstate",
+     "logdice": 9.24,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "back",
+     "logdice": 9.16,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "interstate",
+     "logdice": 9.08,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "freeway",
+     "logdice": 8.52,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "entrance",
+     "logdice": 8.06,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "highway",
+     "logdice": 7.98,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bottom",
+     "logdice": 7.66,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "top",
+     "logdice": 7.58,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "ramp",
+     "logdice": 7.47,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 6433,
+     "slot_logdice": 0.91,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "out",
+       "logdice": 2.05
+      },
+      {
+       "word": "through",
+       "logdice": 1.82
+      },
+      {
+       "word": "off",
+       "logdice": 1.05
+      },
+      {
+       "word": "along",
+       "logdice": 0.38
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 278,
+     "slot_logdice": 0.04,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "Interstate",
+       "logdice": 9.24
+      },
+      {
+       "word": "interstate",
+       "logdice": 9.08
+      },
+      {
+       "word": "freeway",
+       "logdice": 8.52
+      },
+      {
+       "word": "highway",
+       "logdice": 7.98
+      },
+      {
+       "word": "ramp",
+       "logdice": 7.47
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 1142,
+     "slot_logdice": 0.16,
+     "n_collocates": 16,
+     "top5": [
+      {
+       "word": "rear",
+       "logdice": 9.26
+      },
+      {
+       "word": "back",
+       "logdice": 9.16
+      },
+      {
+       "word": "entrance",
+       "logdice": 8.06
+      },
+      {
+       "word": "bottom",
+       "logdice": 7.66
+      },
+      {
+       "word": "top",
+       "logdice": 7.58
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 49651,
+     "slot_logdice": "",
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.61
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.86
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.8
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.66
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 95,
+   "mean_logdice": 3.345,
+   "prominence_score": 22.025,
+   "top_evidence": [
+    {
+     "word": "Long",
+     "logdice": 9.82,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "EU",
+     "logdice": 7.42,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "vehicle",
+     "logdice": 7.05,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "elevator",
+     "logdice": 6.95,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Union",
+     "logdice": 6.85,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "tunnel",
+     "logdice": 6.62,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "mode",
+     "logdice": 6.48,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "building",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "freeway",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "stage",
+     "logdice": 6.33,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 400622,
+     "slot_logdice": 56.92,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Long",
+       "logdice": 9.82
+      },
+      {
+       "word": "EU",
+       "logdice": 7.42
+      },
+      {
+       "word": "vehicle",
+       "logdice": 7.05
+      },
+      {
+       "word": "elevator",
+       "logdice": 6.95
+      },
+      {
+       "word": "Union",
+       "logdice": 6.85
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 62,
+     "slot_logdice": 0.01,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "ramp",
+       "logdice": 5.83
+      },
+      {
+       "word": "stair",
+       "logdice": 3.3
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 131,
+     "slot_logdice": 0.02,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "ramp",
+       "logdice": 6.22
+      },
+      {
+       "word": "aisle",
+       "logdice": 4.95
+      },
+      {
+       "word": "step",
+       "logdice": 3.82
+      },
+      {
+       "word": "stair",
+       "logdice": 3.36
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 49651,
+     "slot_logdice": "",
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.61
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.86
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.8
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.66
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2948,
+     "slot_logdice": 0.42,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "out",
+       "logdice": 1.15
+      },
+      {
+       "word": "off",
+       "logdice": 0.94
+      },
+      {
+       "word": "down",
+       "logdice": 0.03
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 229,
+   "mean_logdice": 4.462,
+   "prominence_score": 35.007,
+   "top_evidence": [
+    {
+     "word": "enter",
+     "logdice": 11.77,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "re-enter",
+     "logdice": 8.95,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "unaided",
+     "logdice": 8.16,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "uninjured",
+     "logdice": 8.14,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "restart",
+     "logdice": 8.12,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "southbound",
+     "logdice": 8.11,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "20B",
+     "logdice": 8.02,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "board",
+     "logdice": 7.86,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "save",
+     "logdice": 7.79,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "northbound",
+     "logdice": 7.73,
+     "slot": "complements of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 85785,
+     "slot_logdice": 12.19,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "turn",
+       "logdice": 7.71
+      },
+      {
+       "word": "gracefully",
+       "logdice": 7.53
+      },
+      {
+       "word": "cleanly",
+       "logdice": 6.63
+      },
+      {
+       "word": "prematurely",
+       "logdice": 5.78
+      },
+      {
+       "word": "abnormally",
+       "logdice": 5.44
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 3592,
+     "slot_logdice": 0.51,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "20B",
+       "logdice": 8.02
+      },
+      {
+       "word": "cleanly",
+       "logdice": 7.61
+      },
+      {
+       "word": "non-zero",
+       "logdice": 7.54
+      },
+      {
+       "word": "4B",
+       "logdice": 7.28
+      },
+      {
+       "word": "46B",
+       "logdice": 7.09
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.24
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 102660,
+     "slot_logdice": 14.59,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "exhaust",
+       "logdice": 6.82
+      },
+      {
+       "word": "emergency",
+       "logdice": 6.58
+      },
+      {
+       "word": "bullet",
+       "logdice": 6.27
+      },
+      {
+       "word": "nerve",
+       "logdice": 5.78
+      },
+      {
+       "word": "suspect",
+       "logdice": 5.75
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 52432,
+     "slot_logdice": 7.45,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "enter",
+       "logdice": 11.77
+      },
+      {
+       "word": "re-enter",
+       "logdice": 8.95
+      },
+      {
+       "word": "restart",
+       "logdice": 8.12
+      },
+      {
+       "word": "board",
+       "logdice": 7.86
+      },
+      {
+       "word": "save",
+       "logdice": 7.79
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 2491,
+     "slot_logdice": 0.35,
+     "n_collocates": 48,
+     "top5": [
+      {
+       "word": "unaided",
+       "logdice": 8.16
+      },
+      {
+       "word": "uninjured",
+       "logdice": 8.14
+      },
+      {
+       "word": "southbound",
+       "logdice": 8.11
+      },
+      {
+       "word": "northbound",
+       "logdice": 7.73
+      },
+      {
+       "word": "unscathed",
+       "logdice": 7.59
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 156,
+   "mean_logdice": 3.402,
+   "prominence_score": 24.813,
+   "top_evidence": [
+    {
+     "word": "Long",
+     "logdice": 9.82,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "EU",
+     "logdice": 7.42,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "vehicle",
+     "logdice": 7.05,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "elevator",
+     "logdice": 6.95,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Union",
+     "logdice": 6.85,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "exhaust",
+     "logdice": 6.82,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "tunnel",
+     "logdice": 6.62,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "emergency",
+     "logdice": 6.58,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "mode",
+     "logdice": 6.48,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "building",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 400622,
+     "slot_logdice": 56.92,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Long",
+       "logdice": 9.82
+      },
+      {
+       "word": "EU",
+       "logdice": 7.42
+      },
+      {
+       "word": "vehicle",
+       "logdice": 7.05
+      },
+      {
+       "word": "elevator",
+       "logdice": 6.95
+      },
+      {
+       "word": "Union",
+       "logdice": 6.85
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 5399,
+     "slot_logdice": 0.77,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "theirs",
+       "logdice": 1.46
+      },
+      {
+       "word": "we",
+       "logdice": 0.68
+      },
+      {
+       "word": "one",
+       "logdice": 0.63
+      },
+      {
+       "word": "itself",
+       "logdice": 0.15
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 95589,
+     "slot_logdice": 13.58,
+     "n_collocates": 19,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 2.03
+      },
+      {
+       "word": "you",
+       "logdice": 1.78
+      },
+      {
+       "word": "them",
+       "logdice": 1.7
+      },
+      {
+       "word": "they",
+       "logdice": 1.66
+      },
+      {
+       "word": "she",
+       "logdice": 1.45
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 102660,
+     "slot_logdice": 14.59,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "exhaust",
+       "logdice": 6.82
+      },
+      {
+       "word": "emergency",
+       "logdice": 6.58
+      },
+      {
+       "word": "bullet",
+       "logdice": 6.27
+      },
+      {
+       "word": "nerve",
+       "logdice": 5.78
+      },
+      {
+       "word": "suspect",
+       "logdice": 5.75
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 49651,
+     "slot_logdice": "",
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.61
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.86
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.8
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.66
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2948,
+     "slot_logdice": 0.42,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "out",
+       "logdice": 1.15
+      },
+      {
+       "word": "off",
+       "logdice": 0.94
+      },
+      {
+       "word": "down",
+       "logdice": 0.03
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

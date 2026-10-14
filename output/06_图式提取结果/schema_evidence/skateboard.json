@@ -1,0 +1,408 @@
+{
+ "verb": "skateboard",
+ "freq": 82096,
+ "lpos": "-n",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "源点脱离图式",
+  "终点抵达图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 1,
+   "slots_defined": 5,
+   "coverage": 0.2,
+   "n_types": 37,
+   "mean_logdice": 0.382,
+   "prominence_score": 2.007,
+   "top_evidence": [
+    {
+     "word": "... on \"%w\"",
+     "logdice": 4.58,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... of \"%w\"",
+     "logdice": 2.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.62,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... with \"%w\"",
+     "logdice": 0.97,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.72,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... for \"%w\"",
+     "logdice": 0.6,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.38,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.37,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... like \"%w\"",
+     "logdice": 0.32,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 11667,
+     "slot_logdice": "",
+     "n_collocates": 37,
+     "top5": [
+      {
+       "word": "... on \"%w\"",
+       "logdice": 4.58
+      },
+      {
+       "word": "... of \"%w\"",
+       "logdice": 2.16
+      },
+      {
+       "word": "... to \"%w\"",
+       "logdice": 1.62
+      },
+      {
+       "word": "... with \"%w\"",
+       "logdice": 0.97
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.72
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 1,
+   "slots_defined": 7,
+   "coverage": 0.143,
+   "n_types": 37,
+   "mean_logdice": 0.382,
+   "prominence_score": 2.007,
+   "top_evidence": [
+    {
+     "word": "... on \"%w\"",
+     "logdice": 4.58,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... of \"%w\"",
+     "logdice": 2.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.62,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... with \"%w\"",
+     "logdice": 0.97,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.72,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... for \"%w\"",
+     "logdice": 0.6,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.38,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.37,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... like \"%w\"",
+     "logdice": 0.32,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 11667,
+     "slot_logdice": "",
+     "n_collocates": 37,
+     "top5": [
+      {
+       "word": "... on \"%w\"",
+       "logdice": 4.58
+      },
+      {
+       "word": "... of \"%w\"",
+       "logdice": 2.16
+      },
+      {
+       "word": "... to \"%w\"",
+       "logdice": 1.62
+      },
+      {
+       "word": "... with \"%w\"",
+       "logdice": 0.97
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.72
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 2,
+   "slots_defined": 6,
+   "coverage": 0.333,
+   "n_types": 81,
+   "mean_logdice": 5.475,
+   "prominence_score": 34.807,
+   "top_evidence": [
+    {
+     "word": "skate",
+     "logdice": 9.65,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "rollerblade",
+     "logdice": 9.58,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "scooter",
+     "logdice": 9.51,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "snowboard",
+     "logdice": 8.86,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "longboard",
+     "logdice": 8.85,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "surfboard",
+     "logdice": 8.56,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "skateboard",
+     "logdice": 8.03,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "bicycle",
+     "logdice": 7.98,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "BMX",
+     "logdice": 7.75,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "hoverboard",
+     "logdice": 7.54,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 16491,
+     "slot_logdice": 20.09,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "scooter",
+       "logdice": 7.95
+      },
+      {
+       "word": "longboard",
+       "logdice": 7.68
+      },
+      {
+       "word": "rollerblade",
+       "logdice": 7.48
+      },
+      {
+       "word": "Longboard",
+       "logdice": 6.83
+      },
+      {
+       "word": "birdhouse",
+       "logdice": 6.82
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 16341,
+     "slot_logdice": 19.9,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "skate",
+       "logdice": 9.65
+      },
+      {
+       "word": "rollerblade",
+       "logdice": 9.58
+      },
+      {
+       "word": "scooter",
+       "logdice": 9.51
+      },
+      {
+       "word": "snowboard",
+       "logdice": 8.86
+      },
+      {
+       "word": "longboard",
+       "logdice": 8.85
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 1,
+   "slots_defined": 6,
+   "coverage": 0.167,
+   "n_types": 37,
+   "mean_logdice": 0.382,
+   "prominence_score": 2.007,
+   "top_evidence": [
+    {
+     "word": "... on \"%w\"",
+     "logdice": 4.58,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... of \"%w\"",
+     "logdice": 2.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.62,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... with \"%w\"",
+     "logdice": 0.97,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.72,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... for \"%w\"",
+     "logdice": 0.6,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.38,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.37,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... like \"%w\"",
+     "logdice": 0.32,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 11667,
+     "slot_logdice": "",
+     "n_collocates": 37,
+     "top5": [
+      {
+       "word": "... on \"%w\"",
+       "logdice": 4.58
+      },
+      {
+       "word": "... of \"%w\"",
+       "logdice": 2.16
+      },
+      {
+       "word": "... to \"%w\"",
+       "logdice": 1.62
+      },
+      {
+       "word": "... with \"%w\"",
+       "logdice": 0.97
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.72
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

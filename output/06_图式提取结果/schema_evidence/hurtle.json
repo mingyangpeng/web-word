@@ -1,0 +1,800 @@
+{
+ "verb": "hurtle",
+ "freq": 48642,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "终点抵达图式",
+ "ranking": [
+  "终点抵达图式",
+  "方式伴随图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 37,
+   "mean_logdice": 2.139,
+   "prominence_score": 11.225,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 8.65,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" towards ...",
+     "logdice": 5.9,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "cliff",
+     "logdice": 5.75,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "rail",
+     "logdice": 5.23,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "track",
+     "logdice": 5.13,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "edge",
+     "logdice": 4.6,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bridge",
+     "logdice": 4.36,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" toward ...",
+     "logdice": 4.29,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "side",
+     "logdice": 4.0,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "course",
+     "logdice": 3.74,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 3390,
+     "slot_logdice": 6.97,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 3.47
+      },
+      {
+       "word": "down",
+       "logdice": 1.81
+      },
+      {
+       "word": "through",
+       "logdice": 0.77
+      },
+      {
+       "word": "around",
+       "logdice": 0.55
+      },
+      {
+       "word": "off",
+       "logdice": 0.17
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 174,
+     "slot_logdice": 0.36,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "cliff",
+       "logdice": 5.75
+      },
+      {
+       "word": "rail",
+       "logdice": 5.23
+      },
+      {
+       "word": "track",
+       "logdice": 5.13
+      },
+      {
+       "word": "edge",
+       "logdice": 4.6
+      },
+      {
+       "word": "bridge",
+       "logdice": 4.36
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 35,
+     "slot_logdice": 0.07,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 2.99
+      },
+      {
+       "word": "window",
+       "logdice": 1.37
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 14265,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 8.65
+      },
+      {
+       "word": "\"%w\" towards ...",
+       "logdice": 5.9
+      },
+      {
+       "word": "\"%w\" toward ...",
+       "logdice": 4.29
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.51
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.69
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 126,
+   "mean_logdice": 4.14,
+   "prominence_score": 28.934,
+   "top_evidence": [
+    {
+     "word": "Myrtle",
+     "logdice": 8.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 8.65,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "track",
+     "logdice": 8.57,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "highway",
+     "logdice": 8.44,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "freeway",
+     "logdice": 8.14,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "slope",
+     "logdice": 7.96,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "motorway",
+     "logdice": 7.94,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "runway",
+     "logdice": 7.87,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "mountainside",
+     "logdice": 7.85,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "course",
+     "logdice": 7.75,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3780,
+     "slot_logdice": 7.77,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Myrtle",
+       "logdice": 8.87
+      },
+      {
+       "word": "Duffield",
+       "logdice": 7.13
+      },
+      {
+       "word": "Bald",
+       "logdice": 6.61
+      },
+      {
+       "word": "Vale",
+       "logdice": 6.55
+      },
+      {
+       "word": "head-first",
+       "logdice": 6.17
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 52,
+     "slot_logdice": 0.11,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "ramp",
+       "logdice": 5.15
+      },
+      {
+       "word": "chart",
+       "logdice": 4.26
+      },
+      {
+       "word": "road",
+       "logdice": 3.07
+      },
+      {
+       "word": "stair",
+       "logdice": 2.45
+      },
+      {
+       "word": "hill",
+       "logdice": 2.03
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 2400,
+     "slot_logdice": 4.93,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "track",
+       "logdice": 8.57
+      },
+      {
+       "word": "highway",
+       "logdice": 8.44
+      },
+      {
+       "word": "freeway",
+       "logdice": 8.14
+      },
+      {
+       "word": "slope",
+       "logdice": 7.96
+      },
+      {
+       "word": "motorway",
+       "logdice": 7.94
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 14265,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 8.65
+      },
+      {
+       "word": "\"%w\" towards ...",
+       "logdice": 5.9
+      },
+      {
+       "word": "\"%w\" toward ...",
+       "logdice": 4.29
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.51
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.69
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 4142,
+     "slot_logdice": 8.52,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 3.62
+      },
+      {
+       "word": "around",
+       "logdice": 2.05
+      },
+      {
+       "word": "along",
+       "logdice": 1.18
+      },
+      {
+       "word": "off",
+       "logdice": 0.03
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 118,
+   "mean_logdice": 3.772,
+   "prominence_score": 26.007,
+   "top_evidence": [
+    {
+     "word": "hurtle",
+     "logdice": 10.14,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "headlong",
+     "logdice": 8.07,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "earthward",
+     "logdice": 7.78,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "asteroid",
+     "logdice": 7.44,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Mrs",
+     "logdice": 7.35,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hurl",
+     "logdice": 6.82,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "meteor",
+     "logdice": 6.44,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "earthwards",
+     "logdice": 6.37,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "skyward",
+     "logdice": 6.35,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "lurch",
+     "logdice": 6.31,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 6403,
+     "slot_logdice": 13.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "headlong",
+       "logdice": 8.07
+      },
+      {
+       "word": "earthward",
+       "logdice": 7.78
+      },
+      {
+       "word": "earthwards",
+       "logdice": 6.37
+      },
+      {
+       "word": "skyward",
+       "logdice": 6.35
+      },
+      {
+       "word": "headfirst",
+       "logdice": 6.06
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 502,
+     "slot_logdice": 1.03,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 5.21
+      },
+      {
+       "word": "downward",
+       "logdice": 4.47
+      },
+      {
+       "word": "downstream",
+       "logdice": 3.56
+      },
+      {
+       "word": "unchecked",
+       "logdice": 2.41
+      },
+      {
+       "word": "near",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 3.35
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 1.09
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 10788,
+     "slot_logdice": 22.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "asteroid",
+       "logdice": 7.44
+      },
+      {
+       "word": "Mrs",
+       "logdice": 7.35
+      },
+      {
+       "word": "meteor",
+       "logdice": 6.44
+      },
+      {
+       "word": "Mrs.",
+       "logdice": 6.21
+      },
+      {
+       "word": "spaceship",
+       "logdice": 6.19
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 145,
+     "slot_logdice": 0.3,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "hurtle",
+       "logdice": 10.14
+      },
+      {
+       "word": "hurl",
+       "logdice": 6.82
+      },
+      {
+       "word": "lurch",
+       "logdice": 6.31
+      },
+      {
+       "word": "tumble",
+       "logdice": 5.06
+      },
+      {
+       "word": "leap",
+       "logdice": 3.49
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 31,
+     "slot_logdice": 0.06,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "first",
+       "logdice": 0.7
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 118,
+   "mean_logdice": 3.164,
+   "prominence_score": 21.816,
+   "top_evidence": [
+    {
+     "word": "Myrtle",
+     "logdice": 8.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 8.65,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "asteroid",
+     "logdice": 7.44,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Mrs",
+     "logdice": 7.35,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Duffield",
+     "logdice": 7.13,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Bald",
+     "logdice": 6.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Vale",
+     "logdice": 6.55,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "meteor",
+     "logdice": 6.44,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Mrs.",
+     "logdice": 6.21,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "spaceship",
+     "logdice": 6.19,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3780,
+     "slot_logdice": 7.77,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Myrtle",
+       "logdice": 8.87
+      },
+      {
+       "word": "Duffield",
+       "logdice": 7.13
+      },
+      {
+       "word": "Bald",
+       "logdice": 6.61
+      },
+      {
+       "word": "Vale",
+       "logdice": 6.55
+      },
+      {
+       "word": "head-first",
+       "logdice": 6.17
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 1466,
+     "slot_logdice": 3.01,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "oneself",
+       "logdice": 0.36
+      },
+      {
+       "word": "herself",
+       "logdice": 0.21
+      },
+      {
+       "word": "himself",
+       "logdice": 0.17
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 8579,
+     "slot_logdice": 17.64,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "ourselves",
+       "logdice": 2.78
+      },
+      {
+       "word": "him",
+       "logdice": 1.62
+      },
+      {
+       "word": "yourself",
+       "logdice": 1.53
+      },
+      {
+       "word": "himself",
+       "logdice": 1.27
+      },
+      {
+       "word": "herself",
+       "logdice": 1.26
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 10788,
+     "slot_logdice": 22.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "asteroid",
+       "logdice": 7.44
+      },
+      {
+       "word": "Mrs",
+       "logdice": 7.35
+      },
+      {
+       "word": "meteor",
+       "logdice": 6.44
+      },
+      {
+       "word": "Mrs.",
+       "logdice": 6.21
+      },
+      {
+       "word": "spaceship",
+       "logdice": 6.19
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 14265,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 8.65
+      },
+      {
+       "word": "\"%w\" towards ...",
+       "logdice": 5.9
+      },
+      {
+       "word": "\"%w\" toward ...",
+       "logdice": 4.29
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.51
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.69
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 4142,
+     "slot_logdice": 8.52,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 3.62
+      },
+      {
+       "word": "around",
+       "logdice": 2.05
+      },
+      {
+       "word": "along",
+       "logdice": 1.18
+      },
+      {
+       "word": "off",
+       "logdice": 0.03
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

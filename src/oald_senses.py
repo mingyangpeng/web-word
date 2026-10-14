@@ -331,8 +331,8 @@ def annotate_oald_senses(senses: List[Dict[str, Any]],
     # 「哪个是原型义」这个字段就自相矛盾了。
     has_other_source = bool(levin_row.get("_has_dict_senses"))
     proto_at = None if has_other_source else next(
-        (i for i, s in enumerate(senses) if not s.get("is_idiom")), 0
-    )
+        (i for i, s in enumerate(senses) if not s.get("is_idiom")), None
+    )  # 全是习语时不应有原型义 —— 默认 0 会把第一条习语错标成 Y
 
     out = []
     for i, sense in enumerate(senses):

@@ -1,0 +1,19 @@
+{
+ "verb": "canoe",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-09 21:32",
+ "n_senses": 1,
+ "results": {
+  "canoe-S1": {
+   "准入标签": "Y",
+   "理由": "理由：运动体为实体（人乘独木舟），沿河道发生三维物理空间位移，激活源点-路径-终点框架，属真实物理运动。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "...",
+   "raw": "The task: label the English verb \"canoe\" (to travel in a canoe). This is a motion verb meaning to travel by canoe. It's a physical motion through space — traveling on a river. So it activates source-path-goal framework → Y.\n\nImage schema: \"canoe\" encodes the manner of motion (traveling in a canoe — the vehicle/manner). The semantic core is the manner/means of movement, not source or goal. So it's 方式伴随图式 (manner-co-occurrence schema).\n\nPrototype level: Y = prototypical physical displacement.\n\nEnglish-Chinese alignment: English \"canoe\" encodes manner (乘独木舟/划独木舟行进). Chinese typically would say 划独木舟旅行 / 去划独木舟 / 乘独木舟. Chinese expression: \"去年夏天我们去怀河划独木舟\" — Chinese uses 划独木舟 which is verb-object structure, or 乘独木舟. The manner is expressed but Chinese requires adding a verb like 划 (paddle) — Chinese syntax forces adding components. The schema is largely consistent (manner co-occurrence), but Chinese needs to add a verb (划/乘) and possibly the path/goal. So partial alignment: 图式大体一致，但存在汉语句法强制增补成分 (Chinese requires adding 划 as the main verb, canoe becomes object/instrument). So 部分对齐.\n\nActually, let me think: English \"canoe\" as a verb means travel in a canoe — manner-encoding verb. Chinese conventional expression: 划独木舟 (paddle a canoe) — the manner verb 划 plus instrument 独木舟 as object. The image schema: manner co-occurrence in both. But Chinese syntactically must add a verb (划) and treat canoe as noun object. So partial alignment due to syntactic forced additions.\n\nOutput five fields:\n准入标签：Y\n理由：...\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：...\n\nReason: canoe (义位: to travel in a canoe) — the mover is a physical entity (person), moving through three-dimensional physical space along a river path, activating source-path-goal framework.\n\nSchema: the verb encodes the manner/means of travel (in a canoe), semantic core is manner accompanying motion, not source or goal → 方式伴随图式.\n\nAlignment: English manner verb; Chinese conventional expression 划独木舟/乘独木舟旅行, requires adding verb 划 and treating 独木舟 as instrument/object, manner schema largely consistent but Chinese syntax forces added components → 部分对齐.\n\n备注存疑点: maybe note that \"go canoeing\" in example uses gerund; the verb itself is activity verb, path not lexically specified; Chinese 划独木舟 vs 乘独木舟 choice. Could note: 例句为 \"go canoeing\" 活动义用法，若视为休闲活动整体义，路径要素弱化，但仍属物理位移。存疑点：canoeing 作为活动名词化用法是否与动词义位完全一致。</think>准入标签：Y\n理由：运动体为实体（人乘独木舟），沿河道发生三维物理空间位移，激活源点-路径-终点框架，属真实物理运动。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：canoe 的语义重心在编码移动方式（乘独木舟行进），路径与端点需由语境补充；汉语常规表达为“划独木舟／乘独木舟（旅行）”，须强制增补动作动词“划／乘”并将“独木舟”处理为工具宾语，方式图式大体一致但句法增补成分明显，故判部分对齐。另例句采用 go canoeing 活动化用法，活动整体义下路径要素弱化，但不影响动词义位本身的物理位移判定。",
+   "sense_id": "canoe-S1",
+   "definition": "to travel in a canoe"
+  }
+ },
+ "errors": []
+}

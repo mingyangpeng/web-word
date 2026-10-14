@@ -1,0 +1,824 @@
+{
+ "verb": "shuffle",
+ "freq": 163227,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 60,
+   "mean_logdice": 2.333,
+   "prominence_score": 13.837,
+   "top_evidence": [
+    {
+     "word": "coil",
+     "logdice": 13.66,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "responsibility",
+     "logdice": 8.71,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "Coil",
+     "logdice": 8.16,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "card",
+     "logdice": 7.89,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "stage",
+     "logdice": 7.35,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "blame",
+     "logdice": 6.87,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "burden",
+     "logdice": 6.27,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "door",
+     "logdice": 5.53,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "planet",
+     "logdice": 5.48,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "around",
+     "logdice": 5.47,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 19827,
+     "slot_logdice": 12.15,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.47
+      },
+      {
+       "word": "along",
+       "logdice": 5.03
+      },
+      {
+       "word": "off",
+       "logdice": 4.11
+      },
+      {
+       "word": "over",
+       "logdice": 3.78
+      },
+      {
+       "word": "across",
+       "logdice": 3.78
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 15,
+     "slot_logdice": 0.01,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "card",
+       "logdice": 7.89
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 2261,
+     "slot_logdice": 1.39,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "coil",
+       "logdice": 13.66
+      },
+      {
+       "word": "responsibility",
+       "logdice": 8.71
+      },
+      {
+       "word": "Coil",
+       "logdice": 8.16
+      },
+      {
+       "word": "stage",
+       "logdice": 7.35
+      },
+      {
+       "word": "blame",
+       "logdice": 6.87
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 171,
+     "slot_logdice": 0.1,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 5.53
+      },
+      {
+       "word": "card",
+       "logdice": 3.84
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 18300,
+     "slot_logdice": "",
+     "n_collocates": 34,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.9
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.82
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.01
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.79
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 120,
+   "mean_logdice": 3.274,
+   "prominence_score": 22.652,
+   "top_evidence": [
+    {
+     "word": "deck",
+     "logdice": 8.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "order",
+     "logdice": 7.7,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "sidewalk",
+     "logdice": 7.52,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 7.18,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hall",
+     "logdice": 7.15,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "gait",
+     "logdice": 6.79,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "corridor",
+     "logdice": 6.71,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "foot",
+     "logdice": 6.41,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "aisle",
+     "logdice": 6.3,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "card",
+     "logdice": 6.2,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 57180,
+     "slot_logdice": 35.03,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "deck",
+       "logdice": 8.87
+      },
+      {
+       "word": "gait",
+       "logdice": 6.79
+      },
+      {
+       "word": "foot",
+       "logdice": 6.41
+      },
+      {
+       "word": "card",
+       "logdice": 6.2
+      },
+      {
+       "word": "pack",
+       "logdice": 6.11
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 300,
+     "slot_logdice": 0.18,
+     "n_collocates": 16,
+     "top5": [
+      {
+       "word": "deck",
+       "logdice": 8.01
+      },
+      {
+       "word": "aisle",
+       "logdice": 6.3
+      },
+      {
+       "word": "ramp",
+       "logdice": 5.7
+      },
+      {
+       "word": "staircase",
+       "logdice": 5.7
+      },
+      {
+       "word": "bed",
+       "logdice": 5.22
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1056,
+     "slot_logdice": 0.65,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "order",
+       "logdice": 7.7
+      },
+      {
+       "word": "sidewalk",
+       "logdice": 7.52
+      },
+      {
+       "word": "hallway",
+       "logdice": 7.18
+      },
+      {
+       "word": "hall",
+       "logdice": 7.15
+      },
+      {
+       "word": "corridor",
+       "logdice": 6.71
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 18300,
+     "slot_logdice": "",
+     "n_collocates": 34,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.9
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.82
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.01
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.79
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 10702,
+     "slot_logdice": 6.56,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.6
+      },
+      {
+       "word": "off",
+       "logdice": 3.48
+      },
+      {
+       "word": "along",
+       "logdice": 3.24
+      },
+      {
+       "word": "in",
+       "logdice": 3.03
+      },
+      {
+       "word": "down",
+       "logdice": 2.5
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 160,
+   "mean_logdice": 4.414,
+   "prominence_score": 32.361,
+   "top_evidence": [
+    {
+     "word": "reshuffle",
+     "logdice": 8.82,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "deal",
+     "logdice": 8.06,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "zombie-like",
+     "logdice": 7.95,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "awkwardly",
+     "logdice": 6.99,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "nervously",
+     "logdice": 6.97,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "shamble",
+     "logdice": 6.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "uncomfortably",
+     "logdice": 6.87,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "limp",
+     "logdice": 6.82,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "mumble",
+     "logdice": 6.5,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "uneasily",
+     "logdice": 6.48,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 32774,
+     "slot_logdice": 20.08,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "awkwardly",
+       "logdice": 6.99
+      },
+      {
+       "word": "nervously",
+       "logdice": 6.97
+      },
+      {
+       "word": "uncomfortably",
+       "logdice": 6.87
+      },
+      {
+       "word": "uneasily",
+       "logdice": 6.48
+      },
+      {
+       "word": "randomly",
+       "logdice": 5.68
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 891,
+     "slot_logdice": 0.55,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "zombie-like",
+       "logdice": 7.95
+      },
+      {
+       "word": "past",
+       "logdice": 4.77
+      },
+      {
+       "word": "near",
+       "logdice": 2.08
+      },
+      {
+       "word": "outside",
+       "logdice": 1.48
+      },
+      {
+       "word": "further",
+       "logdice": 1.24
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.8
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.23
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 18992,
+     "slot_logdice": 11.64,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "spectator",
+       "logdice": 6.3
+      },
+      {
+       "word": "riffle",
+       "logdice": 5.93
+      },
+      {
+       "word": "iPod",
+       "logdice": 5.84
+      },
+      {
+       "word": "footstep",
+       "logdice": 5.83
+      },
+      {
+       "word": "zombie",
+       "logdice": 5.53
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 8220,
+     "slot_logdice": 5.04,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "reshuffle",
+       "logdice": 8.82
+      },
+      {
+       "word": "deal",
+       "logdice": 8.06
+      },
+      {
+       "word": "shamble",
+       "logdice": 6.93
+      },
+      {
+       "word": "limp",
+       "logdice": 6.82
+      },
+      {
+       "word": "mumble",
+       "logdice": 6.5
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 177,
+     "slot_logdice": 0.11,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "outside",
+       "logdice": 1.47
+      },
+      {
+       "word": "close",
+       "logdice": 1.21
+      },
+      {
+       "word": "due",
+       "logdice": 0.14
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 144,
+   "mean_logdice": 2.914,
+   "prominence_score": 20.925,
+   "top_evidence": [
+    {
+     "word": "deck",
+     "logdice": 8.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "gait",
+     "logdice": 6.79,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "foot",
+     "logdice": 6.41,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "spectator",
+     "logdice": 6.3,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "card",
+     "logdice": 6.2,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "pack",
+     "logdice": 6.11,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Deck",
+     "logdice": 5.98,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "riffle",
+     "logdice": 5.93,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "iPod",
+     "logdice": 5.84,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "footstep",
+     "logdice": 5.83,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 57180,
+     "slot_logdice": 35.03,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "deck",
+       "logdice": 8.87
+      },
+      {
+       "word": "gait",
+       "logdice": 6.79
+      },
+      {
+       "word": "foot",
+       "logdice": 6.41
+      },
+      {
+       "word": "card",
+       "logdice": 6.2
+      },
+      {
+       "word": "pack",
+       "logdice": 6.11
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 6503,
+     "slot_logdice": 3.98,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "them",
+       "logdice": 1.21
+      },
+      {
+       "word": "herself",
+       "logdice": 0.11
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 25787,
+     "slot_logdice": 15.8,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 1.51
+      },
+      {
+       "word": "herself",
+       "logdice": 1.39
+      },
+      {
+       "word": "yourself",
+       "logdice": 1.34
+      },
+      {
+       "word": "myself",
+       "logdice": 0.99
+      },
+      {
+       "word": "himself",
+       "logdice": 0.85
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 18992,
+     "slot_logdice": 11.64,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "spectator",
+       "logdice": 6.3
+      },
+      {
+       "word": "riffle",
+       "logdice": 5.93
+      },
+      {
+       "word": "iPod",
+       "logdice": 5.84
+      },
+      {
+       "word": "footstep",
+       "logdice": 5.83
+      },
+      {
+       "word": "zombie",
+       "logdice": 5.53
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 18300,
+     "slot_logdice": "",
+     "n_collocates": 34,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.9
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.82
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.01
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.79
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 10702,
+     "slot_logdice": 6.56,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.6
+      },
+      {
+       "word": "off",
+       "logdice": 3.48
+      },
+      {
+       "word": "along",
+       "logdice": 3.24
+      },
+      {
+       "word": "in",
+       "logdice": 3.03
+      },
+      {
+       "word": "down",
+       "logdice": 2.5
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

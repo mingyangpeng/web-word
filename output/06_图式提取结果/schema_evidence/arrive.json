@@ -1,0 +1,812 @@
+{
+ "verb": "arrive",
+ "freq": 6027033,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "源点脱离图式",
+  "终点抵达图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 112,
+   "mean_logdice": 4.134,
+   "prominence_score": 28.196,
+   "top_evidence": [
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 18.41,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 16.53,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Okinawa",
+     "logdice": 10.0,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "Island",
+     "logdice": 9.55,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "coast",
+     "logdice": 9.51,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "Jima",
+     "logdice": 9.39,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "beach",
+     "logdice": 8.9,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "Saipan",
+     "logdice": 8.82,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "port",
+     "logdice": 8.65,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "Bay",
+     "logdice": 8.62,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 9240,
+     "slot_logdice": 0.15,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "unto",
+       "logdice": 5.01
+      },
+      {
+       "word": "in",
+       "logdice": 4.75
+      },
+      {
+       "word": "along",
+       "logdice": 4.66
+      },
+      {
+       "word": "upon",
+       "logdice": 3.27
+      },
+      {
+       "word": "across",
+       "logdice": 3.12
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 3419,
+     "slot_logdice": 0.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Okinawa",
+       "logdice": 10.0
+      },
+      {
+       "word": "Island",
+       "logdice": 9.55
+      },
+      {
+       "word": "coast",
+       "logdice": 9.51
+      },
+      {
+       "word": "Jima",
+       "logdice": 9.39
+      },
+      {
+       "word": "beach",
+       "logdice": 8.9
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 33,
+     "slot_logdice": 0.0,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "front",
+       "logdice": 6.31
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2895847,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 18.41
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 16.53
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 4.81
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.75
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.46
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 112,
+   "mean_logdice": 3.562,
+   "prominence_score": 24.294,
+   "top_evidence": [
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 18.41,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 16.53,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "morning",
+     "logdice": 8.05,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "yesterday",
+     "logdice": 7.89,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "minute",
+     "logdice": 7.78,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "home",
+     "logdice": 7.48,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "afternoon",
+     "logdice": 7.45,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "settler",
+     "logdice": 7.42,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "immigrant",
+     "logdice": 7.4,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "today",
+     "logdice": 7.17,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 698300,
+     "slot_logdice": 11.59,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "morning",
+       "logdice": 8.05
+      },
+      {
+       "word": "yesterday",
+       "logdice": 7.89
+      },
+      {
+       "word": "minute",
+       "logdice": 7.78
+      },
+      {
+       "word": "home",
+       "logdice": 7.48
+      },
+      {
+       "word": "afternoon",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 42,
+     "slot_logdice": 0.0,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "river",
+       "logdice": 4.12
+      },
+      {
+       "word": "front",
+       "logdice": 3.04
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 94,
+     "slot_logdice": 0.0,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "chimney",
+       "logdice": 6.77
+      },
+      {
+       "word": "lane",
+       "logdice": 4.77
+      },
+      {
+       "word": "stair",
+       "logdice": 2.85
+      },
+      {
+       "word": "road",
+       "logdice": 2.36
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2895847,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 18.41
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 16.53
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 4.81
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.75
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.46
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 8591,
+     "slot_logdice": 0.14,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.01
+      },
+      {
+       "word": "off",
+       "logdice": 4.07
+      },
+      {
+       "word": "unto",
+       "logdice": 3.66
+      },
+      {
+       "word": "on",
+       "logdice": 3.43
+      },
+      {
+       "word": "upon",
+       "logdice": 3.07
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 218,
+   "mean_logdice": 5.563,
+   "prominence_score": 43.253,
+   "top_evidence": [
+    {
+     "word": "depart",
+     "logdice": 11.12,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "unannounced",
+     "logdice": 9.42,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "late",
+     "logdice": 9.34,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "early",
+     "logdice": 9.09,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "leave",
+     "logdice": 8.46,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "finally",
+     "logdice": 8.4,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "safely",
+     "logdice": 8.38,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "newly",
+     "logdice": 8.34,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "begin",
+     "logdice": 8.03,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "daily",
+     "logdice": 7.94,
+     "slot": "adjectives after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 968819,
+     "slot_logdice": 16.07,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "late",
+       "logdice": 9.34
+      },
+      {
+       "word": "early",
+       "logdice": 9.09
+      },
+      {
+       "word": "finally",
+       "logdice": 8.4
+      },
+      {
+       "word": "safely",
+       "logdice": 8.38
+      },
+      {
+       "word": "newly",
+       "logdice": 8.34
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 64284,
+     "slot_logdice": 1.07,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "unannounced",
+       "logdice": 9.42
+      },
+      {
+       "word": "late",
+       "logdice": 8.9
+      },
+      {
+       "word": "early",
+       "logdice": 8.64
+      },
+      {
+       "word": "daily",
+       "logdice": 7.94
+      },
+      {
+       "word": "on-site",
+       "logdice": 7.7
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 4.24
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1982167,
+     "slot_logdice": 32.89,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "police",
+       "logdice": 7.87
+      },
+      {
+       "word": "guest",
+       "logdice": 7.72
+      },
+      {
+       "word": "train",
+       "logdice": 7.26
+      },
+      {
+       "word": "officer",
+       "logdice": 7.14
+      },
+      {
+       "word": "visitor",
+       "logdice": 6.94
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 121406,
+     "slot_logdice": 2.01,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "depart",
+       "logdice": 11.12
+      },
+      {
+       "word": "leave",
+       "logdice": 8.46
+      },
+      {
+       "word": "begin",
+       "logdice": 8.03
+      },
+      {
+       "word": "tell",
+       "logdice": 7.89
+      },
+      {
+       "word": "settle",
+       "logdice": 7.5
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 5261,
+     "slot_logdice": 0.09,
+     "n_collocates": 31,
+     "top5": [
+      {
+       "word": "late",
+       "logdice": 7.97
+      },
+      {
+       "word": "early",
+       "logdice": 7.74
+      },
+      {
+       "word": "[number]",
+       "logdice": 7.15
+      },
+      {
+       "word": "previous",
+       "logdice": 6.66
+      },
+      {
+       "word": "rare",
+       "logdice": 4.71
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 162,
+   "mean_logdice": 4.084,
+   "prominence_score": 30.013,
+   "top_evidence": [
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 18.41,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 16.53,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "morning",
+     "logdice": 8.05,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "yesterday",
+     "logdice": 7.89,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "police",
+     "logdice": 7.87,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "minute",
+     "logdice": 7.78,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "guest",
+     "logdice": 7.72,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "home",
+     "logdice": 7.48,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "afternoon",
+     "logdice": 7.45,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "settler",
+     "logdice": 7.42,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 698300,
+     "slot_logdice": 11.59,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "morning",
+       "logdice": 8.05
+      },
+      {
+       "word": "yesterday",
+       "logdice": 7.89
+      },
+      {
+       "word": "minute",
+       "logdice": 7.78
+      },
+      {
+       "word": "home",
+       "logdice": 7.48
+      },
+      {
+       "word": "afternoon",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 14354,
+     "slot_logdice": 0.24,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "she",
+       "logdice": 4.12
+      },
+      {
+       "word": "they",
+       "logdice": 3.91
+      },
+      {
+       "word": "we",
+       "logdice": 3.85
+      },
+      {
+       "word": "he",
+       "logdice": 3.43
+      },
+      {
+       "word": "it",
+       "logdice": 1.19
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 1262174,
+     "slot_logdice": 20.94,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "we",
+       "logdice": 5.72
+      },
+      {
+       "word": "they",
+       "logdice": 5.61
+      },
+      {
+       "word": "she",
+       "logdice": 5.18
+      },
+      {
+       "word": "he",
+       "logdice": 5.06
+      },
+      {
+       "word": "mine",
+       "logdice": 5.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1982167,
+     "slot_logdice": 32.89,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "police",
+       "logdice": 7.87
+      },
+      {
+       "word": "guest",
+       "logdice": 7.72
+      },
+      {
+       "word": "train",
+       "logdice": 7.26
+      },
+      {
+       "word": "officer",
+       "logdice": 7.14
+      },
+      {
+       "word": "visitor",
+       "logdice": 6.94
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2895847,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 18.41
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 16.53
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 4.81
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.75
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.46
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 8591,
+     "slot_logdice": 0.14,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.01
+      },
+      {
+       "word": "off",
+       "logdice": 4.07
+      },
+      {
+       "word": "unto",
+       "logdice": 3.66
+      },
+      {
+       "word": "on",
+       "logdice": 3.43
+      },
+      {
+       "word": "upon",
+       "logdice": 3.07
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

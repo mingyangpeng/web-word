@@ -1,0 +1,844 @@
+{
+ "verb": "escape",
+ "freq": 2130493,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 78,
+   "mean_logdice": 2.218,
+   "prominence_score": 13.979,
+   "top_evidence": [
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 9.19,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "back",
+     "logdice": 8.71,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "exit",
+     "logdice": 7.94,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "chimney",
+     "logdice": 7.74,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "entrance",
+     "logdice": 7.69,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "front",
+     "logdice": 7.66,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "exhaust",
+     "logdice": 7.57,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "vent",
+     "logdice": 7.45,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "top",
+     "logdice": 7.43,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "door",
+     "logdice": 7.23,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 6907,
+     "slot_logdice": 0.32,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "through",
+       "logdice": 3.34
+      },
+      {
+       "word": "along",
+       "logdice": 3.12
+      },
+      {
+       "word": "out",
+       "logdice": 1.89
+      },
+      {
+       "word": "away",
+       "logdice": 1.41
+      },
+      {
+       "word": "across",
+       "logdice": 1.04
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 153,
+     "slot_logdice": 0.01,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "front",
+       "logdice": 7.66
+      },
+      {
+       "word": "planet",
+       "logdice": 6.58
+      },
+      {
+       "word": "island",
+       "logdice": 6.0
+      },
+      {
+       "word": "map",
+       "logdice": 5.31
+      },
+      {
+       "word": "edge",
+       "logdice": 4.78
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 1517,
+     "slot_logdice": 0.07,
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "back",
+       "logdice": 8.71
+      },
+      {
+       "word": "exit",
+       "logdice": 7.94
+      },
+      {
+       "word": "chimney",
+       "logdice": 7.74
+      },
+      {
+       "word": "entrance",
+       "logdice": 7.69
+      },
+      {
+       "word": "exhaust",
+       "logdice": 7.57
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 386831,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 9.19
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.04
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.51
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.21
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.75
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 150,
+   "mean_logdice": 4.046,
+   "prominence_score": 29.29,
+   "top_evidence": [
+    {
+     "word": "chimney",
+     "logdice": 10.37,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "flue",
+     "logdice": 9.91,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 9.19,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "stairwell",
+     "logdice": 8.15,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "escape",
+     "logdice": 8.06,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "lip",
+     "logdice": 8.05,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "persecution",
+     "logdice": 7.88,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "slave",
+     "logdice": 7.76,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "notice",
+     "logdice": 7.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "prison",
+     "logdice": 7.64,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 820602,
+     "slot_logdice": 38.52,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "lip",
+       "logdice": 8.05
+      },
+      {
+       "word": "persecution",
+       "logdice": 7.88
+      },
+      {
+       "word": "slave",
+       "logdice": 7.76
+      },
+      {
+       "word": "notice",
+       "logdice": 7.67
+      },
+      {
+       "word": "prison",
+       "logdice": 7.64
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 592,
+     "slot_logdice": 0.03,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "chimney",
+       "logdice": 10.37
+      },
+      {
+       "word": "flue",
+       "logdice": 9.91
+      },
+      {
+       "word": "shaft",
+       "logdice": 6.84
+      },
+      {
+       "word": "River",
+       "logdice": 6.81
+      },
+      {
+       "word": "river",
+       "logdice": 6.44
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1060,
+     "slot_logdice": 0.05,
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "stairwell",
+       "logdice": 8.15
+      },
+      {
+       "word": "escape",
+       "logdice": 8.06
+      },
+      {
+       "word": "tunnel",
+       "logdice": 7.56
+      },
+      {
+       "word": "alleyway",
+       "logdice": 7.53
+      },
+      {
+       "word": "chute",
+       "logdice": 7.48
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 386831,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 9.19
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.04
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.51
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.21
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.75
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 5364,
+     "slot_logdice": 0.25,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 2.56
+      },
+      {
+       "word": "along",
+       "logdice": 2.18
+      },
+      {
+       "word": "unto",
+       "logdice": 1.94
+      },
+      {
+       "word": "around",
+       "logdice": 1.93
+      },
+      {
+       "word": "out",
+       "logdice": 1.38
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 232,
+   "mean_logdice": 5.021,
+   "prominence_score": 39.484,
+   "top_evidence": [
+    {
+     "word": "unscathed",
+     "logdice": 11.69,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "unhurt",
+     "logdice": 11.3,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "unharmed",
+     "logdice": 11.08,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "convict",
+     "logdice": 11.01,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "narrowly",
+     "logdice": 10.07,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "uninjured",
+     "logdice": 9.78,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "flee",
+     "logdice": 8.98,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "evade",
+     "logdice": 8.19,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "moan",
+     "logdice": 8.16,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "sigh",
+     "logdice": 8.13,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 322302,
+     "slot_logdice": 15.13,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "narrowly",
+       "logdice": 10.07
+      },
+      {
+       "word": "barely",
+       "logdice": 7.84
+      },
+      {
+       "word": "miraculously",
+       "logdice": 7.01
+      },
+      {
+       "word": "somehow",
+       "logdice": 6.46
+      },
+      {
+       "word": "safely",
+       "logdice": 5.81
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 22807,
+     "slot_logdice": 1.07,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "unscathed",
+       "logdice": 11.69
+      },
+      {
+       "word": "unhurt",
+       "logdice": 11.3
+      },
+      {
+       "word": "unharmed",
+       "logdice": 11.08
+      },
+      {
+       "word": "convict",
+       "logdice": 11.01
+      },
+      {
+       "word": "uninjured",
+       "logdice": 9.78
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.37
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.08
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 310985,
+     "slot_logdice": 14.6,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "moan",
+       "logdice": 8.16
+      },
+      {
+       "word": "sigh",
+       "logdice": 8.13
+      },
+      {
+       "word": "prisoner",
+       "logdice": 7.4
+      },
+      {
+       "word": "slave",
+       "logdice": 7.39
+      },
+      {
+       "word": "gasp",
+       "logdice": 6.92
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 64501,
+     "slot_logdice": 3.03,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "flee",
+       "logdice": 8.98
+      },
+      {
+       "word": "evade",
+       "logdice": 8.19
+      },
+      {
+       "word": "survive",
+       "logdice": 8.11
+      },
+      {
+       "word": "avoid",
+       "logdice": 7.71
+      },
+      {
+       "word": "hide",
+       "logdice": 7.63
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 5084,
+     "slot_logdice": 0.24,
+     "n_collocates": 47,
+     "top5": [
+      {
+       "word": "unscathed",
+       "logdice": 11.56
+      },
+      {
+       "word": "unharmed",
+       "logdice": 10.16
+      },
+      {
+       "word": "unhurt",
+       "logdice": 8.81
+      },
+      {
+       "word": "uninjured",
+       "logdice": 8.45
+      },
+      {
+       "word": "unnoticed",
+       "logdice": 7.48
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 183,
+   "mean_logdice": 3.807,
+   "prominence_score": 28.643,
+   "top_evidence": [
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 9.19,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "moan",
+     "logdice": 8.16,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "sigh",
+     "logdice": 8.13,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "lip",
+     "logdice": 8.05,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "persecution",
+     "logdice": 7.88,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "slave",
+     "logdice": 7.76,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "notice",
+     "logdice": 7.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "prison",
+     "logdice": 7.64,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "clutch",
+     "logdice": 7.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "punishment",
+     "logdice": 7.59,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 820602,
+     "slot_logdice": 38.52,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "lip",
+       "logdice": 8.05
+      },
+      {
+       "word": "persecution",
+       "logdice": 7.88
+      },
+      {
+       "word": "slave",
+       "logdice": 7.76
+      },
+      {
+       "word": "notice",
+       "logdice": 7.67
+      },
+      {
+       "word": "prison",
+       "logdice": 7.64
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 74514,
+     "slot_logdice": 3.5,
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "me",
+       "logdice": 4.49
+      },
+      {
+       "word": "her",
+       "logdice": 3.69
+      },
+      {
+       "word": "him",
+       "logdice": 3.47
+      },
+      {
+       "word": "thee",
+       "logdice": 2.93
+      },
+      {
+       "word": "them",
+       "logdice": 2.5
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 176202,
+     "slot_logdice": 8.27,
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 5.59
+      },
+      {
+       "word": "himself",
+       "logdice": 4.74
+      },
+      {
+       "word": "them",
+       "logdice": 4.61
+      },
+      {
+       "word": "her",
+       "logdice": 4.15
+      },
+      {
+       "word": "herself",
+       "logdice": 3.46
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 310985,
+     "slot_logdice": 14.6,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "moan",
+       "logdice": 8.16
+      },
+      {
+       "word": "sigh",
+       "logdice": 8.13
+      },
+      {
+       "word": "prisoner",
+       "logdice": 7.4
+      },
+      {
+       "word": "slave",
+       "logdice": 7.39
+      },
+      {
+       "word": "gasp",
+       "logdice": 6.92
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 386831,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 9.19
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.04
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.51
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.21
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.75
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 5364,
+     "slot_logdice": 0.25,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 2.56
+      },
+      {
+       "word": "along",
+       "logdice": 2.18
+      },
+      {
+       "word": "unto",
+       "logdice": 1.94
+      },
+      {
+       "word": "around",
+       "logdice": 1.93
+      },
+      {
+       "word": "out",
+       "logdice": 1.38
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

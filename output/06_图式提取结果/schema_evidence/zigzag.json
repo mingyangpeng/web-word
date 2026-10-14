@@ -1,0 +1,648 @@
+{
+ "verb": "zigzag",
+ "freq": 16503,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 2,
+   "slots_defined": 5,
+   "coverage": 0.4,
+   "n_types": 20,
+   "mean_logdice": 0.494,
+   "prominence_score": 2.17,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 2.73,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 2.15,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 1.2,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 0.63,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.48,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "across",
+     "logdice": 0.45,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 0.44,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" along ...",
+     "logdice": 0.28,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "in",
+     "logdice": 0.27,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 831,
+     "slot_logdice": 5.04,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "across",
+       "logdice": 0.45
+      },
+      {
+       "word": "in",
+       "logdice": 0.27
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1510,
+     "slot_logdice": "",
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.73
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 2.15
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.2
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.63
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.48
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 85,
+   "mean_logdice": 2.33,
+   "prominence_score": 14.976,
+   "top_evidence": [
+    {
+     "word": "fellside",
+     "logdice": 9.52,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "scree",
+     "logdice": 8.63,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "hillside",
+     "logdice": 8.24,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "mountainside",
+     "logdice": 8.24,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "slope",
+     "logdice": 7.56,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "flank",
+     "logdice": 7.56,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "ridge",
+     "logdice": 6.37,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "cliff",
+     "logdice": 6.3,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "mountain",
+     "logdice": 5.48,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "hill",
+     "logdice": 5.15,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3114,
+     "slot_logdice": 18.87,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "trope",
+       "logdice": 4.35
+      },
+      {
+       "word": "lightning",
+       "logdice": 3.29
+      },
+      {
+       "word": "boardwalk",
+       "logdice": 3.18
+      },
+      {
+       "word": "southward",
+       "logdice": 3.02
+      },
+      {
+       "word": "northward",
+       "logdice": 2.87
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 336,
+     "slot_logdice": 2.04,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "fellside",
+       "logdice": 9.52
+      },
+      {
+       "word": "scree",
+       "logdice": 8.63
+      },
+      {
+       "word": "hillside",
+       "logdice": 8.24
+      },
+      {
+       "word": "mountainside",
+       "logdice": 8.24
+      },
+      {
+       "word": "slope",
+       "logdice": 7.56
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 181,
+     "slot_logdice": 1.1,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "hillside",
+       "logdice": 6.87
+      },
+      {
+       "word": "mountainside",
+       "logdice": 6.23
+      },
+      {
+       "word": "cliff",
+       "logdice": 5.76
+      },
+      {
+       "word": "slope",
+       "logdice": 5.53
+      },
+      {
+       "word": "valley",
+       "logdice": 4.63
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1510,
+     "slot_logdice": "",
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.73
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 2.15
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.2
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.63
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.48
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1116,
+     "slot_logdice": 6.76,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.2
+      },
+      {
+       "word": "down",
+       "logdice": 0.45
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 86,
+   "mean_logdice": 2.724,
+   "prominence_score": 17.552,
+   "top_evidence": [
+    {
+     "word": "zigzag",
+     "logdice": 8.0,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "snake",
+     "logdice": 7.89,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "spiral",
+     "logdice": 7.72,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "meander",
+     "logdice": 7.35,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "dart",
+     "logdice": 6.28,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "swerve",
+     "logdice": 6.11,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "undulate",
+     "logdice": 5.97,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "tack",
+     "logdice": 5.92,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "backtrack",
+     "logdice": 5.75,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "switchback",
+     "logdice": 5.64,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 2102,
+     "slot_logdice": 12.74,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "erratically",
+       "logdice": 4.38
+      },
+      {
+       "word": "crazily",
+       "logdice": 4.23
+      },
+      {
+       "word": "uphill",
+       "logdice": 4.12
+      },
+      {
+       "word": "drunkenly",
+       "logdice": 4.0
+      },
+      {
+       "word": "steeply",
+       "logdice": 3.02
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 49,
+     "slot_logdice": 0.3,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "east",
+       "logdice": 0.94
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 2.6
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1147,
+     "slot_logdice": 6.95,
+     "n_collocates": 31,
+     "top5": [
+      {
+       "word": "switchback",
+       "logdice": 5.64
+      },
+      {
+       "word": "steamer",
+       "logdice": 4.3
+      },
+      {
+       "word": "stairway",
+       "logdice": 4.05
+      },
+      {
+       "word": "footpath",
+       "logdice": 3.75
+      },
+      {
+       "word": "convoy",
+       "logdice": 3.41
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 384,
+     "slot_logdice": 2.33,
+     "n_collocates": 31,
+     "top5": [
+      {
+       "word": "zigzag",
+       "logdice": 8.0
+      },
+      {
+       "word": "snake",
+       "logdice": 7.89
+      },
+      {
+       "word": "spiral",
+       "logdice": 7.72
+      },
+      {
+       "word": "meander",
+       "logdice": 7.35
+      },
+      {
+       "word": "dart",
+       "logdice": 6.28
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 88,
+   "mean_logdice": 1.426,
+   "prominence_score": 9.233,
+   "top_evidence": [
+    {
+     "word": "switchback",
+     "logdice": 5.64,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "trope",
+     "logdice": 4.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "steamer",
+     "logdice": 4.3,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "stairway",
+     "logdice": 4.05,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "footpath",
+     "logdice": 3.75,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "convoy",
+     "logdice": 3.41,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "path",
+     "logdice": 3.35,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "lightning",
+     "logdice": 3.29,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "boardwalk",
+     "logdice": 3.18,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "southward",
+     "logdice": 3.02,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3114,
+     "slot_logdice": 18.87,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "trope",
+       "logdice": 4.35
+      },
+      {
+       "word": "lightning",
+       "logdice": 3.29
+      },
+      {
+       "word": "boardwalk",
+       "logdice": 3.18
+      },
+      {
+       "word": "southward",
+       "logdice": 3.02
+      },
+      {
+       "word": "northward",
+       "logdice": 2.87
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1147,
+     "slot_logdice": 6.95,
+     "n_collocates": 31,
+     "top5": [
+      {
+       "word": "switchback",
+       "logdice": 5.64
+      },
+      {
+       "word": "steamer",
+       "logdice": 4.3
+      },
+      {
+       "word": "stairway",
+       "logdice": 4.05
+      },
+      {
+       "word": "footpath",
+       "logdice": 3.75
+      },
+      {
+       "word": "convoy",
+       "logdice": 3.41
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1510,
+     "slot_logdice": "",
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.73
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 2.15
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.2
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.63
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.48
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1116,
+     "slot_logdice": 6.76,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.2
+      },
+      {
+       "word": "down",
+       "logdice": 0.45
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

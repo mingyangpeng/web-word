@@ -1,0 +1,564 @@
+{
+ "verb": "sashay",
+ "freq": 3060,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 2,
+   "slots_defined": 5,
+   "coverage": 0.4,
+   "n_types": 10,
+   "mean_logdice": 0.873,
+   "prominence_score": 3.02,
+   "top_evidence": [
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 2.19,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 1.6,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "door",
+     "logdice": 1.41,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 1.08,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.98,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" onto ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.33,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" around ...",
+     "logdice": 0.26,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" of ...",
+     "logdice": 0.16,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 8,
+     "slot_logdice": 0.26,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 1.41
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 224,
+     "slot_logdice": "",
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 2.19
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.6
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.08
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.98
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.36
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 26,
+   "mean_logdice": 2.778,
+   "prominence_score": 13.211,
+   "top_evidence": [
+    {
+     "word": "catwalk",
+     "logdice": 9.66,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "runway",
+     "logdice": 8.0,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "carpet",
+     "logdice": 7.75,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "ramp",
+     "logdice": 6.48,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "aisle",
+     "logdice": 5.41,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "sidewalk",
+     "logdice": 4.96,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "staircase",
+     "logdice": 4.95,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "street",
+     "logdice": 3.36,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "corridor",
+     "logdice": 3.18,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 3.03,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 195,
+     "slot_logdice": 6.37,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "hip",
+       "logdice": 2.75
+      },
+      {
+       "word": "skirt",
+       "logdice": 0.23
+      },
+      {
+       "word": "butt",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 5,
+     "slot_logdice": 0.16,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "aisle",
+       "logdice": 5.41
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 228,
+     "slot_logdice": 7.45,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "catwalk",
+       "logdice": 9.66
+      },
+      {
+       "word": "runway",
+       "logdice": 8.0
+      },
+      {
+       "word": "carpet",
+       "logdice": 7.75
+      },
+      {
+       "word": "ramp",
+       "logdice": 6.48
+      },
+      {
+       "word": "sidewalk",
+       "logdice": 4.96
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 224,
+     "slot_logdice": "",
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 2.19
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.6
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.08
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.98
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.36
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 418,
+     "slot_logdice": 13.66,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 0.26
+      },
+      {
+       "word": "around",
+       "logdice": 0.03
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 3,
+   "slots_defined": 6,
+   "coverage": 0.5,
+   "n_types": 13,
+   "mean_logdice": 3.888,
+   "prominence_score": 14.802,
+   "top_evidence": [
+    {
+     "word": "lisp",
+     "logdice": 8.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "shimmy",
+     "logdice": 7.78,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "strut",
+     "logdice": 6.29,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "RuPaul",
+     "logdice": 6.2,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "twirl",
+     "logdice": 4.8,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sway",
+     "logdice": 3.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "seductively",
+     "logdice": 3.7,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "hip",
+     "logdice": 2.8,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "swing",
+     "logdice": 2.57,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "queen",
+     "logdice": 1.64,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 292,
+     "slot_logdice": 9.54,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "seductively",
+       "logdice": 3.7
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 149,
+     "slot_logdice": 4.87,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "RuPaul",
+       "logdice": 6.2
+      },
+      {
+       "word": "hip",
+       "logdice": 2.8
+      },
+      {
+       "word": "queen",
+       "logdice": 1.64
+      },
+      {
+       "word": "dancer",
+       "logdice": 0.24
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 73,
+     "slot_logdice": 2.39,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "lisp",
+       "logdice": 8.93
+      },
+      {
+       "word": "shimmy",
+       "logdice": 7.78
+      },
+      {
+       "word": "strut",
+       "logdice": 6.29
+      },
+      {
+       "word": "twirl",
+       "logdice": 4.8
+      },
+      {
+       "word": "sway",
+       "logdice": 3.93
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 17,
+   "mean_logdice": 1.103,
+   "prominence_score": 4.599,
+   "top_evidence": [
+    {
+     "word": "RuPaul",
+     "logdice": 6.2,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hip",
+     "logdice": 2.8,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 2.19,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "queen",
+     "logdice": 1.64,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 1.6,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 1.08,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.98,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" onto ...",
+     "logdice": 0.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.33,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 195,
+     "slot_logdice": 6.37,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "hip",
+       "logdice": 2.75
+      },
+      {
+       "word": "skirt",
+       "logdice": 0.23
+      },
+      {
+       "word": "butt",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 149,
+     "slot_logdice": 4.87,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "RuPaul",
+       "logdice": 6.2
+      },
+      {
+       "word": "hip",
+       "logdice": 2.8
+      },
+      {
+       "word": "queen",
+       "logdice": 1.64
+      },
+      {
+       "word": "dancer",
+       "logdice": 0.24
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 224,
+     "slot_logdice": "",
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 2.19
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.6
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.08
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.98
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.36
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 418,
+     "slot_logdice": 13.66,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 0.26
+      },
+      {
+       "word": "around",
+       "logdice": 0.03
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

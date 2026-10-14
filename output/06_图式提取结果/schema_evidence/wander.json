@@ -1,0 +1,836 @@
+{
+ "verb": "wander",
+ "freq": 834147,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 117,
+   "mean_logdice": 3.762,
+   "prominence_score": 25.891,
+   "top_evidence": [
+    {
+     "word": "path",
+     "logdice": 10.5,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "reservation",
+     "logdice": 9.97,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "topic",
+     "logdice": 9.81,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "trail",
+     "logdice": 9.58,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "course",
+     "logdice": 9.34,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "subject",
+     "logdice": 8.64,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "around",
+     "logdice": 8.56,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "track",
+     "logdice": 8.29,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "plantation",
+     "logdice": 8.0,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "set",
+     "logdice": 7.45,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 127592,
+     "slot_logdice": 15.3,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 8.56
+      },
+      {
+       "word": "off",
+       "logdice": 7.1
+      },
+      {
+       "word": "over",
+       "logdice": 6.45
+      },
+      {
+       "word": "in",
+       "logdice": 6.26
+      },
+      {
+       "word": "away",
+       "logdice": 5.56
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 4383,
+     "slot_logdice": 0.53,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "path",
+       "logdice": 10.5
+      },
+      {
+       "word": "reservation",
+       "logdice": 9.97
+      },
+      {
+       "word": "topic",
+       "logdice": 9.81
+      },
+      {
+       "word": "trail",
+       "logdice": 9.58
+      },
+      {
+       "word": "course",
+       "logdice": 9.34
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 236,
+     "slot_logdice": 0.03,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 5.4
+      },
+      {
+       "word": "back",
+       "logdice": 5.19
+      },
+      {
+       "word": "night",
+       "logdice": 3.99
+      },
+      {
+       "word": "side",
+       "logdice": 3.15
+      },
+      {
+       "word": "bit",
+       "logdice": 2.7
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 203936,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 4.8
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.06
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.59
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 2.82
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 2.08
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 173,
+   "mean_logdice": 4.374,
+   "prominence_score": 32.555,
+   "top_evidence": [
+    {
+     "word": "street",
+     "logdice": 9.0,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "around",
+     "logdice": 8.72,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "alley",
+     "logdice": 8.69,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "lane",
+     "logdice": 8.49,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "beach",
+     "logdice": 8.39,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Street",
+     "logdice": 8.27,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "corridor",
+     "logdice": 8.26,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hall",
+     "logdice": 8.16,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "path",
+     "logdice": 8.16,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "aisle",
+     "logdice": 8.09,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 176708,
+     "slot_logdice": 21.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "street",
+       "logdice": 9.0
+      },
+      {
+       "word": "minstrel",
+       "logdice": 7.87
+      },
+      {
+       "word": "aisle",
+       "logdice": 7.69
+      },
+      {
+       "word": "hall",
+       "logdice": 7.67
+      },
+      {
+       "word": "albatross",
+       "logdice": 7.57
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 1564,
+     "slot_logdice": 0.19,
+     "n_collocates": 41,
+     "top5": [
+      {
+       "word": "Street",
+       "logdice": 8.19
+      },
+      {
+       "word": "street",
+       "logdice": 7.88
+      },
+      {
+       "word": "canyon",
+       "logdice": 7.64
+      },
+      {
+       "word": "driveway",
+       "logdice": 7.29
+      },
+      {
+       "word": "Avenue",
+       "logdice": 7.22
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 6620,
+     "slot_logdice": 0.79,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "alley",
+       "logdice": 8.69
+      },
+      {
+       "word": "lane",
+       "logdice": 8.49
+      },
+      {
+       "word": "beach",
+       "logdice": 8.39
+      },
+      {
+       "word": "Street",
+       "logdice": 8.27
+      },
+      {
+       "word": "corridor",
+       "logdice": 8.26
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 203936,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 4.8
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.06
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.59
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 2.82
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 2.08
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 48008,
+     "slot_logdice": 5.76,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 8.72
+      },
+      {
+       "word": "along",
+       "logdice": 5.01
+      },
+      {
+       "word": "down",
+       "logdice": 4.99
+      },
+      {
+       "word": "off",
+       "logdice": 4.17
+      },
+      {
+       "word": "over",
+       "logdice": 2.82
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 208,
+   "mean_logdice": 5.192,
+   "prominence_score": 40.015,
+   "top_evidence": [
+    {
+     "word": "aimlessly",
+     "logdice": 10.61,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "oaken",
+     "logdice": 8.82,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "wonder",
+     "logdice": 8.75,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "wander",
+     "logdice": 8.61,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "roam",
+     "logdice": 8.35,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "unsupervised",
+     "logdice": 8.28,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "mind",
+     "logdice": 8.25,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "off-topic",
+     "logdice": 8.11,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "stray",
+     "logdice": 8.04,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "lonely",
+     "logdice": 8.02,
+     "slot": "adjectives after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 166340,
+     "slot_logdice": 19.94,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "aimlessly",
+       "logdice": 10.61
+      },
+      {
+       "word": "afield",
+       "logdice": 6.85
+      },
+      {
+       "word": "freely",
+       "logdice": 6.56
+      },
+      {
+       "word": "hither",
+       "logdice": 5.94
+      },
+      {
+       "word": "restlessly",
+       "logdice": 5.94
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 9456,
+     "slot_logdice": 1.13,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "oaken",
+       "logdice": 8.82
+      },
+      {
+       "word": "off-topic",
+       "logdice": 8.11
+      },
+      {
+       "word": "lonely",
+       "logdice": 8.02
+      },
+      {
+       "word": "aimless",
+       "logdice": 7.67
+      },
+      {
+       "word": "unsupervised",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.94
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.01
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 152083,
+     "slot_logdice": 18.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "mind",
+       "logdice": 8.25
+      },
+      {
+       "word": "Marcel",
+       "logdice": 7.32
+      },
+      {
+       "word": "gaze",
+       "logdice": 6.98
+      },
+      {
+       "word": "eye",
+       "logdice": 6.51
+      },
+      {
+       "word": "thought",
+       "logdice": 6.46
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 18423,
+     "slot_logdice": 2.21,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "wonder",
+       "logdice": 8.75
+      },
+      {
+       "word": "wander",
+       "logdice": 8.61
+      },
+      {
+       "word": "roam",
+       "logdice": 8.35
+      },
+      {
+       "word": "stray",
+       "logdice": 8.04
+      },
+      {
+       "word": "meander",
+       "logdice": 7.76
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 691,
+     "slot_logdice": 0.08,
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "unsupervised",
+       "logdice": 8.28
+      },
+      {
+       "word": "unhindered",
+       "logdice": 7.01
+      },
+      {
+       "word": "naked",
+       "logdice": 6.27
+      },
+      {
+       "word": "unattended",
+       "logdice": 4.99
+      },
+      {
+       "word": "east",
+       "logdice": 3.87
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 171,
+   "mean_logdice": 3.544,
+   "prominence_score": 26.318,
+   "top_evidence": [
+    {
+     "word": "street",
+     "logdice": 9.0,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "around",
+     "logdice": 8.72,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "mind",
+     "logdice": 8.25,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "minstrel",
+     "logdice": 7.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "aisle",
+     "logdice": 7.69,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hall",
+     "logdice": 7.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "albatross",
+     "logdice": 7.57,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Jew",
+     "logdice": 7.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Marcel",
+     "logdice": 7.32,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "desert",
+     "logdice": 7.13,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 176708,
+     "slot_logdice": 21.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "street",
+       "logdice": 9.0
+      },
+      {
+       "word": "minstrel",
+       "logdice": 7.87
+      },
+      {
+       "word": "aisle",
+       "logdice": 7.69
+      },
+      {
+       "word": "hall",
+       "logdice": 7.67
+      },
+      {
+       "word": "albatross",
+       "logdice": 7.57
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 1010,
+     "slot_logdice": 0.12,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "they",
+       "logdice": 2.36
+      },
+      {
+       "word": "he",
+       "logdice": 1.62
+      },
+      {
+       "word": "we",
+       "logdice": 0.82
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 153277,
+     "slot_logdice": 18.38,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "myself",
+       "logdice": 5.26
+      },
+      {
+       "word": "yourself",
+       "logdice": 4.97
+      },
+      {
+       "word": "ourselves",
+       "logdice": 4.5
+      },
+      {
+       "word": "herself",
+       "logdice": 4.29
+      },
+      {
+       "word": "him",
+       "logdice": 3.84
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 152083,
+     "slot_logdice": 18.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "mind",
+       "logdice": 8.25
+      },
+      {
+       "word": "Marcel",
+       "logdice": 7.32
+      },
+      {
+       "word": "gaze",
+       "logdice": 6.98
+      },
+      {
+       "word": "eye",
+       "logdice": 6.51
+      },
+      {
+       "word": "thought",
+       "logdice": 6.46
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 203936,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 4.8
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.06
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.59
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 2.82
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 2.08
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 48008,
+     "slot_logdice": 5.76,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 8.72
+      },
+      {
+       "word": "along",
+       "logdice": 5.01
+      },
+      {
+       "word": "down",
+       "logdice": 4.99
+      },
+      {
+       "word": "off",
+       "logdice": 4.17
+      },
+      {
+       "word": "over",
+       "logdice": 2.82
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

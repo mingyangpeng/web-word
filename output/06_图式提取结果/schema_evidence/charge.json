@@ -1,0 +1,856 @@
+{
+ "verb": "charge",
+ "freq": 4187712,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 89,
+   "mean_logdice": 2.603,
+   "prominence_score": 16.901,
+   "top_evidence": [
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 10.05,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "account",
+     "logdice": 9.97,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "wazoo",
+     "logdice": 9.49,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "USB",
+     "logdice": 8.86,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "alternator",
+     "logdice": 8.84,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "fan",
+     "logdice": 8.67,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "port",
+     "logdice": 8.35,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "charger",
+     "logdice": 8.24,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "ass",
+     "logdice": 8.03,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "gate",
+     "logdice": 7.5,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 43138,
+     "slot_logdice": 1.03,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 4.26
+      },
+      {
+       "word": "along",
+       "logdice": 4.23
+      },
+      {
+       "word": "in",
+       "logdice": 4.02
+      },
+      {
+       "word": "through",
+       "logdice": 4.0
+      },
+      {
+       "word": "off",
+       "logdice": 3.67
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 18,
+     "slot_logdice": 0.0,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "fan",
+       "logdice": 8.67
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 751,
+     "slot_logdice": 0.02,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "account",
+       "logdice": 9.97
+      },
+      {
+       "word": "USB",
+       "logdice": 8.86
+      },
+      {
+       "word": "alternator",
+       "logdice": 8.84
+      },
+      {
+       "word": "port",
+       "logdice": 8.35
+      },
+      {
+       "word": "charger",
+       "logdice": 8.24
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 307,
+     "slot_logdice": 0.01,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "wazoo",
+       "logdice": 9.49
+      },
+      {
+       "word": "ass",
+       "logdice": 8.03
+      },
+      {
+       "word": "gate",
+       "logdice": 7.5
+      },
+      {
+       "word": "rate",
+       "logdice": 5.89
+      },
+      {
+       "word": "front",
+       "logdice": 5.56
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 902400,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 10.05
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 3.26
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.7
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 1.36
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.24
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 193,
+   "mean_logdice": 4.954,
+   "prominence_score": 37.646,
+   "top_evidence": [
+    {
+     "word": "battery",
+     "logdice": 11.29,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "fee",
+     "logdice": 10.6,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "kick",
+     "logdice": 10.42,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "clearance",
+     "logdice": 10.26,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 10.05,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "capacitor",
+     "logdice": 9.56,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "attack",
+     "logdice": 9.13,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "pitch",
+     "logdice": 9.09,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "station",
+     "logdice": 9.02,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "wicket",
+     "logdice": 8.75,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1955995,
+     "slot_logdice": 46.71,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "fee",
+       "logdice": 10.6
+      },
+      {
+       "word": "battery",
+       "logdice": 9.52
+      },
+      {
+       "word": "station",
+       "logdice": 9.02
+      },
+      {
+       "word": "particle",
+       "logdice": 8.49
+      },
+      {
+       "word": "rate",
+       "logdice": 7.87
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 10562,
+     "slot_logdice": 0.25,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "battery",
+       "logdice": 11.29
+      },
+      {
+       "word": "capacitor",
+       "logdice": 9.56
+      },
+      {
+       "word": "attack",
+       "logdice": 9.13
+      },
+      {
+       "word": "device",
+       "logdice": 8.57
+      },
+      {
+       "word": "hill",
+       "logdice": 8.24
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 3431,
+     "slot_logdice": 0.08,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "kick",
+       "logdice": 10.42
+      },
+      {
+       "word": "clearance",
+       "logdice": 10.26
+      },
+      {
+       "word": "pitch",
+       "logdice": 9.09
+      },
+      {
+       "word": "wicket",
+       "logdice": 8.75
+      },
+      {
+       "word": "flank",
+       "logdice": 8.43
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 902400,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 10.05
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 3.26
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.7
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 1.36
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.24
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 29246,
+     "slot_logdice": 0.7,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 4.54
+      },
+      {
+       "word": "down",
+       "logdice": 4.19
+      },
+      {
+       "word": "around",
+       "logdice": 3.62
+      },
+      {
+       "word": "along",
+       "logdice": 2.9
+      },
+      {
+       "word": "off",
+       "logdice": 2.39
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 223,
+   "mean_logdice": 5.853,
+   "prominence_score": 45.696,
+   "top_evidence": [
+    {
+     "word": "arrest",
+     "logdice": 11.8,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "extra",
+     "logdice": 10.68,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "discharge",
+     "logdice": 10.49,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "convict",
+     "logdice": 9.97,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "wireless",
+     "logdice": 9.89,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Ev",
+     "logdice": 9.53,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "emotionally",
+     "logdice": 9.28,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "negatively",
+     "logdice": 9.01,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "positively",
+     "logdice": 8.79,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "USB",
+     "logdice": 8.69,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 716257,
+     "slot_logdice": 17.1,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "emotionally",
+       "logdice": 9.28
+      },
+      {
+       "word": "negatively",
+       "logdice": 9.01
+      },
+      {
+       "word": "positively",
+       "logdice": 8.79
+      },
+      {
+       "word": "politically",
+       "logdice": 8.63
+      },
+      {
+       "word": "electrically",
+       "logdice": 8.24
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 54082,
+     "slot_logdice": 1.29,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "extra",
+       "logdice": 10.68
+      },
+      {
+       "word": "current",
+       "logdice": 8.53
+      },
+      {
+       "word": "GST",
+       "logdice": 7.91
+      },
+      {
+       "word": "hourly",
+       "logdice": 7.04
+      },
+      {
+       "word": "overnight",
+       "logdice": 6.64
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 6.88
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.09
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 636658,
+     "slot_logdice": 15.2,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "wireless",
+       "logdice": 9.89
+      },
+      {
+       "word": "Ev",
+       "logdice": 9.53
+      },
+      {
+       "word": "USB",
+       "logdice": 8.69
+      },
+      {
+       "word": "indictment",
+       "logdice": 8.61
+      },
+      {
+       "word": "battery",
+       "logdice": 8.58
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 129406,
+     "slot_logdice": 3.09,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "arrest",
+       "logdice": 11.8
+      },
+      {
+       "word": "discharge",
+       "logdice": 10.49
+      },
+      {
+       "word": "convict",
+       "logdice": 9.97
+      },
+      {
+       "word": "prosecute",
+       "logdice": 7.86
+      },
+      {
+       "word": "sentence",
+       "logdice": 7.7
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 22975,
+     "slot_logdice": 0.55,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "extra",
+       "logdice": 10.2
+      },
+      {
+       "word": "overnight",
+       "logdice": 8.37
+      },
+      {
+       "word": "monthly",
+       "logdice": 7.5
+      },
+      {
+       "word": "less",
+       "logdice": 7.31
+      },
+      {
+       "word": "more",
+       "logdice": 7.29
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 180,
+   "mean_logdice": 4.098,
+   "prominence_score": 30.738,
+   "top_evidence": [
+    {
+     "word": "fee",
+     "logdice": 10.6,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 10.05,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "wireless",
+     "logdice": 9.89,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Ev",
+     "logdice": 9.53,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "battery",
+     "logdice": 9.52,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "station",
+     "logdice": 9.02,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "USB",
+     "logdice": 8.69,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "indictment",
+     "logdice": 8.61,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "particle",
+     "logdice": 8.49,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "vehicle",
+     "logdice": 8.19,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1955995,
+     "slot_logdice": 46.71,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "fee",
+       "logdice": 10.6
+      },
+      {
+       "word": "battery",
+       "logdice": 9.52
+      },
+      {
+       "word": "station",
+       "logdice": 9.02
+      },
+      {
+       "word": "particle",
+       "logdice": 8.49
+      },
+      {
+       "word": "rate",
+       "logdice": 7.87
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 238456,
+     "slot_logdice": 5.69,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "thee",
+       "logdice": 5.89
+      },
+      {
+       "word": "him",
+       "logdice": 5.31
+      },
+      {
+       "word": "me",
+       "logdice": 5.03
+      },
+      {
+       "word": "you",
+       "logdice": 4.92
+      },
+      {
+       "word": "them",
+       "logdice": 4.75
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 379183,
+     "slot_logdice": 9.05,
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "they",
+       "logdice": 4.44
+      },
+      {
+       "word": "he",
+       "logdice": 3.97
+      },
+      {
+       "word": "himself",
+       "logdice": 3.81
+      },
+      {
+       "word": "them",
+       "logdice": 3.78
+      },
+      {
+       "word": "him",
+       "logdice": 3.6
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 636658,
+     "slot_logdice": 15.2,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "wireless",
+       "logdice": 9.89
+      },
+      {
+       "word": "Ev",
+       "logdice": 9.53
+      },
+      {
+       "word": "USB",
+       "logdice": 8.69
+      },
+      {
+       "word": "indictment",
+       "logdice": 8.61
+      },
+      {
+       "word": "battery",
+       "logdice": 8.58
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 902400,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 10.05
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 3.26
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.7
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 1.36
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.24
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 29246,
+     "slot_logdice": 0.7,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 4.54
+      },
+      {
+       "word": "down",
+       "logdice": 4.19
+      },
+      {
+       "word": "around",
+       "logdice": 3.62
+      },
+      {
+       "word": "along",
+       "logdice": 2.9
+      },
+      {
+       "word": "off",
+       "logdice": 2.39
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

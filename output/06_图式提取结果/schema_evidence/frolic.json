@@ -1,0 +1,604 @@
+{
+ "verb": "frolic",
+ "freq": 13486,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 17,
+   "mean_logdice": 1.819,
+   "prominence_score": 7.587,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 16.5,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "leash",
+     "logdice": 6.58,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 2.74,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 1.88,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "around",
+     "logdice": 1.09,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 0.79,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.3,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.3,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" along ...",
+     "logdice": 0.17,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" among ...",
+     "logdice": 0.13,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 406,
+     "slot_logdice": 3.01,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.09
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 6,
+     "slot_logdice": 0.04,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "leash",
+       "logdice": 6.58
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 3138,
+     "slot_logdice": "",
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 16.5
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.74
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.79
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.3
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 3,
+   "slots_defined": 7,
+   "coverage": 0.429,
+   "n_types": 37,
+   "mean_logdice": 1.953,
+   "prominence_score": 10.249,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 16.5,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Qigong",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "off-leash",
+     "logdice": 5.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Architecture",
+     "logdice": 3.84,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Parade",
+     "logdice": 3.73,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "dolphin",
+     "logdice": 3.49,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Gong",
+     "logdice": 3.25,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "unicorn",
+     "logdice": 3.12,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "foal",
+     "logdice": 3.08,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 2.74,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 648,
+     "slot_logdice": 4.8,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "Qigong",
+       "logdice": 6.35
+      },
+      {
+       "word": "off-leash",
+       "logdice": 5.94
+      },
+      {
+       "word": "Architecture",
+       "logdice": 3.84
+      },
+      {
+       "word": "Parade",
+       "logdice": 3.73
+      },
+      {
+       "word": "dolphin",
+       "logdice": 3.49
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 3138,
+     "slot_logdice": "",
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 16.5
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.74
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.79
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.3
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 173,
+     "slot_logdice": 1.28,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 0.71
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 104,
+   "mean_logdice": 3.555,
+   "prominence_score": 23.871,
+   "top_evidence": [
+    {
+     "word": "gambol",
+     "logdice": 9.15,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cavort",
+     "logdice": 8.94,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "romp",
+     "logdice": 8.22,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "fun",
+     "logdice": 7.68,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "detour",
+     "logdice": 7.59,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "in passive",
+     "logdice": 7.09,
+     "slot": "usage patterns"
+    },
+    {
+     "word": "caper",
+     "logdice": 6.95,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frisk",
+     "logdice": 6.58,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "prance",
+     "logdice": 6.52,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "scamper",
+     "logdice": 6.52,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 1283,
+     "slot_logdice": 9.51,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "merrily",
+       "logdice": 4.21
+      },
+      {
+       "word": "gaily",
+       "logdice": 4.15
+      },
+      {
+       "word": "playfully",
+       "logdice": 3.92
+      },
+      {
+       "word": "joyfully",
+       "logdice": 3.49
+      },
+      {
+       "word": "offshore",
+       "logdice": 3.1
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 129,
+     "slot_logdice": 0.96,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "carefree",
+       "logdice": 5.4
+      },
+      {
+       "word": "naked",
+       "logdice": 3.87
+      },
+      {
+       "word": "nude",
+       "logdice": 3.84
+      },
+      {
+       "word": "outside",
+       "logdice": 0.31
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 7.09
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 951,
+     "slot_logdice": 7.05,
+     "n_collocates": 37,
+     "top5": [
+      {
+       "word": "Jolly",
+       "logdice": 6.1
+      },
+      {
+       "word": "HMS",
+       "logdice": 5.55
+      },
+      {
+       "word": "otter",
+       "logdice": 4.7
+      },
+      {
+       "word": "dolphin",
+       "logdice": 4.66
+      },
+      {
+       "word": "unicorn",
+       "logdice": 4.33
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 1616,
+     "slot_logdice": 11.98,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "gambol",
+       "logdice": 9.15
+      },
+      {
+       "word": "cavort",
+       "logdice": 8.94
+      },
+      {
+       "word": "romp",
+       "logdice": 8.22
+      },
+      {
+       "word": "fun",
+       "logdice": 7.68
+      },
+      {
+       "word": "detour",
+       "logdice": 7.59
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 64,
+   "mean_logdice": 2.228,
+   "prominence_score": 13.417,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 16.5,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Qigong",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Jolly",
+     "logdice": 6.1,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "off-leash",
+     "logdice": 5.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "HMS",
+     "logdice": 5.55,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "otter",
+     "logdice": 4.7,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "dolphin",
+     "logdice": 4.66,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "unicorn",
+     "logdice": 4.33,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Shore",
+     "logdice": 4.25,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "mermaid",
+     "logdice": 3.92,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 648,
+     "slot_logdice": 4.8,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "Qigong",
+       "logdice": 6.35
+      },
+      {
+       "word": "off-leash",
+       "logdice": 5.94
+      },
+      {
+       "word": "Architecture",
+       "logdice": 3.84
+      },
+      {
+       "word": "Parade",
+       "logdice": 3.73
+      },
+      {
+       "word": "dolphin",
+       "logdice": 3.49
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 951,
+     "slot_logdice": 7.05,
+     "n_collocates": 37,
+     "top5": [
+      {
+       "word": "Jolly",
+       "logdice": 6.1
+      },
+      {
+       "word": "HMS",
+       "logdice": 5.55
+      },
+      {
+       "word": "otter",
+       "logdice": 4.7
+      },
+      {
+       "word": "dolphin",
+       "logdice": 4.66
+      },
+      {
+       "word": "unicorn",
+       "logdice": 4.33
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 3138,
+     "slot_logdice": "",
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 16.5
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.74
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.79
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.3
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 173,
+     "slot_logdice": 1.28,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 0.71
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

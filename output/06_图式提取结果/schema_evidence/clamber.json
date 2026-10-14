@@ -1,0 +1,752 @@
+{
+ "verb": "clamber",
+ "freq": 37917,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "终点抵达图式",
+ "ranking": [
+  "终点抵达图式",
+  "方式伴随图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 40,
+   "mean_logdice": 1.753,
+   "prominence_score": 9.392,
+   "top_evidence": [
+    {
+     "word": "\"%w\" over ...",
+     "logdice": 6.68,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "bed",
+     "logdice": 6.38,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "boat",
+     "logdice": 5.2,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bus",
+     "logdice": 5.06,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "couch",
+     "logdice": 5.0,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bike",
+     "logdice": 4.38,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 4.08,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "train",
+     "logdice": 3.94,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 3.73,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "plane",
+     "logdice": 3.52,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 7772,
+     "slot_logdice": 20.5,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 1.86
+      },
+      {
+       "word": "around",
+       "logdice": 1.76
+      },
+      {
+       "word": "in",
+       "logdice": 1.74
+      },
+      {
+       "word": "across",
+       "logdice": 1.47
+      },
+      {
+       "word": "down",
+       "logdice": 1.43
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 121,
+     "slot_logdice": 0.32,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "bed",
+       "logdice": 6.38
+      },
+      {
+       "word": "boat",
+       "logdice": 5.2
+      },
+      {
+       "word": "bus",
+       "logdice": 5.06
+      },
+      {
+       "word": "couch",
+       "logdice": 5.0
+      },
+      {
+       "word": "bike",
+       "logdice": 4.38
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 39,
+     "slot_logdice": 0.1,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "window",
+       "logdice": 2.72
+      },
+      {
+       "word": "door",
+       "logdice": 0.99
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 8351,
+     "slot_logdice": "",
+     "n_collocates": 22,
+     "top5": [
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 6.68
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 4.08
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.73
+      },
+      {
+       "word": "\"%w\" onto ...",
+       "logdice": 2.43
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.94
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 92,
+   "mean_logdice": 4.7,
+   "prominence_score": 30.735,
+   "top_evidence": [
+    {
+     "word": "chilong",
+     "logdice": 9.54,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ladder",
+     "logdice": 8.79,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "rock",
+     "logdice": 8.75,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "cliff",
+     "logdice": 8.43,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "slope",
+     "logdice": 8.41,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "escape",
+     "logdice": 8.41,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hillside",
+     "logdice": 8.18,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "bank",
+     "logdice": 8.13,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "embankment",
+     "logdice": 8.08,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "boulder",
+     "logdice": 7.92,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 864,
+     "slot_logdice": 2.28,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "chilong",
+       "logdice": 9.54
+      },
+      {
+       "word": "Moor",
+       "logdice": 5.54
+      },
+      {
+       "word": "vine",
+       "logdice": 4.19
+      },
+      {
+       "word": "onstage",
+       "logdice": 3.05
+      },
+      {
+       "word": "shrub",
+       "logdice": 2.88
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 2969,
+     "slot_logdice": 7.83,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "cliff",
+       "logdice": 8.43
+      },
+      {
+       "word": "slope",
+       "logdice": 8.41
+      },
+      {
+       "word": "rock",
+       "logdice": 8.36
+      },
+      {
+       "word": "ladder",
+       "logdice": 8.28
+      },
+      {
+       "word": "hillside",
+       "logdice": 8.18
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 650,
+     "slot_logdice": 1.71,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "ladder",
+       "logdice": 8.79
+      },
+      {
+       "word": "rock",
+       "logdice": 8.75
+      },
+      {
+       "word": "escape",
+       "logdice": 8.41
+      },
+      {
+       "word": "bank",
+       "logdice": 7.83
+      },
+      {
+       "word": "rope",
+       "logdice": 7.52
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 8351,
+     "slot_logdice": "",
+     "n_collocates": 22,
+     "top5": [
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 6.68
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 4.08
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.73
+      },
+      {
+       "word": "\"%w\" onto ...",
+       "logdice": 2.43
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.94
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 6185,
+     "slot_logdice": 16.31,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 3.23
+      },
+      {
+       "word": "up",
+       "logdice": 2.25
+      },
+      {
+       "word": "down",
+       "logdice": 1.95
+      },
+      {
+       "word": "around",
+       "logdice": 1.64
+      },
+      {
+       "word": "along",
+       "logdice": 0.1
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 123,
+   "mean_logdice": 2.773,
+   "prominence_score": 19.286,
+   "top_evidence": [
+    {
+     "word": "chilong",
+     "logdice": 8.24,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "sprawl",
+     "logdice": 8.23,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "twine",
+     "logdice": 7.61,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "aboard",
+     "logdice": 7.45,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "slither",
+     "logdice": 6.57,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "scramble",
+     "logdice": 6.31,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cling",
+     "logdice": 5.96,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "unsteadily",
+     "logdice": 5.83,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "climb",
+     "logdice": 5.81,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "nimbly",
+     "logdice": 5.72,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 6033,
+     "slot_logdice": 15.91,
+     "n_collocates": 39,
+     "top5": [
+      {
+       "word": "aboard",
+       "logdice": 7.45
+      },
+      {
+       "word": "unsteadily",
+       "logdice": 5.83
+      },
+      {
+       "word": "nimbly",
+       "logdice": 5.72
+      },
+      {
+       "word": "clumsily",
+       "logdice": 5.62
+      },
+      {
+       "word": "awkwardly",
+       "logdice": 5.53
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 175,
+     "slot_logdice": 0.46,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "onboard",
+       "logdice": 4.46
+      },
+      {
+       "word": "naked",
+       "logdice": 0.41
+      },
+      {
+       "word": "past",
+       "logdice": 0.17
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.33
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4242,
+     "slot_logdice": 11.19,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "chilong",
+       "logdice": 8.24
+      },
+      {
+       "word": "honeysuckle",
+       "logdice": 4.68
+      },
+      {
+       "word": "vine",
+       "logdice": 4.46
+      },
+      {
+       "word": "tendril",
+       "logdice": 4.01
+      },
+      {
+       "word": "ivy",
+       "logdice": 3.92
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 671,
+     "slot_logdice": 1.77,
+     "n_collocates": 29,
+     "top5": [
+      {
+       "word": "sprawl",
+       "logdice": 8.23
+      },
+      {
+       "word": "twine",
+       "logdice": 7.61
+      },
+      {
+       "word": "slither",
+       "logdice": 6.57
+      },
+      {
+       "word": "scramble",
+       "logdice": 6.31
+      },
+      {
+       "word": "cling",
+       "logdice": 5.96
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 91,
+   "mean_logdice": 1.897,
+   "prominence_score": 12.373,
+   "top_evidence": [
+    {
+     "word": "chilong",
+     "logdice": 9.54,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" over ...",
+     "logdice": 6.68,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Moor",
+     "logdice": 5.54,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "honeysuckle",
+     "logdice": 4.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "vine",
+     "logdice": 4.46,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 4.08,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "tendril",
+     "logdice": 4.01,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "ivy",
+     "logdice": 3.92,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 3.73,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "squirrel",
+     "logdice": 3.52,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 864,
+     "slot_logdice": 2.28,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "chilong",
+       "logdice": 9.54
+      },
+      {
+       "word": "Moor",
+       "logdice": 5.54
+      },
+      {
+       "word": "vine",
+       "logdice": 4.19
+      },
+      {
+       "word": "onstage",
+       "logdice": 3.05
+      },
+      {
+       "word": "shrub",
+       "logdice": 2.88
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 8406,
+     "slot_logdice": 22.17,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "ourselves",
+       "logdice": 1.12
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4242,
+     "slot_logdice": 11.19,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "chilong",
+       "logdice": 8.24
+      },
+      {
+       "word": "honeysuckle",
+       "logdice": 4.68
+      },
+      {
+       "word": "vine",
+       "logdice": 4.46
+      },
+      {
+       "word": "tendril",
+       "logdice": 4.01
+      },
+      {
+       "word": "ivy",
+       "logdice": 3.92
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 8351,
+     "slot_logdice": "",
+     "n_collocates": 22,
+     "top5": [
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 6.68
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 4.08
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.73
+      },
+      {
+       "word": "\"%w\" onto ...",
+       "logdice": 2.43
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.94
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 6185,
+     "slot_logdice": 16.31,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 3.23
+      },
+      {
+       "word": "up",
+       "logdice": 2.25
+      },
+      {
+       "word": "down",
+       "logdice": 1.95
+      },
+      {
+       "word": "around",
+       "logdice": 1.64
+      },
+      {
+       "word": "along",
+       "logdice": 0.1
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

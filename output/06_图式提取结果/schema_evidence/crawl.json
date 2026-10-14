@@ -1,0 +1,832 @@
+{
+ "verb": "crawl",
+ "freq": 481253,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 90,
+   "mean_logdice": 2.853,
+   "prominence_score": 18.569,
+   "top_evidence": [
+    {
+     "word": "altar",
+     "logdice": 10.32,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "woodwork",
+     "logdice": 9.72,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "bed",
+     "logdice": 8.53,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "lap",
+     "logdice": 8.45,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "blanket",
+     "logdice": 7.83,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "plate",
+     "logdice": 7.58,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "ear",
+     "logdice": 7.22,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "sofa",
+     "logdice": 7.03,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "mouth",
+     "logdice": 6.72,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "window",
+     "logdice": 6.63,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 70477,
+     "slot_logdice": 14.64,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 6.35
+      },
+      {
+       "word": "through",
+       "logdice": 5.48
+      },
+      {
+       "word": "along",
+       "logdice": 5.44
+      },
+      {
+       "word": "over",
+       "logdice": 5.01
+      },
+      {
+       "word": "away",
+       "logdice": 4.95
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 667,
+     "slot_logdice": 0.14,
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "altar",
+       "logdice": 10.32
+      },
+      {
+       "word": "bed",
+       "logdice": 8.53
+      },
+      {
+       "word": "lap",
+       "logdice": 8.45
+      },
+      {
+       "word": "blanket",
+       "logdice": 7.83
+      },
+      {
+       "word": "plate",
+       "logdice": 7.58
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 827,
+     "slot_logdice": 0.17,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "woodwork",
+       "logdice": 9.72
+      },
+      {
+       "word": "ear",
+       "logdice": 7.22
+      },
+      {
+       "word": "mouth",
+       "logdice": 6.72
+      },
+      {
+       "word": "window",
+       "logdice": 6.63
+      },
+      {
+       "word": "hole",
+       "logdice": 6.62
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 123046,
+     "slot_logdice": "",
+     "n_collocates": 47,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.15
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 3.51
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.76
+      },
+      {
+       "word": "\"%w\" under ...",
+       "logdice": 2.29
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.09
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 178,
+   "mean_logdice": 4.407,
+   "prominence_score": 32.983,
+   "top_evidence": [
+    {
+     "word": "leg",
+     "logdice": 10.1,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "spine",
+     "logdice": 9.71,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "wall",
+     "logdice": 9.5,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "ass",
+     "logdice": 9.48,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "back",
+     "logdice": 8.92,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "bed",
+     "logdice": 8.67,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "neck",
+     "logdice": 8.67,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "throat",
+     "logdice": 8.64,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "butt",
+     "logdice": 8.44,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "body",
+     "logdice": 8.42,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 58530,
+     "slot_logdice": 12.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "insect",
+       "logdice": 7.15
+      },
+      {
+       "word": "Eye",
+       "logdice": 6.85
+      },
+      {
+       "word": "web",
+       "logdice": 6.63
+      },
+      {
+       "word": "indexing",
+       "logdice": 6.48
+      },
+      {
+       "word": "sensation",
+       "logdice": 6.27
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 9732,
+     "slot_logdice": 2.02,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "leg",
+       "logdice": 10.1
+      },
+      {
+       "word": "spine",
+       "logdice": 9.71
+      },
+      {
+       "word": "wall",
+       "logdice": 9.5
+      },
+      {
+       "word": "ass",
+       "logdice": 9.48
+      },
+      {
+       "word": "back",
+       "logdice": 8.92
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 2175,
+     "slot_logdice": 0.45,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "spine",
+       "logdice": 8.3
+      },
+      {
+       "word": "trunk",
+       "logdice": 8.12
+      },
+      {
+       "word": "tunnel",
+       "logdice": 7.7
+      },
+      {
+       "word": "bed",
+       "logdice": 7.67
+      },
+      {
+       "word": "back",
+       "logdice": 7.44
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 123046,
+     "slot_logdice": "",
+     "n_collocates": 47,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.15
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 3.51
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.76
+      },
+      {
+       "word": "\"%w\" under ...",
+       "logdice": 2.29
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.09
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 22748,
+     "slot_logdice": 4.73,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.24
+      },
+      {
+       "word": "along",
+       "logdice": 4.63
+      },
+      {
+       "word": "upon",
+       "logdice": 4.28
+      },
+      {
+       "word": "over",
+       "logdice": 4.24
+      },
+      {
+       "word": "up",
+       "logdice": 3.86
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 181,
+   "mean_logdice": 5.083,
+   "prominence_score": 38.161,
+   "top_evidence": [
+    {
+     "word": "creep",
+     "logdice": 10.15,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "index",
+     "logdice": 10.14,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "dungeon",
+     "logdice": 9.73,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "climb",
+     "logdice": 8.62,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "crouch",
+     "logdice": 8.6,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "spider",
+     "logdice": 8.41,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "fly",
+     "logdice": 8.4,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ant",
+     "logdice": 8.33,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "slither",
+     "logdice": 8.21,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "walk",
+     "logdice": 8.13,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 86720,
+     "slot_logdice": 18.02,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "underneath",
+       "logdice": 6.83
+      },
+      {
+       "word": "inside",
+       "logdice": 5.86
+      },
+      {
+       "word": "backwards",
+       "logdice": 5.85
+      },
+      {
+       "word": "slowly",
+       "logdice": 5.72
+      },
+      {
+       "word": "ashore",
+       "logdice": 5.15
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 3502,
+     "slot_logdice": 0.73,
+     "n_collocates": 32,
+     "top5": [
+      {
+       "word": "spider-like",
+       "logdice": 6.64
+      },
+      {
+       "word": "roguelike",
+       "logdice": 6.44
+      },
+      {
+       "word": "naked",
+       "logdice": 5.5
+      },
+      {
+       "word": "unaided",
+       "logdice": 5.42
+      },
+      {
+       "word": "backwards",
+       "logdice": 4.82
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.65
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 99340,
+     "slot_logdice": 20.64,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "dungeon",
+       "logdice": 9.73
+      },
+      {
+       "word": "spider",
+       "logdice": 8.41
+      },
+      {
+       "word": "ant",
+       "logdice": 8.33
+      },
+      {
+       "word": "rock",
+       "logdice": 7.89
+      },
+      {
+       "word": "worm",
+       "logdice": 7.59
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 32230,
+     "slot_logdice": 6.7,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "creep",
+       "logdice": 10.15
+      },
+      {
+       "word": "index",
+       "logdice": 10.14
+      },
+      {
+       "word": "climb",
+       "logdice": 8.62
+      },
+      {
+       "word": "crouch",
+       "logdice": 8.6
+      },
+      {
+       "word": "fly",
+       "logdice": 8.4
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 335,
+     "slot_logdice": 0.07,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "unaware",
+       "logdice": 5.61
+      },
+      {
+       "word": "daily",
+       "logdice": 2.22
+      },
+      {
+       "word": "deep",
+       "logdice": 1.24
+      },
+      {
+       "word": "first",
+       "logdice": 0.99
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 158,
+   "mean_logdice": 3.473,
+   "prominence_score": 25.399,
+   "top_evidence": [
+    {
+     "word": "dungeon",
+     "logdice": 9.73,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "spider",
+     "logdice": 8.41,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "ant",
+     "logdice": 8.33,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "rock",
+     "logdice": 7.89,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "worm",
+     "logdice": 7.59,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "bug",
+     "logdice": 7.36,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "insect",
+     "logdice": 7.31,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "maggot",
+     "logdice": 7.12,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "pub",
+     "logdice": 7.09,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "snake",
+     "logdice": 7.02,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 58530,
+     "slot_logdice": 12.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "insect",
+       "logdice": 7.15
+      },
+      {
+       "word": "Eye",
+       "logdice": 6.85
+      },
+      {
+       "word": "web",
+       "logdice": 6.63
+      },
+      {
+       "word": "indexing",
+       "logdice": 6.48
+      },
+      {
+       "word": "sensation",
+       "logdice": 6.27
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 2268,
+     "slot_logdice": 0.47,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "she",
+       "logdice": 3.09
+      },
+      {
+       "word": "they",
+       "logdice": 2.25
+      },
+      {
+       "word": "we",
+       "logdice": 1.7
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 68890,
+     "slot_logdice": 14.31,
+     "n_collocates": 19,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 3.07
+      },
+      {
+       "word": "them",
+       "logdice": 2.5
+      },
+      {
+       "word": "myself",
+       "logdice": 2.44
+      },
+      {
+       "word": "ourselves",
+       "logdice": 2.2
+      },
+      {
+       "word": "yourself",
+       "logdice": 2.01
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 99340,
+     "slot_logdice": 20.64,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "dungeon",
+       "logdice": 9.73
+      },
+      {
+       "word": "spider",
+       "logdice": 8.41
+      },
+      {
+       "word": "ant",
+       "logdice": 8.33
+      },
+      {
+       "word": "rock",
+       "logdice": 7.89
+      },
+      {
+       "word": "worm",
+       "logdice": 7.59
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 123046,
+     "slot_logdice": "",
+     "n_collocates": 47,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.15
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 3.51
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.76
+      },
+      {
+       "word": "\"%w\" under ...",
+       "logdice": 2.29
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.09
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 22748,
+     "slot_logdice": 4.73,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.24
+      },
+      {
+       "word": "along",
+       "logdice": 4.63
+      },
+      {
+       "word": "upon",
+       "logdice": 4.28
+      },
+      {
+       "word": "over",
+       "logdice": 4.24
+      },
+      {
+       "word": "up",
+       "logdice": 3.86
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

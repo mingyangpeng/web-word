@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# 一键启动 web-word：MySQL(本地 mysql@8.0, 数据目录 data/mysql) → 等就绪 → 灌库(幂等) → Streamlit
+# 用法：./start          启动（幂等，重复执行安全）
+#       ./start stop     停止 Streamlit 与 MySQL
+#       ./start status   查看两个服务的状态
+set -euo pipefail
+cd "$(dirname "$0")"
+
+MYSQL_BIN=/opt/homebrew/opt/mysql@8.0/bin
+DATADIR="$PWD/data/mysql"
+LOGDIR="$PWD/data/logs";  mkdir -p "$LOGDIR"
+APP_PORT=8501
+DB_PORT=3306
+
+db_up()   { "$MYSQL_BIN/mysqladmin" --protocol=tcp -h 127.0.0.1 -P "$DB_PORT" ping >/dev/null 2>&1; }
+app_up()  { lsof -iTCP:"$APP_PORT" -sTCP:LISTEN >/dev/null 2>&1; }
+
+wait_db() {  # 最多等 60s
+  for _ in $(seq 1 60); do
+    db_up && return 0
+    sleep 1
+  done
+  echo "✗ MySQL 60s 未就绪，看日志: $LOGDIR/mysqld.err"; exit 1
+}
+
+stop_all() {
+  [ -f "$DATADIR/mysqld.pid" ] && kill "$(cat "$DATADIR/mysqld.pid")" 2>/dev/null || true
+  pkill -f "streamlit run src/app.py" 2>/dev/null || true
+  echo "已停止（MySQL 退出稍等数秒）"
+}
+
+status_all() {
+  db_up && echo "MySQL : 运行中 (127.0.0.1:$DB_PORT)" || echo "MySQL : 未运行"
+  app_up && echo "App   : 运行中 (http://localhost:$APP_PORT)" || echo "App   : 未运行"
+}
+
+case "${1:-start}" in
+  stop)   stop_all; exit 0 ;;
+  status) status_all; exit 0 ;;
+esac
+
+# ---------- 1. MySQL ----------
+if db_up; then
+  echo "[1/3] MySQL 已在运行"
+else
+  echo "[1/3] 启动 MySQL（数据目录 data/mysql）..."
+  "$MYSQL_BIN/mysqld" \
+    --datadir="$DATADIR" \
+    --port="$DB_PORT" --bind-address=127.0.0.1 \
+    --mysqlx=OFF \
+    --log-error="$LOGDIR/mysqld.err" \
+    --pid-file="$DATADIR/mysqld.pid" \
+    >> "$LOGDIR/mysqld.stdout" 2>&1 &
+  wait_db
+  echo "      MySQL 就绪"
+fi
+
+# ---------- 2. 确保库/用户存在（幂等，root 免密时才执行）----------
+if ! "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u web_word_user -pwebword123 \
+     -e "SELECT 1" web_word_db >/dev/null 2>&1; then
+  echo "[2/3] 首次配置：建库授权（scripts/grant_local_mysql.sql）..."
+  if "$MYSQL_BIN/mysql" -u root < scripts/grant_local_mysql.sql >/dev/null 2>&1 \
+     || "$MYSQL_BIN/mysql" -u root -prootpass123 < scripts/grant_local_mysql.sql >/dev/null 2>&1; then
+    echo "      授权完成"
+  else
+    echo "      ⚠ root 连不上（免密/rootpass123 都失败），请手动执行："
+    echo "        $MYSQL_BIN/mysql -u root -p < scripts/grant_local_mysql.sql"
+    exit 1
+  fi
+else
+  echo "[2/3] 数据库账号可用"
+fi
+
+# ---------- 3. 灌库（幂等：已有数据则跳过）----------
+if MYSQL_HOST=127.0.0.1 python3 scripts/load_word_library.py --if-empty \
+     > "$LOGDIR/load_word_library.log" 2>&1; then
+  echo "[3/3] 词库检查/灌入完成（详见 $LOGDIR/load_word_library.log）"
+else
+  echo "[3/3] ⚠ 灌库脚本报错（继续启动，看 $LOGDIR/load_word_library.log）"
+fi
+
+# ---------- 3.5 语料数据集（output/ 语料包 → corpus_* 表，幂等）----------
+if MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py --if-empty \
+     >> "$LOGDIR/load_corpus.log" 2>&1; then
+  echo "[3.5] 语料数据集检查完成（详见 $LOGDIR/load_corpus.log）"
+else
+  echo "[3.5] ⚠ 语料数据集灌入失败（继续启动，看 $LOGDIR/load_corpus.log）"
+fi
+
+# ---------- 4. Streamlit ----------
+if app_up; then
+  echo "[+] 应用已在运行 → http://localhost:$APP_PORT"
+else
+  echo "[+] 启动 Streamlit ..."
+  MYSQL_HOST=127.0.0.1 nohup python3 -m streamlit run src/app.py \
+    --server.port "$APP_PORT" --server.headless true \
+    > "$LOGDIR/streamlit.log" 2>&1 &
+  for _ in $(seq 1 30); do
+    app_up && break; sleep 1
+  done
+  app_up && echo "[+] 应用就绪 → http://localhost:$APP_PORT" \
+        || { echo "✗ 应用 30s 未就绪，看 $LOGDIR/streamlit.log"; exit 1; }
+fi
+
+open "http://localhost:$APP_PORT" 2>/dev/null || true

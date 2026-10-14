@@ -1,0 +1,872 @@
+{
+ "verb": "sweep",
+ "freq": 795730,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "源点脱离图式",
+ "ranking": [
+  "源点脱离图式",
+  "终点抵达图式",
+  "方式伴随图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 186,
+   "mean_logdice": 5.336,
+   "prominence_score": 40.273,
+   "top_evidence": [
+    {
+     "word": "foot",
+     "logdice": 12.1,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "home",
+     "logdice": 9.37,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "bridge",
+     "logdice": 9.17,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "house",
+     "logdice": 9.06,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "everything",
+     "logdice": 8.97,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "system",
+     "logdice": 8.89,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "foundation",
+     "logdice": 8.79,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "aside",
+     "logdice": 8.6,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "dust",
+     "logdice": 8.6,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "refuge",
+     "logdice": 8.57,
+     "slot": "objects of \"%w away\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 82075,
+     "slot_logdice": 10.31,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "aside",
+       "logdice": 8.6
+      },
+      {
+       "word": "away",
+       "logdice": 7.66
+      },
+      {
+       "word": "along",
+       "logdice": 6.29
+      },
+      {
+       "word": "across",
+       "logdice": 5.4
+      },
+      {
+       "word": "through",
+       "logdice": 5.29
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 12858,
+     "slot_logdice": 1.62,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "home",
+       "logdice": 9.37
+      },
+      {
+       "word": "bridge",
+       "logdice": 9.17
+      },
+      {
+       "word": "house",
+       "logdice": 9.06
+      },
+      {
+       "word": "everything",
+       "logdice": 8.97
+      },
+      {
+       "word": "system",
+       "logdice": 8.89
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 5221,
+     "slot_logdice": 0.66,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "foot",
+       "logdice": 12.1
+      },
+      {
+       "word": "foundation",
+       "logdice": 8.79
+      },
+      {
+       "word": "rock",
+       "logdice": 8.46
+      },
+      {
+       "word": "hat",
+       "logdice": 8.01
+      },
+      {
+       "word": "porch",
+       "logdice": 7.73
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 2239,
+     "slot_logdice": 0.28,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "garage",
+       "logdice": 8.47
+      },
+      {
+       "word": "dust",
+       "logdice": 8.41
+      },
+      {
+       "word": "cobweb",
+       "logdice": 8.36
+      },
+      {
+       "word": "ash",
+       "logdice": 8.23
+      },
+      {
+       "word": "cobwebs",
+       "logdice": 8.16
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 151621,
+     "slot_logdice": "",
+     "n_collocates": 44,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 3.96
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 2.82
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 2.4
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.98
+      },
+      {
+       "word": "\"%w\" under ...",
+       "logdice": 1.93
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 194,
+   "mean_logdice": 4.969,
+   "prominence_score": 37.798,
+   "top_evidence": [
+    {
+     "word": "plain",
+     "logdice": 10.98,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "valley",
+     "logdice": 9.45,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "debris",
+     "logdice": 9.23,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "leaf",
+     "logdice": 9.13,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "crumb",
+     "logdice": 8.82,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "dust",
+     "logdice": 8.69,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "stream",
+     "logdice": 8.65,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "away",
+     "logdice": 8.46,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "century",
+     "logdice": 8.4,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "glass",
+     "logdice": 8.35,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 312050,
+     "slot_logdice": 39.22,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "floor",
+       "logdice": 8.22
+      },
+      {
+       "word": "globe",
+       "logdice": 7.72
+      },
+      {
+       "word": "nation",
+       "logdice": 7.29
+      },
+      {
+       "word": "gaze",
+       "logdice": 6.88
+      },
+      {
+       "word": "wing",
+       "logdice": 6.85
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 8791,
+     "slot_logdice": 1.1,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "debris",
+       "logdice": 9.23
+      },
+      {
+       "word": "leaf",
+       "logdice": 9.13
+      },
+      {
+       "word": "crumb",
+       "logdice": 8.82
+      },
+      {
+       "word": "dust",
+       "logdice": 8.69
+      },
+      {
+       "word": "glass",
+       "logdice": 8.35
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 2920,
+     "slot_logdice": 0.37,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "plain",
+       "logdice": 10.98
+      },
+      {
+       "word": "valley",
+       "logdice": 9.45
+      },
+      {
+       "word": "stream",
+       "logdice": 8.65
+      },
+      {
+       "word": "century",
+       "logdice": 8.4
+      },
+      {
+       "word": "river",
+       "logdice": 8.16
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 151621,
+     "slot_logdice": "",
+     "n_collocates": 44,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 3.96
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 2.82
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 2.4
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.98
+      },
+      {
+       "word": "\"%w\" under ...",
+       "logdice": 1.93
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 79303,
+     "slot_logdice": 9.97,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "away",
+       "logdice": 8.46
+      },
+      {
+       "word": "aside",
+       "logdice": 8.27
+      },
+      {
+       "word": "along",
+       "logdice": 6.6
+      },
+      {
+       "word": "off",
+       "logdice": 5.42
+      },
+      {
+       "word": "across",
+       "logdice": 4.68
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 203,
+   "mean_logdice": 4.91,
+   "prominence_score": 37.67,
+   "top_evidence": [
+    {
+     "word": "mop",
+     "logdice": 11.31,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "vacuum",
+     "logdice": 10.4,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "dust",
+     "logdice": 9.26,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "garnish",
+     "logdice": 8.85,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "capacitive",
+     "logdice": 8.56,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "4-games-to-none",
+     "logdice": 8.24,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "scrub",
+     "logdice": 8.19,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "rake",
+     "logdice": 7.99,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "shovel",
+     "logdice": 7.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "clean",
+     "logdice": 7.83,
+     "slot": "complements of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 143355,
+     "slot_logdice": 18.02,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "away",
+       "logdice": 7.51
+      },
+      {
+       "word": "downstream",
+       "logdice": 6.94
+      },
+      {
+       "word": "overboard",
+       "logdice": 6.85
+      },
+      {
+       "word": "aside",
+       "logdice": 6.61
+      },
+      {
+       "word": "upward",
+       "logdice": 5.7
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 7247,
+     "slot_logdice": 0.91,
+     "n_collocates": 42,
+     "top5": [
+      {
+       "word": "clean",
+       "logdice": 7.4
+      },
+      {
+       "word": "downstream",
+       "logdice": 7.11
+      },
+      {
+       "word": "past",
+       "logdice": 6.84
+      },
+      {
+       "word": "southward",
+       "logdice": 6.35
+      },
+      {
+       "word": "bare",
+       "logdice": 5.75
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 5.96
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 183459,
+     "slot_logdice": 23.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "flood",
+       "logdice": 7.49
+      },
+      {
+       "word": "gaze",
+       "logdice": 7.44
+      },
+      {
+       "word": "wave",
+       "logdice": 7.37
+      },
+      {
+       "word": "wind",
+       "logdice": 7.36
+      },
+      {
+       "word": "craze",
+       "logdice": 7.26
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 18931,
+     "slot_logdice": 2.38,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "mop",
+       "logdice": 11.31
+      },
+      {
+       "word": "vacuum",
+       "logdice": 10.4
+      },
+      {
+       "word": "dust",
+       "logdice": 9.26
+      },
+      {
+       "word": "garnish",
+       "logdice": 8.85
+      },
+      {
+       "word": "scrub",
+       "logdice": 8.19
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 3091,
+     "slot_logdice": 0.39,
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "capacitive",
+       "logdice": 8.56
+      },
+      {
+       "word": "4-games-to-none",
+       "logdice": 8.24
+      },
+      {
+       "word": "clean",
+       "logdice": 7.83
+      },
+      {
+       "word": "downstream",
+       "logdice": 7.39
+      },
+      {
+       "word": "Invitational",
+       "logdice": 7.34
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 164,
+   "mean_logdice": 3.736,
+   "prominence_score": 27.52,
+   "top_evidence": [
+    {
+     "word": "away",
+     "logdice": 8.46,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "aside",
+     "logdice": 8.27,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "floor",
+     "logdice": 8.22,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "globe",
+     "logdice": 7.72,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "flood",
+     "logdice": 7.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "gaze",
+     "logdice": 7.44,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "wave",
+     "logdice": 7.37,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "wind",
+     "logdice": 7.36,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "nation",
+     "logdice": 7.29,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "craze",
+     "logdice": 7.26,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 312050,
+     "slot_logdice": 39.22,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "floor",
+       "logdice": 8.22
+      },
+      {
+       "word": "globe",
+       "logdice": 7.72
+      },
+      {
+       "word": "nation",
+       "logdice": 7.29
+      },
+      {
+       "word": "gaze",
+       "logdice": 6.88
+      },
+      {
+       "word": "wing",
+       "logdice": 6.85
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 41850,
+     "slot_logdice": 5.26,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "her",
+       "logdice": 3.73
+      },
+      {
+       "word": "them",
+       "logdice": 2.67
+      },
+      {
+       "word": "him",
+       "logdice": 2.08
+      },
+      {
+       "word": "us",
+       "logdice": 2.06
+      },
+      {
+       "word": "me",
+       "logdice": 1.93
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 67269,
+     "slot_logdice": 8.45,
+     "n_collocates": 19,
+     "top5": [
+      {
+       "word": "herself",
+       "logdice": 4.97
+      },
+      {
+       "word": "yourself",
+       "logdice": 3.8
+      },
+      {
+       "word": "himself",
+       "logdice": 3.74
+      },
+      {
+       "word": "ourselves",
+       "logdice": 3.67
+      },
+      {
+       "word": "themselves",
+       "logdice": 3.47
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 183459,
+     "slot_logdice": 23.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "flood",
+       "logdice": 7.49
+      },
+      {
+       "word": "gaze",
+       "logdice": 7.44
+      },
+      {
+       "word": "wave",
+       "logdice": 7.37
+      },
+      {
+       "word": "wind",
+       "logdice": 7.36
+      },
+      {
+       "word": "craze",
+       "logdice": 7.26
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 151621,
+     "slot_logdice": "",
+     "n_collocates": 44,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 3.96
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 2.82
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 2.4
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.98
+      },
+      {
+       "word": "\"%w\" under ...",
+       "logdice": 1.93
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 79303,
+     "slot_logdice": 9.97,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "away",
+       "logdice": 8.46
+      },
+      {
+       "word": "aside",
+       "logdice": 8.27
+      },
+      {
+       "word": "along",
+       "logdice": 6.6
+      },
+      {
+       "word": "off",
+       "logdice": 5.42
+      },
+      {
+       "word": "across",
+       "logdice": 4.68
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

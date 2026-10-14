@@ -1,0 +1,828 @@
+{
+ "verb": "speed",
+ "freq": 945587,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "终点抵达图式",
+ "ranking": [
+  "终点抵达图式",
+  "方式伴随图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 62,
+   "mean_logdice": 1.513,
+   "prominence_score": 9.043,
+   "top_evidence": [
+    {
+     "word": "edge",
+     "logdice": 6.77,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "mark",
+     "logdice": 6.56,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "up",
+     "logdice": 6.3,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "home",
+     "logdice": 5.95,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "off",
+     "logdice": 5.57,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "along",
+     "logdice": 5.54,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "way",
+     "logdice": 5.24,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "away",
+     "logdice": 5.07,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "road",
+     "logdice": 4.32,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "line",
+     "logdice": 4.32,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 125241,
+     "slot_logdice": 13.24,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 6.3
+      },
+      {
+       "word": "off",
+       "logdice": 5.57
+      },
+      {
+       "word": "along",
+       "logdice": 5.54
+      },
+      {
+       "word": "away",
+       "logdice": 5.07
+      },
+      {
+       "word": "through",
+       "logdice": 3.8
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 283,
+     "slot_logdice": 0.03,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "edge",
+       "logdice": 6.77
+      },
+      {
+       "word": "mark",
+       "logdice": 6.56
+      },
+      {
+       "word": "home",
+       "logdice": 5.95
+      },
+      {
+       "word": "way",
+       "logdice": 5.24
+      },
+      {
+       "word": "road",
+       "logdice": 4.32
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 57,
+     "slot_logdice": 0.01,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 4.11
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 62497,
+     "slot_logdice": "",
+     "n_collocates": 40,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.91
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.83
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.75
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.45
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 184,
+   "mean_logdice": 5.054,
+   "prominence_score": 38.065,
+   "top_evidence": [
+    {
+     "word": "process",
+     "logdice": 12.38,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "highway",
+     "logdice": 10.43,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "development",
+     "logdice": 9.79,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "time",
+     "logdice": 9.67,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "freeway",
+     "logdice": 9.03,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "recovery",
+     "logdice": 8.88,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "runway",
+     "logdice": 8.73,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "up",
+     "logdice": 8.46,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "metabolism",
+     "logdice": 8.44,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "delivery",
+     "logdice": 8.41,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 165314,
+     "slot_logdice": 17.48,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "healing",
+       "logdice": 7.56
+      },
+      {
+       "word": "recovery",
+       "logdice": 7.41
+      },
+      {
+       "word": "ticket",
+       "logdice": 6.93
+      },
+      {
+       "word": "motorist",
+       "logdice": 6.22
+      },
+      {
+       "word": "deployment",
+       "logdice": 6.16
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 250481,
+     "slot_logdice": 26.49,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "process",
+       "logdice": 12.38
+      },
+      {
+       "word": "development",
+       "logdice": 9.79
+      },
+      {
+       "word": "time",
+       "logdice": 9.67
+      },
+      {
+       "word": "recovery",
+       "logdice": 8.88
+      },
+      {
+       "word": "metabolism",
+       "logdice": 8.44
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 6530,
+     "slot_logdice": 0.69,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "highway",
+       "logdice": 10.43
+      },
+      {
+       "word": "freeway",
+       "logdice": 9.03
+      },
+      {
+       "word": "runway",
+       "logdice": 8.73
+      },
+      {
+       "word": "track",
+       "logdice": 8.33
+      },
+      {
+       "word": "road",
+       "logdice": 8.16
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 62497,
+     "slot_logdice": "",
+     "n_collocates": 40,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.91
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.83
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.75
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.45
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 320117,
+     "slot_logdice": 33.85,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 8.46
+      },
+      {
+       "word": "along",
+       "logdice": 5.92
+      },
+      {
+       "word": "down",
+       "logdice": 4.91
+      },
+      {
+       "word": "around",
+       "logdice": 3.84
+      },
+      {
+       "word": "through",
+       "logdice": 2.47
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 199,
+   "mean_logdice": 4.74,
+   "prominence_score": 36.232,
+   "top_evidence": [
+    {
+     "word": "ease",
+     "logdice": 9.83,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "simplify",
+     "logdice": 9.72,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "slow",
+     "logdice": 8.5,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "shutter",
+     "logdice": 8.29,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "incline",
+     "logdice": 8.23,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "streamline",
+     "logdice": 7.67,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "speed",
+     "logdice": 7.51,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "tailgating",
+     "logdice": 7.48,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "high",
+     "logdice": 7.45,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "past",
+     "logdice": 7.45,
+     "slot": "adjectives after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 134051,
+     "slot_logdice": 14.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "high",
+       "logdice": 7.45
+      },
+      {
+       "word": "dramatically",
+       "logdice": 6.13
+      },
+      {
+       "word": "up",
+       "logdice": 6.0
+      },
+      {
+       "word": "greatly",
+       "logdice": 5.75
+      },
+      {
+       "word": "full",
+       "logdice": 5.58
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 7001,
+     "slot_logdice": 0.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 7.45
+      },
+      {
+       "word": "southbound",
+       "logdice": 6.87
+      },
+      {
+       "word": "triple",
+       "logdice": 6.74
+      },
+      {
+       "word": "eastbound",
+       "logdice": 6.61
+      },
+      {
+       "word": "troubleshooting",
+       "logdice": 6.43
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.06
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.07
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 104527,
+     "slot_logdice": 11.05,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "shutter",
+       "logdice": 8.29
+      },
+      {
+       "word": "download",
+       "logdice": 7.35
+      },
+      {
+       "word": "broadband",
+       "logdice": 6.88
+      },
+      {
+       "word": "clock",
+       "logdice": 6.49
+      },
+      {
+       "word": "upload",
+       "logdice": 6.4
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 26328,
+     "slot_logdice": 2.78,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ease",
+       "logdice": 9.83
+      },
+      {
+       "word": "simplify",
+       "logdice": 9.72
+      },
+      {
+       "word": "slow",
+       "logdice": 8.5
+      },
+      {
+       "word": "incline",
+       "logdice": 8.23
+      },
+      {
+       "word": "streamline",
+       "logdice": 7.67
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 588,
+     "slot_logdice": 0.06,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "elementary",
+       "logdice": 5.27
+      },
+      {
+       "word": "slow",
+       "logdice": 2.66
+      },
+      {
+       "word": "relative",
+       "logdice": 2.65
+      },
+      {
+       "word": "straight",
+       "logdice": 2.58
+      },
+      {
+       "word": "overall",
+       "logdice": 2.52
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 162,
+   "mean_logdice": 3.397,
+   "prominence_score": 24.966,
+   "top_evidence": [
+    {
+     "word": "up",
+     "logdice": 8.46,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "shutter",
+     "logdice": 8.29,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "healing",
+     "logdice": 7.56,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "recovery",
+     "logdice": 7.41,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "download",
+     "logdice": 7.35,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "ticket",
+     "logdice": 6.93,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "broadband",
+     "logdice": 6.88,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "clock",
+     "logdice": 6.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "upload",
+     "logdice": 6.4,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "motorist",
+     "logdice": 6.22,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 165314,
+     "slot_logdice": 17.48,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "healing",
+       "logdice": 7.56
+      },
+      {
+       "word": "recovery",
+       "logdice": 7.41
+      },
+      {
+       "word": "ticket",
+       "logdice": 6.93
+      },
+      {
+       "word": "motorist",
+       "logdice": 6.22
+      },
+      {
+       "word": "deployment",
+       "logdice": 6.16
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 23237,
+     "slot_logdice": 2.46,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "thee",
+       "logdice": 3.6
+      },
+      {
+       "word": "we",
+       "logdice": 2.6
+      },
+      {
+       "word": "she",
+       "logdice": 2.51
+      },
+      {
+       "word": "thou",
+       "logdice": 1.93
+      },
+      {
+       "word": "it",
+       "logdice": 1.84
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 62349,
+     "slot_logdice": 6.59,
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "yourself",
+       "logdice": 2.46
+      },
+      {
+       "word": "thee",
+       "logdice": 2.25
+      },
+      {
+       "word": "him",
+       "logdice": 2.16
+      },
+      {
+       "word": "myself",
+       "logdice": 1.92
+      },
+      {
+       "word": "us",
+       "logdice": 1.86
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 104527,
+     "slot_logdice": 11.05,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "shutter",
+       "logdice": 8.29
+      },
+      {
+       "word": "download",
+       "logdice": 7.35
+      },
+      {
+       "word": "broadband",
+       "logdice": 6.88
+      },
+      {
+       "word": "clock",
+       "logdice": 6.49
+      },
+      {
+       "word": "upload",
+       "logdice": 6.4
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 62497,
+     "slot_logdice": "",
+     "n_collocates": 40,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.91
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.83
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.75
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.45
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 320117,
+     "slot_logdice": 33.85,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 8.46
+      },
+      {
+       "word": "along",
+       "logdice": 5.92
+      },
+      {
+       "word": "down",
+       "logdice": 4.91
+      },
+      {
+       "word": "around",
+       "logdice": 3.84
+      },
+      {
+       "word": "through",
+       "logdice": 2.47
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

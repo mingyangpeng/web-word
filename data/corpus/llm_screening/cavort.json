@@ -1,0 +1,19 @@
+{
+ "verb": "cavort",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-09 21:33",
+ "n_senses": 1,
+ "results": {
+  "cavort-S1": {
+   "准入标签": "Y",
+   "理由": "Reason: 运动体为实体（人），在海滩上蹦跳、四处移动，发生真实三维物理空间位移，激活源点-路径-终点框架（尽管语义重心在方式）。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "...",
+   "raw": "The task: annotate the English verb \"cavort\" (S1): \"to jump or move around in a noisy, excited and often sexual way\". Example: \"The photos showed her cavorting on the beach with her new lover.\"\n\nRule 1: Does this sense activate a physical source-path-goal displacement frame? Cavorting involves jumping and moving around — physical movement of an entity (person) in space. It's physical motion, jumping around on a beach. So it's Y (physical displacement). It's not purely abstract metaphor. The motion is real physical jumping/moving around. So Y.\n\nRule 2: Image schema — cavort encodes manner of motion (jumping around noisily, excitedly). The semantic core is the manner, not source or goal. So 方式伴随图式 (manner co-occurring schema).\n\nRule 3: Y = prototypical physical displacement.\n\nRule 4: English-Chinese alignment: English \"cavort\" is a manner verb; Chinese typically uses 嬉戏/欢闹/调情/打闹 — Chinese expression like \"与情人嬉戏打闹\" — Chinese would use verbs like 嬉闹, 调情, 欢闹, possibly with 蹦蹦跳跳. The manner schema: Chinese often uses verb complements or descriptive compounds. \"cavort on the beach\" → \"在海滩上与情人嬉戏打闹/调情\". The manner is expressed but Chinese may need additional components (e.g., 打闹, 嬉戏) — partial alignment? The schema is manner-accompanying; Chinese expresses similar manner via 嬉闹/欢蹦乱跳. Is it fully aligned? The core elements: mover, motion, manner. Chinese \"嬉戏打闹\" captures noisy excited manner; the sexual connotation may need 做出亲昵举动/调情. There's semantic element missing (sexual way) or Chinese needs supplementary components. So partial alignment seems reasonable.\n\nOutput format: five fields:\n准入标签：Y\n理由：...\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：...\n\nReason: 运动体为实体（人），在海滩上蹦跳、四处移动，发生真实三维物理空间位移，激活源点-路径-终点框架（尽管语义重心在方式）。\n\nNote: cavorting involves jumping around — physical displacement exists. Some might argue it's \"move around\" without clear source/goal, but the frame is still physical motion. Y.\n\n备注存疑点: 该义位语义重心为喧闹兴奋的方式，路径/终点要素弱化，若视为纯行为方式描写可争议；性暗示成分在汉语常规表达（嬉闹、调情）中需增补说明。\n\nKeep concise, Chinese only.</think>准入标签：Y\n理由：运动体为实体（人），义位核心为蹦跳、四处移动，在海滩等物理场景中发生真实三维空间位移，激活源点-路径-终点位移框架，非纯抽象隐喻。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：该义位语义重心在喧闹、兴奋（常含性意味）的方式而非路径或终点，源点-终点要素弱化；汉语常规表达如“与情人嬉戏打闹／调情欢闹”，方式图式大体一致，但“性意味”这一语义要素在汉语中往往需增补成分（如“举止亲昵”“调情”）才能体现，故判部分对齐。",
+   "sense_id": "cavort-S1",
+   "definition": "to jump or move around in a noisy, excited and often sexual way"
+  }
+ },
+ "errors": []
+}

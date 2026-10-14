@@ -1,0 +1,872 @@
+{
+ "verb": "move",
+ "freq": 19969949,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "源点脱离图式",
+  "终点抵达图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 176,
+   "mean_logdice": 5.588,
+   "prominence_score": 41.728,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 14.51,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "on",
+     "logdice": 11.01,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "campus",
+     "logdice": 10.42,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "around",
+     "logdice": 9.9,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "bit",
+     "logdice": 9.64,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "away",
+     "logdice": 9.62,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "west",
+     "logdice": 9.57,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "year",
+     "logdice": 9.55,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "ball",
+     "logdice": 9.53,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "distance",
+     "logdice": 9.51,
+     "slot": "objects of \"%w away\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 1407509,
+     "slot_logdice": 7.05,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "on",
+       "logdice": 11.01
+      },
+      {
+       "word": "around",
+       "logdice": 9.9
+      },
+      {
+       "word": "away",
+       "logdice": 9.62
+      },
+      {
+       "word": "along",
+       "logdice": 9.12
+      },
+      {
+       "word": "in",
+       "logdice": 8.99
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 1529,
+     "slot_logdice": 0.01,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "bit",
+       "logdice": 9.64
+      },
+      {
+       "word": "year",
+       "logdice": 9.55
+      },
+      {
+       "word": "distance",
+       "logdice": 9.51
+      },
+      {
+       "word": "summer",
+       "logdice": 9.14
+      },
+      {
+       "word": "step",
+       "logdice": 9.13
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 18106,
+     "slot_logdice": 0.09,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "campus",
+       "logdice": 10.42
+      },
+      {
+       "word": "ball",
+       "logdice": 9.53
+      },
+      {
+       "word": "farm",
+       "logdice": 9.21
+      },
+      {
+       "word": "site",
+       "logdice": 8.77
+      },
+      {
+       "word": "bed",
+       "logdice": 8.6
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 8573,
+     "slot_logdice": 0.04,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "west",
+       "logdice": 9.57
+      },
+      {
+       "word": "West",
+       "logdice": 9.44
+      },
+      {
+       "word": "month",
+       "logdice": 8.62
+      },
+      {
+       "word": "front",
+       "logdice": 8.16
+      },
+      {
+       "word": "furniture",
+       "logdice": 8.11
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 6325633,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 14.51
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 3.68
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.12
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 2.1
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.2
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 185,
+   "mean_logdice": 5.501,
+   "prominence_score": 41.476,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 14.51,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "ladder",
+     "logdice": 11.46,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "rank",
+     "logdice": 10.58,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "chain",
+     "logdice": 10.54,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "spot",
+     "logdice": 10.31,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "around",
+     "logdice": 10.1,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "level",
+     "logdice": 9.56,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "place",
+     "logdice": 9.43,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "body",
+     "logdice": 9.34,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "line",
+     "logdice": 9.22,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 4741647,
+     "slot_logdice": 23.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "average",
+       "logdice": 8.7
+      },
+      {
+       "word": "company",
+       "logdice": 7.62
+      },
+      {
+       "word": "object",
+       "logdice": 7.61
+      },
+      {
+       "word": "cursor",
+       "logdice": 7.52
+      },
+      {
+       "word": "ball",
+       "logdice": 7.5
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 80284,
+     "slot_logdice": 0.4,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ladder",
+       "logdice": 11.46
+      },
+      {
+       "word": "rank",
+       "logdice": 10.58
+      },
+      {
+       "word": "chain",
+       "logdice": 10.54
+      },
+      {
+       "word": "spot",
+       "logdice": 10.31
+      },
+      {
+       "word": "level",
+       "logdice": 9.56
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 31041,
+     "slot_logdice": 0.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "body",
+       "logdice": 9.34
+      },
+      {
+       "word": "line",
+       "logdice": 9.22
+      },
+      {
+       "word": "field",
+       "logdice": 9.1
+      },
+      {
+       "word": "list",
+       "logdice": 8.97
+      },
+      {
+       "word": "road",
+       "logdice": 8.74
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 6325633,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 14.51
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 3.68
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.12
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 2.1
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.2
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 404712,
+     "slot_logdice": 2.03,
+     "n_collocates": 16,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 10.1
+      },
+      {
+       "word": "along",
+       "logdice": 8.36
+      },
+      {
+       "word": "over",
+       "logdice": 7.68
+      },
+      {
+       "word": "in",
+       "logdice": 7.55
+      },
+      {
+       "word": "down",
+       "logdice": 7.34
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 211,
+   "mean_logdice": 6.48,
+   "prominence_score": 50.074,
+   "top_evidence": [
+    {
+     "word": "forward",
+     "logdice": 11.12,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "close",
+     "logdice": 9.9,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "away",
+     "logdice": 9.44,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "relative",
+     "logdice": 9.04,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "family",
+     "logdice": 8.93,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "quickly",
+     "logdice": 8.89,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "pack",
+     "logdice": 8.89,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "further",
+     "logdice": 8.87,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "east",
+     "logdice": 8.83,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "copy",
+     "logdice": 8.82,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 4916067,
+     "slot_logdice": 24.62,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "forward",
+       "logdice": 11.12
+      },
+      {
+       "word": "away",
+       "logdice": 9.44
+      },
+      {
+       "word": "quickly",
+       "logdice": 8.89
+      },
+      {
+       "word": "slowly",
+       "logdice": 8.74
+      },
+      {
+       "word": "fast",
+       "logdice": 8.66
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 226130,
+     "slot_logdice": 1.13,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "relative",
+       "logdice": 9.04
+      },
+      {
+       "word": "further",
+       "logdice": 8.87
+      },
+      {
+       "word": "east",
+       "logdice": 8.83
+      },
+      {
+       "word": "slow",
+       "logdice": 8.53
+      },
+      {
+       "word": "forward",
+       "logdice": 8.45
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.89
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.08
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4167742,
+     "slot_logdice": 20.87,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "family",
+       "logdice": 8.93
+      },
+      {
+       "word": "thing",
+       "logdice": 7.21
+      },
+      {
+       "word": "hand",
+       "logdice": 7.12
+      },
+      {
+       "word": "object",
+       "logdice": 6.52
+      },
+      {
+       "word": "couple",
+       "logdice": 6.38
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 526024,
+     "slot_logdice": 2.63,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "pack",
+       "logdice": 8.89
+      },
+      {
+       "word": "copy",
+       "logdice": 8.82
+      },
+      {
+       "word": "delete",
+       "logdice": 8.54
+      },
+      {
+       "word": "rename",
+       "logdice": 8.28
+      },
+      {
+       "word": "change",
+       "logdice": 8.18
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 61262,
+     "slot_logdice": 0.31,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "close",
+       "logdice": 9.9
+      },
+      {
+       "word": "near",
+       "logdice": 8.18
+      },
+      {
+       "word": "further",
+       "logdice": 8.16
+      },
+      {
+       "word": "forward",
+       "logdice": 8.08
+      },
+      {
+       "word": "online",
+       "logdice": 8.01
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 179,
+   "mean_logdice": 4.415,
+   "prominence_score": 33.077,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 14.51,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "around",
+     "logdice": 10.1,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "family",
+     "logdice": 8.93,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "average",
+     "logdice": 8.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "along",
+     "logdice": 8.36,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "over",
+     "logdice": 7.68,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "company",
+     "logdice": 7.62,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "object",
+     "logdice": 7.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "in",
+     "logdice": 7.55,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "cursor",
+     "logdice": 7.52,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 4741647,
+     "slot_logdice": 23.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "average",
+       "logdice": 8.7
+      },
+      {
+       "word": "company",
+       "logdice": 7.62
+      },
+      {
+       "word": "object",
+       "logdice": 7.61
+      },
+      {
+       "word": "cursor",
+       "logdice": 7.52
+      },
+      {
+       "word": "ball",
+       "logdice": 7.5
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 634838,
+     "slot_logdice": 3.18,
+     "n_collocates": 27,
+     "top5": [
+      {
+       "word": "them",
+       "logdice": 6.54
+      },
+      {
+       "word": "it",
+       "logdice": 6.17
+      },
+      {
+       "word": "us",
+       "logdice": 6.15
+      },
+      {
+       "word": "him",
+       "logdice": 5.89
+      },
+      {
+       "word": "her",
+       "logdice": 5.73
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 2952875,
+     "slot_logdice": 14.79,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "she",
+       "logdice": 6.64
+      },
+      {
+       "word": "he",
+       "logdice": 6.61
+      },
+      {
+       "word": "we",
+       "logdice": 6.56
+      },
+      {
+       "word": "them",
+       "logdice": 6.55
+      },
+      {
+       "word": "him",
+       "logdice": 6.45
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4167742,
+     "slot_logdice": 20.87,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "family",
+       "logdice": 8.93
+      },
+      {
+       "word": "thing",
+       "logdice": 7.21
+      },
+      {
+       "word": "hand",
+       "logdice": 7.12
+      },
+      {
+       "word": "object",
+       "logdice": 6.52
+      },
+      {
+       "word": "couple",
+       "logdice": 6.38
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 6325633,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 14.51
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 3.68
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.12
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 2.1
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.2
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 404712,
+     "slot_logdice": 2.03,
+     "n_collocates": 16,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 10.1
+      },
+      {
+       "word": "along",
+       "logdice": 8.36
+      },
+      {
+       "word": "over",
+       "logdice": 7.68
+      },
+      {
+       "word": "in",
+       "logdice": 7.55
+      },
+      {
+       "word": "down",
+       "logdice": 7.34
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

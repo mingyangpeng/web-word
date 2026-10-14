@@ -91,6 +91,15 @@ def data_fingerprint(graph: Dict[str, Any]) -> str:
             "edges": sorted(
                 f"{l['source']}-{l['target']}" for l in graph.get("links", [])
             ),
+            # 节点全量载荷（释义/义项/音标/标注）也要进指纹：
+            # 否则"只更新释义不增删词"的灌库不会刷新图谱页。
+            # 节点按 id 排序后再哈希 —— 指纹必须行序无关（见测试契约）。
+            "data": hashlib.sha256(
+                json.dumps(
+                    sorted(graph.get("nodes", []), key=lambda n: str(n.get("id"))),
+                    ensure_ascii=False, sort_keys=True, default=str,
+                ).encode("utf-8")
+            ).hexdigest(),
         },
         sort_keys=True,
         ensure_ascii=False,
@@ -202,9 +211,11 @@ def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图�
     return _render_template({
         "TITLE": _esc(title),
         "VIS_LIB": _esc(VIS_LIB),
-        "NODES_JSON": json.dumps(vis_nodes, ensure_ascii=False),
-        "EDGES_JSON": json.dumps(vis_edges, ensure_ascii=False),
-        "LEGEND_JSON": json.dumps(legend, ensure_ascii=False),
+        # "</" 必须转义成 "<\/"：json.dumps 不转义斜杠，节点字段里若含
+        # "</script>" 字面量会提前终结 <script> 元素（页面损坏/注入）。
+        "NODES_JSON": json.dumps(vis_nodes, ensure_ascii=False).replace("</", "<\\/"),
+        "EDGES_JSON": json.dumps(vis_edges, ensure_ascii=False).replace("</", "<\\/"),
+        "LEGEND_JSON": json.dumps(legend, ensure_ascii=False).replace("</", "<\\/"),
         "NODE_COUNT": str(stats.get("node_count", len(nodes))),
         "EDGE_COUNT": str(stats.get("edge_count", len(links))),
         "CLUSTER_COUNT": str(stats.get("cluster_count", len(clusters))),
@@ -249,8 +260,12 @@ def ensure_graph_html(graph: Dict[str, Any], force: bool = False) -> str:
     try:
         os.makedirs(STATIC_DIR, exist_ok=True)
         if force or not os.path.exists(path):
-            with open(path, "w", encoding="utf-8") as f:
+            # 先写临时文件再原子替换 —— 直接写目标文件时，中途崩溃会留下
+            # 残缺 HTML，而存在性检查会让它被永久复用
+            tmp_path = path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 f.write(build_graph_html(graph))
+            os.replace(tmp_path, path)
             logger.info(f"交互式图谱已生成: {filename}")
             _prune_old_graphs(keep=filename)
         return f"/app/static/{filename}"
@@ -1539,3 +1554,327 @@ window.__particleDebug = {
 </body>
 </html>
 """
+
+
+# ============================================
+# 词簇交互图（搜索结果页内嵌：当前词 + 其所在簇）
+# ============================================
+# 与全库图谱（build_graph_html）的分工：
+#   * 全库页 —— 136 词的语义地图，带搜索/侧栏/图例；
+#   * 本模板 —— 单簇轻量视图：中心词高亮，默认只画"中心词↔成员"连线
+#     （避免完全图在静态 SVG 时代挤成毛球的问题），簇内两两连线由
+#     页内按钮按需展开 —— 纯前端切换，不触发 Streamlit 重跑。
+CLUSTER_TEMPLATE_VERSION = 3
+
+_CLUSTER_TEMPLATE = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>__TITLE__</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #ffffff;
+               font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif; }
+  #bar { display: flex; align-items: center; gap: 12px; padding: 8px 14px;
+         border-bottom: 1px solid #e2e8f0; box-sizing: border-box; }
+  #bar .t { font-weight: 600; color: #2d3748; font-size: 14px; }
+  #bar .s { color: #718096; font-size: 12px; }
+  #bar button { margin-left: auto; border: 1px solid #cbd5e0; background: #fff;
+                color: #4a5568; border-radius: 6px; padding: 4px 10px;
+                font-size: 12px; cursor: pointer; }
+  #bar button.on { background: #6b46c1; border-color: #6b46c1; color: #fff; }
+  #net { width: 100%; height: calc(100% - 41px); }
+  /* ---------- 浮层卡片（对齐知识图谱页的词条/关系卡片） ---------- */
+  #card { position: absolute; z-index: 30; max-width: 320px; min-width: 240px;
+          background: #fff; border: 1px solid #cbd5e0; border-radius: 10px;
+          box-shadow: 0 8px 24px rgba(45,55,72,.18); display: none; }
+  #card.on { display: block; }
+  #card-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+               background: #6b46c1; color: #fff; border-radius: 9px 9px 0 0;
+               cursor: move; user-select: none; }
+  #card-head .t { font-weight: 600; font-size: 14px; flex: 1;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #card-close { border: none; background: none; color: #fff; font-size: 16px;
+                line-height: 1; cursor: pointer; padding: 0 2px; }
+  #card-body { padding: 10px 12px; max-height: 300px; overflow-y: auto;
+               font-size: 12.5px; color: #2d3748; }
+  #card-body .row { display: flex; padding: 3px 0; }
+  #card-body .k { color: #718096; min-width: 72px; }
+  #card-body .v { flex: 1; word-break: break-word; }
+  #card-body .sec { margin: 8px 0 4px; font-weight: 600; color: #553c9a;
+                    border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+  #card-body .ex { background: #f7fafc; border-left: 3px solid #b794f4;
+                   padding: 6px 8px; margin: 4px 0; border-radius: 0 6px 6px 0; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <span class="t">__CLUSTER_LABEL__</span>
+  <span class="s">__SIZE__ 词 · 中心连线 __CENTER_EDGES__ 条 · 簇内两两 __PAIR_EDGES__ 条</span>
+  <button id="toggle" type="button">显示簇内两两连线</button>
+</div>
+<div id="net"></div>
+<div id="card">
+  <div id="card-head"><span class="t" id="card-title"></span>
+    <button id="card-close" type="button" title="关闭">×</button></div>
+  <div id="card-body"></div>
+</div>
+<script src="__VIS_LIB__"></script>
+<script>
+  var NODES_JSON = __NODES_JSON__;
+  var EDGES_JSON = __EDGES_JSON__;
+  var nodes = new vis.DataSet(NODES_JSON);
+  var edges = new vis.DataSet(EDGES_JSON);
+  var showPair = false;
+  var container = document.getElementById('net');
+  var data = { nodes: nodes, edges: edges };
+  var options = {
+    autoResize: true,
+    physics: { solver: 'barnesHut',
+               barnesHut: { gravitationalConstant: -6000, springLength: 110 },
+               stabilization: { iterations: 400, fit: true } },
+    interaction: { hover: true, tooltipDelay: 120, navigationButtons: false },
+    nodes: { shape: 'dot', font: { size: 13, color: '#2d3748' },
+             borderWidth: 2, borderWidthSelected: 3 },
+    edges: { selectionWidth: 1.5, hoverWidth: 0.6 }
+  };
+  var network = new vis.Network(container, data, options);
+  // 布局稳定后立即冻结物理引擎：节点停住不动、拖到哪停在哪儿，
+  // 不再持续漂移抖动（与全库图谱页同一处理）。
+  network.once('stabilizationIterationsDone', function () {
+    network.setOptions({ physics: { enabled: false } });
+  });
+  // ---------- 浮层卡片（点节点/点边弹出，对齐知识图谱页效果） ----------
+  var card = document.getElementById('card');
+  var cardTitle = document.getElementById('card-title');
+  var cardBody = document.getElementById('card-body');
+  document.getElementById('card-close').addEventListener('click', function () {
+    card.classList.remove('on');
+  });
+  function esc(x) {
+    return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function row(k, v) {
+    return '<div class="row"><span class="k">' + esc(k) + '</span><span class="v">'
+           + esc(v) + '</span></div>';
+  }
+  function showCard(x, y) {
+    card.classList.add('on');
+    // 定位在点击点附近，越界回拉
+    var cw = card.offsetWidth || 280, ch = card.offsetHeight || 200;
+    var px = Math.min(Math.max(8, x + 14), window.innerWidth - cw - 8);
+    var py = Math.min(Math.max(8, y + 14), window.innerHeight - ch - 8);
+    card.style.left = px + 'px';
+    card.style.top = py + 'px';
+  }
+  function openNodeCard(nodeId, x, y) {
+    var n = nodes.get(nodeId);
+    if (!n) return;
+    var d = n._d || {};
+    cardTitle.textContent = n.label + (n.isCenter ? '（中心词）' : '');
+    var h = '';
+    if (d.chinese_ndef || d.en_ndef) {
+      h += '<div class="sec">释义</div>';
+      if (d.chinese_ndef) h += row('中文', d.chinese_ndef);
+      if (d.en_ndef) h += row('英文', d.en_ndef);
+    }
+    if (d.sense_brief) h += row('主导义', d.sense_brief);
+    if (d.image_schema) h += row('意象图式', d.image_schema);
+    if (d.subCat) h += row('次类', d.subCat);
+    if (d.example_sentence) {
+      h += '<div class="sec">例句</div><div class="ex">' + esc(d.example_sentence) + '</div>';
+    }
+    h += '<div class="sec">提示</div>' + row('操作', '点击簇内其他节点或连线继续查看');
+    cardBody.innerHTML = h;
+    showCard(x, y);
+  }
+  function openEdgeCard(edgeId, x, y) {
+    var e = edges.get(edgeId);
+    if (!e) return;
+    var a = nodes.get(e.from), b = nodes.get(e.to);
+    if (!a || !b) return;
+    cardTitle.textContent = a.label + ' ↔ ' + b.label;
+    var h = '<div class="sec">关系</div>';
+    h += row('关系名称', '近义');
+    h += row('关系类型', '同一次类内的近义关系（簇内完全图边）');
+    h += row('关系方向', '无向（对称关系）');
+    h += row('所属次类', (a._d && a._d.subCat) || '');
+    h += row('关系说明', a.label + ' 与 ' + b.label + ' 同簇，在该次类内两两互为近义');
+    h += '<div class="sec">提示</div>' + row('操作', '点击节点可查看词条详情');
+    cardBody.innerHTML = h;
+    showCard(x, y);
+  }
+  network.on('click', function (params) {
+    // 节点优先于边（vis 点节点会把关联边一并塞进 params.edges）
+    if (params.nodes.length > 0) {
+      network.selectNodes(params.nodes);
+      openNodeCard(params.nodes[0], params.pointer.DOM.x, params.pointer.DOM.y);
+      return;
+    }
+    if (params.edges && params.edges.length > 0) {
+      network.selectEdges(params.edges);
+      openEdgeCard(params.edges[0], params.pointer.DOM.x, params.pointer.DOM.y);
+      return;
+    }
+    card.classList.remove('on');
+  });
+  // 卡片拖动（按住标题栏移动）
+  (function () {
+    var dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    var head = document.getElementById('card-head');
+    head.addEventListener('pointerdown', function (ev) {
+      if (ev.target.id === 'card-close') return;
+      var cr = card.getBoundingClientRect();
+      ox = cr.left; oy = cr.top; sx = ev.clientX; sy = ev.clientY;
+      card.style.left = ox + 'px'; card.style.top = oy + 'px';
+      dragging = true;
+      try { head.setPointerCapture(ev.pointerId); } catch (e) {}
+      ev.preventDefault();
+    });
+    head.addEventListener('pointermove', function (ev) {
+      if (!dragging) return;
+      card.style.left = (ox + ev.clientX - sx) + 'px';
+      card.style.top = (oy + ev.clientY - sy) + 'px';
+    });
+    var stop = function () { dragging = false; };
+    head.addEventListener('pointerup', stop);
+    head.addEventListener('pointercancel', stop);
+  })();
+  var btn = document.getElementById('toggle');
+  btn.addEventListener('click', function () {
+    showPair = !showPair;
+    btn.classList.toggle('on', showPair);
+    btn.textContent = showPair ? '隐藏簇内两两连线' : '显示簇内两两连线';
+    EDGES_JSON.forEach(function (e) {
+      if (e.pair) edges.update({ id: e.id, hidden: !showPair });
+    });
+  });
+</script>
+</body>
+</html>"""
+
+
+def _esc_js_json(obj: Any) -> str:
+    """json.dumps 后转义 "</"，防止节点字段里的字面量提前终结 <script>。"""
+    return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+
+
+def build_cluster_html(graph: Dict[str, Any]) -> str:
+    """渲染词簇交互图 HTML（中心词高亮；簇内两两连线默认隐藏、页内可展开）。"""
+    center = graph.get("center") or ""
+    cluster = graph.get("cluster") or {}
+    nodes = graph.get("nodes", [])
+    links = graph.get("links", [])
+
+    vis_nodes = []
+    for n in nodes:
+        is_center = n.get("is_center") or n.get("id") == center
+        vis_nodes.append({
+            "id": n["id"],
+            "label": n["id"],
+            "title": (f"★ 中心词：{n['id']}" if is_center
+                      else f"{n['id']}（与「{center}」同簇近义）"),
+            "isCenter": is_center,
+            # 浮层卡片明细：与知识图谱页 nodeDetailHTML 同源字段
+            "_d": {
+                "chinese_ndef": n.get("chinese_ndef") or "",
+                "en_ndef": n.get("en_ndef") or "",
+                "sense_brief": n.get("sense_brief") or "",
+                "image_schema": n.get("image_schema") or "",
+                "subCat": n.get("sub_cat") or "",
+                "example_sentence": n.get("example_sentence") or "",
+            },
+            "size": 24 if is_center else 12,
+            "color": ({"background": "#6b46c1", "border": "#44337a",
+                       "highlight": {"background": "#6b46c1", "border": "#2d3748"}}
+                      if is_center
+                      else {"background": "#b794f4", "border": "#805ad5",
+                            "highlight": {"background": "#805ad5", "border": "#2d3748"}}),
+            "font": {"size": 15 if is_center else 12,
+                     "bold": is_center},
+        })
+
+    vis_edges = []
+    center_edges = pair_edges = 0
+    for l in links:
+        s, tg = l.get("source"), l.get("target")
+        is_center_edge = (s == center or tg == center)
+        if is_center_edge:
+            center_edges += 1
+        else:
+            pair_edges += 1
+        vis_edges.append({
+            "id": f"{s}|{tg}",
+            "from": s, "to": tg,
+            "pair": not is_center_edge,
+            "hidden": not is_center_edge,
+            "color": ({"color": "rgba(107,70,193,0.55)", "highlight": "#44337a"}
+                      if is_center_edge
+                      else {"color": "rgba(160,174,208,0.22)", "highlight": "#805ad5"}),
+            "width": 1.4 if is_center_edge else 0.8,
+        })
+
+    values = {
+        "TITLE": _esc(f"词簇图谱：{center}"),
+        "CLUSTER_LABEL": _esc(f"词簇 {cluster.get('label', '未分组')}（中心词 {center}）"),
+        "SIZE": _esc(str(len(nodes))),
+        "CENTER_EDGES": _esc(str(center_edges)),
+        "PAIR_EDGES": _esc(str(pair_edges)),
+        "VIS_LIB": _esc(VIS_LIB),
+        "NODES_JSON": _esc_js_json(vis_nodes),
+        "EDGES_JSON": _esc_js_json(vis_edges),
+    }
+    html = _CLUSTER_TEMPLATE
+    for k, v in values.items():
+        html = html.replace(f"__{k}__", v)
+    return html
+
+
+def cluster_fingerprint(graph: Dict[str, Any]) -> str:
+    """词簇图指纹：中心词 + 簇成员集合变化即重绘（行序无关）。"""
+    payload = json.dumps(
+        {
+            "v": CLUSTER_TEMPLATE_VERSION,
+            "center": graph.get("center") or "",
+            "nodes": sorted(n["id"] for n in graph.get("nodes", [])),
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+
+def ensure_cluster_html(graph: Dict[str, Any]) -> str:
+    """生成（或复用）当前词的词簇图静态文件，返回 /app/static/ 相对 URL。"""
+    if not graph or not graph.get("nodes"):
+        return ""
+
+    fp = cluster_fingerprint(graph)
+    filename = f"cluster_graph_{fp}.html"
+    path = os.path.join(STATIC_DIR, filename)
+
+    try:
+        os.makedirs(STATIC_DIR, exist_ok=True)
+        if not os.path.exists(path):
+            tmp_path = path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(build_cluster_html(graph))
+            os.replace(tmp_path, path)
+            logger.info(f"词簇图已生成: {filename}")
+            _prune_cluster_graphs(keep=filename)
+        return f"/app/static/{filename}"
+    except OSError as e:
+        logger.error(f"写入词簇图失败: {e}")
+        return ""
+
+
+def _prune_cluster_graphs(keep: str) -> None:
+    """清理旧指纹的词簇图文件，避免 static/ 越积越多。"""
+    try:
+        for name in os.listdir(STATIC_DIR):
+            if (name.startswith("cluster_graph_") and name.endswith(".html")
+                    and name != keep):
+                os.remove(os.path.join(STATIC_DIR, name))
+    except OSError as e:
+        logger.warning(f"清理旧词簇图文件失败: {e}")

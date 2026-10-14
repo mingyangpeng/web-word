@@ -1,0 +1,19 @@
+{
+ "verb": "bound",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-09 21:32",
+ "n_senses": 1,
+ "results": {
+  "bound-S1": {
+   "准入标签": "Y",
+   "理由": "Reason: 运动体为实体（狗），发生三维物理空间位移（大步奔跑前进），激活源点-路径-终点框架。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "...",
+   "raw": "The task: annotate the English self-motion verb sense \"bound\" S1: \"to run with long steps, especially in an enthusiastic way\". Example: \"The dogs bounded ahead.\"\n\nRule 1: Talmy motion event admission. The sense involves physical motion of an entity (dogs running with long steps), activating source-path-goal framework → Y.\n\nRule 2: Image schema. Options: 源点脱离图式 (source detachment), 终点抵达图式 (goal arrival), 方式伴随图式 (manner co-occurring), 互动位移图式 (interactive displacement). \"bound\" encodes manner of motion (running with long steps, jumping movement). The semantic core is the manner of movement — leaping strides. So 方式伴随图式.\n\nRule 3: Y = prototypical physical displacement.\n\nRule 4: English-Chinese alignment. English \"bound\" is a manner verb; Chinese typically uses manner verbs too for running, e.g., \"狗蹦蹦跳跳地向前跑\" or \"狗大步跳跃着往前跑\". Chinese would express this as \"狗蹦跳着向前跑去\" — Chinese also uses manner verbs (跑, 蹦, 跳). Actually Chinese is a verb-serializing language that also encodes manner in the verb, unlike satellite-framed English. For \"bound\", Chinese could say \"蹦跳着前进\" or \"大步奔跑\". The alignment: Chinese uses manner verbs like 蹦/跳/窜, so the manner schema aligns. But is it complete alignment? The manner component \"with long steps, enthusiastic\" might need additional components in Chinese: \"蹦蹦跳跳地\" plus \"跑/前进\" — Chinese may need compound expression \"连蹦带跳地跑\". The core motion event elements match: figure (dogs), path (ahead/向前), motion. Manner is encoded in Chinese via reduplication or verb compounds. Possibly 部分对齐 because Chinese requires adding a path verb (跑/前进/窜) plus manner expression, i.e., syntactic forced supplementation: \"狗连蹦带跳地向前跑去\" — the manner \"bound\" as single verb becomes serial verb construction in Chinese. Hmm.\n\nConsider: English \"bound\" = manner verb with path expressed separately (\"ahead\"). Chinese conventional expression: \"狗蹦蹦跳跳地跑在前面\" or \"狗一路蹦跳着往前跑\". The schema (manner co-occurring) matches Chinese manner-encoding. But Chinese cannot use a single verb \"蹦跳\" alone to convey running with long steps forward; it typically adds 跑/前进/去 as path/deictic component. So there's syntactic forced supplementation → 部分对齐.\n\nAlternatively, one could argue 完全对齐 since Chinese \"蹦跳\" itself is a manner verb of motion. But \"bound\" specifically means running with long bounding strides; Chinese \"蹦跳\" implies jumping rather than running strides. The conventional Chinese expression would be \"大步流星地跑\" (but that lacks the jumping) or \"连蹦带跳地跑\". The manner component needs decomposition into multiple elements. I'd say 部分对齐 with note.\n\nOutput format: five fields:\n准入标签：Y\n理由：...\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：...\n\nReason: 运动体为实体（狗），发生三维物理空间位移（大步奔跑前进），激活源点-路径-终点框架。\n\nImage schema: 方式伴随图式 — the verb's semantic core encodes the manner of movement (大步跳跃式奔跑), path is expressed by \"ahead\" not the verb itself.\n\nAlignment: 汉语常规表达如\"狗连蹦带跳地向前跑/蹦蹦跳跳地跑在前面\"，图式大体一致（同为方式编码），但汉语需拆分为方式成分（连蹦带跳）加位移动词（跑/前进），句法强制增补成分 → 部分对齐。\n\n备注存疑点: \"bound\"兼具跳跃与奔跑方式义，汉语无单一对应动词，需复合表达；若视为汉语同样以方式动词编码（蹦跳），亦可论证完全对齐，此处存疑。\n\nKeep concise, Chinese only.</think>准入标签：Y\n理由：运动体为实体（狗），发生三维物理空间中的大步奔跑位移，激活源点-路径-终点框架，属典型自移移动义位。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：该义位语义重心在移动方式（大步、带跳跃感的奔跑），路径由例句中ahead单独编码，非动词自带。汉语常规表达需拆分为方式成分加位移动词，如“狗连蹦带跳地向前跑”“蹦蹦跳跳地跑在前面”，图式大体一致但句法强制增补“跑/前进”等成分，且“bound”兼具跳跃与奔跑双重方式义，汉语无单一动词对应，故判部分对齐；若强调汉语“蹦跳”同为方式动词编码，亦有完全对齐的论证空间，此处存疑。",
+   "sense_id": "bound-S1",
+   "definition": "to run with long steps, especially in an enthusiastic way"
+  }
+ },
+ "errors": []
+}

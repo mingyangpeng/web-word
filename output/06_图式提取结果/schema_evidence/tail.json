@@ -1,0 +1,704 @@
+{
+ "verb": "tail",
+ "freq": 75663,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "互动位移图式",
+ "ranking": [
+  "互动位移图式",
+  "方式伴随图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 23,
+   "mean_logdice": 1.659,
+   "prominence_score": 7.607,
+   "top_evidence": [
+    {
+     "word": "bit",
+     "logdice": 8.35,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "off",
+     "logdice": 5.09,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "year",
+     "logdice": 5.07,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "month",
+     "logdice": 4.66,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "season",
+     "logdice": 4.44,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "time",
+     "logdice": 4.39,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "back",
+     "logdice": 3.44,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "along",
+     "logdice": 0.9,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" by ...",
+     "logdice": 0.78,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" of ...",
+     "logdice": 0.22,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 9752,
+     "slot_logdice": 12.89,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 5.09
+      },
+      {
+       "word": "along",
+       "logdice": 0.9
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 366,
+     "slot_logdice": 0.48,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "bit",
+       "logdice": 8.35
+      },
+      {
+       "word": "year",
+       "logdice": 5.07
+      },
+      {
+       "word": "month",
+       "logdice": 4.66
+      },
+      {
+       "word": "season",
+       "logdice": 4.44
+      },
+      {
+       "word": "time",
+       "logdice": 4.39
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1388,
+     "slot_logdice": "",
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 0.78
+      },
+      {
+       "word": "\"%w\" of ...",
+       "logdice": 0.22
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.22
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.12
+      },
+      {
+       "word": "\"%w\" after ...",
+       "logdice": 0.1
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 4,
+   "slots_defined": 7,
+   "coverage": 0.571,
+   "n_types": 68,
+   "mean_logdice": 4.851,
+   "prominence_score": 29.633,
+   "top_evidence": [
+    {
+     "word": "sea",
+     "logdice": 11.51,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "godwit",
+     "logdice": 8.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hawk",
+     "logdice": 8.43,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "macaque",
+     "logdice": 8.38,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "redfish",
+     "logdice": 8.07,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Hawk",
+     "logdice": 7.74,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "tit",
+     "logdice": 7.56,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "deer",
+     "logdice": 7.43,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Eagle",
+     "logdice": 7.39,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "pond",
+     "logdice": 7.34,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 27676,
+     "slot_logdice": 36.58,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "godwit",
+       "logdice": 8.94
+      },
+      {
+       "word": "hawk",
+       "logdice": 8.43
+      },
+      {
+       "word": "macaque",
+       "logdice": 8.38
+      },
+      {
+       "word": "redfish",
+       "logdice": 8.07
+      },
+      {
+       "word": "Hawk",
+       "logdice": 7.74
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 25,
+     "slot_logdice": 0.03,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "sea",
+       "logdice": 11.51
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1388,
+     "slot_logdice": "",
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 0.78
+      },
+      {
+       "word": "\"%w\" of ...",
+       "logdice": 0.22
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.22
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.12
+      },
+      {
+       "word": "\"%w\" after ...",
+       "logdice": 0.1
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1722,
+     "slot_logdice": 2.28,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 1.29
+      },
+      {
+       "word": "over",
+       "logdice": 0.2
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 125,
+   "mean_logdice": 4.5,
+   "prominence_score": 31.398,
+   "top_evidence": [
+    {
+     "word": "top",
+     "logdice": 11.4,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ovate",
+     "logdice": 10.58,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "quadruped",
+     "logdice": 10.4,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "wing",
+     "logdice": 8.6,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "fin",
+     "logdice": 8.3,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "vert",
+     "logdice": 7.97,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "Happy",
+     "logdice": 7.72,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Red",
+     "logdice": 7.69,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Wedge",
+     "logdice": 7.61,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "tail",
+     "logdice": 7.51,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 8192,
+     "slot_logdice": 10.83,
+     "n_collocates": 22,
+     "top5": [
+      {
+       "word": "high",
+       "logdice": 7.1
+      },
+      {
+       "word": "hot",
+       "logdice": 4.05
+      },
+      {
+       "word": "square",
+       "logdice": 3.85
+      },
+      {
+       "word": "thick",
+       "logdice": 3.69
+      },
+      {
+       "word": "short",
+       "logdice": 3.62
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 168,
+     "slot_logdice": 0.22,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "quadruped",
+       "logdice": 10.4
+      },
+      {
+       "word": "vert",
+       "logdice": 7.97
+      },
+      {
+       "word": "biting",
+       "logdice": 5.89
+      },
+      {
+       "word": "blue",
+       "logdice": 1.71
+      },
+      {
+       "word": "wide",
+       "logdice": 1.0
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 2.25
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.05
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 14203,
+     "slot_logdice": 18.77,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Happy",
+       "logdice": 7.72
+      },
+      {
+       "word": "Red",
+       "logdice": 7.69
+      },
+      {
+       "word": "Wedge",
+       "logdice": 7.61
+      },
+      {
+       "word": "Nine",
+       "logdice": 7.0
+      },
+      {
+       "word": "swallow",
+       "logdice": 6.85
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 2324,
+     "slot_logdice": 3.07,
+     "n_collocates": 43,
+     "top5": [
+      {
+       "word": "top",
+       "logdice": 11.4
+      },
+      {
+       "word": "wing",
+       "logdice": 8.6
+      },
+      {
+       "word": "fin",
+       "logdice": 8.3
+      },
+      {
+       "word": "tail",
+       "logdice": 7.51
+      },
+      {
+       "word": "crined",
+       "logdice": 7.48
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 110,
+     "slot_logdice": 0.15,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "ovate",
+       "logdice": 10.58
+      },
+      {
+       "word": "loose",
+       "logdice": 4.76
+      },
+      {
+       "word": "long",
+       "logdice": 0.93
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 118,
+   "mean_logdice": 5.105,
+   "prominence_score": 35.201,
+   "top_evidence": [
+    {
+     "word": "godwit",
+     "logdice": 8.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hawk",
+     "logdice": 8.43,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "macaque",
+     "logdice": 8.38,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "redfish",
+     "logdice": 8.07,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Hawk",
+     "logdice": 7.74,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Happy",
+     "logdice": 7.72,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Red",
+     "logdice": 7.69,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Wedge",
+     "logdice": 7.61,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "tit",
+     "logdice": 7.56,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "deer",
+     "logdice": 7.43,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 27676,
+     "slot_logdice": 36.58,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "godwit",
+       "logdice": 8.94
+      },
+      {
+       "word": "hawk",
+       "logdice": 8.43
+      },
+      {
+       "word": "macaque",
+       "logdice": 8.38
+      },
+      {
+       "word": "redfish",
+       "logdice": 8.07
+      },
+      {
+       "word": "Hawk",
+       "logdice": 7.74
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 7522,
+     "slot_logdice": 9.94,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "we",
+       "logdice": 1.54
+      },
+      {
+       "word": "him",
+       "logdice": 0.73
+      },
+      {
+       "word": "her",
+       "logdice": 0.72
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 4270,
+     "slot_logdice": 5.64,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "her",
+       "logdice": 1.32
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 14203,
+     "slot_logdice": 18.77,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Happy",
+       "logdice": 7.72
+      },
+      {
+       "word": "Red",
+       "logdice": 7.69
+      },
+      {
+       "word": "Wedge",
+       "logdice": 7.61
+      },
+      {
+       "word": "Nine",
+       "logdice": 7.0
+      },
+      {
+       "word": "swallow",
+       "logdice": 6.85
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1388,
+     "slot_logdice": "",
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 0.78
+      },
+      {
+       "word": "\"%w\" of ...",
+       "logdice": 0.22
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.22
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.12
+      },
+      {
+       "word": "\"%w\" after ...",
+       "logdice": 0.1
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1722,
+     "slot_logdice": 2.28,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 1.29
+      },
+      {
+       "word": "over",
+       "logdice": 0.2
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

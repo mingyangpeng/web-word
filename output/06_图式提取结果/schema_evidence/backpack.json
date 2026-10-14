@@ -1,0 +1,408 @@
+{
+ "verb": "backpack",
+ "freq": 317609,
+ "lpos": "-n",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "源点脱离图式",
+  "终点抵达图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 1,
+   "slots_defined": 5,
+   "coverage": 0.2,
+   "n_types": 50,
+   "mean_logdice": 0.533,
+   "prominence_score": 3.023,
+   "top_evidence": [
+    {
+     "word": "... in \"%w\"",
+     "logdice": 6.07,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... of \"%w\"",
+     "logdice": 3.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... with \"%w\"",
+     "logdice": 2.26,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 1.8,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 1.74,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... into \"%w\"",
+     "logdice": 1.56,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.44,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... on \"%w\"",
+     "logdice": 1.09,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.93,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.91,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 85028,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "... in \"%w\"",
+       "logdice": 6.07
+      },
+      {
+       "word": "... of \"%w\"",
+       "logdice": 3.16
+      },
+      {
+       "word": "... with \"%w\"",
+       "logdice": 2.26
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.8
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.74
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 1,
+   "slots_defined": 7,
+   "coverage": 0.143,
+   "n_types": 50,
+   "mean_logdice": 0.533,
+   "prominence_score": 3.023,
+   "top_evidence": [
+    {
+     "word": "... in \"%w\"",
+     "logdice": 6.07,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... of \"%w\"",
+     "logdice": 3.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... with \"%w\"",
+     "logdice": 2.26,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 1.8,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 1.74,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... into \"%w\"",
+     "logdice": 1.56,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.44,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... on \"%w\"",
+     "logdice": 1.09,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.93,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.91,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 85028,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "... in \"%w\"",
+       "logdice": 6.07
+      },
+      {
+       "word": "... of \"%w\"",
+       "logdice": 3.16
+      },
+      {
+       "word": "... with \"%w\"",
+       "logdice": 2.26
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.8
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.74
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 2,
+   "slots_defined": 6,
+   "coverage": 0.333,
+   "n_types": 83,
+   "mean_logdice": 5.885,
+   "prominence_score": 37.62,
+   "top_evidence": [
+    {
+     "word": "purse",
+     "logdice": 9.34,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "suitcase",
+     "logdice": 9.04,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "briefcase",
+     "logdice": 8.91,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "bag",
+     "logdice": 8.79,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "luggage",
+     "logdice": 7.94,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "handbag",
+     "logdice": 7.82,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "drawstring",
+     "logdice": 7.63,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "tote",
+     "logdice": 7.59,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "backpack",
+     "logdice": 7.54,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "pocket",
+     "logdice": 7.13,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 102881,
+     "slot_logdice": 32.39,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "drawstring",
+       "logdice": 7.63
+      },
+      {
+       "word": "purse",
+       "logdice": 7.34
+      },
+      {
+       "word": "bag",
+       "logdice": 7.18
+      },
+      {
+       "word": "laptop",
+       "logdice": 6.48
+      },
+      {
+       "word": "briefcase",
+       "logdice": 6.46
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 76443,
+     "slot_logdice": 24.07,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "purse",
+       "logdice": 9.34
+      },
+      {
+       "word": "suitcase",
+       "logdice": 9.04
+      },
+      {
+       "word": "briefcase",
+       "logdice": 8.91
+      },
+      {
+       "word": "bag",
+       "logdice": 8.79
+      },
+      {
+       "word": "luggage",
+       "logdice": 7.94
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 1,
+   "slots_defined": 6,
+   "coverage": 0.167,
+   "n_types": 50,
+   "mean_logdice": 0.533,
+   "prominence_score": 3.023,
+   "top_evidence": [
+    {
+     "word": "... in \"%w\"",
+     "logdice": 6.07,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... of \"%w\"",
+     "logdice": 3.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... with \"%w\"",
+     "logdice": 2.26,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 1.8,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 1.74,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... into \"%w\"",
+     "logdice": 1.56,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.44,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... on \"%w\"",
+     "logdice": 1.09,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.93,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.91,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 85028,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "... in \"%w\"",
+       "logdice": 6.07
+      },
+      {
+       "word": "... of \"%w\"",
+       "logdice": 3.16
+      },
+      {
+       "word": "... with \"%w\"",
+       "logdice": 2.26
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.8
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.74
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

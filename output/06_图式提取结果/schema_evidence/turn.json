@@ -1,0 +1,872 @@
+{
+ "verb": "turn",
+ "freq": 17389867,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "源点脱离图式",
+  "终点抵达图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 199,
+   "mean_logdice": 5.776,
+   "prominence_score": 44.149,
+   "top_evidence": [
+    {
+     "word": "light",
+     "logdice": 11.27,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "people",
+     "logdice": 10.54,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "around",
+     "logdice": 10.49,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "out",
+     "logdice": 10.43,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "patient",
+     "logdice": 10.43,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "customer",
+     "logdice": 10.38,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "way",
+     "logdice": 10.19,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "face",
+     "logdice": 10.06,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "eye",
+     "logdice": 9.65,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "phone",
+     "logdice": 9.58,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 3152992,
+     "slot_logdice": 18.13,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 10.49
+      },
+      {
+       "word": "out",
+       "logdice": 10.43
+      },
+      {
+       "word": "off",
+       "logdice": 9.45
+      },
+      {
+       "word": "over",
+       "logdice": 8.95
+      },
+      {
+       "word": "on",
+       "logdice": 8.66
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 22747,
+     "slot_logdice": 0.13,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "people",
+       "logdice": 10.54
+      },
+      {
+       "word": "patient",
+       "logdice": 10.43
+      },
+      {
+       "word": "customer",
+       "logdice": 10.38
+      },
+      {
+       "word": "face",
+       "logdice": 10.06
+      },
+      {
+       "word": "eye",
+       "logdice": 9.65
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 301851,
+     "slot_logdice": 1.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "light",
+       "logdice": 11.27
+      },
+      {
+       "word": "phone",
+       "logdice": 9.58
+      },
+      {
+       "word": "heat",
+       "logdice": 9.49
+      },
+      {
+       "word": "TV",
+       "logdice": 9.48
+      },
+      {
+       "word": "computer",
+       "logdice": 9.23
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 197588,
+     "slot_logdice": 1.14,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "light",
+       "logdice": 10.32
+      },
+      {
+       "word": "way",
+       "logdice": 10.19
+      },
+      {
+       "word": "fine",
+       "logdice": 9.09
+      },
+      {
+       "word": "people",
+       "logdice": 8.65
+      },
+      {
+       "word": "right",
+       "logdice": 8.54
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 3063632,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.95
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.35
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.31
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.05
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.69
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 194,
+   "mean_logdice": 5.539,
+   "prominence_score": 42.138,
+   "top_evidence": [
+    {
+     "word": "offer",
+     "logdice": 11.98,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "heat",
+     "logdice": 11.56,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "volume",
+     "logdice": 11.07,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "request",
+     "logdice": 10.59,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "off",
+     "logdice": 10.43,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "on",
+     "logdice": 10.42,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "opportunity",
+     "logdice": 10.32,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "nose",
+     "logdice": 10.27,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "over",
+     "logdice": 10.0,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "nothing",
+     "logdice": 9.92,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 4741207,
+     "slot_logdice": 27.26,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "back",
+       "logdice": 9.47
+      },
+      {
+       "word": "head",
+       "logdice": 9.26
+      },
+      {
+       "word": "attention",
+       "logdice": 9.2
+      },
+      {
+       "word": "point",
+       "logdice": 8.7
+      },
+      {
+       "word": "eye",
+       "logdice": 8.58
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 129892,
+     "slot_logdice": 0.75,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "heat",
+       "logdice": 11.56
+      },
+      {
+       "word": "volume",
+       "logdice": 11.07
+      },
+      {
+       "word": "nose",
+       "logdice": 10.27
+      },
+      {
+       "word": "nothing",
+       "logdice": 9.92
+      },
+      {
+       "word": "evidence",
+       "logdice": 9.2
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 132874,
+     "slot_logdice": 0.76,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "offer",
+       "logdice": 11.98
+      },
+      {
+       "word": "request",
+       "logdice": 10.59
+      },
+      {
+       "word": "opportunity",
+       "logdice": 10.32
+      },
+      {
+       "word": "volume",
+       "logdice": 9.79
+      },
+      {
+       "word": "chance",
+       "logdice": 9.72
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 3063632,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.95
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.35
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.31
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.05
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.69
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1541412,
+     "slot_logdice": 8.86,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 10.43
+      },
+      {
+       "word": "on",
+       "logdice": 10.42
+      },
+      {
+       "word": "over",
+       "logdice": 10.0
+      },
+      {
+       "word": "around",
+       "logdice": 9.69
+      },
+      {
+       "word": "down",
+       "logdice": 9.47
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 216,
+   "mean_logdice": 6.755,
+   "prominence_score": 52.43,
+   "top_evidence": [
+    {
+     "word": "loose",
+     "logdice": 10.88,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "twist",
+     "logdice": 10.32,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "red",
+     "logdice": 10.31,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "toss",
+     "logdice": 9.97,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "in",
+     "logdice": 9.81,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "green",
+     "logdice": 9.79,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "violent",
+     "logdice": 9.66,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "brown",
+     "logdice": 9.6,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "sour",
+     "logdice": 9.56,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "inside-out",
+     "logdice": 9.55,
+     "slot": "complements of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 3231796,
+     "slot_logdice": 18.58,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "in",
+       "logdice": 9.81
+      },
+      {
+       "word": "away",
+       "logdice": 9.12
+      },
+      {
+       "word": "back",
+       "logdice": 8.47
+      },
+      {
+       "word": "around",
+       "logdice": 8.47
+      },
+      {
+       "word": "right",
+       "logdice": 8.2
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 494726,
+     "slot_logdice": 2.84,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "red",
+       "logdice": 10.31
+      },
+      {
+       "word": "green",
+       "logdice": 9.79
+      },
+      {
+       "word": "violent",
+       "logdice": 9.66
+      },
+      {
+       "word": "brown",
+       "logdice": 9.6
+      },
+      {
+       "word": "sour",
+       "logdice": 9.56
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.6
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.4
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 3691836,
+     "slot_logdice": 21.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "face",
+       "logdice": 7.26
+      },
+      {
+       "word": "head",
+       "logdice": 7.15
+      },
+      {
+       "word": "light",
+       "logdice": 7.12
+      },
+      {
+       "word": "eye",
+       "logdice": 7.03
+      },
+      {
+       "word": "weather",
+       "logdice": 7.01
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 457825,
+     "slot_logdice": 2.63,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "twist",
+       "logdice": 10.32
+      },
+      {
+       "word": "toss",
+       "logdice": 9.97
+      },
+      {
+       "word": "walk",
+       "logdice": 9.36
+      },
+      {
+       "word": "look",
+       "logdice": 9.11
+      },
+      {
+       "word": "stop",
+       "logdice": 8.69
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 64223,
+     "slot_logdice": 0.37,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "loose",
+       "logdice": 10.88
+      },
+      {
+       "word": "inside-out",
+       "logdice": 9.55
+      },
+      {
+       "word": "green",
+       "logdice": 9.26
+      },
+      {
+       "word": "red",
+       "logdice": 9.19
+      },
+      {
+       "word": "blue",
+       "logdice": 9.15
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 176,
+   "mean_logdice": 4.444,
+   "prominence_score": 33.184,
+   "top_evidence": [
+    {
+     "word": "off",
+     "logdice": 10.43,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "on",
+     "logdice": 10.42,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "over",
+     "logdice": 10.0,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "around",
+     "logdice": 9.69,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "back",
+     "logdice": 9.47,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "down",
+     "logdice": 9.47,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "head",
+     "logdice": 9.26,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "attention",
+     "logdice": 9.2,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "point",
+     "logdice": 8.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "away",
+     "logdice": 8.62,
+     "slot": "particles after \"%w\" with object"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 4741207,
+     "slot_logdice": 27.26,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "back",
+       "logdice": 9.47
+      },
+      {
+       "word": "head",
+       "logdice": 9.26
+      },
+      {
+       "word": "attention",
+       "logdice": 9.2
+      },
+      {
+       "word": "point",
+       "logdice": 8.7
+      },
+      {
+       "word": "eye",
+       "logdice": 8.58
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 1103969,
+     "slot_logdice": 6.35,
+     "n_collocates": 29,
+     "top5": [
+      {
+       "word": "himself",
+       "logdice": 7.27
+      },
+      {
+       "word": "it",
+       "logdice": 7.24
+      },
+      {
+       "word": "them",
+       "logdice": 7.07
+      },
+      {
+       "word": "itself",
+       "logdice": 6.69
+      },
+      {
+       "word": "her",
+       "logdice": 6.65
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 3257523,
+     "slot_logdice": 18.73,
+     "n_collocates": 27,
+     "top5": [
+      {
+       "word": "it",
+       "logdice": 7.01
+      },
+      {
+       "word": "she",
+       "logdice": 6.89
+      },
+      {
+       "word": "he",
+       "logdice": 6.59
+      },
+      {
+       "word": "him",
+       "logdice": 5.96
+      },
+      {
+       "word": "them",
+       "logdice": 5.94
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 3691836,
+     "slot_logdice": 21.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "face",
+       "logdice": 7.26
+      },
+      {
+       "word": "head",
+       "logdice": 7.15
+      },
+      {
+       "word": "light",
+       "logdice": 7.12
+      },
+      {
+       "word": "eye",
+       "logdice": 7.03
+      },
+      {
+       "word": "weather",
+       "logdice": 7.01
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 3063632,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.95
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.35
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.31
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.05
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.69
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1541412,
+     "slot_logdice": 8.86,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 10.43
+      },
+      {
+       "word": "on",
+       "logdice": 10.42
+      },
+      {
+       "word": "over",
+       "logdice": 10.0
+      },
+      {
+       "word": "around",
+       "logdice": 9.69
+      },
+      {
+       "word": "down",
+       "logdice": 9.47
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

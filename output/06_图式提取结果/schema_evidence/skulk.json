@@ -1,0 +1,656 @@
+{
+ "verb": "skulk",
+ "freq": 16182,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 24,
+   "mean_logdice": 1.283,
+   "prominence_score": 5.958,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 10.34,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "home",
+     "logdice": 5.15,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "around",
+     "logdice": 3.63,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "stage",
+     "logdice": 3.02,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 1.41,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" around ...",
+     "logdice": 1.34,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "away",
+     "logdice": 1.29,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "off",
+     "logdice": 1.01,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" about ...",
+     "logdice": 0.74,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 0.44,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 2590,
+     "slot_logdice": 16.01,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.63
+      },
+      {
+       "word": "away",
+       "logdice": 1.29
+      },
+      {
+       "word": "off",
+       "logdice": 1.01
+      },
+      {
+       "word": "along",
+       "logdice": 0.36
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 11,
+     "slot_logdice": 0.07,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "home",
+       "logdice": 5.15
+      },
+      {
+       "word": "stage",
+       "logdice": 3.02
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2643,
+     "slot_logdice": "",
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 10.34
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.41
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.34
+      },
+      {
+       "word": "\"%w\" about ...",
+       "logdice": 0.74
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.44
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 62,
+   "mean_logdice": 2.475,
+   "prominence_score": 14.794,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 10.34,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Geist",
+     "logdice": 7.84,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "passerine",
+     "logdice": 6.82,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "babbler",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "warbler",
+     "logdice": 6.26,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "vagabond",
+     "logdice": 5.85,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hyena",
+     "logdice": 5.31,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Wren",
+     "logdice": 5.26,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "brute",
+     "logdice": 4.93,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "alley",
+     "logdice": 4.9,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1042,
+     "slot_logdice": 6.44,
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "Geist",
+       "logdice": 7.84
+      },
+      {
+       "word": "passerine",
+       "logdice": 6.82
+      },
+      {
+       "word": "babbler",
+       "logdice": 6.35
+      },
+      {
+       "word": "warbler",
+       "logdice": 6.26
+      },
+      {
+       "word": "vagabond",
+       "logdice": 5.85
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 5,
+     "slot_logdice": 0.03,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "stair",
+       "logdice": 1.46
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 34,
+     "slot_logdice": 0.21,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "alley",
+       "logdice": 4.9
+      },
+      {
+       "word": "corridor",
+       "logdice": 4.33
+      },
+      {
+       "word": "hallway",
+       "logdice": 2.77
+      },
+      {
+       "word": "street",
+       "logdice": 1.62
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2643,
+     "slot_logdice": "",
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 10.34
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.41
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.34
+      },
+      {
+       "word": "\"%w\" about ...",
+       "logdice": 0.74
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.44
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 931,
+     "slot_logdice": 5.75,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.45
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 80,
+   "mean_logdice": 2.667,
+   "prominence_score": 16.91,
+   "top_evidence": [
+    {
+     "word": "slink",
+     "logdice": 9.5,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sneak",
+     "logdice": 7.89,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "lurk",
+     "logdice": 7.88,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "prowl",
+     "logdice": 7.8,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sulk",
+     "logdice": 7.09,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "slither",
+     "logdice": 6.73,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "scheme",
+     "logdice": 6.22,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "babbler",
+     "logdice": 5.93,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "furtively",
+     "logdice": 5.73,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "cower",
+     "logdice": 5.5,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 2955,
+     "slot_logdice": 18.26,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "furtively",
+       "logdice": 5.73
+      },
+      {
+       "word": "guiltily",
+       "logdice": 4.44
+      },
+      {
+       "word": "stealthily",
+       "logdice": 3.7
+      },
+      {
+       "word": "silently",
+       "logdice": 1.88
+      },
+      {
+       "word": "nearby",
+       "logdice": 1.54
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 90,
+     "slot_logdice": 0.56,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "unseen",
+       "logdice": 3.24
+      },
+      {
+       "word": "past",
+       "logdice": 1.1
+      },
+      {
+       "word": "outside",
+       "logdice": 0.77
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.52
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1319,
+     "slot_logdice": 8.15,
+     "n_collocates": 45,
+     "top5": [
+      {
+       "word": "babbler",
+       "logdice": 5.93
+      },
+      {
+       "word": "warbler",
+       "logdice": 4.84
+      },
+      {
+       "word": "heron",
+       "logdice": 4.47
+      },
+      {
+       "word": "coward",
+       "logdice": 4.27
+      },
+      {
+       "word": "hyena",
+       "logdice": 4.19
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 354,
+     "slot_logdice": 2.19,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "slink",
+       "logdice": 9.5
+      },
+      {
+       "word": "sneak",
+       "logdice": 7.89
+      },
+      {
+       "word": "lurk",
+       "logdice": 7.88
+      },
+      {
+       "word": "prowl",
+       "logdice": 7.8
+      },
+      {
+       "word": "sulk",
+       "logdice": 7.09
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 83,
+   "mean_logdice": 2.191,
+   "prominence_score": 14.003,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 10.34,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Geist",
+     "logdice": 7.84,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "passerine",
+     "logdice": 6.82,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "babbler",
+     "logdice": 6.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "warbler",
+     "logdice": 6.26,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "vagabond",
+     "logdice": 5.85,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hyena",
+     "logdice": 5.31,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Wren",
+     "logdice": 5.26,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "brute",
+     "logdice": 4.93,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Heron",
+     "logdice": 4.58,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1042,
+     "slot_logdice": 6.44,
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "Geist",
+       "logdice": 7.84
+      },
+      {
+       "word": "passerine",
+       "logdice": 6.82
+      },
+      {
+       "word": "babbler",
+       "logdice": 6.35
+      },
+      {
+       "word": "warbler",
+       "logdice": 6.26
+      },
+      {
+       "word": "vagabond",
+       "logdice": 5.85
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1319,
+     "slot_logdice": 8.15,
+     "n_collocates": 45,
+     "top5": [
+      {
+       "word": "babbler",
+       "logdice": 5.93
+      },
+      {
+       "word": "warbler",
+       "logdice": 4.84
+      },
+      {
+       "word": "heron",
+       "logdice": 4.47
+      },
+      {
+       "word": "coward",
+       "logdice": 4.27
+      },
+      {
+       "word": "hyena",
+       "logdice": 4.19
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2643,
+     "slot_logdice": "",
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 10.34
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.41
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.34
+      },
+      {
+       "word": "\"%w\" about ...",
+       "logdice": 0.74
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.44
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 931,
+     "slot_logdice": 5.75,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.45
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

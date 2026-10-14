@@ -143,7 +143,8 @@ def _fake_cursor_factory(fake):
                     self._rows = [row] if row else []
                 else:
                     self._rows = []
-            elif "FROM definitions" in sql and "WHERE cluster_id" in sql:
+            elif "FROM definitions" in sql and "cluster_id" in sql:
+                # 兼容带别名的 WHERE d.cluster_id（节点明细联查版）
                 self._rows = list(fake["members"].get(params[0], []))
             elif "FROM word_clusters" in sql and "ORDER BY size" in sql:
                 self._rows = sorted(
@@ -195,7 +196,7 @@ class TestClusterGraph:
 
     def _patch(self, monkeypatch, fake):
         cur = _fake_cursor_factory(fake)
-        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(cur))
+        monkeypatch.setattr(db, "get_db_cursor", lambda autocommit=True: _FakeCtx(cur))
 
     def test_three_member_cluster_is_complete(self, monkeypatch):
         self._patch(monkeypatch, _fixture())
@@ -252,7 +253,7 @@ class TestClusterGraphById:
 
     def _patch(self, monkeypatch, fake):
         cur = _fake_cursor_factory(fake)
-        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(cur))
+        monkeypatch.setattr(db, "get_db_cursor", lambda autocommit=True: _FakeCtx(cur))
 
     def test_open_cluster_without_any_verb(self, monkeypatch):
         """不传 center 也要能打开一个簇，并自动高亮一个节点。"""
@@ -294,7 +295,7 @@ class TestListClusters:
                                "sub_cat": "奔跑行进", "main_cat": "方式聚焦类",
                                "size": 31}
         cur = _fake_cursor_factory(fake)
-        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(cur))
+        monkeypatch.setattr(db, "get_db_cursor", lambda autocommit=True: _FakeCtx(cur))
 
         cs = db.list_clusters()
         assert [c["id"] for c in cs] == [8, 7]          # 按 size 降序
@@ -381,7 +382,7 @@ class TestSidebarStatsContract:
             def __exit__(self, *a):
                 return False
 
-        monkeypatch.setattr(db, "get_db_cursor", lambda: BoomCtx())
+        monkeypatch.setattr(db, "get_db_cursor", lambda autocommit=True: BoomCtx())
         s = db.get_stats()
         assert "total_clusters" in s
         assert "total_relations" in s
@@ -672,7 +673,7 @@ class TestFullWordGraph:
             def fetchall(self):
                 return list(self._rows)
 
-        monkeypatch.setattr(db, "get_db_cursor", lambda: _FakeCtx(FakeCursor()))
+        monkeypatch.setattr(db, "get_db_cursor", lambda autocommit=True: _FakeCtx(FakeCursor()))
         g = db.get_full_word_graph()
 
         assert g["stats"] == {"node_count": 2, "edge_count": 1, "cluster_count": 1}
@@ -1010,7 +1011,7 @@ class TestAnnotationColumnsWhitelist:
                 return False
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: Ctx()
+        db.get_db_cursor = lambda autocommit=True: Ctx()
         try:
             db.insert_definition("v", "d", {}, None, "m", None,
                                  {"image_schema": "方式伴随图式",
@@ -1038,7 +1039,7 @@ class TestAnnotationColumnsWhitelist:
                 return False
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: Ctx()
+        db.get_db_cursor = lambda autocommit=True: Ctx()
         try:
             db.insert_definition("v", "d", {}, None, "m", None,
                                  {"image_schema": "方式伴随图式"})
@@ -1078,7 +1079,7 @@ class TestClusterMaintenance:
                 return self._rows[0] if self._rows else None
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        db.get_db_cursor = lambda autocommit=True: _FakeCtx(FakeCursor())
         try:
             n = db.prune_empty_clusters()
         finally:
@@ -1109,7 +1110,7 @@ class TestClusterMaintenance:
                 return list(self._rows)
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        db.get_db_cursor = lambda autocommit=True: _FakeCtx(FakeCursor())
         try:
             n = db.prune_empty_clusters()
         finally:
@@ -1130,7 +1131,7 @@ class TestClusterMaintenance:
                 return {"n": 5}
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        db.get_db_cursor = lambda autocommit=True: _FakeCtx(FakeCursor())
         try:
             db.clear_all_word_data()
         finally:
@@ -1157,7 +1158,7 @@ class TestSensesReplace:
                 executed.append((sql, rows))
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        db.get_db_cursor = lambda autocommit=True: _FakeCtx(FakeCursor())
         try:
             n = db.replace_word_senses(42, [
                 {"sense_index": 1, "ch_ndef": "甲", "prototype_level": "Y"},
@@ -1181,7 +1182,7 @@ class TestSensesReplace:
                 executed.append(sql)
 
         orig = db.get_db_cursor
-        db.get_db_cursor = lambda: _FakeCtx(FakeCursor())
+        db.get_db_cursor = lambda autocommit=True: _FakeCtx(FakeCursor())
         try:
             n = db.replace_word_senses(42, [])
         finally:

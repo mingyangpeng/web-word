@@ -1,0 +1,848 @@
+{
+ "verb": "follow",
+ "freq": 30988888,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 100,
+   "mean_logdice": 2.907,
+   "prominence_score": 19.358,
+   "top_evidence": [
+    {
+     "word": "through",
+     "logdice": 10.43,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "along",
+     "logdice": 9.65,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "train",
+     "logdice": 8.6,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "up",
+     "logdice": 8.35,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "logic",
+     "logdice": 7.99,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "implication",
+     "logdice": 7.97,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "suggestion",
+     "logdice": 7.93,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "instruction",
+     "logdice": 7.89,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "subject",
+     "logdice": 7.75,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "consequence",
+     "logdice": 7.59,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 603435,
+     "slot_logdice": 1.95,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "through",
+       "logdice": 10.43
+      },
+      {
+       "word": "along",
+       "logdice": 9.65
+      },
+      {
+       "word": "up",
+       "logdice": 8.35
+      },
+      {
+       "word": "on",
+       "logdice": 5.08
+      },
+      {
+       "word": "around",
+       "logdice": 4.04
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 22,
+     "slot_logdice": 0.0,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "game",
+       "logdice": 6.76
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 87,
+     "slot_logdice": 0.0,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "back",
+       "logdice": 4.98
+      },
+      {
+       "word": "list",
+       "logdice": 4.08
+      },
+      {
+       "word": "season",
+       "logdice": 3.45
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 1813,
+     "slot_logdice": 0.01,
+     "n_collocates": 34,
+     "top5": [
+      {
+       "word": "train",
+       "logdice": 8.6
+      },
+      {
+       "word": "logic",
+       "logdice": 7.99
+      },
+      {
+       "word": "implication",
+       "logdice": 7.97
+      },
+      {
+       "word": "suggestion",
+       "logdice": 7.93
+      },
+      {
+       "word": "instruction",
+       "logdice": 7.89
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2752333,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 6.42
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.0
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.29
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.23
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.2
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 178,
+   "mean_logdice": 5.055,
+   "prominence_score": 37.828,
+   "top_evidence": [
+    {
+     "word": "question",
+     "logdice": 10.09,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "appointment",
+     "logdice": 9.09,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "success",
+     "logdice": 9.04,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "email",
+     "logdice": 8.97,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "year",
+     "logdice": 8.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "visit",
+     "logdice": 8.89,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "call",
+     "logdice": 8.76,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "action",
+     "logdice": 8.74,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "instruction",
+     "logdice": 8.65,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "study",
+     "logdice": 8.54,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 19474784,
+     "slot_logdice": 62.84,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "year",
+       "logdice": 8.94
+      },
+      {
+       "word": "instruction",
+       "logdice": 8.65
+      },
+      {
+       "word": "link",
+       "logdice": 8.51
+      },
+      {
+       "word": "step",
+       "logdice": 8.41
+      },
+      {
+       "word": "day",
+       "logdice": 8.31
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 121992,
+     "slot_logdice": 0.39,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "question",
+       "logdice": 10.09
+      },
+      {
+       "word": "appointment",
+       "logdice": 9.09
+      },
+      {
+       "word": "success",
+       "logdice": 9.04
+      },
+      {
+       "word": "email",
+       "logdice": 8.97
+      },
+      {
+       "word": "visit",
+       "logdice": 8.89
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1692,
+     "slot_logdice": 0.01,
+     "n_collocates": 33,
+     "top5": [
+      {
+       "word": "creek",
+       "logdice": 8.17
+      },
+      {
+       "word": "drainage",
+       "logdice": 7.79
+      },
+      {
+       "word": "stream",
+       "logdice": 7.75
+      },
+      {
+       "word": "course",
+       "logdice": 7.56
+      },
+      {
+       "word": "ridge",
+       "logdice": 7.48
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2752333,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 6.42
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.0
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.29
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.23
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.2
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 278203,
+     "slot_logdice": 0.9,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 8.52
+      },
+      {
+       "word": "through",
+       "logdice": 7.96
+      },
+      {
+       "word": "up",
+       "logdice": 7.78
+      },
+      {
+       "word": "in",
+       "logdice": 7.15
+      },
+      {
+       "word": "on",
+       "logdice": 7.12
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 239,
+   "mean_logdice": 6.126,
+   "prominence_score": 48.436,
+   "top_evidence": [
+    {
+     "word": "precede",
+     "logdice": 10.24,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "immediately",
+     "logdice": 9.42,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "as",
+     "logdice": 9.36,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "closely",
+     "logdice": 9.26,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "graphic",
+     "logdice": 9.04,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "east",
+     "logdice": 8.36,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "year",
+     "logdice": 8.25,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "read",
+     "logdice": 8.16,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "day",
+     "logdice": 8.02,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "understand",
+     "logdice": 7.97,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 3519003,
+     "slot_logdice": 11.36,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "immediately",
+       "logdice": 9.42
+      },
+      {
+       "word": "as",
+       "logdice": 9.36
+      },
+      {
+       "word": "closely",
+       "logdice": 9.26
+      },
+      {
+       "word": "soon",
+       "logdice": 7.95
+      },
+      {
+       "word": "shortly",
+       "logdice": 7.52
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 73954,
+     "slot_logdice": 0.24,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "graphic",
+       "logdice": 9.04
+      },
+      {
+       "word": "social",
+       "logdice": 7.24
+      },
+      {
+       "word": "tutorial",
+       "logdice": 6.79
+      },
+      {
+       "word": "hot",
+       "logdice": 6.77
+      },
+      {
+       "word": "standard",
+       "logdice": 6.73
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.97
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.01
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 7358188,
+     "slot_logdice": 23.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "year",
+       "logdice": 8.25
+      },
+      {
+       "word": "day",
+       "logdice": 8.02
+      },
+      {
+       "word": "month",
+       "logdice": 7.75
+      },
+      {
+       "word": "week",
+       "logdice": 7.43
+      },
+      {
+       "word": "period",
+       "logdice": 7.31
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 276361,
+     "slot_logdice": 0.89,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "precede",
+       "logdice": 10.24
+      },
+      {
+       "word": "read",
+       "logdice": 8.16
+      },
+      {
+       "word": "understand",
+       "logdice": 7.97
+      },
+      {
+       "word": "lead",
+       "logdice": 7.89
+      },
+      {
+       "word": "obey",
+       "logdice": 7.89
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 84837,
+     "slot_logdice": 0.27,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "east",
+       "logdice": 8.36
+      },
+      {
+       "word": "helpful",
+       "logdice": 7.93
+      },
+      {
+       "word": "similar",
+       "logdice": 7.88
+      },
+      {
+       "word": "outside",
+       "logdice": 7.54
+      },
+      {
+       "word": "downstream",
+       "logdice": 7.26
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 177,
+   "mean_logdice": 4.419,
+   "prominence_score": 33.033,
+   "top_evidence": [
+    {
+     "word": "year",
+     "logdice": 8.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "instruction",
+     "logdice": 8.65,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "around",
+     "logdice": 8.52,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "link",
+     "logdice": 8.51,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "step",
+     "logdice": 8.41,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "day",
+     "logdice": 8.31,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "rule",
+     "logdice": 8.24,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "him",
+     "logdice": 8.01,
+     "slot": "pronominal objects of \"%w\""
+    },
+    {
+     "word": "through",
+     "logdice": 7.96,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "her",
+     "logdice": 7.94,
+     "slot": "pronominal objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 19474784,
+     "slot_logdice": 62.84,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "year",
+       "logdice": 8.94
+      },
+      {
+       "word": "instruction",
+       "logdice": 8.65
+      },
+      {
+       "word": "link",
+       "logdice": 8.51
+      },
+      {
+       "word": "step",
+       "logdice": 8.41
+      },
+      {
+       "word": "day",
+       "logdice": 8.31
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 1078709,
+     "slot_logdice": 3.48,
+     "n_collocates": 26,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 8.01
+      },
+      {
+       "word": "her",
+       "logdice": 7.94
+      },
+      {
+       "word": "us",
+       "logdice": 7.33
+      },
+      {
+       "word": "me",
+       "logdice": 7.11
+      },
+      {
+       "word": "them",
+       "logdice": 6.77
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 1596534,
+     "slot_logdice": 5.15,
+     "n_collocates": 26,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 5.89
+      },
+      {
+       "word": "them",
+       "logdice": 5.75
+      },
+      {
+       "word": "us",
+       "logdice": 5.42
+      },
+      {
+       "word": "you",
+       "logdice": 5.34
+      },
+      {
+       "word": "they",
+       "logdice": 5.34
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 7358188,
+     "slot_logdice": 23.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "year",
+       "logdice": 8.25
+      },
+      {
+       "word": "day",
+       "logdice": 8.02
+      },
+      {
+       "word": "month",
+       "logdice": 7.75
+      },
+      {
+       "word": "week",
+       "logdice": 7.43
+      },
+      {
+       "word": "period",
+       "logdice": 7.31
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 2752333,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 6.42
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.0
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 0.29
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.23
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.2
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 278203,
+     "slot_logdice": 0.9,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 8.52
+      },
+      {
+       "word": "through",
+       "logdice": 7.96
+      },
+      {
+       "word": "up",
+       "logdice": 7.78
+      },
+      {
+       "word": "in",
+       "logdice": 7.15
+      },
+      {
+       "word": "on",
+       "logdice": 7.12
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

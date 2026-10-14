@@ -30,6 +30,8 @@ data/*
 !data/oxford_cache.json
 !data/word_graph.json
 !data/docs/
+# Sketch Engine 语料检索结果（enTenTen21，136 动词 Word Sketch 原始数据与汇总）
+!data/corpus/
 
 # MySQL 数据目录（本机运行态，数百 MB，绝不应入库）
 data/mysql/

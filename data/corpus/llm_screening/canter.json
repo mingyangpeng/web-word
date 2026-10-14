@@ -1,0 +1,19 @@
+{
+ "verb": "canter",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-09 21:33",
+ "n_senses": 1,
+ "results": {
+  "canter-S1": {
+   "准入标签": "Y",
+   "理由": "运动体为实体（骑手与马），沿海滩发生真实三维物理空间位移，激活源点-路径-终点框架，属典型自移移动动词义位。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "canter将移动方式（马的特定步态）编码入动词本身，汉语无对应单一动词，常规表达需用“骑马慢跑/小跑”等组合，句法强制增补“骑马”及方式词，图式大体一致但要素需增补；该义位兼含使役用法（使马以canter行进），标注以例句所示自移用法为准。",
+   "raw": "The task: label the English verb \"canter\" (S1): to move at a canter; to make a horse move at a canter. Example: We cantered along the beach.\n\nRule 1: Does it activate physical displacement frame? Yes - moving along the beach, horse/rider moving in physical space. So Y.\n\nRule 2: Image schema - canter encodes manner of movement (a gait between trot and gallop). The semantic core is the manner of locomotion, not source or endpoint. So 方式伴随图式 (manner co-occurring schema).\n\nRule 3: Y = prototypical physical displacement.\n\nRule 4: English-Chinese alignment. English \"canter\" conflates manner into the verb; Chinese typically uses 慢跑/小跑? Actually canter in Chinese is often expressed as \"（马）慢跑\" or \"骑马小跑\" — Chinese would use a path verb like 跑/奔 plus manner expression, e.g., \"我们骑着马沿海滩慢跑\" — Chinese requires adding the horse/rider component: 骑马慢跑. The schema is largely consistent (manner of movement), but Chinese syntax forces adding components (骑马, specifying the horse). So partial alignment: 图式大体一致，但存在语义要素缺失或汉语句法强制增补成分. Chinese doesn't have a single verb for canter; it needs 慢跑/小跑 plus 骑马. So 部分对齐.\n\nNote: canter as \"make a horse move at a canter\" (causative) - but the example is intransitive. The义位 includes both. Still manner-focused.\n\nOutput five fields in Chinese, following format.</think>准入标签：Y\n理由：运动体为实体（骑手与马），沿海滩发生真实三维物理空间位移，激活源点-路径-终点框架，属典型自移移动动词义位。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：canter将移动方式（马的特定步态）编码入动词本身，汉语无对应单一动词，常规表达需用“骑马慢跑/小跑”等组合，句法强制增补“骑马”及方式词，图式大体一致但要素需增补；该义位兼含使役用法（使马以canter行进），标注以例句所示自移用法为准。",
+   "sense_id": "canter-S1",
+   "definition": "to move at a canter; to make a horse move at a canter"
+  }
+ },
+ "errors": []
+}

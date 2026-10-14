@@ -5,6 +5,188 @@
   "source": "docs/Levin移动动词候选词筛选表.xlsx（词目与分类）+ docs/output-oald10en-for-senselist-1020.xlsx（OALD10 义项）+ data/dictionary.db（中英对照义位）",
   "nodes": [
     {
+      "id": "accompany",
+      "label": "accompany",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。（Oxford: To go with or attend as a companion or associate; to keep company with; to go along with.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
+    },
+    {
+      "id": "conduct",
+      "label": "conduct",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同、正式地。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
+    },
+    {
+      "id": "escort",
+      "label": "escort",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "协同随行位移；移动、涉及另一参与者、陪同。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
+    },
+    {
+      "id": "guide",
+      "label": "guide",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。（Oxford: To act as a guide.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
+    },
+    {
+      "id": "lead",
+      "label": "lead",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 21
+    },
+    {
+      "id": "shepherd",
+      "label": "shepherd",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "引路带领位移；移动、涉及另一参与者、引领、引导。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
+    },
+    {
+      "id": "chase",
+      "label": "chase",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "追逐；追赶；追击〔某人或某物〕",
+      "definition_source": "dictionary.db",
+      "sense_count": 5,
+      "dict_sense_count": 5,
+      "oald_sense_count": 8
+    },
+    {
+      "id": "follow",
+      "label": "follow",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "跟随〔某人〕；跟着",
+      "definition_source": "dictionary.db",
+      "sense_count": 16,
+      "dict_sense_count": 16,
+      "oald_sense_count": 23
+    },
+    {
+      "id": "pursue",
+      "label": "pursue",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "追求〔目标〕",
+      "definition_source": "dictionary.db",
+      "sense_count": 3,
+      "dict_sense_count": 3,
+      "oald_sense_count": 3
+    },
+    {
+      "id": "shadow",
+      "label": "shadow",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随、隐秘地。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
+    },
+    {
+      "id": "tail",
+      "label": "tail",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 2
+    },
+    {
+      "id": "track",
+      "label": "track",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 7
+    },
+    {
+      "id": "trail",
+      "label": "trail",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "image_schema": "互动位移图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "跟随潜伏位移；移动、以某目的为方向、跟随。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
+    },
+    {
       "id": "clamber",
       "label": "clamber",
       "main_cat": "方式聚焦型",
@@ -1907,9 +2089,492 @@
       "sense_count": 0,
       "dict_sense_count": 0,
       "oald_sense_count": 7
+    },
+    {
+      "id": "abandon",
+      "label": "abandon",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔某人〕舍弃〔汽车；房子等〕；离弃〔某地〕",
+      "definition_source": "dictionary.db",
+      "sense_count": 4,
+      "dict_sense_count": 4,
+      "oald_sense_count": 5
+    },
+    {
+      "id": "depart",
+      "label": "depart",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "逃离来源位移；移动、离开、出发。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
+    },
+    {
+      "id": "desert",
+      "label": "desert",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "处所脱离位移；移动、离开。（Oxford: To leave one's duty or post, especially to leave a military or naval unit without permission.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 6
+    },
+    {
+      "id": "escape",
+      "label": "escape",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔某人从某地或某处〕逃离；溜走；逃脱〔监禁；搜查等〕",
+      "definition_source": "dictionary.db",
+      "sense_count": 3,
+      "dict_sense_count": 3,
+      "oald_sense_count": 6
+    },
+    {
+      "id": "exit",
+      "label": "exit",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "空间移出位移；移动。（Oxford: To go out or go away from a place or situation; to depart, to leave.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
+    },
+    {
+      "id": "flee",
+      "label": "flee",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "逃离来源位移；移动、离开、逃离。（Oxford: To run away; to escape.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
+    },
+    {
+      "id": "leave",
+      "label": "leave",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "离去；离开",
+      "definition_source": "dictionary.db",
+      "sense_count": 13,
+      "dict_sense_count": 13,
+      "oald_sense_count": 21
+    },
+    {
+      "id": "recede",
+      "label": "recede",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "image_schema": "源点脱离图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "水平后退位移；移动、向后移动。",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
+    },
+    {
+      "id": "advance",
+      "label": "advance",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔人群；士兵〕向〔某地；某人〕行进，前进；进攻",
+      "definition_source": "dictionary.db",
+      "sense_count": 7,
+      "dict_sense_count": 7,
+      "oald_sense_count": 8
+    },
+    {
+      "id": "arrive",
+      "label": "arrive",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔人或车辆〕抵达〔某地〕；到达〔某地〕（尤指旅途的终点)",
+      "definition_source": "dictionary.db",
+      "sense_count": 6,
+      "dict_sense_count": 6,
+      "oald_sense_count": 4
+    },
+    {
+      "id": "ascend",
+      "label": "ascend",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To move upward, to fly, to soar.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 1
+    },
+    {
+      "id": "climb",
+      "label": "climb",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To ascend; rise; to go up.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 9
+    },
+    {
+      "id": "come",
+      "label": "come",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "来到；到达",
+      "definition_source": "dictionary.db",
+      "sense_count": 62,
+      "dict_sense_count": 62,
+      "oald_sense_count": 28
+    },
+    {
+      "id": "cross",
+      "label": "cross",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "穿过、跨越空间（研究者标注的原型义简述，完整释义待补）",
+      "definition_source": "levin-brief",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 18
+    },
+    {
+      "id": "descend",
+      "label": "descend",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To pass from a higher to a lower place; to move downwards; to come or go down in any way, for example by falling, flowing, walking, climbing etc.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 3
+    },
+    {
+      "id": "enter",
+      "label": "enter",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔某人〕进入，进去〔某处〕",
+      "definition_source": "dictionary.db",
+      "sense_count": 5,
+      "dict_sense_count": 5,
+      "oald_sense_count": 8
+    },
+    {
+      "id": "fall",
+      "label": "fall",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔从高处〕落下；往下掉；降落",
+      "definition_source": "dictionary.db",
+      "sense_count": 12,
+      "dict_sense_count": 12,
+      "oald_sense_count": 12
+    },
+    {
+      "id": "go",
+      "label": "go",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "去，走",
+      "definition_source": "dictionary.db",
+      "sense_count": 38,
+      "dict_sense_count": 38,
+      "oald_sense_count": 60
+    },
+    {
+      "id": "plunge",
+      "label": "plunge",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To fall or rush headlong into some thing, action, state or condition.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 4
+    },
+    {
+      "id": "return",
+      "label": "return",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "〔某人〕〔从某处〕返回〔另一处〕",
+      "definition_source": "dictionary.db",
+      "sense_count": 8,
+      "dict_sense_count": 8,
+      "oald_sense_count": 10
+    },
+    {
+      "id": "rise",
+      "label": "rise",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "垂直上行位移；移动、向上移动。（Oxford: To go up; to ascend; to climb.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 21
+    },
+    {
+      "id": "tumble",
+      "label": "tumble",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "image_schema": "终点抵达图式",
+      "prototype_level": "Y",
+      "alignment": "部分对齐",
+      "chinese_ndef": "垂直下行位移；移动、向下移动。（Oxford: To move or rush in a headlong or uncontrolled way.）",
+      "definition_source": "legacy-library",
+      "sense_count": 0,
+      "dict_sense_count": 0,
+      "oald_sense_count": 5
     }
   ],
   "links": [
+    {
+      "source": "abandon",
+      "target": "depart",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "abandon",
+      "target": "desert",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "abandon",
+      "target": "escape",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "abandon",
+      "target": "exit",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "abandon",
+      "target": "flee",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "abandon",
+      "target": "leave",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "abandon",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "accompany",
+      "target": "conduct",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "accompany",
+      "target": "escort",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "accompany",
+      "target": "guide",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "accompany",
+      "target": "lead",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "accompany",
+      "target": "shepherd",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "advance",
+      "target": "arrive",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "ascend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "climb",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "come",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "cross",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "descend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "advance",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
     {
       "source": "amble",
       "target": "clump",
@@ -2217,6 +2882,167 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "陆地行进类"
+    },
+    {
+      "source": "arrive",
+      "target": "ascend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "climb",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "come",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "cross",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "descend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "arrive",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "climb",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "come",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "cross",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "descend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "ascend",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
     },
     {
       "source": "backpack",
@@ -3332,6 +4158,48 @@
       "sub_cat": "奔跑行进类"
     },
     {
+      "source": "chase",
+      "target": "follow",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "chase",
+      "target": "pursue",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "chase",
+      "target": "shadow",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "chase",
+      "target": "tail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "chase",
+      "target": "track",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "chase",
+      "target": "trail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
       "source": "clamber",
       "target": "crawl",
       "relation": "近义",
@@ -3358,6 +4226,76 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "匍匐爬行类"
+    },
+    {
+      "source": "climb",
+      "target": "come",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "cross",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "descend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "climb",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
     },
     {
       "source": "clump",
@@ -3731,6 +4669,97 @@
       "sub_cat": "滚动滑行类"
     },
     {
+      "source": "come",
+      "target": "cross",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "descend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "come",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "conduct",
+      "target": "escort",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "conduct",
+      "target": "guide",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "conduct",
+      "target": "lead",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "conduct",
+      "target": "shepherd",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
       "source": "crawl",
       "target": "creep",
       "relation": "近义",
@@ -3764,6 +4793,62 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "匍匐爬行类"
+    },
+    {
+      "source": "cross",
+      "target": "descend",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "cross",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
     },
     {
       "source": "cruise",
@@ -4354,6 +5439,132 @@
       "sub_cat": "奔跑行进类"
     },
     {
+      "source": "depart",
+      "target": "desert",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "depart",
+      "target": "escape",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "depart",
+      "target": "exit",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "depart",
+      "target": "flee",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "depart",
+      "target": "leave",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "depart",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "descend",
+      "target": "enter",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "descend",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "descend",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "descend",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "descend",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "descend",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "descend",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "desert",
+      "target": "escape",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "desert",
+      "target": "exit",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "desert",
+      "target": "flee",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "desert",
+      "target": "leave",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "desert",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
       "source": "dodder",
       "target": "hobble",
       "relation": "近义",
@@ -4886,6 +6097,153 @@
       "sub_cat": "滚动滑行类"
     },
     {
+      "source": "enter",
+      "target": "fall",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "enter",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "enter",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "enter",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "enter",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "enter",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "escape",
+      "target": "exit",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "escape",
+      "target": "flee",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "escape",
+      "target": "leave",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "escape",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "escort",
+      "target": "guide",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "escort",
+      "target": "lead",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "escort",
+      "target": "shepherd",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "exit",
+      "target": "flee",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "exit",
+      "target": "leave",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "exit",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "fall",
+      "target": "go",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "fall",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "fall",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "fall",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "fall",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
       "source": "ferry",
       "target": "jet",
       "relation": "近义",
@@ -4998,6 +6356,20 @@
       "sub_cat": "运载工具类"
     },
     {
+      "source": "flee",
+      "target": "leave",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
+      "source": "flee",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
+    },
+    {
       "source": "flit",
       "target": "fly",
       "relation": "近义",
@@ -5066,6 +6438,41 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "飞行游动类"
+    },
+    {
+      "source": "follow",
+      "target": "pursue",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "follow",
+      "target": "shadow",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "follow",
+      "target": "tail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "follow",
+      "target": "track",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "follow",
+      "target": "trail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
     },
     {
       "source": "frolic",
@@ -5381,6 +6788,48 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "滚动滑行类"
+    },
+    {
+      "source": "go",
+      "target": "plunge",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "go",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "go",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "go",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "guide",
+      "target": "lead",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
+      "source": "guide",
+      "target": "shepherd",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
     },
     {
       "source": "hasten",
@@ -6839,6 +8288,13 @@
       "sub_cat": "运载工具类"
     },
     {
+      "source": "lead",
+      "target": "shepherd",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类"
+    },
+    {
       "source": "leap",
       "target": "prance",
       "relation": "近义",
@@ -6872,6 +8328,13 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "腾空跳跃类"
+    },
+    {
+      "source": "leave",
+      "target": "recede",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类"
     },
     {
       "source": "limp",
@@ -9982,6 +11445,27 @@
       "sub_cat": "陆地行进类"
     },
     {
+      "source": "plunge",
+      "target": "return",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "plunge",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "plunge",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
       "source": "prance",
       "target": "romp",
       "relation": "近义",
@@ -10472,6 +11956,34 @@
       "sub_cat": "运载工具类"
     },
     {
+      "source": "pursue",
+      "target": "shadow",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "pursue",
+      "target": "tail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "pursue",
+      "target": "track",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "pursue",
+      "target": "trail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
       "source": "race",
       "target": "run",
       "relation": "近义",
@@ -10612,6 +12124,20 @@
       "sub_cat": "长途行进类"
     },
     {
+      "source": "return",
+      "target": "rise",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
+      "source": "return",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
+    },
+    {
       "source": "ride",
       "target": "rocket",
       "relation": "近义",
@@ -10666,6 +12192,13 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "运载工具类"
+    },
+    {
+      "source": "rise",
+      "target": "tumble",
+      "relation": "近义",
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类"
     },
     {
       "source": "roam",
@@ -11814,6 +13347,27 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "奔跑行进类"
+    },
+    {
+      "source": "shadow",
+      "target": "tail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "shadow",
+      "target": "track",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "shadow",
+      "target": "trail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
     },
     {
       "source": "shamble",
@@ -13965,6 +15519,20 @@
       "sub_cat": "运载工具类"
     },
     {
+      "source": "tail",
+      "target": "track",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
+      "source": "tail",
+      "target": "trail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
+    },
+    {
       "source": "tear",
       "target": "trot",
       "relation": "近义",
@@ -14152,6 +15720,13 @@
       "relation": "近义",
       "main_cat": "方式聚焦型",
       "sub_cat": "陆地行进类"
+    },
+    {
+      "source": "track",
+      "target": "trail",
+      "relation": "近义",
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类"
     },
     {
       "source": "traipse",
@@ -14372,6 +15947,41 @@
     }
   ],
   "clusters": [
+    {
+      "main_cat": "互动聚焦型",
+      "sub_cat": "参与者类",
+      "size": 6,
+      "edge_count": 15,
+      "image_schema": "互动位移图式",
+      "cn_syntax": "常用连动式（跟着／追着＋V）；需两个参与者共现",
+      "translation_strategy": "重构为汉语连动结构；保留双参与者互动关系",
+      "verbs": [
+        "accompany",
+        "conduct",
+        "escort",
+        "guide",
+        "lead",
+        "shepherd"
+      ]
+    },
+    {
+      "main_cat": "互动聚焦型",
+      "sub_cat": "目的类",
+      "size": 7,
+      "edge_count": 21,
+      "image_schema": "互动位移图式",
+      "cn_syntax": "常用连动式（跟着／追着＋V）；需两个参与者共现",
+      "translation_strategy": "重构为汉语连动结构；保留双参与者互动关系",
+      "verbs": [
+        "chase",
+        "follow",
+        "pursue",
+        "shadow",
+        "tail",
+        "track",
+        "trail"
+      ]
+    },
     {
       "main_cat": "方式聚焦型",
       "sub_cat": "匍匐爬行类",
@@ -14594,6 +16204,50 @@
         "flit",
         "fly",
         "swim"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦型",
+      "sub_cat": "来源类",
+      "size": 8,
+      "edge_count": 28,
+      "image_schema": "源点脱离图式",
+      "cn_syntax": "需趋向补语（离开／出去）；动词可带处所宾语",
+      "translation_strategy": "保留源点脱离图式；汉语以趋向补语显化路径",
+      "verbs": [
+        "abandon",
+        "depart",
+        "desert",
+        "escape",
+        "exit",
+        "flee",
+        "leave",
+        "recede"
+      ]
+    },
+    {
+      "main_cat": "路径聚焦型",
+      "sub_cat": "终点类",
+      "size": 14,
+      "edge_count": 91,
+      "image_schema": "终点抵达图式",
+      "cn_syntax": "需趋向补语（到／进／上来）；常与处所介词短语共现",
+      "translation_strategy": "保留终点抵达图式；汉语补出终点趋向成分",
+      "verbs": [
+        "advance",
+        "arrive",
+        "ascend",
+        "climb",
+        "come",
+        "cross",
+        "descend",
+        "enter",
+        "fall",
+        "go",
+        "plunge",
+        "return",
+        "rise",
+        "tumble"
       ]
     }
   ]

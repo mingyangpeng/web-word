@@ -1,0 +1,19 @@
+{
+ "verb": "clamber",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-09 21:35",
+ "n_senses": 1,
+ "results": {
+  "clamber-S1": {
+   "准入标签": "Y",
+   "理由": "Reason: 运动体为实体（儿童），沿陡坡发生向上物理位移，激活源点-路径-终点空间框架；动词义位本身编码攀爬方式（费力、手脚并用）。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "...",
+   "raw": "The task: annotate the English motion verb \"clamber\", sense S1: \"to climb or move with difficulty or a lot of effort, using your hands and feet\". Example: \"The children clambered up the steep bank.\"\n\nRule 1: Does this sense activate a physical source-path-goal displacement frame? Yes — climbing up a steep bank involves physical movement of an entity (children) through space. So Y.\n\nRule 2: Image schema — choose one of: 源点脱离图式 (source detachment), 终点抵达图式 (goal arrival), 方式伴随图式 (manner co-occurring), 互动位移图式 (interactive displacement). \"Clamber\" encodes manner of motion (climbing with difficulty, using hands and feet). The semantic core is the manner of movement, not source or goal. So 方式伴随图式.\n\nRule 3: Y = prototypical physical displacement sense. Yes.\n\nRule 4: English-Chinese alignment. English \"clamber\" is a manner verb; Chinese typically expresses this event with a path verb plus manner in a satellite/coverb or adverbial, e.g., 孩子们手脚并用地爬上陡坡 / 攀爬上陡岸. Chinese would say \"孩子们艰难地爬上了陡峭的河岸\" — the manner is expressed separately (爬 + 艰难地/手脚并用), and Chinese requires adding aspect/directional complement (上/了). The schema is largely consistent (manner co-occurring schema vs. Chinese uses path verb 爬+上). Actually 爬 itself is a manner-ish verb in Chinese (crawl/climb). Hmm. Chinese 爬 can encode climbing manner. \"爬上陡坡\" — 爬 is the verb, 上 directional complement. So Chinese expression: 孩子们手脚并用地爬上陡峭的堤岸。The manner component (手脚并用、费力) is expressed via adverbials, and Chinese syntax forces the directional complement 上. So partial alignment: schema broadly consistent but Chinese requires syntactic supplementation of directional/path components and manner expressed separately.\n\nAlternatively, one could argue complete alignment if 爬 encodes manner similarly. But standard Talmy analysis: English is satellite-framed with manner verbs; Chinese is also often considered satellite-framed (or equipollently framed), with 爬 being a manner verb too. However, the rule says \"部分对齐：图式大体一致，但存在语义要素缺失或汉语句法强制增补成分\". Chinese requires the directional complement 上 (path) to be obligatorily added, and the \"difficulty/effort\" element needs separate adverbial expression (艰难地、费力地). So partial alignment seems right.\n\nOutput format: five fields:\n准入标签：Y\n理由：...\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：...\n\nReason: 运动体为实体（儿童），沿陡坡发生向上物理位移，激活源点-路径-终点空间框架；动词义位本身编码攀爬方式（费力、手脚并用）。\n\n备注存疑点: \"clamber\" 的方式义（费力攀爬）在汉语中常需副词性成分（如\"手脚并用地\"\"费力地\"）单独表达，且汉语需强制增补趋向补语\"上\"，故判部分对齐；若认为汉语\"爬\"已含方式义且图式核心一致，亦可论证为完全对齐。Something like that.\n\nKeep it concise, in Chinese, only the five fields.</think>准入标签：Y\n理由：运动体为实体（儿童），沿陡峭河岸发生向上的三维物理空间位移，激活源点-路径-终点框架，属原型物理位移义。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：clamber 的语义重心在编码移动方式（费力、手脚并用），汉语常规表达如“孩子们手脚并用地爬上陡峭的河岸”需将方式要素拆出为状语（“手脚并用地”“费力地”），且句法强制增补趋向成分“上”以显化路径，故判部分对齐；若认为汉语“爬”本身已承载攀爬方式义、图式核心要素齐备，亦可论证为完全对齐，此处存疑。",
+   "sense_id": "clamber-S1",
+   "definition": "to climb or move with difficulty or a lot of effort, using your hands and feet"
+  }
+ },
+ "errors": []
+}

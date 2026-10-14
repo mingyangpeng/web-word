@@ -1,0 +1,780 @@
+{
+ "verb": "wade",
+ "freq": 183534,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 38,
+   "mean_logdice": 2.547,
+   "prominence_score": 13.46,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 19.71,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "waist",
+     "logdice": 10.58,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 10.18,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "distance",
+     "logdice": 7.39,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "yard",
+     "logdice": 7.13,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "foot",
+     "logdice": 6.74,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "through",
+     "logdice": 6.71,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "across",
+     "logdice": 6.05,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "in",
+     "logdice": 4.59,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 4.47,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 13768,
+     "slot_logdice": 7.5,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "through",
+       "logdice": 6.71
+      },
+      {
+       "word": "across",
+       "logdice": 6.05
+      },
+      {
+       "word": "in",
+       "logdice": 4.59
+      },
+      {
+       "word": "around",
+       "logdice": 2.43
+      },
+      {
+       "word": "out",
+       "logdice": 1.7
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 112,
+     "slot_logdice": 0.06,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "waist",
+       "logdice": 10.58
+      },
+      {
+       "word": "distance",
+       "logdice": 7.39
+      },
+      {
+       "word": "yard",
+       "logdice": 7.13
+      },
+      {
+       "word": "foot",
+       "logdice": 6.74
+      },
+      {
+       "word": "bit",
+       "logdice": 3.7
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 66955,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 19.71
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 10.18
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 4.47
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.37
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 82,
+   "mean_logdice": 3.899,
+   "prominence_score": 24.855,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 19.71,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 10.18,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "creek",
+     "logdice": 8.46,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "pool",
+     "logdice": 8.28,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "bird",
+     "logdice": 8.14,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "stream",
+     "logdice": 7.39,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "boot",
+     "logdice": 6.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "River",
+     "logdice": 6.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Goodwyn",
+     "logdice": 6.48,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "fishing",
+     "logdice": 6.25,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 33840,
+     "slot_logdice": 18.44,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "pool",
+       "logdice": 8.28
+      },
+      {
+       "word": "bird",
+       "logdice": 8.14
+      },
+      {
+       "word": "boot",
+       "logdice": 6.67
+      },
+      {
+       "word": "River",
+       "logdice": 6.67
+      },
+      {
+       "word": "Goodwyn",
+       "logdice": 6.48
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 146,
+     "slot_logdice": 0.08,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "creek",
+       "logdice": 8.33
+      },
+      {
+       "word": "stream",
+       "logdice": 7.39
+      },
+      {
+       "word": "beach",
+       "logdice": 6.24
+      },
+      {
+       "word": "river",
+       "logdice": 5.51
+      },
+      {
+       "word": "paper",
+       "logdice": 4.13
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 106,
+     "slot_logdice": 0.06,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "creek",
+       "logdice": 8.46
+      },
+      {
+       "word": "stream",
+       "logdice": 6.73
+      },
+      {
+       "word": "river",
+       "logdice": 5.31
+      },
+      {
+       "word": "River",
+       "logdice": 4.8
+      },
+      {
+       "word": "middle",
+       "logdice": 4.14
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 66955,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 19.71
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 10.18
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 4.47
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.37
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1383,
+     "slot_logdice": 0.75,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "through",
+       "logdice": 4.22
+      },
+      {
+       "word": "across",
+       "logdice": 2.18
+      },
+      {
+       "word": "along",
+       "logdice": 1.41
+      },
+      {
+       "word": "around",
+       "logdice": 0.99
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 171,
+   "mean_logdice": 4.633,
+   "prominence_score": 34.403,
+   "top_evidence": [
+    {
+     "word": "knee-deep",
+     "logdice": 10.38,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "swim",
+     "logdice": 9.26,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "neck-deep",
+     "logdice": 8.76,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "ashore",
+     "logdice": 8.38,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "splash",
+     "logdice": 8.1,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "waist-deep",
+     "logdice": 8.07,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "chest-high",
+     "logdice": 8.07,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "float",
+     "logdice": 7.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Shoreham",
+     "logdice": 7.69,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "congregate",
+     "logdice": 7.56,
+     "slot": "complements of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 18080,
+     "slot_logdice": 9.85,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ashore",
+       "logdice": 8.38
+      },
+      {
+       "word": "waist-deep",
+       "logdice": 8.07
+      },
+      {
+       "word": "upstream",
+       "logdice": 6.36
+      },
+      {
+       "word": "barefoot",
+       "logdice": 6.18
+      },
+      {
+       "word": "thru",
+       "logdice": 5.5
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 1421,
+     "slot_logdice": 0.77,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "knee-deep",
+       "logdice": 10.38
+      },
+      {
+       "word": "neck-deep",
+       "logdice": 8.76
+      },
+      {
+       "word": "chest-high",
+       "logdice": 8.07
+      },
+      {
+       "word": "knee-high",
+       "logdice": 6.81
+      },
+      {
+       "word": "downstream",
+       "logdice": 5.46
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.36
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 16665,
+     "slot_logdice": 9.08,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Shoreham",
+       "logdice": 7.69
+      },
+      {
+       "word": "Mr.",
+       "logdice": 7.39
+      },
+      {
+       "word": "heron",
+       "logdice": 7.23
+      },
+      {
+       "word": "kiddie",
+       "logdice": 6.85
+      },
+      {
+       "word": "v",
+       "logdice": 6.62
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 5702,
+     "slot_logdice": 3.11,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "swim",
+       "logdice": 9.26
+      },
+      {
+       "word": "splash",
+       "logdice": 8.1
+      },
+      {
+       "word": "float",
+       "logdice": 7.93
+      },
+      {
+       "word": "boat",
+       "logdice": 7.36
+      },
+      {
+       "word": "paddle",
+       "logdice": 7.23
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 1046,
+     "slot_logdice": 0.57,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "congregate",
+       "logdice": 7.56
+      },
+      {
+       "word": "deep",
+       "logdice": 6.93
+      },
+      {
+       "word": "native",
+       "logdice": 4.85
+      },
+      {
+       "word": "weekly",
+       "logdice": 3.3
+      },
+      {
+       "word": "full",
+       "logdice": 1.26
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 131,
+   "mean_logdice": 4.159,
+   "prominence_score": 29.298,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 19.71,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 10.18,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "pool",
+     "logdice": 8.28,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "bird",
+     "logdice": 8.14,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Shoreham",
+     "logdice": 7.69,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Mr.",
+     "logdice": 7.39,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "heron",
+     "logdice": 7.23,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "kiddie",
+     "logdice": 6.85,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "boot",
+     "logdice": 6.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "River",
+     "logdice": 6.67,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 33840,
+     "slot_logdice": 18.44,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "pool",
+       "logdice": 8.28
+      },
+      {
+       "word": "bird",
+       "logdice": 8.14
+      },
+      {
+       "word": "boot",
+       "logdice": 6.67
+      },
+      {
+       "word": "River",
+       "logdice": 6.67
+      },
+      {
+       "word": "Goodwyn",
+       "logdice": 6.48
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 20621,
+     "slot_logdice": 11.24,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "ourselves",
+       "logdice": 2.69
+      },
+      {
+       "word": "yourself",
+       "logdice": 2.52
+      },
+      {
+       "word": "myself",
+       "logdice": 2.03
+      },
+      {
+       "word": "themselves",
+       "logdice": 1.26
+      },
+      {
+       "word": "herself",
+       "logdice": 1.13
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 16665,
+     "slot_logdice": 9.08,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Shoreham",
+       "logdice": 7.69
+      },
+      {
+       "word": "Mr.",
+       "logdice": 7.39
+      },
+      {
+       "word": "heron",
+       "logdice": 7.23
+      },
+      {
+       "word": "kiddie",
+       "logdice": 6.85
+      },
+      {
+       "word": "v",
+       "logdice": 6.62
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 66955,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 19.71
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 10.18
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 4.47
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.37
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1383,
+     "slot_logdice": 0.75,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "through",
+       "logdice": 4.22
+      },
+      {
+       "word": "across",
+       "logdice": 2.18
+      },
+      {
+       "word": "along",
+       "logdice": 1.41
+      },
+      {
+       "word": "around",
+       "logdice": 0.99
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

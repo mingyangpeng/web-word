@@ -1,0 +1,780 @@
+{
+ "verb": "trek",
+ "freq": 191907,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 47,
+   "mean_logdice": 0.935,
+   "prominence_score": 5.224,
+   "top_evidence": [
+    {
+     "word": "path",
+     "logdice": 6.11,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 4.7,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 4.37,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "track",
+     "logdice": 4.04,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 3.9,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "across",
+     "logdice": 2.86,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "through",
+     "logdice": 2.4,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "over",
+     "logdice": 2.14,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "along",
+     "logdice": 2.0,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 1.73,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 7263,
+     "slot_logdice": 3.78,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "across",
+       "logdice": 2.86
+      },
+      {
+       "word": "through",
+       "logdice": 2.4
+      },
+      {
+       "word": "over",
+       "logdice": 2.14
+      },
+      {
+       "word": "along",
+       "logdice": 2.0
+      },
+      {
+       "word": "down",
+       "logdice": 1.7
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 55,
+     "slot_logdice": 0.03,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "path",
+       "logdice": 6.11
+      },
+      {
+       "word": "track",
+       "logdice": 4.04
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 36318,
+     "slot_logdice": "",
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 4.7
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 4.37
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 3.9
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.73
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.68
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 125,
+   "mean_logdice": 4.158,
+   "prominence_score": 29.014,
+   "top_evidence": [
+    {
+     "word": "Kilimanjaro",
+     "logdice": 9.31,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "pole",
+     "logdice": 9.23,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "volcano",
+     "logdice": 9.23,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "mountain",
+     "logdice": 8.82,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "peak",
+     "logdice": 8.32,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "Mountain",
+     "logdice": 7.94,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "glacier",
+     "logdice": 7.9,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "Hill",
+     "logdice": 7.74,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "Everest",
+     "logdice": 7.65,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "Mountains",
+     "logdice": 7.64,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 60053,
+     "slot_logdice": 31.29,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "pole",
+       "logdice": 9.23
+      },
+      {
+       "word": "biking",
+       "logdice": 7.33
+      },
+      {
+       "word": "mountaineering",
+       "logdice": 7.07
+      },
+      {
+       "word": "Pole",
+       "logdice": 6.98
+      },
+      {
+       "word": "expedition",
+       "logdice": 6.94
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 1250,
+     "slot_logdice": 0.65,
+     "n_collocates": 32,
+     "top5": [
+      {
+       "word": "Kilimanjaro",
+       "logdice": 9.31
+      },
+      {
+       "word": "volcano",
+       "logdice": 9.23
+      },
+      {
+       "word": "mountain",
+       "logdice": 8.82
+      },
+      {
+       "word": "peak",
+       "logdice": 8.32
+      },
+      {
+       "word": "Mountain",
+       "logdice": 7.94
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 423,
+     "slot_logdice": 0.22,
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "mountain",
+       "logdice": 6.33
+      },
+      {
+       "word": "trail",
+       "logdice": 6.26
+      },
+      {
+       "word": "valley",
+       "logdice": 5.96
+      },
+      {
+       "word": "beach",
+       "logdice": 5.61
+      },
+      {
+       "word": "hill",
+       "logdice": 4.81
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 36318,
+     "slot_logdice": "",
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 4.7
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 4.37
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 3.9
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.73
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.68
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3688,
+     "slot_logdice": 1.92,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.26
+      },
+      {
+       "word": "along",
+       "logdice": 2.58
+      },
+      {
+       "word": "down",
+       "logdice": 1.52
+      },
+      {
+       "word": "up",
+       "logdice": 1.13
+      },
+      {
+       "word": "over",
+       "logdice": 0.42
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 163,
+   "mean_logdice": 5.083,
+   "prominence_score": 37.401,
+   "top_evidence": [
+    {
+     "word": "mountaineer",
+     "logdice": 10.49,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "raft",
+     "logdice": 10.03,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "hike",
+     "logdice": 9.82,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "gorilla",
+     "logdice": 9.72,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "telescopic",
+     "logdice": 9.71,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "pony",
+     "logdice": 9.37,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "jungle",
+     "logdice": 9.11,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "climb",
+     "logdice": 9.09,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "camp",
+     "logdice": 8.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "backcountry",
+     "logdice": 8.46,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 13741,
+     "slot_logdice": 7.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "uphill",
+       "logdice": 6.38
+      },
+      {
+       "word": "cross-country",
+       "logdice": 5.94
+      },
+      {
+       "word": "onward",
+       "logdice": 5.67
+      },
+      {
+       "word": "westward",
+       "logdice": 5.56
+      },
+      {
+       "word": "northward",
+       "logdice": 5.29
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 990,
+     "slot_logdice": 0.52,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "overland",
+       "logdice": 7.84
+      },
+      {
+       "word": "Pvt",
+       "logdice": 7.7
+      },
+      {
+       "word": "cross-country",
+       "logdice": 6.7
+      },
+      {
+       "word": "uphill",
+       "logdice": 5.43
+      },
+      {
+       "word": "door-to-door",
+       "logdice": 4.55
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.22
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 33603,
+     "slot_logdice": 17.51,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "gorilla",
+       "logdice": 9.72
+      },
+      {
+       "word": "pony",
+       "logdice": 9.37
+      },
+      {
+       "word": "jungle",
+       "logdice": 9.11
+      },
+      {
+       "word": "backcountry",
+       "logdice": 8.46
+      },
+      {
+       "word": "llama",
+       "logdice": 8.03
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 14268,
+     "slot_logdice": 7.43,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "mountaineer",
+       "logdice": 10.49
+      },
+      {
+       "word": "raft",
+       "logdice": 10.03
+      },
+      {
+       "word": "hike",
+       "logdice": 9.82
+      },
+      {
+       "word": "climb",
+       "logdice": 9.09
+      },
+      {
+       "word": "camp",
+       "logdice": 8.93
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 319,
+     "slot_logdice": 0.17,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "telescopic",
+       "logdice": 9.71
+      },
+      {
+       "word": "helpful",
+       "logdice": 1.35
+      },
+      {
+       "word": "suitable",
+       "logdice": 1.34
+      },
+      {
+       "word": "available",
+       "logdice": 0.43
+      },
+      {
+       "word": "due",
+       "logdice": 0.11
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 139,
+   "mean_logdice": 4.336,
+   "prominence_score": 30.91,
+   "top_evidence": [
+    {
+     "word": "gorilla",
+     "logdice": 9.72,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "pony",
+     "logdice": 9.37,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "pole",
+     "logdice": 9.23,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "jungle",
+     "logdice": 9.11,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "backcountry",
+     "logdice": 8.46,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "llama",
+     "logdice": 8.03,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Himalayan",
+     "logdice": 7.74,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Annapurna",
+     "logdice": 7.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Nepal",
+     "logdice": 7.48,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "biking",
+     "logdice": 7.33,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 60053,
+     "slot_logdice": 31.29,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "pole",
+       "logdice": 9.23
+      },
+      {
+       "word": "biking",
+       "logdice": 7.33
+      },
+      {
+       "word": "mountaineering",
+       "logdice": 7.07
+      },
+      {
+       "word": "Pole",
+       "logdice": 6.98
+      },
+      {
+       "word": "expedition",
+       "logdice": 6.94
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 739,
+     "slot_logdice": 0.39,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "we",
+       "logdice": 1.29
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 14676,
+     "slot_logdice": 7.65,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "yourself",
+       "logdice": 1.26
+      },
+      {
+       "word": "myself",
+       "logdice": 1.09
+      },
+      {
+       "word": "themselves",
+       "logdice": 0.14
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 33603,
+     "slot_logdice": 17.51,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "gorilla",
+       "logdice": 9.72
+      },
+      {
+       "word": "pony",
+       "logdice": 9.37
+      },
+      {
+       "word": "jungle",
+       "logdice": 9.11
+      },
+      {
+       "word": "backcountry",
+       "logdice": 8.46
+      },
+      {
+       "word": "llama",
+       "logdice": 8.03
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 36318,
+     "slot_logdice": "",
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 4.7
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 4.37
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 3.9
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.73
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.68
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3688,
+     "slot_logdice": 1.92,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.26
+      },
+      {
+       "word": "along",
+       "logdice": 2.58
+      },
+      {
+       "word": "down",
+       "logdice": 1.52
+      },
+      {
+       "word": "up",
+       "logdice": 1.13
+      },
+      {
+       "word": "over",
+       "logdice": 0.42
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

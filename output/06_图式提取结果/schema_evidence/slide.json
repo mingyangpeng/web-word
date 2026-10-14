@@ -1,0 +1,844 @@
+{
+ "verb": "slide",
+ "freq": 1205270,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "源点脱离图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 149,
+   "mean_logdice": 4.707,
+   "prominence_score": 34.027,
+   "top_evidence": [
+    {
+     "word": "bed",
+     "logdice": 10.11,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "keyboard",
+     "logdice": 9.92,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "tray",
+     "logdice": 9.54,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "road",
+     "logdice": 9.29,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "stool",
+     "logdice": 9.23,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "shoulder",
+     "logdice": 9.2,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "table",
+     "logdice": 9.05,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "runway",
+     "logdice": 8.97,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "lap",
+     "logdice": 8.93,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "seat",
+     "logdice": 8.85,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 103816,
+     "slot_logdice": 8.61,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "in",
+       "logdice": 6.93
+      },
+      {
+       "word": "open",
+       "logdice": 6.77
+      },
+      {
+       "word": "down",
+       "logdice": 6.38
+      },
+      {
+       "word": "around",
+       "logdice": 6.11
+      },
+      {
+       "word": "off",
+       "logdice": 5.56
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 17017,
+     "slot_logdice": 1.41,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "bed",
+       "logdice": 10.11
+      },
+      {
+       "word": "road",
+       "logdice": 9.29
+      },
+      {
+       "word": "stool",
+       "logdice": 9.23
+      },
+      {
+       "word": "shoulder",
+       "logdice": 9.2
+      },
+      {
+       "word": "table",
+       "logdice": 9.05
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 1804,
+     "slot_logdice": 0.15,
+     "n_collocates": 47,
+     "top5": [
+      {
+       "word": "keyboard",
+       "logdice": 9.92
+      },
+      {
+       "word": "tray",
+       "logdice": 9.54
+      },
+      {
+       "word": "drawer",
+       "logdice": 8.79
+      },
+      {
+       "word": "rear",
+       "logdice": 8.15
+      },
+      {
+       "word": "back",
+       "logdice": 7.95
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 166253,
+     "slot_logdice": "",
+     "n_collocates": 46,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.74
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.52
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.89
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 0.78
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 177,
+   "mean_logdice": 5.116,
+   "prominence_score": 38.245,
+   "top_evidence": [
+    {
+     "word": "thigh",
+     "logdice": 10.69,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "slope",
+     "logdice": 10.48,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "wall",
+     "logdice": 9.75,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hill",
+     "logdice": 9.75,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "door",
+     "logdice": 9.66,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "slide",
+     "logdice": 9.64,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "throat",
+     "logdice": 9.47,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "scale",
+     "logdice": 9.45,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "cheek",
+     "logdice": 9.39,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "pole",
+     "logdice": 9.28,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 442434,
+     "slot_logdice": 36.71,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 9.66
+      },
+      {
+       "word": "scale",
+       "logdice": 9.45
+      },
+      {
+       "word": "finger",
+       "logdice": 8.01
+      },
+      {
+       "word": "cock",
+       "logdice": 7.56
+      },
+      {
+       "word": "window",
+       "logdice": 7.31
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 3831,
+     "slot_logdice": 0.32,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "thigh",
+       "logdice": 10.69
+      },
+      {
+       "word": "back",
+       "logdice": 9.17
+      },
+      {
+       "word": "leg",
+       "logdice": 8.82
+      },
+      {
+       "word": "chest",
+       "logdice": 8.78
+      },
+      {
+       "word": "inside",
+       "logdice": 8.47
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 40417,
+     "slot_logdice": 3.35,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "slope",
+       "logdice": 10.48
+      },
+      {
+       "word": "hill",
+       "logdice": 9.75
+      },
+      {
+       "word": "wall",
+       "logdice": 9.75
+      },
+      {
+       "word": "slide",
+       "logdice": 9.64
+      },
+      {
+       "word": "throat",
+       "logdice": 9.47
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 166253,
+     "slot_logdice": "",
+     "n_collocates": 46,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.74
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.52
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.89
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 0.78
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 112942,
+     "slot_logdice": 9.37,
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 7.67
+      },
+      {
+       "word": "open",
+       "logdice": 7.59
+      },
+      {
+       "word": "in",
+       "logdice": 6.65
+      },
+      {
+       "word": "off",
+       "logdice": 6.27
+      },
+      {
+       "word": "across",
+       "logdice": 5.87
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 218,
+   "mean_logdice": 5.33,
+   "prominence_score": 41.438,
+   "top_evidence": [
+    {
+     "word": "slip",
+     "logdice": 11.14,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Yeezy",
+     "logdice": 8.98,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "surface",
+     "logdice": 8.53,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "swing",
+     "logdice": 8.28,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sideways",
+     "logdice": 8.25,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "glide",
+     "logdice": 8.14,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "skid",
+     "logdice": 8.13,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "roll",
+     "logdice": 8.06,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "recline",
+     "logdice": 7.94,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "tilt",
+     "logdice": 7.93,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 207094,
+     "slot_logdice": 17.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "sideways",
+       "logdice": 8.25
+      },
+      {
+       "word": "backwards",
+       "logdice": 7.32
+      },
+      {
+       "word": "downhill",
+       "logdice": 7.12
+      },
+      {
+       "word": "smoothly",
+       "logdice": 6.95
+      },
+      {
+       "word": "slowly",
+       "logdice": 6.88
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 17213,
+     "slot_logdice": 1.43,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "closed",
+       "logdice": 7.72
+      },
+      {
+       "word": "downward",
+       "logdice": 6.73
+      },
+      {
+       "word": "sideways",
+       "logdice": 6.41
+      },
+      {
+       "word": "past",
+       "logdice": 6.38
+      },
+      {
+       "word": "open",
+       "logdice": 6.36
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "as reflexive",
+       "logdice": 0.15
+      },
+      {
+       "word": "in passive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 252041,
+     "slot_logdice": 20.91,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Yeezy",
+       "logdice": 8.98
+      },
+      {
+       "word": "finger",
+       "logdice": 7.8
+      },
+      {
+       "word": "PowerPoint",
+       "logdice": 7.74
+      },
+      {
+       "word": "cock",
+       "logdice": 7.64
+      },
+      {
+       "word": "door",
+       "logdice": 7.57
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 42190,
+     "slot_logdice": 3.5,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "slip",
+       "logdice": 11.14
+      },
+      {
+       "word": "surface",
+       "logdice": 8.53
+      },
+      {
+       "word": "swing",
+       "logdice": 8.28
+      },
+      {
+       "word": "glide",
+       "logdice": 8.14
+      },
+      {
+       "word": "skid",
+       "logdice": 8.13
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 7110,
+     "slot_logdice": 0.59,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "deep",
+       "logdice": 7.51
+      },
+      {
+       "word": "13Yeezy",
+       "logdice": 7.48
+      },
+      {
+       "word": "open",
+       "logdice": 7.42
+      },
+      {
+       "word": "10000Yeezy",
+       "logdice": 7.4
+      },
+      {
+       "word": "11Yeezy",
+       "logdice": 7.28
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 167,
+   "mean_logdice": 3.772,
+   "prominence_score": 27.886,
+   "top_evidence": [
+    {
+     "word": "door",
+     "logdice": 9.66,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "scale",
+     "logdice": 9.45,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Yeezy",
+     "logdice": 8.98,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "finger",
+     "logdice": 8.01,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "PowerPoint",
+     "logdice": 7.74,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "down",
+     "logdice": 7.67,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "cock",
+     "logdice": 7.64,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "open",
+     "logdice": 7.59,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "hand",
+     "logdice": 7.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "glass",
+     "logdice": 7.45,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 442434,
+     "slot_logdice": 36.71,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 9.66
+      },
+      {
+       "word": "scale",
+       "logdice": 9.45
+      },
+      {
+       "word": "finger",
+       "logdice": 8.01
+      },
+      {
+       "word": "cock",
+       "logdice": 7.56
+      },
+      {
+       "word": "window",
+       "logdice": 7.31
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 47995,
+     "slot_logdice": 3.98,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "it",
+       "logdice": 3.1
+      },
+      {
+       "word": "hers",
+       "logdice": 3.09
+      },
+      {
+       "word": "herself",
+       "logdice": 2.98
+      },
+      {
+       "word": "them",
+       "logdice": 2.77
+      },
+      {
+       "word": "one",
+       "logdice": 2.49
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 145711,
+     "slot_logdice": 12.09,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 4.0
+      },
+      {
+       "word": "herself",
+       "logdice": 3.95
+      },
+      {
+       "word": "myself",
+       "logdice": 3.83
+      },
+      {
+       "word": "yourself",
+       "logdice": 3.8
+      },
+      {
+       "word": "himself",
+       "logdice": 3.68
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 252041,
+     "slot_logdice": 20.91,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Yeezy",
+       "logdice": 8.98
+      },
+      {
+       "word": "finger",
+       "logdice": 7.8
+      },
+      {
+       "word": "PowerPoint",
+       "logdice": 7.74
+      },
+      {
+       "word": "cock",
+       "logdice": 7.64
+      },
+      {
+       "word": "door",
+       "logdice": 7.57
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 166253,
+     "slot_logdice": "",
+     "n_collocates": 46,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.74
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.52
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.89
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 0.78
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 112942,
+     "slot_logdice": 9.37,
+     "n_collocates": 15,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 7.67
+      },
+      {
+       "word": "open",
+       "logdice": 7.59
+      },
+      {
+       "word": "in",
+       "logdice": 6.65
+      },
+      {
+       "word": "off",
+       "logdice": 6.27
+      },
+      {
+       "word": "across",
+       "logdice": 5.87
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

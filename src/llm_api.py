@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 # ============================================
 # Configuration
 # ============================================
-ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY", "")
-LLM_MODEL = os.getenv("LLM_MODEL", "glm-4")
+ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY", "")  # 兼容旧引用；实际读取见 get_zhipuai_client()
+LLM_MODEL = os.getenv("ZHIPUAI_MODEL") or os.getenv("LLM_MODEL", "glm-4")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "500"))
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "30"))
@@ -85,6 +85,9 @@ def get_zhipuai_client():
     """
     Get or create ZhipuAI client.
 
+    支持自定义网关：ZHIPUAI_BASE_URL（如 openapi.cloud-ai.cn 的 OpenAI 兼容端点）
+    未设置时用 SDK 默认（open.bigmodel.cn）。
+
     Returns:
         ZhipuAI client instance or None if unavailable
     """
@@ -97,13 +100,20 @@ def get_zhipuai_client():
         logger.warning("ZhipuAI SDK not available")
         return None
 
-    if not ZHIPUAI_API_KEY:
+    # 每次调用时读取 env：import 时快照会漏掉进程启动后才注入的密钥
+    api_key = os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZHIPU_API_KEY") or ""
+
+    if not api_key:
         logger.warning("ZHIPUAI_API_KEY not set")
         return None
 
     try:
-        _client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
-        logger.info("ZhipuAI client initialized successfully")
+        base_url = os.getenv("ZHIPUAI_BASE_URL") or ""
+        kwargs = {"api_key": api_key}
+        if base_url:
+            kwargs["base_url"] = base_url
+        _client = ZhipuAI(**kwargs)
+        logger.info(f"ZhipuAI client initialized (base_url={base_url or 'default'})")
         return _client
 
     except Exception as e:
@@ -168,7 +178,18 @@ def get_definition_from_cache(verb: str) -> Optional[Dict[str, Any]]:
 
                 if age < timedelta(hours=CACHE_TTL_HOURS):
                     logger.debug(f"Cache hit for verb: {verb}")
-                    return result
+                    # 归一化成与 LLM 结果一致的形状，调用方才能按同一组键取值
+                    return {
+                        "verb": verb,
+                        "chinese_ndef": result.get("chinese_ndef", ""),
+                        "traditional": result.get("chinese_ndef", ""),
+                        "optimized": result.get("chinese_ndef", ""),
+                        "semantic_table": result.get("semantic_table") or {},
+                        "example": result.get("example_sentence") or "",
+                        "synonyms": [],
+                        "raw_response": result.get("raw_response"),
+                        "_cache_hit": True,
+                    }
 
         return None
 

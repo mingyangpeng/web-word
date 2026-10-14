@@ -55,8 +55,15 @@ class TestKeyManager:
         del os.environ['ZHIPU_API_KEY']
 
     def test_mask_key(self):
-        """测试密钥掩码"""
-        key = KeyManager.mask_key('test_key_12345')
+        """测试密钥掩码（长密钥保留首尾 4 位，长度不变）"""
+        # 真实 API 密钥 32 位量级 —— 4+4 保留才不至于泄露大半密钥
+        key = KeyManager.mask_key('test_key_1234567890abcdefghij')
         assert key.startswith('test')
-        assert key.endswith('345')
-        assert len(key) == len('test_key_12345')  # 保持长度不变
+        assert key.endswith('ghij')
+        assert len(key) == len('test_key_1234567890abcdefghij')  # 保持长度不变
+
+    def test_mask_key_short_key_fully_masked(self):
+        """短密钥（<16 位）整体掩码 —— 保留首尾会泄露大半内容"""
+        assert KeyManager.mask_key('short') == '****'
+        assert KeyManager.mask_key('test_key_12345') == '****'  # 15 位：旧实现会泄露 11/15
+        assert KeyManager.mask_key('abcdefgh') == '****'  # 8 位：旧实现等于原样输出
