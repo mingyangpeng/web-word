@@ -59,25 +59,28 @@ def test_schema_values_are_within_allowed_set():
 # Levin xlsx 解析
 # ============================================
 def test_levin_table_is_readable():
-    """默认只取「方式聚焦型」—— 自移移动动词就是这一类，共 136 词。"""
+    """默认取全部三类 171 词（2026-10-07 决策：捞回路径/互动聚焦词）。"""
     rows = ws.load_levin_table()
     assert rows, "没读到任何词 —— 检查工作表名是否被改"
-    assert len(rows) == 136, f"方式聚焦型应有 136 词，实得 {len(rows)}"
-    assert {r["main_cat"] for r in rows} == {ws.MAIN_CAT_MANNER}
+    assert len(rows) == 171, f"词表默认范围应有 171 词，实得 {len(rows)}"
+    assert {r["main_cat"] for r in rows} == {"方式聚焦型", "路径聚焦型", "互动聚焦型"}
 
 
-def test_levin_scope_all_returns_every_kept_word():
+def test_levin_manner_scope_is_the_136_subset():
     """
-    ``scope='all'`` 取回全部 171 词（三类），默认的 136 是它的子集。
+    ``scope='manner'`` 取回历史的方式聚焦子集（136 词）。
 
-    两个数都要钉住：136 是词表的范围，171 是筛选表的全部结果。
-    只钉一个的话，「默认范围被改回 171」或「xlsx 悄悄少了词」都发现不了。
+    两个数都要钉住：136 是 9-28 至 10-07 间的历史词表范围（对照与语料连续性
+    检查用），171 是筛选表的全部结果。只钉一个的话，「默认范围被改回 136」
+    或「xlsx 悄悄少了词」都发现不了。
     """
     allrows = ws.load_levin_table(scope="all")
     assert len(allrows) == 171, f"筛选后应有 171 词，实得 {len(allrows)}"
     assert {r["main_cat"] for r in allrows} == {"方式聚焦型", "路径聚焦型", "互动聚焦型"}
-    assert ({r["verb"] for r in ws.load_levin_table()}
-            <= {r["verb"] for r in allrows})
+    manner = ws.load_levin_table(scope="manner")
+    assert len(manner) == 136, f"方式聚焦型应有 136 词，实得 {len(manner)}"
+    assert {r["main_cat"] for r in manner} == {ws.MAIN_CAT_MANNER}
+    assert {r["verb"] for r in manner} <= {r["verb"] for r in allrows}
 
 
 def test_levin_rejects_unknown_scope():
@@ -103,8 +106,8 @@ def test_levin_three_main_categories():
 
 
 def test_manner_scope_has_eight_sub_categories():
-    """词表范围内的次类数（8 个）。「十二次类」是整张筛选表的说法。"""
-    subs = {r["sub_cat"] for r in ws.load_levin_table()}
+    """方式聚焦子集的次类数（8 个）。「十二次类」是整张筛选表的说法。"""
+    subs = {r["sub_cat"] for r in ws.load_levin_table(scope="manner")}
     assert len(subs) == 8, f"方式聚焦型应有 8 个次类，实得 {len(subs)}: {sorted(subs)}"
 
 
@@ -416,15 +419,15 @@ def test_audit_reports_honest_coverage():
     """
     审计必须如实报告 dictionary.db 的低覆盖率。
 
-    这是刻意暴露的事实：136 词（方式聚焦型）里只有 9 个在词典库里有动词词条。
-    若审计把数字报高了，文档里就会写出与事实不符的「全部来自 OALD 原文」。
+    这是刻意暴露的事实：词表 171 词（默认范围，三类）里只有少数在词典库里有
+    动词词条。若审计把数字报高了，文档里就会写出与事实不符的「全部来自 OALD 原文」。
     """
     entries = ws.build_entries(
         ws.load_levin_table(), ws.load_oxford_cache(),
         ws.DictionaryDB(), ws.load_legacy_library(),
     )
     audit = ws.audit_coverage(entries)
-    assert audit["total"] == 136
+    assert audit["total"] == 171
     assert audit["in_dictionary_db"] == sum(
         1 for e in entries if e["has_dictionary_verb"]
     )

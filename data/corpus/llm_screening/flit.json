@@ -1,0 +1,19 @@
+{
+ "verb": "flit",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-10 09:21",
+ "n_senses": 1,
+ "results": {
+  "flit-S1": {
+   "准入标签": "Y",
+   "理由": "Let me write the 理由: 运动体为实体（蝴蝶），在花朵之间发生真实三维空间位移，激活源点（一朵花）—路径—终点（另一朵花）框架，属原型物理位移义。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "...",
+   "raw": "The task is to annotate the English motion verb \"flit\" with sense S1: \"to move lightly and quickly from one place or thing to another\", example: \"Butterflies flitted from flower to flower.\"\n\nRule 1: Talmy motion event admission - the sense activates physical spatial displacement with source-path-goal framework → Y. Butterflies flitting from flower to flower is clearly physical motion of an entity (butterflies) through space, with source (flower), path, and goal (flower). So Y.\n\nRule 2: Image schema - choose one of: 源点脱离图式, 终点抵达图式, 方式伴随图式, 互动位移图式. The verb \"flit\" encodes the manner of movement (lightly and quickly) - it's a manner verb. The semantic core is the manner of motion (light, quick, fluttering movement). So 方式伴随图式.\n\nRule 3: Prototype level - Y = prototypical physical displacement.\n\nRule 4: English-Chinese schema alignment - compare English sense schema with the conventional Chinese expression for the same event scene. Chinese for \"flit\" would be 翩然飞舞/轻快地飞来飞去/掠过/飞掠. The example \"Butterflies flitted from flower to flower\" would be 蝴蝶在花丛中飞来飞去 / 蝴蝶从一朵花飞到另一朵花. Chinese typically uses manner verb 飞 plus directional complements or reduplication 飞来飞去, or adds adverbials like 轻盈地/翩翩. The manner component in English \"flit\" (light and quick) is encoded in the verb itself, while Chinese would need to add adverbials (轻盈地、轻快地) or use 飞 plus 来回/来来去去. So there's syntactic forced supplementation in Chinese - the manner is not fully in the verb 飞, requiring additional components. This suggests 部分对齐.\n\nActually, let me think. Chinese 飞 does encode manner (flying), but \"flit\" specifically means light and quick movement. Chinese conventional expression: 蝴蝶在花间翩翩飞舞 or 蝴蝶轻盈地从一朵花飞到另一朵花. The manner \"lightly and quickly\" needs supplementation in Chinese (翩翩、轻盈地). The schema is broadly consistent (manner-accompanied motion), but Chinese requires syntactic supplementation of manner adverbials. So 部分对齐.\n\nAlternatively, one could argue 完全对齐 if Chinese 飞 captures it. But \"flit\" includes lightness and quickness which 飞 alone doesn't capture. So 部分对齐 with note about manner supplementation.\n\nOutput format: five fields:\n准入标签：Y\n理由：...\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：...\n\nLet me write the 理由: 运动体为实体（蝴蝶），在花朵之间发生真实三维空间位移，激活源点（一朵花）—路径—终点（另一朵花）框架，属原型物理位移义。\n\n备注存疑点: 汉语常规表达（如\"蝴蝶在花丛中飞来飞去\"\"翩翩飞舞\"）中，\"轻快\"这一方式义需由状语（翩翩、轻盈地）或趋向重叠式补足，动词\"飞\"本身不完整编码flit的方式语义；若认为\"飞来飞去\"已隐含轻快往复义，可视为接近完全对齐，故存疑。\n\nKeep it concise, in Chinese, only the five fields.</think>准入标签：Y\n理由：运动体为实体（蝴蝶），在花朵之间发生真实三维空间位移，激活源点（一朵花）—路径—终点（另一朵花）的完整位移框架，属原型物理位移义。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：英语flit将“轻快、飘忽”的方式义编码于动词本身，汉语常规表达（如“蝴蝶在花丛中飞来飞去”“翩翩飞舞”）需靠状语（翩翩、轻盈地）或“来……去”重叠趋向式补足方式与往复路径义，动词“飞”本身不完整承载该方式语义，存在句法强制增补成分；若认为“飞来飞去”已隐含轻快往复义，可上调为完全对齐，故存疑。",
+   "sense_id": "flit-S1",
+   "definition": "to move lightly and quickly from one place or thing to another"
+  }
+ },
+ "errors": []
+}

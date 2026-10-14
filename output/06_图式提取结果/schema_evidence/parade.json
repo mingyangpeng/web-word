@@ -1,0 +1,744 @@
+{
+ "verb": "parade",
+ "freq": 96613,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 36,
+   "mean_logdice": 0.946,
+   "prominence_score": 4.926,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 5.77,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "around",
+     "logdice": 5.42,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 5.24,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "list",
+     "logdice": 2.64,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "door",
+     "logdice": 2.11,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 1.91,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" around ...",
+     "logdice": 1.75,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" before ...",
+     "logdice": 1.21,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" as ...",
+     "logdice": 1.16,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "in",
+     "logdice": 1.01,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 7178,
+     "slot_logdice": 7.43,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.42
+      },
+      {
+       "word": "in",
+       "logdice": 1.01
+      },
+      {
+       "word": "through",
+       "logdice": 0.95
+      },
+      {
+       "word": "along",
+       "logdice": 0.38
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 31,
+     "slot_logdice": 0.03,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "list",
+       "logdice": 2.64
+      },
+      {
+       "word": "door",
+       "logdice": 2.11
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 20831,
+     "slot_logdice": "",
+     "n_collocates": 30,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 5.77
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 5.24
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.91
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.75
+      },
+      {
+       "word": "\"%w\" before ...",
+       "logdice": 1.21
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 112,
+   "mean_logdice": 3.89,
+   "prominence_score": 26.527,
+   "top_evidence": [
+    {
+     "word": "catwalk",
+     "logdice": 9.95,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Broadway",
+     "logdice": 9.37,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "Avenue",
+     "logdice": 8.94,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Street",
+     "logdice": 8.63,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "runway",
+     "logdice": 8.52,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "boulevard",
+     "logdice": 8.06,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Boulevard",
+     "logdice": 7.94,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Mall",
+     "logdice": 7.88,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "carpet",
+     "logdice": 7.7,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "street",
+     "logdice": 7.49,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 22481,
+     "slot_logdice": 23.27,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Sqn",
+       "logdice": 6.51
+      },
+      {
+       "word": "street",
+       "logdice": 5.74
+      },
+      {
+       "word": "suspect",
+       "logdice": 5.73
+      },
+      {
+       "word": "effigy",
+       "logdice": 5.44
+      },
+      {
+       "word": "ignorance",
+       "logdice": 5.18
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 130,
+     "slot_logdice": 0.13,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "Broadway",
+       "logdice": 9.37
+      },
+      {
+       "word": "Avenue",
+       "logdice": 8.59
+      },
+      {
+       "word": "Street",
+       "logdice": 7.15
+      },
+      {
+       "word": "aisle",
+       "logdice": 6.63
+      },
+      {
+       "word": "street",
+       "logdice": 4.95
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1755,
+     "slot_logdice": 1.82,
+     "n_collocates": 32,
+     "top5": [
+      {
+       "word": "catwalk",
+       "logdice": 9.95
+      },
+      {
+       "word": "Avenue",
+       "logdice": 8.94
+      },
+      {
+       "word": "Street",
+       "logdice": 8.63
+      },
+      {
+       "word": "runway",
+       "logdice": 8.52
+      },
+      {
+       "word": "boulevard",
+       "logdice": 8.06
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 20831,
+     "slot_logdice": "",
+     "n_collocates": 30,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 5.77
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 5.24
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.91
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.75
+      },
+      {
+       "word": "\"%w\" before ...",
+       "logdice": 1.21
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 5903,
+     "slot_logdice": 6.11,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.34
+      },
+      {
+       "word": "down",
+       "logdice": 3.16
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 160,
+   "mean_logdice": 4.055,
+   "prominence_score": 29.723,
+   "top_evidence": [
+    {
+     "word": "Gras",
+     "logdice": 8.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "half-naked",
+     "logdice": 8.36,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "picket",
+     "logdice": 7.56,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "march",
+     "logdice": 7.43,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Pride",
+     "logdice": 7.15,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "flaunt",
+     "logdice": 7.15,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "naked",
+     "logdice": 6.97,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "ostentatiously",
+     "logdice": 6.9,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "masquerade",
+     "logdice": 6.9,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "strut",
+     "logdice": 6.82,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 10651,
+     "slot_logdice": 11.02,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ostentatiously",
+       "logdice": 6.9
+      },
+      {
+       "word": "triumphantly",
+       "logdice": 5.82
+      },
+      {
+       "word": "ceremoniously",
+       "logdice": 5.76
+      },
+      {
+       "word": "pompously",
+       "logdice": 5.36
+      },
+      {
+       "word": "proudly",
+       "logdice": 5.22
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 1095,
+     "slot_logdice": 1.13,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "half-naked",
+       "logdice": 8.36
+      },
+      {
+       "word": "naked",
+       "logdice": 6.97
+      },
+      {
+       "word": "topless",
+       "logdice": 6.38
+      },
+      {
+       "word": "nude",
+       "logdice": 6.05
+      },
+      {
+       "word": "shirtless",
+       "logdice": 5.55
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 5.95
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 2.45
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 14714,
+     "slot_logdice": 15.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Gras",
+       "logdice": 8.49
+      },
+      {
+       "word": "Pride",
+       "logdice": 7.15
+      },
+      {
+       "word": "Day",
+       "logdice": 5.87
+      },
+      {
+       "word": "float",
+       "logdice": 5.26
+      },
+      {
+       "word": "Klan",
+       "logdice": 5.07
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 2520,
+     "slot_logdice": 2.61,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "picket",
+       "logdice": 7.56
+      },
+      {
+       "word": "march",
+       "logdice": 7.43
+      },
+      {
+       "word": "flaunt",
+       "logdice": 7.15
+      },
+      {
+       "word": "masquerade",
+       "logdice": 6.9
+      },
+      {
+       "word": "strut",
+       "logdice": 6.82
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 164,
+     "slot_logdice": 0.17,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "naked",
+       "logdice": 6.9
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 130,
+   "mean_logdice": 3.274,
+   "prominence_score": 23.03,
+   "top_evidence": [
+    {
+     "word": "Gras",
+     "logdice": 8.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Pride",
+     "logdice": 7.15,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Sqn",
+     "logdice": 6.51,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Day",
+     "logdice": 5.87,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 5.77,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "street",
+     "logdice": 5.74,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "suspect",
+     "logdice": 5.73,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "effigy",
+     "logdice": 5.44,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "around",
+     "logdice": 5.34,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "float",
+     "logdice": 5.26,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 22481,
+     "slot_logdice": 23.27,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Sqn",
+       "logdice": 6.51
+      },
+      {
+       "word": "street",
+       "logdice": 5.74
+      },
+      {
+       "word": "suspect",
+       "logdice": 5.73
+      },
+      {
+       "word": "effigy",
+       "logdice": 5.44
+      },
+      {
+       "word": "ignorance",
+       "logdice": 5.18
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 6794,
+     "slot_logdice": 7.03,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "themselves",
+       "logdice": 2.66
+      },
+      {
+       "word": "himself",
+       "logdice": 2.19
+      },
+      {
+       "word": "itself",
+       "logdice": 2.06
+      },
+      {
+       "word": "herself",
+       "logdice": 1.64
+      },
+      {
+       "word": "her",
+       "logdice": 0.31
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 10108,
+     "slot_logdice": 10.46,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 0
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 14714,
+     "slot_logdice": 15.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Gras",
+       "logdice": 8.49
+      },
+      {
+       "word": "Pride",
+       "logdice": 7.15
+      },
+      {
+       "word": "Day",
+       "logdice": 5.87
+      },
+      {
+       "word": "float",
+       "logdice": 5.26
+      },
+      {
+       "word": "Klan",
+       "logdice": 5.07
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 20831,
+     "slot_logdice": "",
+     "n_collocates": 30,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 5.77
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 5.24
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.91
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.75
+      },
+      {
+       "word": "\"%w\" before ...",
+       "logdice": 1.21
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 5903,
+     "slot_logdice": 6.11,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.34
+      },
+      {
+       "word": "down",
+       "logdice": 3.16
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

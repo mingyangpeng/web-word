@@ -1,0 +1,844 @@
+{
+ "verb": "jump",
+ "freq": 2672920,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "源点脱离图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 147,
+   "mean_logdice": 4.749,
+   "prominence_score": 34.239,
+   "top_evidence": [
+    {
+     "word": "point",
+     "logdice": 11.97,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "cliff",
+     "logdice": 11.04,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bridge",
+     "logdice": 10.93,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "page",
+     "logdice": 10.65,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "building",
+     "logdice": 10.16,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "window",
+     "logdice": 9.83,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "roof",
+     "logdice": 9.8,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bed",
+     "logdice": 9.0,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "screen",
+     "logdice": 8.98,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "Bridge",
+     "logdice": 8.86,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 404365,
+     "slot_logdice": 15.13,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "in",
+       "logdice": 8.72
+      },
+      {
+       "word": "around",
+       "logdice": 7.59
+      },
+      {
+       "word": "out",
+       "logdice": 6.97
+      },
+      {
+       "word": "through",
+       "logdice": 6.94
+      },
+      {
+       "word": "up",
+       "logdice": 6.55
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 73026,
+     "slot_logdice": 2.73,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "point",
+       "logdice": 11.97
+      },
+      {
+       "word": "cliff",
+       "logdice": 11.04
+      },
+      {
+       "word": "bridge",
+       "logdice": 10.93
+      },
+      {
+       "word": "page",
+       "logdice": 10.65
+      },
+      {
+       "word": "building",
+       "logdice": 10.16
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 6018,
+     "slot_logdice": 0.23,
+     "n_collocates": 44,
+     "top5": [
+      {
+       "word": "window",
+       "logdice": 9.83
+      },
+      {
+       "word": "plane",
+       "logdice": 8.3
+      },
+      {
+       "word": "front",
+       "logdice": 8.0
+      },
+      {
+       "word": "car",
+       "logdice": 7.99
+      },
+      {
+       "word": "lead",
+       "logdice": 7.64
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 790788,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 6.01
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.83
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 5.33
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 2.79
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 2.64
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 193,
+   "mean_logdice": 4.787,
+   "prominence_score": 36.382,
+   "top_evidence": [
+    {
+     "word": "throat",
+     "logdice": 10.92,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hole",
+     "logdice": 9.39,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "shark",
+     "logdice": 9.14,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "jack",
+     "logdice": 9.1,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "fence",
+     "logdice": 8.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ship",
+     "logdice": 8.86,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ledge",
+     "logdice": 8.85,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "notch",
+     "logdice": 8.69,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "spider",
+     "logdice": 8.68,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "spot",
+     "logdice": 8.68,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 332732,
+     "slot_logdice": 12.45,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "shark",
+       "logdice": 9.14
+      },
+      {
+       "word": "jack",
+       "logdice": 9.1
+      },
+      {
+       "word": "fence",
+       "logdice": 8.94
+      },
+      {
+       "word": "ship",
+       "logdice": 8.86
+      },
+      {
+       "word": "spider",
+       "logdice": 8.68
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 5183,
+     "slot_logdice": 0.19,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ledge",
+       "logdice": 8.85
+      },
+      {
+       "word": "notch",
+       "logdice": 8.69
+      },
+      {
+       "word": "spot",
+       "logdice": 8.68
+      },
+      {
+       "word": "octave",
+       "logdice": 8.52
+      },
+      {
+       "word": "platform",
+       "logdice": 8.19
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 4699,
+     "slot_logdice": 0.18,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "throat",
+       "logdice": 10.92
+      },
+      {
+       "word": "hole",
+       "logdice": 9.39
+      },
+      {
+       "word": "ledge",
+       "logdice": 8.72
+      },
+      {
+       "word": "well",
+       "logdice": 8.62
+      },
+      {
+       "word": "pit",
+       "logdice": 8.6
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 790788,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 6.01
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.83
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 5.33
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 2.79
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 2.64
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 114219,
+     "slot_logdice": 4.27,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 7.98
+      },
+      {
+       "word": "over",
+       "logdice": 6.41
+      },
+      {
+       "word": "around",
+       "logdice": 6.15
+      },
+      {
+       "word": "down",
+       "logdice": 4.56
+      },
+      {
+       "word": "through",
+       "logdice": 3.78
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 213,
+   "mean_logdice": 5.146,
+   "prominence_score": 39.834,
+   "top_evidence": [
+    {
+     "word": "run",
+     "logdice": 9.73,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "climb",
+     "logdice": 9.45,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "onboard",
+     "logdice": 9.27,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "skip",
+     "logdice": 9.12,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "bungee",
+     "logdice": 8.58,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hop",
+     "logdice": 8.14,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ski",
+     "logdice": 8.09,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "fly",
+     "logdice": 8.08,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "throw",
+     "logdice": 8.0,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "leap",
+     "logdice": 7.98,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 536635,
+     "slot_logdice": 20.08,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "straight",
+       "logdice": 7.9
+      },
+      {
+       "word": "overboard",
+       "logdice": 7.85
+      },
+      {
+       "word": "ahead",
+       "logdice": 7.53
+      },
+      {
+       "word": "immediately",
+       "logdice": 6.66
+      },
+      {
+       "word": "right",
+       "logdice": 6.65
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 28620,
+     "slot_logdice": 1.07,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "onboard",
+       "logdice": 9.27
+      },
+      {
+       "word": "straight",
+       "logdice": 7.28
+      },
+      {
+       "word": "high",
+       "logdice": 6.88
+      },
+      {
+       "word": "up-and-down",
+       "logdice": 5.92
+      },
+      {
+       "word": "squat",
+       "logdice": 5.81
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "as reflexive",
+       "logdice": 0.02
+      },
+      {
+       "word": "in passive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 631442,
+     "slot_logdice": 23.62,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "bungee",
+       "logdice": 8.58
+      },
+      {
+       "word": "ski",
+       "logdice": 8.09
+      },
+      {
+       "word": "show",
+       "logdice": 7.19
+      },
+      {
+       "word": "share",
+       "logdice": 6.73
+      },
+      {
+       "word": "Show",
+       "logdice": 6.68
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 132083,
+     "slot_logdice": 4.94,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "run",
+       "logdice": 9.73
+      },
+      {
+       "word": "climb",
+       "logdice": 9.45
+      },
+      {
+       "word": "skip",
+       "logdice": 9.12
+      },
+      {
+       "word": "hop",
+       "logdice": 8.14
+      },
+      {
+       "word": "fly",
+       "logdice": 8.08
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 3132,
+     "slot_logdice": 0.12,
+     "n_collocates": 29,
+     "top5": [
+      {
+       "word": "first",
+       "logdice": 6.25
+      },
+      {
+       "word": "high",
+       "logdice": 4.54
+      },
+      {
+       "word": "straight",
+       "logdice": 4.42
+      },
+      {
+       "word": "key",
+       "logdice": 4.38
+      },
+      {
+       "word": "final",
+       "logdice": 3.89
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 183,
+   "mean_logdice": 3.937,
+   "prominence_score": 29.619,
+   "top_evidence": [
+    {
+     "word": "shark",
+     "logdice": 9.14,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "jack",
+     "logdice": 9.1,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "fence",
+     "logdice": 8.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ship",
+     "logdice": 8.86,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "spider",
+     "logdice": 8.68,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "gun",
+     "logdice": 8.6,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "bungee",
+     "logdice": 8.58,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "rope",
+     "logdice": 8.56,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ski",
+     "logdice": 8.09,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "off",
+     "logdice": 7.98,
+     "slot": "particles after \"%w\" with object"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 332732,
+     "slot_logdice": 12.45,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "shark",
+       "logdice": 9.14
+      },
+      {
+       "word": "jack",
+       "logdice": 9.1
+      },
+      {
+       "word": "fence",
+       "logdice": 8.94
+      },
+      {
+       "word": "ship",
+       "logdice": 8.86
+      },
+      {
+       "word": "spider",
+       "logdice": 8.68
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 17736,
+     "slot_logdice": 0.66,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "they",
+       "logdice": 3.31
+      },
+      {
+       "word": "she",
+       "logdice": 2.62
+      },
+      {
+       "word": "him",
+       "logdice": 2.09
+      },
+      {
+       "word": "her",
+       "logdice": 1.34
+      },
+      {
+       "word": "he",
+       "logdice": 1.16
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 397240,
+     "slot_logdice": 14.86,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 5.39
+      },
+      {
+       "word": "me",
+       "logdice": 4.93
+      },
+      {
+       "word": "them",
+       "logdice": 4.28
+      },
+      {
+       "word": "she",
+       "logdice": 4.06
+      },
+      {
+       "word": "myself",
+       "logdice": 4.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 631442,
+     "slot_logdice": 23.62,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "bungee",
+       "logdice": 8.58
+      },
+      {
+       "word": "ski",
+       "logdice": 8.09
+      },
+      {
+       "word": "show",
+       "logdice": 7.19
+      },
+      {
+       "word": "share",
+       "logdice": 6.73
+      },
+      {
+       "word": "Show",
+       "logdice": 6.68
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 790788,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 6.01
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.83
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 5.33
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 2.79
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 2.64
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 114219,
+     "slot_logdice": 4.27,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "off",
+       "logdice": 7.98
+      },
+      {
+       "word": "over",
+       "logdice": 6.41
+      },
+      {
+       "word": "around",
+       "logdice": 6.15
+      },
+      {
+       "word": "down",
+       "logdice": 4.56
+      },
+      {
+       "word": "through",
+       "logdice": 3.78
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

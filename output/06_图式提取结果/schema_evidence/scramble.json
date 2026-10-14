@@ -1,0 +1,804 @@
+{
+ "verb": "scramble",
+ "freq": 306191,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 69,
+   "mean_logdice": 2.024,
+   "prominence_score": 12.408,
+   "top_evidence": [
+    {
+     "word": "bed",
+     "logdice": 8.74,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "lap",
+     "logdice": 8.6,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "sofa",
+     "logdice": 7.28,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "couch",
+     "logdice": 6.57,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "stool",
+     "logdice": 6.52,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 5.88,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "floor",
+     "logdice": 5.42,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "line",
+     "logdice": 5.37,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "door",
+     "logdice": 5.34,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "trail",
+     "logdice": 5.12,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 19019,
+     "slot_logdice": 6.21,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 4.73
+      },
+      {
+       "word": "across",
+       "logdice": 3.21
+      },
+      {
+       "word": "away",
+       "logdice": 3.06
+      },
+      {
+       "word": "over",
+       "logdice": 2.88
+      },
+      {
+       "word": "up",
+       "logdice": 2.33
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 520,
+     "slot_logdice": 0.17,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "bed",
+       "logdice": 8.74
+      },
+      {
+       "word": "lap",
+       "logdice": 8.6
+      },
+      {
+       "word": "sofa",
+       "logdice": 7.28
+      },
+      {
+       "word": "couch",
+       "logdice": 6.57
+      },
+      {
+       "word": "stool",
+       "logdice": 6.52
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 197,
+     "slot_logdice": 0.06,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 5.34
+      },
+      {
+       "word": "window",
+       "logdice": 3.4
+      },
+      {
+       "word": "side",
+       "logdice": 3.29
+      },
+      {
+       "word": "way",
+       "logdice": 0.37
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 45700,
+     "slot_logdice": "",
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 5.88
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.42
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 0.88
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.86
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.65
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 156,
+   "mean_logdice": 4.384,
+   "prominence_score": 31.979,
+   "top_evidence": [
+    {
+     "word": "rock",
+     "logdice": 9.75,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "slope",
+     "logdice": 9.6,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "bank",
+     "logdice": 9.45,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "gully",
+     "logdice": 9.28,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Eggs",
+     "logdice": 9.04,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "cliff",
+     "logdice": 9.04,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "ridge",
+     "logdice": 8.86,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "boulder",
+     "logdice": 8.85,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "embankment",
+     "logdice": 8.63,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hillside",
+     "logdice": 8.62,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 44188,
+     "slot_logdice": 14.43,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Eggs",
+       "logdice": 9.04
+      },
+      {
+       "word": "egg",
+       "logdice": 8.16
+      },
+      {
+       "word": "jet",
+       "logdice": 7.86
+      },
+      {
+       "word": "interceptor",
+       "logdice": 6.63
+      },
+      {
+       "word": "fighter",
+       "logdice": 6.31
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 6076,
+     "slot_logdice": 1.98,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "rock",
+       "logdice": 9.75
+      },
+      {
+       "word": "slope",
+       "logdice": 9.6
+      },
+      {
+       "word": "bank",
+       "logdice": 9.2
+      },
+      {
+       "word": "cliff",
+       "logdice": 9.04
+      },
+      {
+       "word": "gully",
+       "logdice": 9.03
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1741,
+     "slot_logdice": 0.57,
+     "n_collocates": 44,
+     "top5": [
+      {
+       "word": "bank",
+       "logdice": 9.45
+      },
+      {
+       "word": "rock",
+       "logdice": 9.38
+      },
+      {
+       "word": "gully",
+       "logdice": 9.28
+      },
+      {
+       "word": "embankment",
+       "logdice": 8.63
+      },
+      {
+       "word": "cliff",
+       "logdice": 8.59
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 45700,
+     "slot_logdice": "",
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 5.88
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.42
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 0.88
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.86
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.65
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 13168,
+     "slot_logdice": 4.3,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.48
+      },
+      {
+       "word": "over",
+       "logdice": 3.34
+      },
+      {
+       "word": "up",
+       "logdice": 3.23
+      },
+      {
+       "word": "down",
+       "logdice": 3.14
+      },
+      {
+       "word": "along",
+       "logdice": 1.7
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 164,
+   "mean_logdice": 4.505,
+   "prominence_score": 33.185,
+   "top_evidence": [
+    {
+     "word": "poach",
+     "logdice": 9.66,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "unscramble",
+     "logdice": 8.62,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "climb",
+     "logdice": 8.44,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "fry",
+     "logdice": 7.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "last-minute",
+     "logdice": 7.73,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "encrypt",
+     "logdice": 7.45,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "boil",
+     "logdice": 7.38,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "descramble",
+     "logdice": 7.23,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frantically",
+     "logdice": 7.13,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "bushwhack",
+     "logdice": 7.13,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 40287,
+     "slot_logdice": 13.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "frantically",
+       "logdice": 7.13
+      },
+      {
+       "word": "madly",
+       "logdice": 6.69
+      },
+      {
+       "word": "aboard",
+       "logdice": 5.91
+      },
+      {
+       "word": "backwards",
+       "logdice": 5.86
+      },
+      {
+       "word": "ashore",
+       "logdice": 5.53
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 1192,
+     "slot_logdice": 0.39,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "last-minute",
+       "logdice": 7.73
+      },
+      {
+       "word": "perennial",
+       "logdice": 5.42
+      },
+      {
+       "word": "annual",
+       "logdice": 4.34
+      },
+      {
+       "word": "upright",
+       "logdice": 4.33
+      },
+      {
+       "word": "required",
+       "logdice": 3.54
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.37
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 87970,
+     "slot_logdice": 28.73,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ghyll",
+       "logdice": 6.22
+      },
+      {
+       "word": "rock",
+       "logdice": 6.05
+      },
+      {
+       "word": "egg",
+       "logdice": 5.64
+      },
+      {
+       "word": "polarization",
+       "logdice": 5.51
+      },
+      {
+       "word": "gorge",
+       "logdice": 5.28
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 11658,
+     "slot_logdice": 3.81,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "poach",
+       "logdice": 9.66
+      },
+      {
+       "word": "unscramble",
+       "logdice": 8.62
+      },
+      {
+       "word": "climb",
+       "logdice": 8.44
+      },
+      {
+       "word": "fry",
+       "logdice": 7.93
+      },
+      {
+       "word": "encrypt",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 245,
+     "slot_logdice": 0.08,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "corresponding",
+       "logdice": 3.16
+      },
+      {
+       "word": "clear",
+       "logdice": 2.28
+      },
+      {
+       "word": "first",
+       "logdice": 0.39
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 154,
+   "mean_logdice": 3.065,
+   "prominence_score": 22.3,
+   "top_evidence": [
+    {
+     "word": "Eggs",
+     "logdice": 9.04,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "egg",
+     "logdice": 8.16,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "jet",
+     "logdice": 7.86,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "interceptor",
+     "logdice": 6.63,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "fighter",
+     "logdice": 6.31,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "F-16s",
+     "logdice": 6.22,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ghyll",
+     "logdice": 6.22,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "rock",
+     "logdice": 6.05,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "shrub",
+     "logdice": 6.02,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 5.88,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 44188,
+     "slot_logdice": 14.43,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Eggs",
+       "logdice": 9.04
+      },
+      {
+       "word": "egg",
+       "logdice": 8.16
+      },
+      {
+       "word": "jet",
+       "logdice": 7.86
+      },
+      {
+       "word": "interceptor",
+       "logdice": 6.63
+      },
+      {
+       "word": "fighter",
+       "logdice": 6.31
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 43226,
+     "slot_logdice": 14.12,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "yourself",
+       "logdice": 4.03
+      },
+      {
+       "word": "ourselves",
+       "logdice": 3.92
+      },
+      {
+       "word": "themselves",
+       "logdice": 3.91
+      },
+      {
+       "word": "myself",
+       "logdice": 3.04
+      },
+      {
+       "word": "herself",
+       "logdice": 2.19
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 87970,
+     "slot_logdice": 28.73,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ghyll",
+       "logdice": 6.22
+      },
+      {
+       "word": "rock",
+       "logdice": 6.05
+      },
+      {
+       "word": "egg",
+       "logdice": 5.64
+      },
+      {
+       "word": "polarization",
+       "logdice": 5.51
+      },
+      {
+       "word": "gorge",
+       "logdice": 5.28
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 45700,
+     "slot_logdice": "",
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 5.88
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.42
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 0.88
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.86
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.65
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 13168,
+     "slot_logdice": 4.3,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.48
+      },
+      {
+       "word": "over",
+       "logdice": 3.34
+      },
+      {
+       "word": "up",
+       "logdice": 3.23
+      },
+      {
+       "word": "down",
+       "logdice": 3.14
+      },
+      {
+       "word": "along",
+       "logdice": 1.7
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

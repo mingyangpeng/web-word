@@ -1,0 +1,732 @@
+{
+ "verb": "lurch",
+ "freq": 49978,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 39,
+   "mean_logdice": 1.416,
+   "prominence_score": 7.537,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 5.85,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "runway",
+     "logdice": 5.67,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 5.54,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "bed",
+     "logdice": 5.22,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "table",
+     "logdice": 4.43,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "track",
+     "logdice": 3.55,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "ground",
+     "logdice": 3.23,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 3.03,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "road",
+     "logdice": 2.64,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "door",
+     "logdice": 2.58,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 3255,
+     "slot_logdice": 6.51,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 2.49
+      },
+      {
+       "word": "around",
+       "logdice": 1.88
+      },
+      {
+       "word": "over",
+       "logdice": 0.58
+      },
+      {
+       "word": "across",
+       "logdice": 0.26
+      },
+      {
+       "word": "off",
+       "logdice": 0.2
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 71,
+     "slot_logdice": 0.14,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "runway",
+       "logdice": 5.67
+      },
+      {
+       "word": "bed",
+       "logdice": 5.22
+      },
+      {
+       "word": "table",
+       "logdice": 4.43
+      },
+      {
+       "word": "track",
+       "logdice": 3.55
+      },
+      {
+       "word": "ground",
+       "logdice": 3.23
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 18,
+     "slot_logdice": 0.04,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 2.58
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 10109,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.85
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 5.54
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.03
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.81
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.51
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 89,
+   "mean_logdice": 2.126,
+   "prominence_score": 13.799,
+   "top_evidence": [
+    {
+     "word": "throat",
+     "logdice": 6.76,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "gait",
+     "logdice": 6.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 5.85,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "stagger",
+     "logdice": 5.73,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 5.54,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "bassline",
+     "logdice": 5.43,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Linear",
+     "logdice": 5.18,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "sidewalk",
+     "logdice": 4.96,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "lurch",
+     "logdice": 4.86,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "waltz",
+     "logdice": 4.75,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3419,
+     "slot_logdice": 6.84,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "gait",
+       "logdice": 6.7
+      },
+      {
+       "word": "stagger",
+       "logdice": 5.73
+      },
+      {
+       "word": "bassline",
+       "logdice": 5.43
+      },
+      {
+       "word": "Linear",
+       "logdice": 5.18
+      },
+      {
+       "word": "lurch",
+       "logdice": 4.86
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 47,
+     "slot_logdice": 0.09,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "throat",
+       "logdice": 6.76
+      },
+      {
+       "word": "road",
+       "logdice": 3.07
+      },
+      {
+       "word": "stair",
+       "logdice": 3.04
+      },
+      {
+       "word": "hill",
+       "logdice": 2.03
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 177,
+     "slot_logdice": 0.35,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "sidewalk",
+       "logdice": 4.96
+      },
+      {
+       "word": "step",
+       "logdice": 4.2
+      },
+      {
+       "word": "aisle",
+       "logdice": 4.18
+      },
+      {
+       "word": "corridor",
+       "logdice": 3.45
+      },
+      {
+       "word": "road",
+       "logdice": 3.43
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 10109,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.85
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 5.54
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.03
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.81
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.51
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 913,
+     "slot_logdice": 1.83,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.04
+      },
+      {
+       "word": "down",
+       "logdice": 0.17
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 157,
+   "mean_logdice": 4.71,
+   "prominence_score": 34.402,
+   "top_evidence": [
+    {
+     "word": "rightward",
+     "logdice": 8.38,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "stagger",
+     "logdice": 8.35,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "stomach",
+     "logdice": 8.24,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "leftward",
+     "logdice": 8.2,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "shamble",
+     "logdice": 8.13,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "lumber",
+     "logdice": 8.02,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sway",
+     "logdice": 7.64,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "jolt",
+     "logdice": 7.64,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "careen",
+     "logdice": 7.42,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "drunkenly",
+     "logdice": 7.3,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 15400,
+     "slot_logdice": 30.81,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "drunkenly",
+       "logdice": 7.3
+      },
+      {
+       "word": "leftward",
+       "logdice": 6.79
+      },
+      {
+       "word": "unsteadily",
+       "logdice": 6.5
+      },
+      {
+       "word": "sickeningly",
+       "logdice": 6.38
+      },
+      {
+       "word": "forwards",
+       "logdice": 6.25
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 475,
+     "slot_logdice": 0.95,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "rightward",
+       "logdice": 8.38
+      },
+      {
+       "word": "leftward",
+       "logdice": 8.2
+      },
+      {
+       "word": "forward",
+       "logdice": 5.21
+      },
+      {
+       "word": "upright",
+       "logdice": 4.07
+      },
+      {
+       "word": "left",
+       "logdice": 3.76
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.15
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.15
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 13508,
+     "slot_logdice": 27.03,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "stomach",
+       "logdice": 8.24
+      },
+      {
+       "word": "zombie",
+       "logdice": 5.34
+      },
+      {
+       "word": "wagon",
+       "logdice": 5.26
+      },
+      {
+       "word": "elevator",
+       "logdice": 5.16
+      },
+      {
+       "word": "carriage",
+       "logdice": 5.02
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 2743,
+     "slot_logdice": 5.49,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "stagger",
+       "logdice": 8.35
+      },
+      {
+       "word": "shamble",
+       "logdice": 8.13
+      },
+      {
+       "word": "lumber",
+       "logdice": 8.02
+      },
+      {
+       "word": "sway",
+       "logdice": 7.64
+      },
+      {
+       "word": "jolt",
+       "logdice": 7.64
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 119,
+   "mean_logdice": 2.629,
+   "prominence_score": 18.16,
+   "top_evidence": [
+    {
+     "word": "stomach",
+     "logdice": 8.24,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "gait",
+     "logdice": 6.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 5.85,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "stagger",
+     "logdice": 5.73,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 5.54,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "bassline",
+     "logdice": 5.43,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "zombie",
+     "logdice": 5.34,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "wagon",
+     "logdice": 5.26,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Linear",
+     "logdice": 5.18,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "elevator",
+     "logdice": 5.16,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3419,
+     "slot_logdice": 6.84,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "gait",
+       "logdice": 6.7
+      },
+      {
+       "word": "stagger",
+       "logdice": 5.73
+      },
+      {
+       "word": "bassline",
+       "logdice": 5.43
+      },
+      {
+       "word": "Linear",
+       "logdice": 5.18
+      },
+      {
+       "word": "lurch",
+       "logdice": 4.86
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 7649,
+     "slot_logdice": 15.3,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "ourselves",
+       "logdice": 1.0
+      },
+      {
+       "word": "him",
+       "logdice": 0.29
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 13508,
+     "slot_logdice": 27.03,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "stomach",
+       "logdice": 8.24
+      },
+      {
+       "word": "zombie",
+       "logdice": 5.34
+      },
+      {
+       "word": "wagon",
+       "logdice": 5.26
+      },
+      {
+       "word": "elevator",
+       "logdice": 5.16
+      },
+      {
+       "word": "carriage",
+       "logdice": 5.02
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 10109,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 5.85
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 5.54
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.03
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.81
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.51
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 913,
+     "slot_logdice": 1.83,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.04
+      },
+      {
+       "word": "down",
+       "logdice": 0.17
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

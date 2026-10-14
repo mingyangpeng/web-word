@@ -1,0 +1,736 @@
+{
+ "verb": "ascend",
+ "freq": 397328,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 2,
+   "slots_defined": 5,
+   "coverage": 0.4,
+   "n_types": 35,
+   "mean_logdice": 0.696,
+   "prominence_score": 3.6,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 14.2,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 3.24,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 1.38,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "up",
+     "logdice": 1.34,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 1.1,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 0.59,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.4,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" by ...",
+     "logdice": 0.32,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "along",
+     "logdice": 0.29,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.22,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 4743,
+     "slot_logdice": 1.19,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 1.34
+      },
+      {
+       "word": "along",
+       "logdice": 0.29
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 90516,
+     "slot_logdice": "",
+     "n_collocates": 33,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 14.2
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.24
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.38
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.59
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 4,
+   "slots_defined": 7,
+   "coverage": 0.571,
+   "n_types": 107,
+   "mean_logdice": 4.265,
+   "prominence_score": 28.808,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 14.2,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "throne",
+     "logdice": 10.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Masters",
+     "logdice": 9.09,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "stair",
+     "logdice": 8.93,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "spiral",
+     "logdice": 8.9,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "staircase",
+     "logdice": 8.12,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "aorta",
+     "logdice": 8.04,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ladder",
+     "logdice": 7.98,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hill",
+     "logdice": 7.83,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "mountain",
+     "logdice": 7.67,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 144285,
+     "slot_logdice": 36.31,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "throne",
+       "logdice": 10.67
+      },
+      {
+       "word": "Masters",
+       "logdice": 9.09
+      },
+      {
+       "word": "stair",
+       "logdice": 8.93
+      },
+      {
+       "word": "staircase",
+       "logdice": 8.12
+      },
+      {
+       "word": "aorta",
+       "logdice": 8.04
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 727,
+     "slot_logdice": 0.18,
+     "n_collocates": 33,
+     "top5": [
+      {
+       "word": "spiral",
+       "logdice": 8.9
+      },
+      {
+       "word": "gully",
+       "logdice": 7.67
+      },
+      {
+       "word": "mountainside",
+       "logdice": 7.28
+      },
+      {
+       "word": "hierarchy",
+       "logdice": 7.13
+      },
+      {
+       "word": "stairway",
+       "logdice": 7.13
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 90516,
+     "slot_logdice": "",
+     "n_collocates": 33,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 14.2
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.24
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.38
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.59
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2038,
+     "slot_logdice": 0.51,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "unto",
+       "logdice": 6.8
+      },
+      {
+       "word": "upon",
+       "logdice": 2.17
+      },
+      {
+       "word": "along",
+       "logdice": 0.85
+      },
+      {
+       "word": "up",
+       "logdice": 0.65
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 192,
+   "mean_logdice": 4.631,
+   "prominence_score": 35.159,
+   "top_evidence": [
+    {
+     "word": "descend",
+     "logdice": 13.17,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "P7",
+     "logdice": 10.49,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "reticular",
+     "logdice": 9.88,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "bodily",
+     "logdice": 9.56,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "Jupiter",
+     "logdice": 8.94,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Lark",
+     "logdice": 8.75,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Huawei",
+     "logdice": 8.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "resurrect",
+     "logdice": 8.44,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "P1",
+     "logdice": 8.13,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "steeply",
+     "logdice": 7.94,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 44121,
+     "slot_logdice": 11.1,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "steeply",
+       "logdice": 7.94
+      },
+      {
+       "word": "heavenward",
+       "logdice": 6.04
+      },
+      {
+       "word": "geniculately",
+       "logdice": 5.73
+      },
+      {
+       "word": "thither",
+       "logdice": 5.66
+      },
+      {
+       "word": "upwards",
+       "logdice": 5.55
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 3451,
+     "slot_logdice": 0.87,
+     "n_collocates": 38,
+     "top5": [
+      {
+       "word": "P7",
+       "logdice": 10.49
+      },
+      {
+       "word": "reticular",
+       "logdice": 9.88
+      },
+      {
+       "word": "bodily",
+       "logdice": 9.56
+      },
+      {
+       "word": "P1",
+       "logdice": 8.13
+      },
+      {
+       "word": "Mate7",
+       "logdice": 7.7
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.22
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 63072,
+     "slot_logdice": 15.87,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Jupiter",
+       "logdice": 8.94
+      },
+      {
+       "word": "Lark",
+       "logdice": 8.75
+      },
+      {
+       "word": "Huawei",
+       "logdice": 8.68
+      },
+      {
+       "word": "Astria",
+       "logdice": 7.33
+      },
+      {
+       "word": "climber",
+       "logdice": 6.95
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 24012,
+     "slot_logdice": 6.04,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "descend",
+       "logdice": 13.17
+      },
+      {
+       "word": "resurrect",
+       "logdice": 8.44
+      },
+      {
+       "word": "rise",
+       "logdice": 6.85
+      },
+      {
+       "word": "spread",
+       "logdice": 6.77
+      },
+      {
+       "word": "ascend",
+       "logdice": 6.68
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 530,
+     "slot_logdice": 0.13,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "steep",
+       "logdice": 5.25
+      },
+      {
+       "word": "east",
+       "logdice": 3.88
+      },
+      {
+       "word": "visible",
+       "logdice": 3.0
+      },
+      {
+       "word": "adjacent",
+       "logdice": 2.8
+      },
+      {
+       "word": "high",
+       "logdice": 2.03
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 149,
+   "mean_logdice": 4.181,
+   "prominence_score": 30.223,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 14.2,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "throne",
+     "logdice": 10.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Masters",
+     "logdice": 9.09,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Jupiter",
+     "logdice": 8.94,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "stair",
+     "logdice": 8.93,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Lark",
+     "logdice": 8.75,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Huawei",
+     "logdice": 8.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "staircase",
+     "logdice": 8.12,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "aorta",
+     "logdice": 8.04,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ladder",
+     "logdice": 7.98,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 144285,
+     "slot_logdice": 36.31,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "throne",
+       "logdice": 10.67
+      },
+      {
+       "word": "Masters",
+       "logdice": 9.09
+      },
+      {
+       "word": "stair",
+       "logdice": 8.93
+      },
+      {
+       "word": "staircase",
+       "logdice": 8.12
+      },
+      {
+       "word": "aorta",
+       "logdice": 8.04
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 2361,
+     "slot_logdice": 0.59,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "he",
+       "logdice": 2.78
+      },
+      {
+       "word": "thou",
+       "logdice": 2.31
+      },
+      {
+       "word": "we",
+       "logdice": 0.11
+      },
+      {
+       "word": "one",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 48176,
+     "slot_logdice": 12.12,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "thou",
+       "logdice": 2.44
+      },
+      {
+       "word": "him",
+       "logdice": 2.36
+      },
+      {
+       "word": "thee",
+       "logdice": 2.25
+      },
+      {
+       "word": "one",
+       "logdice": 2.08
+      },
+      {
+       "word": "ourselves",
+       "logdice": 2.0
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 63072,
+     "slot_logdice": 15.87,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Jupiter",
+       "logdice": 8.94
+      },
+      {
+       "word": "Lark",
+       "logdice": 8.75
+      },
+      {
+       "word": "Huawei",
+       "logdice": 8.68
+      },
+      {
+       "word": "Astria",
+       "logdice": 7.33
+      },
+      {
+       "word": "climber",
+       "logdice": 6.95
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 90516,
+     "slot_logdice": "",
+     "n_collocates": 33,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 14.2
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.24
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 1.38
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.59
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2038,
+     "slot_logdice": 0.51,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "unto",
+       "logdice": 6.8
+      },
+      {
+       "word": "upon",
+       "logdice": 2.17
+      },
+      {
+       "word": "along",
+       "logdice": 0.85
+      },
+      {
+       "word": "up",
+       "logdice": 0.65
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

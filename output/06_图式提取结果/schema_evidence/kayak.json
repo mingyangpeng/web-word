@@ -1,0 +1,408 @@
+{
+ "verb": "kayak",
+ "freq": 245164,
+ "lpos": "-n",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "源点脱离图式",
+  "终点抵达图式",
+  "互动位移图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 1,
+   "slots_defined": 5,
+   "coverage": 0.2,
+   "n_types": 50,
+   "mean_logdice": 0.377,
+   "prominence_score": 2.14,
+   "top_evidence": [
+    {
+     "word": "... of \"%w\"",
+     "logdice": 2.99,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... in \"%w\"",
+     "logdice": 2.87,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.88,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 1.0,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.97,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.96,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... for \"%w\"",
+     "logdice": 0.95,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... on \"%w\"",
+     "logdice": 0.93,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... by \"%w\"",
+     "logdice": 0.92,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... from \"%w\"",
+     "logdice": 0.75,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 46513,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "... of \"%w\"",
+       "logdice": 2.99
+      },
+      {
+       "word": "... in \"%w\"",
+       "logdice": 2.87
+      },
+      {
+       "word": "... to \"%w\"",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.0
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.97
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 1,
+   "slots_defined": 7,
+   "coverage": 0.143,
+   "n_types": 50,
+   "mean_logdice": 0.377,
+   "prominence_score": 2.14,
+   "top_evidence": [
+    {
+     "word": "... of \"%w\"",
+     "logdice": 2.99,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... in \"%w\"",
+     "logdice": 2.87,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.88,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 1.0,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.97,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.96,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... for \"%w\"",
+     "logdice": 0.95,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... on \"%w\"",
+     "logdice": 0.93,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... by \"%w\"",
+     "logdice": 0.92,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... from \"%w\"",
+     "logdice": 0.75,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 46513,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "... of \"%w\"",
+       "logdice": 2.99
+      },
+      {
+       "word": "... in \"%w\"",
+       "logdice": 2.87
+      },
+      {
+       "word": "... to \"%w\"",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.0
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.97
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 2,
+   "slots_defined": 6,
+   "coverage": 0.333,
+   "n_types": 80,
+   "mean_logdice": 6.369,
+   "prominence_score": 40.376,
+   "top_evidence": [
+    {
+     "word": "canoe",
+     "logdice": 12.11,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "paddleboard",
+     "logdice": 10.18,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "raft",
+     "logdice": 9.06,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "inflatable",
+     "logdice": 9.01,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "sup",
+     "logdice": 8.55,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "boat",
+     "logdice": 8.33,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "paddle",
+     "logdice": 8.3,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "kayak",
+     "logdice": 8.28,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sit-on-top",
+     "logdice": 8.16,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "sailboat",
+     "logdice": 8.02,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 68813,
+     "slot_logdice": 28.07,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "canoe",
+       "logdice": 9.8
+      },
+      {
+       "word": "inflatable",
+       "logdice": 9.01
+      },
+      {
+       "word": "sit-on-top",
+       "logdice": 8.16
+      },
+      {
+       "word": "tandem",
+       "logdice": 7.97
+      },
+      {
+       "word": "paddleboard",
+       "logdice": 7.42
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 70874,
+     "slot_logdice": 28.91,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "canoe",
+       "logdice": 12.11
+      },
+      {
+       "word": "paddleboard",
+       "logdice": 10.18
+      },
+      {
+       "word": "raft",
+       "logdice": 9.06
+      },
+      {
+       "word": "sup",
+       "logdice": 8.55
+      },
+      {
+       "word": "boat",
+       "logdice": 8.33
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 1,
+   "slots_defined": 6,
+   "coverage": 0.167,
+   "n_types": 50,
+   "mean_logdice": 0.377,
+   "prominence_score": 2.14,
+   "top_evidence": [
+    {
+     "word": "... of \"%w\"",
+     "logdice": 2.99,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... in \"%w\"",
+     "logdice": 2.87,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... to \"%w\"",
+     "logdice": 1.88,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 1.0,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.97,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.96,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... for \"%w\"",
+     "logdice": 0.95,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... on \"%w\"",
+     "logdice": 0.93,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... by \"%w\"",
+     "logdice": 0.92,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "... from \"%w\"",
+     "logdice": 0.75,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 46513,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "... of \"%w\"",
+       "logdice": 2.99
+      },
+      {
+       "word": "... in \"%w\"",
+       "logdice": 2.87
+      },
+      {
+       "word": "... to \"%w\"",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.0
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.97
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

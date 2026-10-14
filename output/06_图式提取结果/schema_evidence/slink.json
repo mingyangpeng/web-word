@@ -1,0 +1,708 @@
+{
+ "verb": "slink",
+ "freq": 26908,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 35,
+   "mean_logdice": 1.806,
+   "prominence_score": 9.338,
+   "top_evidence": [
+    {
+     "word": "home",
+     "logdice": 6.79,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "tail",
+     "logdice": 6.49,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "stage",
+     "logdice": 6.27,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 5.76,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "door",
+     "logdice": 5.08,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "bed",
+     "logdice": 4.45,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "away",
+     "logdice": 4.42,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "field",
+     "logdice": 3.94,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "off",
+     "logdice": 3.43,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "around",
+     "logdice": 2.65,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 7253,
+     "slot_logdice": 26.95,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "away",
+       "logdice": 4.42
+      },
+      {
+       "word": "off",
+       "logdice": 3.43
+      },
+      {
+       "word": "around",
+       "logdice": 2.65
+      },
+      {
+       "word": "along",
+       "logdice": 1.77
+      },
+      {
+       "word": "in",
+       "logdice": 1.18
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 93,
+     "slot_logdice": 0.35,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "home",
+       "logdice": 6.79
+      },
+      {
+       "word": "tail",
+       "logdice": 6.49
+      },
+      {
+       "word": "stage",
+       "logdice": 6.27
+      },
+      {
+       "word": "bed",
+       "logdice": 4.45
+      },
+      {
+       "word": "field",
+       "logdice": 3.94
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 102,
+     "slot_logdice": 0.38,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 5.08
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4103,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.76
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.57
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.87
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.71
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.65
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 56,
+   "mean_logdice": 2.037,
+   "prominence_score": 11.882,
+   "top_evidence": [
+    {
+     "word": "alley",
+     "logdice": 6.65,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 5.76,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "whisperer",
+     "logdice": 5.58,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "sorcerer",
+     "logdice": 5.44,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "runway",
+     "logdice": 5.23,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "jackal",
+     "logdice": 4.98,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "bassline",
+     "logdice": 4.88,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 4.69,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hall",
+     "logdice": 4.53,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "stair",
+     "logdice": 4.36,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1369,
+     "slot_logdice": 5.09,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "whisperer",
+       "logdice": 5.58
+      },
+      {
+       "word": "sorcerer",
+       "logdice": 5.44
+      },
+      {
+       "word": "jackal",
+       "logdice": 4.98
+      },
+      {
+       "word": "bassline",
+       "logdice": 4.88
+      },
+      {
+       "word": "Moss",
+       "logdice": 4.17
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 27,
+     "slot_logdice": 0.1,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "stair",
+       "logdice": 3.38
+      },
+      {
+       "word": "step",
+       "logdice": 3.18
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 197,
+     "slot_logdice": 0.73,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "alley",
+       "logdice": 6.65
+      },
+      {
+       "word": "runway",
+       "logdice": 5.23
+      },
+      {
+       "word": "hallway",
+       "logdice": 4.69
+      },
+      {
+       "word": "hall",
+       "logdice": 4.53
+      },
+      {
+       "word": "stair",
+       "logdice": 4.36
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4103,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.76
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.57
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.87
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.71
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.65
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1263,
+     "slot_logdice": 4.69,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 2.21
+      },
+      {
+       "word": "down",
+       "logdice": 0.52
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 123,
+   "mean_logdice": 2.69,
+   "prominence_score": 18.708,
+   "top_evidence": [
+    {
+     "word": "slither",
+     "logdice": 9.56,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "skulk",
+     "logdice": 9.5,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "prowl",
+     "logdice": 8.04,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "swagger",
+     "logdice": 7.57,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cower",
+     "logdice": 7.31,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "strut",
+     "logdice": 6.98,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "slouch",
+     "logdice": 6.74,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "crouch",
+     "logdice": 6.08,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "sneak",
+     "logdice": 6.04,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cringe",
+     "logdice": 5.93,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 9927,
+     "slot_logdice": 36.89,
+     "n_collocates": 30,
+     "top5": [
+      {
+       "word": "guiltily",
+       "logdice": 5.5
+      },
+      {
+       "word": "furtively",
+       "logdice": 5.18
+      },
+      {
+       "word": "stealthily",
+       "logdice": 5.03
+      },
+      {
+       "word": "offstage",
+       "logdice": 4.89
+      },
+      {
+       "word": "sullenly",
+       "logdice": 4.52
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 334,
+     "slot_logdice": 1.24,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "unseen",
+       "logdice": 4.12
+      },
+      {
+       "word": "undetected",
+       "logdice": 3.09
+      },
+      {
+       "word": "past",
+       "logdice": 2.49
+      },
+      {
+       "word": "unnoticed",
+       "logdice": 2.43
+      },
+      {
+       "word": "embarrassed",
+       "logdice": 2.32
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.93
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.06
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 2006,
+     "slot_logdice": 7.46,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "coward",
+       "logdice": 4.6
+      },
+      {
+       "word": "feline",
+       "logdice": 4.27
+      },
+      {
+       "word": "Crime",
+       "logdice": 4.25
+      },
+      {
+       "word": "jackal",
+       "logdice": 4.12
+      },
+      {
+       "word": "leopard",
+       "logdice": 4.11
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 548,
+     "slot_logdice": 2.04,
+     "n_collocates": 32,
+     "top5": [
+      {
+       "word": "slither",
+       "logdice": 9.56
+      },
+      {
+       "word": "skulk",
+       "logdice": 9.5
+      },
+      {
+       "word": "prowl",
+       "logdice": 8.04
+      },
+      {
+       "word": "swagger",
+       "logdice": 7.57
+      },
+      {
+       "word": "cower",
+       "logdice": 7.31
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 86,
+   "mean_logdice": 1.65,
+   "prominence_score": 10.628,
+   "top_evidence": [
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 5.76,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "whisperer",
+     "logdice": 5.58,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "sorcerer",
+     "logdice": 5.44,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "jackal",
+     "logdice": 4.98,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "bassline",
+     "logdice": 4.88,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "coward",
+     "logdice": 4.6,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "feline",
+     "logdice": 4.27,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Crime",
+     "logdice": 4.25,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Moss",
+     "logdice": 4.17,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "leopard",
+     "logdice": 4.11,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1369,
+     "slot_logdice": 5.09,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "whisperer",
+       "logdice": 5.58
+      },
+      {
+       "word": "sorcerer",
+       "logdice": 5.44
+      },
+      {
+       "word": "jackal",
+       "logdice": 4.98
+      },
+      {
+       "word": "bassline",
+       "logdice": 4.88
+      },
+      {
+       "word": "Moss",
+       "logdice": 4.17
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 2006,
+     "slot_logdice": 7.46,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "coward",
+       "logdice": 4.6
+      },
+      {
+       "word": "feline",
+       "logdice": 4.27
+      },
+      {
+       "word": "Crime",
+       "logdice": 4.25
+      },
+      {
+       "word": "jackal",
+       "logdice": 4.12
+      },
+      {
+       "word": "leopard",
+       "logdice": 4.11
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4103,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 5.76
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.57
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.87
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 1.71
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.65
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1263,
+     "slot_logdice": 4.69,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 2.21
+      },
+      {
+       "word": "down",
+       "logdice": 0.52
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

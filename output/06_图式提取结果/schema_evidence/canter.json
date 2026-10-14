@@ -1,0 +1,628 @@
+{
+ "verb": "canter",
+ "freq": 11607,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 2,
+   "slots_defined": 5,
+   "coverage": 0.4,
+   "n_types": 15,
+   "mean_logdice": 0.788,
+   "prominence_score": 3.152,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 2.83,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 2.18,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "along",
+     "logdice": 1.3,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 1.21,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 0.78,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" along ...",
+     "logdice": 0.56,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.5,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 0.46,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" over ...",
+     "logdice": 0.44,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 0.43,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 994,
+     "slot_logdice": 8.56,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 1.3
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1222,
+     "slot_logdice": "",
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.83
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.21
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.78
+      },
+      {
+       "word": "\"%w\" along ...",
+       "logdice": 0.56
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 50,
+   "mean_logdice": 2.157,
+   "prominence_score": 12.238,
+   "top_evidence": [
+    {
+     "word": "centerline",
+     "logdice": 10.33,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "beach",
+     "logdice": 5.68,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "furlong",
+     "logdice": 5.12,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "trail",
+     "logdice": 4.6,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "steed",
+     "logdice": 3.98,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "stallion",
+     "logdice": 3.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hill",
+     "logdice": 3.73,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "street",
+     "logdice": 3.71,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "hoof",
+     "logdice": 3.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "lane",
+     "logdice": 3.63,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1088,
+     "slot_logdice": 9.37,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "furlong",
+       "logdice": 5.12
+      },
+      {
+       "word": "steed",
+       "logdice": 3.98
+      },
+      {
+       "word": "stallion",
+       "logdice": 3.87
+      },
+      {
+       "word": "hoof",
+       "logdice": 3.7
+      },
+      {
+       "word": "gait",
+       "logdice": 3.44
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 43,
+     "slot_logdice": 0.37,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "hill",
+       "logdice": 3.73
+      },
+      {
+       "word": "street",
+       "logdice": 3.71
+      },
+      {
+       "word": "road",
+       "logdice": 3.23
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 114,
+     "slot_logdice": 0.98,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "centerline",
+       "logdice": 10.33
+      },
+      {
+       "word": "beach",
+       "logdice": 5.68
+      },
+      {
+       "word": "trail",
+       "logdice": 4.6
+      },
+      {
+       "word": "lane",
+       "logdice": 3.63
+      },
+      {
+       "word": "slope",
+       "logdice": 3.26
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1222,
+     "slot_logdice": "",
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.83
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.21
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.78
+      },
+      {
+       "word": "\"%w\" along ...",
+       "logdice": 0.56
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 467,
+     "slot_logdice": 4.02,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 0.49
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 40,
+   "mean_logdice": 3.54,
+   "prominence_score": 18.966,
+   "top_evidence": [
+    {
+     "word": "trot",
+     "logdice": 12.38,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "gallop",
+     "logdice": 10.61,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "lope",
+     "logdice": 8.35,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "canter",
+     "logdice": 8.02,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "whinny",
+     "logdice": 6.13,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Deer",
+     "logdice": 6.12,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "buck",
+     "logdice": 5.84,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "bareback",
+     "logdice": 5.65,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "prance",
+     "logdice": 5.26,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "gaily",
+     "logdice": 4.53,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 1574,
+     "slot_logdice": 13.56,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "bareback",
+       "logdice": 5.65
+      },
+      {
+       "word": "gaily",
+       "logdice": 4.53
+      },
+      {
+       "word": "briskly",
+       "logdice": 3.11
+      },
+      {
+       "word": "gracefully",
+       "logdice": 2.16
+      },
+      {
+       "word": "forwards",
+       "logdice": 1.36
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 46,
+     "slot_logdice": 0.4,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 1.93
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 3.26
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 568,
+     "slot_logdice": 4.89,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "Deer",
+       "logdice": 6.12
+      },
+      {
+       "word": "horseman",
+       "logdice": 3.98
+      },
+      {
+       "word": "horseback",
+       "logdice": 3.87
+      },
+      {
+       "word": "giraffe",
+       "logdice": 3.62
+      },
+      {
+       "word": "horse",
+       "logdice": 3.54
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 2136,
+     "slot_logdice": 18.4,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "trot",
+       "logdice": 12.38
+      },
+      {
+       "word": "gallop",
+       "logdice": 10.61
+      },
+      {
+       "word": "lope",
+       "logdice": 8.35
+      },
+      {
+       "word": "canter",
+       "logdice": 8.02
+      },
+      {
+       "word": "whinny",
+       "logdice": 6.13
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 50,
+   "mean_logdice": 1.873,
+   "prominence_score": 10.622,
+   "top_evidence": [
+    {
+     "word": "Deer",
+     "logdice": 6.12,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "furlong",
+     "logdice": 5.12,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "steed",
+     "logdice": 3.98,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "horseman",
+     "logdice": 3.98,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "stallion",
+     "logdice": 3.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "horseback",
+     "logdice": 3.87,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hoof",
+     "logdice": 3.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "giraffe",
+     "logdice": 3.62,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "horse",
+     "logdice": 3.54,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "gait",
+     "logdice": 3.44,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1088,
+     "slot_logdice": 9.37,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "furlong",
+       "logdice": 5.12
+      },
+      {
+       "word": "steed",
+       "logdice": 3.98
+      },
+      {
+       "word": "stallion",
+       "logdice": 3.87
+      },
+      {
+       "word": "hoof",
+       "logdice": 3.7
+      },
+      {
+       "word": "gait",
+       "logdice": 3.44
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 568,
+     "slot_logdice": 4.89,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "Deer",
+       "logdice": 6.12
+      },
+      {
+       "word": "horseman",
+       "logdice": 3.98
+      },
+      {
+       "word": "horseback",
+       "logdice": 3.87
+      },
+      {
+       "word": "giraffe",
+       "logdice": 3.62
+      },
+      {
+       "word": "horse",
+       "logdice": 3.54
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 1222,
+     "slot_logdice": "",
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.83
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.21
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.78
+      },
+      {
+       "word": "\"%w\" along ...",
+       "logdice": 0.56
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 467,
+     "slot_logdice": 4.02,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 0.49
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

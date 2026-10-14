@@ -1,0 +1,768 @@
+{
+ "verb": "nip",
+ "freq": 83995,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 54,
+   "mean_logdice": 3.495,
+   "prominence_score": 20.207,
+   "top_evidence": [
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 12.55,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "wicket",
+     "logdice": 10.71,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "bud",
+     "logdice": 10.27,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "shoot",
+     "logdice": 8.8,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "seam",
+     "logdice": 8.76,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "twig",
+     "logdice": 8.09,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "flower",
+     "logdice": 7.88,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "tip",
+     "logdice": 7.36,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "length",
+     "logdice": 7.07,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "leaf",
+     "logdice": 7.03,
+     "slot": "objects of \"%w off\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 5906,
+     "slot_logdice": 7.03,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "in",
+       "logdice": 3.37
+      },
+      {
+       "word": "across",
+       "logdice": 3.25
+      },
+      {
+       "word": "over",
+       "logdice": 2.12
+      },
+      {
+       "word": "off",
+       "logdice": 2.03
+      },
+      {
+       "word": "down",
+       "logdice": 0.99
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 379,
+     "slot_logdice": 0.45,
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "bud",
+       "logdice": 10.27
+      },
+      {
+       "word": "shoot",
+       "logdice": 8.8
+      },
+      {
+       "word": "seam",
+       "logdice": 8.76
+      },
+      {
+       "word": "twig",
+       "logdice": 8.09
+      },
+      {
+       "word": "flower",
+       "logdice": 7.88
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 117,
+     "slot_logdice": 0.14,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "wicket",
+       "logdice": 10.71
+      },
+      {
+       "word": "shoot",
+       "logdice": 7.48
+      },
+      {
+       "word": "tip",
+       "logdice": 5.95
+      },
+      {
+       "word": "back",
+       "logdice": 5.83
+      },
+      {
+       "word": "morning",
+       "logdice": 4.41
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 18843,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 12.55
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 6.51
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.93
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.88
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.42
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 86,
+   "mean_logdice": 3.724,
+   "prominence_score": 23.995,
+   "top_evidence": [
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 12.55,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "G",
+     "logdice": 9.36,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "bolt",
+     "logdice": 8.99,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "shop",
+     "logdice": 8.45,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "screw",
+     "logdice": 8.43,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "pub",
+     "logdice": 8.34,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "earlobe",
+     "logdice": 8.27,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "nut",
+     "logdice": 8.22,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "inside",
+     "logdice": 7.73,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "nip",
+     "logdice": 6.79,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 14756,
+     "slot_logdice": 17.57,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "earlobe",
+       "logdice": 8.27
+      },
+      {
+       "word": "nip",
+       "logdice": 6.79
+      },
+      {
+       "word": "waist",
+       "logdice": 6.57
+      },
+      {
+       "word": "Fox4",
+       "logdice": 6.48
+      },
+      {
+       "word": "lobe",
+       "logdice": 6.05
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 141,
+     "slot_logdice": 0.17,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "G",
+       "logdice": 9.36
+      },
+      {
+       "word": "bolt",
+       "logdice": 8.99
+      },
+      {
+       "word": "screw",
+       "logdice": 8.43
+      },
+      {
+       "word": "nut",
+       "logdice": 8.22
+      },
+      {
+       "word": "inside",
+       "logdice": 7.73
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 173,
+     "slot_logdice": 0.21,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "shop",
+       "logdice": 8.45
+      },
+      {
+       "word": "pub",
+       "logdice": 8.34
+      },
+      {
+       "word": "chest",
+       "logdice": 6.41
+      },
+      {
+       "word": "neck",
+       "logdice": 5.83
+      },
+      {
+       "word": "road",
+       "logdice": 3.74
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 18843,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 12.55
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 6.51
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.93
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.88
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.42
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2780,
+     "slot_logdice": 3.31,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 1.95
+      },
+      {
+       "word": "around",
+       "logdice": 1.73
+      },
+      {
+       "word": "off",
+       "logdice": 1.63
+      },
+      {
+       "word": "down",
+       "logdice": 0.84
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 144,
+   "mean_logdice": 4.184,
+   "prominence_score": 30.041,
+   "top_evidence": [
+    {
+     "word": "tuck",
+     "logdice": 10.6,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "lick",
+     "logdice": 9.53,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "suckle",
+     "logdice": 9.27,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "suck",
+     "logdice": 8.99,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "bite",
+     "logdice": 8.65,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "mouth",
+     "logdice": 8.59,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "kiss",
+     "logdice": 8.31,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "nuzzle",
+     "logdice": 7.85,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "playfully",
+     "logdice": 7.71,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "nibble",
+     "logdice": 7.65,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 12387,
+     "slot_logdice": 14.75,
+     "n_collocates": 41,
+     "top5": [
+      {
+       "word": "playfully",
+       "logdice": 7.71
+      },
+      {
+       "word": "lightly",
+       "logdice": 5.45
+      },
+      {
+       "word": "teasingly",
+       "logdice": 5.21
+      },
+      {
+       "word": "gently",
+       "logdice": 5.2
+      },
+      {
+       "word": "hungrily",
+       "logdice": 4.85
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 285,
+     "slot_logdice": 0.34,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 2.6
+      },
+      {
+       "word": "outside",
+       "logdice": 1.4
+      },
+      {
+       "word": "evil",
+       "logdice": 0.43
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "as reflexive",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 8498,
+     "slot_logdice": 10.12,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "fang",
+       "logdice": 6.95
+      },
+      {
+       "word": "Frost",
+       "logdice": 6.82
+      },
+      {
+       "word": "Fox4",
+       "logdice": 6.5
+      },
+      {
+       "word": "tooth",
+       "logdice": 6.26
+      },
+      {
+       "word": "frost",
+       "logdice": 6.2
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 6883,
+     "slot_logdice": 8.19,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "tuck",
+       "logdice": 10.6
+      },
+      {
+       "word": "lick",
+       "logdice": 9.53
+      },
+      {
+       "word": "suckle",
+       "logdice": 9.27
+      },
+      {
+       "word": "suck",
+       "logdice": 8.99
+      },
+      {
+       "word": "bite",
+       "logdice": 8.65
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 62,
+     "slot_logdice": 0.07,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "tight",
+       "logdice": 3.34
+      },
+      {
+       "word": "hard",
+       "logdice": 0.36
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 115,
+   "mean_logdice": 3.602,
+   "prominence_score": 24.704,
+   "top_evidence": [
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 12.55,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "earlobe",
+     "logdice": 8.27,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "fang",
+     "logdice": 6.95,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Frost",
+     "logdice": 6.82,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "nip",
+     "logdice": 6.79,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "waist",
+     "logdice": 6.57,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 6.51,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Fox4",
+     "logdice": 6.5,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "tooth",
+     "logdice": 6.26,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "frost",
+     "logdice": 6.2,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 14756,
+     "slot_logdice": 17.57,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "earlobe",
+       "logdice": 8.27
+      },
+      {
+       "word": "nip",
+       "logdice": 6.79
+      },
+      {
+       "word": "waist",
+       "logdice": 6.57
+      },
+      {
+       "word": "Fox4",
+       "logdice": 6.48
+      },
+      {
+       "word": "lobe",
+       "logdice": 6.05
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 6815,
+     "slot_logdice": 8.11,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "it",
+       "logdice": 0.09
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 8498,
+     "slot_logdice": 10.12,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "fang",
+       "logdice": 6.95
+      },
+      {
+       "word": "Frost",
+       "logdice": 6.82
+      },
+      {
+       "word": "Fox4",
+       "logdice": 6.5
+      },
+      {
+       "word": "tooth",
+       "logdice": 6.26
+      },
+      {
+       "word": "frost",
+       "logdice": 6.2
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 18843,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 12.55
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 6.51
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.93
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.88
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.42
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2780,
+     "slot_logdice": 3.31,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 1.95
+      },
+      {
+       "word": "around",
+       "logdice": 1.73
+      },
+      {
+       "word": "off",
+       "logdice": 1.63
+      },
+      {
+       "word": "down",
+       "logdice": 0.84
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

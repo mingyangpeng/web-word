@@ -146,7 +146,7 @@ def _clean(value: Any) -> str:
 MAIN_CAT_MANNER = "方式聚焦型"
 
 
-def load_levin_table(path: str = None, scope: str = "manner") -> List[Dict[str, Any]]:
+def load_levin_table(path: str = None, scope: str = "all") -> List[Dict[str, Any]]:
     """
     读 `docs/Levin移动动词候选词筛选表.xlsx` 的「去除不符合的」页。
 
@@ -157,12 +157,13 @@ def load_levin_table(path: str = None, scope: str = "manner") -> List[Dict[str, 
     Args:
         path: xlsx 路径，默认取仓库内的那份
         scope: 取词范围。
-            ``"manner"``（默认）只取主范畴为「方式聚焦型」的词 —— 这批词与
-            `docs/output-oald10en-for-senselist-1020.xlsx` 的提取范围一致
-            （实测两边都是 136 词，完全相等），也就是「自移移动动词」这个词表要覆盖的
-            对象。另外两类（路径聚焦型 / 互动聚焦型）不是自移，留在 xlsx 里、
-            不进词表。
-            ``"all"`` 取全部三类的词（171 个），历史行为，供测试与对照使用。
+            ``"all"``（默认）取全部三类 171 词（方式 136 + 路径 22 + 互动 13）。
+            这是本研究的词表范围：2026-10-07 决定把 9-28 被收窄掉的 35 个
+            路径聚焦型 / 互动聚焦型词目捞回（它们已通过 Talmy 与构式核查），
+            使源点脱离、终点抵达、互动位移三类图式拥有真实词元。
+            ``"manner"`` 只取主范畴为「方式聚焦型」的 136 词 —— 9-28 至 10-07
+            间的历史词表范围，与 `docs/output-oald10en-for-senselist-1020.xlsx`
+            当时的提取范围一致；保留该选项供对照与语料连续性检查使用。
 
     Returns:
         [{verb, levin_source, cross_subclass, main_cat, sub_cat,
@@ -303,7 +304,7 @@ class DictionaryDB:
             return False
         cur = self.connect().cursor()
         cur.execute(
-            "SELECT 1 FROM dictionary WHERE lower(trim(lemma)) = ? AND trim(pos) = 'v' LIMIT 1",
+            "SELECT 1 FROM dictionary WHERE lower(trim(lemma)) = ? AND trim(pos, char(32) || char(12288)) = 'v' LIMIT 1",
             (verb.lower(),),
         )
         return cur.fetchone() is not None
@@ -320,7 +321,7 @@ class DictionaryDB:
             return ""
         cur = self.connect().cursor()
         cur.execute(
-            "SELECT xml FROM dictionary WHERE lower(trim(lemma)) = ? AND trim(pos) = 'v' LIMIT 1",
+            "SELECT xml FROM dictionary WHERE lower(trim(lemma)) = ? AND trim(pos, char(32) || char(12288)) = 'v' LIMIT 1",
             (verb.lower(),),
         )
         row = cur.fetchone()
@@ -354,7 +355,7 @@ class DictionaryDB:
         cur = self.connect().cursor()
         cur.execute(
             """SELECT xml FROM dictionary
-               WHERE lower(trim(lemma)) = ? AND trim(pos) = 'v'
+               WHERE lower(trim(lemma)) = ? AND trim(pos, char(32) || char(12288)) = 'v'
                ORDER BY id""",
             (verb.lower(),),
         )
@@ -701,7 +702,9 @@ def build_entries(levin_rows: List[Dict[str, Any]],
         sense_count = len(senses)
 
         # 是否保留了词典首条义位（要在重排**之前**判断，重排后 proto_idx 恒为 0）
-        kept_first = (proto_idx == 0)
+        # 仅 dictionary.db 来源有意义：legacy/levin-brief 来源 senses 被整表替换，
+        # proto_idx 指的是词典义位列表，对它们没有"保留首条"可言
+        kept_first = (proto_idx == 0) if source == "dictionary.db" else True
 
         # 把选中的原型义位挪到首位：页面的「义位明细」表按 sense_index 升序展示，
         # 原型义排第一才符合文档「原型义为核心样本」的表述。

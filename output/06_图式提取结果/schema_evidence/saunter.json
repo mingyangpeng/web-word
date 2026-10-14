@@ -1,0 +1,732 @@
+{
+ "verb": "saunter",
+ "freq": 32857,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 36,
+   "mean_logdice": 1.379,
+   "prominence_score": 7.186,
+   "top_evidence": [
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 4.96,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "stage",
+     "logdice": 4.94,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "door",
+     "logdice": 4.8,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "over",
+     "logdice": 4.41,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "field",
+     "logdice": 3.78,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "time",
+     "logdice": 3.76,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "along",
+     "logdice": 2.93,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 2.66,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "off",
+     "logdice": 2.61,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 2.18,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 9595,
+     "slot_logdice": 29.2,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 4.41
+      },
+      {
+       "word": "along",
+       "logdice": 2.93
+      },
+      {
+       "word": "off",
+       "logdice": 2.61
+      },
+      {
+       "word": "across",
+       "logdice": 2.17
+      },
+      {
+       "word": "around",
+       "logdice": 1.55
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 7,
+     "slot_logdice": 0.02,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "time",
+       "logdice": 3.76
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 42,
+     "slot_logdice": 0.13,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "stage",
+       "logdice": 4.94
+      },
+      {
+       "word": "field",
+       "logdice": 3.78
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 84,
+     "slot_logdice": 0.26,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 4.8
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4979,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.96
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" along ...",
+       "logdice": 0.84
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 77,
+   "mean_logdice": 3.277,
+   "prominence_score": 20.599,
+   "top_evidence": [
+    {
+     "word": "catwalk",
+     "logdice": 8.46,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "boardwalk",
+     "logdice": 7.95,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "runway",
+     "logdice": 7.66,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "carpet",
+     "logdice": 7.64,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "walk",
+     "logdice": 7.45,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "promenade",
+     "logdice": 7.37,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "sidewalk",
+     "logdice": 7.07,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "dock",
+     "logdice": 6.75,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "aisle",
+     "logdice": 6.48,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "ramp",
+     "logdice": 6.46,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1495,
+     "slot_logdice": 4.55,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "arm-in-arm",
+       "logdice": 5.88
+      },
+      {
+       "word": "onstage",
+       "logdice": 5.04
+      },
+      {
+       "word": "gait",
+       "logdice": 3.59
+      },
+      {
+       "word": "downstairs",
+       "logdice": 3.34
+      },
+      {
+       "word": "blonde",
+       "logdice": 3.22
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 179,
+     "slot_logdice": 0.54,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "walk",
+       "logdice": 6.52
+      },
+      {
+       "word": "aisle",
+       "logdice": 6.48
+      },
+      {
+       "word": "Avenue",
+       "logdice": 6.38
+      },
+      {
+       "word": "driveway",
+       "logdice": 5.69
+      },
+      {
+       "word": "street",
+       "logdice": 5.56
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1109,
+     "slot_logdice": 3.38,
+     "n_collocates": 34,
+     "top5": [
+      {
+       "word": "catwalk",
+       "logdice": 8.46
+      },
+      {
+       "word": "boardwalk",
+       "logdice": 7.95
+      },
+      {
+       "word": "runway",
+       "logdice": 7.66
+      },
+      {
+       "word": "carpet",
+       "logdice": 7.64
+      },
+      {
+       "word": "walk",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4979,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.96
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" along ...",
+       "logdice": 0.84
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2410,
+     "slot_logdice": 7.33,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 2.48
+      },
+      {
+       "word": "around",
+       "logdice": 2.15
+      },
+      {
+       "word": "along",
+       "logdice": 0.85
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 128,
+   "mean_logdice": 2.996,
+   "prominence_score": 21.007,
+   "top_evidence": [
+    {
+     "word": "amble",
+     "logdice": 9.12,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "swagger",
+     "logdice": 8.38,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "loiter",
+     "logdice": 7.87,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "stroll",
+     "logdice": 7.65,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "nonchalantly",
+     "logdice": 6.55,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "meander",
+     "logdice": 6.52,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "leisurely",
+     "logdice": 6.42,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "casually",
+     "logdice": 6.01,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "strut",
+     "logdice": 5.92,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "jauntily",
+     "logdice": 5.77,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 6612,
+     "slot_logdice": 20.12,
+     "n_collocates": 43,
+     "top5": [
+      {
+       "word": "nonchalantly",
+       "logdice": 6.55
+      },
+      {
+       "word": "leisurely",
+       "logdice": 6.42
+      },
+      {
+       "word": "casually",
+       "logdice": 6.01
+      },
+      {
+       "word": "jauntily",
+       "logdice": 5.77
+      },
+      {
+       "word": "lazily",
+       "logdice": 5.59
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 314,
+     "slot_logdice": 0.96,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 4.4
+      },
+      {
+       "word": "naked",
+       "logdice": 1.63
+      },
+      {
+       "word": "outside",
+       "logdice": 0.49
+      },
+      {
+       "word": "near",
+       "logdice": 0.04
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 4.27
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 3078,
+     "slot_logdice": 9.37,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Maura",
+       "logdice": 3.97
+      },
+      {
+       "word": "Spike",
+       "logdice": 3.89
+      },
+      {
+       "word": "Thoreau",
+       "logdice": 3.84
+      },
+      {
+       "word": "Malfoy",
+       "logdice": 3.79
+      },
+      {
+       "word": "moose",
+       "logdice": 3.65
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 739,
+     "slot_logdice": 2.25,
+     "n_collocates": 30,
+     "top5": [
+      {
+       "word": "amble",
+       "logdice": 9.12
+      },
+      {
+       "word": "swagger",
+       "logdice": 8.38
+      },
+      {
+       "word": "loiter",
+       "logdice": 7.87
+      },
+      {
+       "word": "stroll",
+       "logdice": 7.65
+      },
+      {
+       "word": "meander",
+       "logdice": 6.52
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 92,
+   "mean_logdice": 1.952,
+   "prominence_score": 12.765,
+   "top_evidence": [
+    {
+     "word": "arm-in-arm",
+     "logdice": 5.88,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "onstage",
+     "logdice": 5.04,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 4.96,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "Maura",
+     "logdice": 3.97,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Spike",
+     "logdice": 3.89,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Thoreau",
+     "logdice": 3.84,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Malfoy",
+     "logdice": 3.79,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "moose",
+     "logdice": 3.65,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "angelus",
+     "logdice": 3.64,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "giraffe",
+     "logdice": 3.63,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1495,
+     "slot_logdice": 4.55,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "arm-in-arm",
+       "logdice": 5.88
+      },
+      {
+       "word": "onstage",
+       "logdice": 5.04
+      },
+      {
+       "word": "gait",
+       "logdice": 3.59
+      },
+      {
+       "word": "downstairs",
+       "logdice": 3.34
+      },
+      {
+       "word": "blonde",
+       "logdice": 3.22
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 8495,
+     "slot_logdice": 25.85,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "herself",
+       "logdice": 0.06
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 3078,
+     "slot_logdice": 9.37,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Maura",
+       "logdice": 3.97
+      },
+      {
+       "word": "Spike",
+       "logdice": 3.89
+      },
+      {
+       "word": "Thoreau",
+       "logdice": 3.84
+      },
+      {
+       "word": "Malfoy",
+       "logdice": 3.79
+      },
+      {
+       "word": "moose",
+       "logdice": 3.65
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4979,
+     "slot_logdice": "",
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 4.96
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.18
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.1
+      },
+      {
+       "word": "\"%w\" along ...",
+       "logdice": 0.84
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 2410,
+     "slot_logdice": 7.33,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 2.48
+      },
+      {
+       "word": "around",
+       "logdice": 2.15
+      },
+      {
+       "word": "along",
+       "logdice": 0.85
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

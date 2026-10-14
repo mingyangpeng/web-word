@@ -1,0 +1,788 @@
+{
+ "verb": "pad",
+ "freq": 262157,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 82,
+   "mean_logdice": 4.197,
+   "prominence_score": 26.753,
+   "top_evidence": [
+    {
+     "word": "runtime",
+     "logdice": 9.89,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "length",
+     "logdice": 8.88,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "count",
+     "logdice": 8.67,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "CV",
+     "logdice": 8.12,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "film",
+     "logdice": 7.69,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "ball",
+     "logdice": 7.67,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "plot",
+     "logdice": 7.61,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "episode",
+     "logdice": 7.59,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "playtime",
+     "logdice": 7.55,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "narrative",
+     "logdice": 7.51,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 8708,
+     "slot_logdice": 3.32,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 3.7
+      },
+      {
+       "word": "across",
+       "logdice": 2.42
+      },
+      {
+       "word": "along",
+       "logdice": 2.39
+      },
+      {
+       "word": "out",
+       "logdice": 1.53
+      },
+      {
+       "word": "around",
+       "logdice": 1.43
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 15,
+     "slot_logdice": 0.01,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "ball",
+       "logdice": 7.67
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 2584,
+     "slot_logdice": 0.99,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "runtime",
+       "logdice": 9.89
+      },
+      {
+       "word": "length",
+       "logdice": 8.88
+      },
+      {
+       "word": "count",
+       "logdice": 8.67
+      },
+      {
+       "word": "CV",
+       "logdice": 8.12
+      },
+      {
+       "word": "film",
+       "logdice": 7.69
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 15033,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.98
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.63
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.58
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.36
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 92,
+   "mean_logdice": 4.463,
+   "prominence_score": 29.181,
+   "top_evidence": [
+    {
+     "word": "strap",
+     "logdice": 9.16,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "tweeter",
+     "logdice": 8.42,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "bra",
+     "logdice": 8.34,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "slab",
+     "logdice": 8.27,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "envelope",
+     "logdice": 8.03,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "jacket",
+     "logdice": 7.81,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "compartment",
+     "logdice": 7.76,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "armrest",
+     "logdice": 7.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hall",
+     "logdice": 7.64,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 7.64,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 143697,
+     "slot_logdice": 54.81,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "strap",
+       "logdice": 9.16
+      },
+      {
+       "word": "bra",
+       "logdice": 8.34
+      },
+      {
+       "word": "envelope",
+       "logdice": 8.03
+      },
+      {
+       "word": "compartment",
+       "logdice": 7.76
+      },
+      {
+       "word": "armrest",
+       "logdice": 7.67
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 174,
+     "slot_logdice": 0.07,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "slab",
+       "logdice": 8.27
+      },
+      {
+       "word": "stat",
+       "logdice": 5.83
+      },
+      {
+       "word": "stair",
+       "logdice": 5.45
+      },
+      {
+       "word": "step",
+       "logdice": 4.42
+      },
+      {
+       "word": "front",
+       "logdice": 3.28
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 748,
+     "slot_logdice": 0.29,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "tweeter",
+       "logdice": 8.42
+      },
+      {
+       "word": "jacket",
+       "logdice": 7.81
+      },
+      {
+       "word": "hall",
+       "logdice": 7.64
+      },
+      {
+       "word": "hallway",
+       "logdice": 7.64
+      },
+      {
+       "word": "signal",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 15033,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.98
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.63
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.58
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.36
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 8488,
+     "slot_logdice": 3.24,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "out",
+       "logdice": 2.93
+      },
+      {
+       "word": "around",
+       "logdice": 2.69
+      },
+      {
+       "word": "down",
+       "logdice": 2.0
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 188,
+   "mean_logdice": 5.286,
+   "prominence_score": 39.973,
+   "top_evidence": [
+    {
+     "word": "upholster",
+     "logdice": 10.06,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Brake",
+     "logdice": 10.0,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "39B",
+     "logdice": 9.86,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "39A",
+     "logdice": 9.77,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "panty",
+     "logdice": 9.39,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "brake",
+     "logdice": 9.32,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "line",
+     "logdice": 9.2,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "quilt",
+     "logdice": 9.02,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "incremental",
+     "logdice": 8.94,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "contour",
+     "logdice": 8.9,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 34777,
+     "slot_logdice": 13.27,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "thickly",
+       "logdice": 8.36
+      },
+      {
+       "word": "barefoot",
+       "logdice": 7.05
+      },
+      {
+       "word": "lightly",
+       "logdice": 6.4
+      },
+      {
+       "word": "soft",
+       "logdice": 6.23
+      },
+      {
+       "word": "softly",
+       "logdice": 6.14
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 1700,
+     "slot_logdice": 0.65,
+     "n_collocates": 29,
+     "top5": [
+      {
+       "word": "39B",
+       "logdice": 9.86
+      },
+      {
+       "word": "39A",
+       "logdice": 9.77
+      },
+      {
+       "word": "panty",
+       "logdice": 9.39
+      },
+      {
+       "word": "Thai",
+       "logdice": 7.97
+      },
+      {
+       "word": "interior",
+       "logdice": 7.47
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.84
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.18
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 46789,
+     "slot_logdice": 17.85,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Brake",
+       "logdice": 10.0
+      },
+      {
+       "word": "brake",
+       "logdice": 9.32
+      },
+      {
+       "word": "foam",
+       "logdice": 8.6
+      },
+      {
+       "word": "Knee",
+       "logdice": 8.32
+      },
+      {
+       "word": "lily",
+       "logdice": 7.86
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 5855,
+     "slot_logdice": 2.23,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "upholster",
+       "logdice": 10.06
+      },
+      {
+       "word": "line",
+       "logdice": 9.2
+      },
+      {
+       "word": "quilt",
+       "logdice": 9.02
+      },
+      {
+       "word": "contour",
+       "logdice": 8.9
+      },
+      {
+       "word": "cushion",
+       "logdice": 8.83
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 690,
+     "slot_logdice": 0.26,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "incremental",
+       "logdice": 8.94
+      },
+      {
+       "word": "adjustable",
+       "logdice": 5.86
+      },
+      {
+       "word": "upper",
+       "logdice": 5.61
+      },
+      {
+       "word": "durable",
+       "logdice": 4.08
+      },
+      {
+       "word": "top",
+       "logdice": 4.03
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 129,
+   "mean_logdice": 4.931,
+   "prominence_score": 34.628,
+   "top_evidence": [
+    {
+     "word": "Brake",
+     "logdice": 10.0,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "brake",
+     "logdice": 9.32,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "strap",
+     "logdice": 9.16,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "foam",
+     "logdice": 8.6,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "bra",
+     "logdice": 8.34,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Knee",
+     "logdice": 8.32,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "envelope",
+     "logdice": 8.03,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "lily",
+     "logdice": 7.86,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "compartment",
+     "logdice": 7.76,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "armrest",
+     "logdice": 7.67,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 143697,
+     "slot_logdice": 54.81,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "strap",
+       "logdice": 9.16
+      },
+      {
+       "word": "bra",
+       "logdice": 8.34
+      },
+      {
+       "word": "envelope",
+       "logdice": 8.03
+      },
+      {
+       "word": "compartment",
+       "logdice": 7.76
+      },
+      {
+       "word": "armrest",
+       "logdice": 7.67
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 4535,
+     "slot_logdice": 1.73,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "we",
+       "logdice": 1.42
+      },
+      {
+       "word": "themselves",
+       "logdice": 0.17
+      },
+      {
+       "word": "itself",
+       "logdice": 0.09
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 11862,
+     "slot_logdice": 4.52,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "her",
+       "logdice": 0.53
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 46789,
+     "slot_logdice": 17.85,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Brake",
+       "logdice": 10.0
+      },
+      {
+       "word": "brake",
+       "logdice": 9.32
+      },
+      {
+       "word": "foam",
+       "logdice": 8.6
+      },
+      {
+       "word": "Knee",
+       "logdice": 8.32
+      },
+      {
+       "word": "lily",
+       "logdice": 7.86
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 15033,
+     "slot_logdice": "",
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.98
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.84
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.63
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.58
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.36
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 8488,
+     "slot_logdice": 3.24,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "out",
+       "logdice": 2.93
+      },
+      {
+       "word": "around",
+       "logdice": 2.69
+      },
+      {
+       "word": "down",
+       "logdice": 2.0
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

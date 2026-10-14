@@ -1,0 +1,528 @@
+{
+ "verb": "gambol",
+ "freq": 3712,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 1,
+   "slots_defined": 5,
+   "coverage": 0.2,
+   "n_types": 10,
+   "mean_logdice": 0.952,
+   "prominence_score": 3.293,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 5.77,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 1.59,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 0.67,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" like ...",
+     "logdice": 0.43,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.24,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" before ...",
+     "logdice": 0.24,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 0.19,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" by ...",
+     "logdice": 0.13,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" around ...",
+     "logdice": 0.13,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" along ...",
+     "logdice": 0.13,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 354,
+     "slot_logdice": "",
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 5.77
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.59
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.67
+      },
+      {
+       "word": "\"%w\" like ...",
+       "logdice": 0.43
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.24
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 2,
+   "slots_defined": 7,
+   "coverage": 0.286,
+   "n_types": 15,
+   "mean_logdice": 1.407,
+   "prominence_score": 5.629,
+   "top_evidence": [
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 5.77,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "caper",
+     "logdice": 4.55,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "lamb",
+     "logdice": 4.46,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 1.59,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "sheep",
+     "logdice": 1.18,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "kitten",
+     "logdice": 0.96,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 0.67,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "puppy",
+     "logdice": 0.44,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" like ...",
+     "logdice": 0.43,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.24,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 154,
+     "slot_logdice": 4.15,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "caper",
+       "logdice": 4.55
+      },
+      {
+       "word": "lamb",
+       "logdice": 4.46
+      },
+      {
+       "word": "sheep",
+       "logdice": 1.18
+      },
+      {
+       "word": "kitten",
+       "logdice": 0.96
+      },
+      {
+       "word": "puppy",
+       "logdice": 0.44
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 354,
+     "slot_logdice": "",
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 5.77
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.59
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.67
+      },
+      {
+       "word": "\"%w\" like ...",
+       "logdice": 0.43
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.24
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 46,
+   "mean_logdice": 3.801,
+   "prominence_score": 21.113,
+   "top_evidence": [
+    {
+     "word": "cixousian",
+     "logdice": 10.62,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "caper",
+     "logdice": 9.18,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frolic",
+     "logdice": 9.15,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frolick",
+     "logdice": 8.83,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cavort",
+     "logdice": 8.54,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frisk",
+     "logdice": 7.42,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "prance",
+     "logdice": 6.88,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "romp",
+     "logdice": 6.88,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "gallop",
+     "logdice": 6.17,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "lamb",
+     "logdice": 5.97,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 451,
+     "slot_logdice": 12.15,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "gaily",
+       "logdice": 4.68
+      },
+      {
+       "word": "playfully",
+       "logdice": 4.23
+      },
+      {
+       "word": "merrily",
+       "logdice": 3.52
+      },
+      {
+       "word": "happily",
+       "logdice": 0.82
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 3.56
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 435,
+     "slot_logdice": 11.72,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "cixousian",
+       "logdice": 10.62
+      },
+      {
+       "word": "lamb",
+       "logdice": 5.97
+      },
+      {
+       "word": "porpoise",
+       "logdice": 5.75
+      },
+      {
+       "word": "fawn",
+       "logdice": 4.88
+      },
+      {
+       "word": "foal",
+       "logdice": 4.08
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 341,
+     "slot_logdice": 9.19,
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "caper",
+       "logdice": 9.18
+      },
+      {
+       "word": "frolic",
+       "logdice": 9.15
+      },
+      {
+       "word": "frolick",
+       "logdice": 8.83
+      },
+      {
+       "word": "cavort",
+       "logdice": 8.54
+      },
+      {
+       "word": "frisk",
+       "logdice": 7.42
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 3,
+   "slots_defined": 6,
+   "coverage": 0.5,
+   "n_types": 32,
+   "mean_logdice": 2.319,
+   "prominence_score": 11.7,
+   "top_evidence": [
+    {
+     "word": "cixousian",
+     "logdice": 10.62,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "lamb",
+     "logdice": 5.97,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 5.77,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "porpoise",
+     "logdice": 5.75,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "fawn",
+     "logdice": 4.88,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "caper",
+     "logdice": 4.55,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "foal",
+     "logdice": 4.08,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "cub",
+     "logdice": 3.4,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "bunny",
+     "logdice": 3.15,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "kitten",
+     "logdice": 2.8,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 154,
+     "slot_logdice": 4.15,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "caper",
+       "logdice": 4.55
+      },
+      {
+       "word": "lamb",
+       "logdice": 4.46
+      },
+      {
+       "word": "sheep",
+       "logdice": 1.18
+      },
+      {
+       "word": "kitten",
+       "logdice": 0.96
+      },
+      {
+       "word": "puppy",
+       "logdice": 0.44
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 435,
+     "slot_logdice": 11.72,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "cixousian",
+       "logdice": 10.62
+      },
+      {
+       "word": "lamb",
+       "logdice": 5.97
+      },
+      {
+       "word": "porpoise",
+       "logdice": 5.75
+      },
+      {
+       "word": "fawn",
+       "logdice": 4.88
+      },
+      {
+       "word": "foal",
+       "logdice": 4.08
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 354,
+     "slot_logdice": "",
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 5.77
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.59
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.67
+      },
+      {
+       "word": "\"%w\" like ...",
+       "logdice": 0.43
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 0.24
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

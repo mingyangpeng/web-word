@@ -384,18 +384,14 @@ def get_section_spacing() -> str:
     They use the SPACE_LG constant.
 
     Returns:
-        CSS style string for section spacing
+        A spacer ``<div>``（可直接传给 st.markdown(..., unsafe_allow_html=True)）。
+        之前返回裸 CSS 文本，st.markdown 会把它当正文渲染成可见的一行
+        "margin-top: 32px; ..."。
 
     Example:
-        >>> style = get_section_spacing()
-        >>> with st.container(): st.markdown("Section 1", unsafe_allow_html=True)
-        >>> st.markdown("---", unsafe_allow_html=True)
-        >>> with st.container(): st.markdown("Section 2", unsafe_allow_html=True)
+        >>> st.markdown(get_section_spacing(), unsafe_allow_html=True)
     """
-    return f"""
-    margin-top: {SPACE_LG}px;
-    margin-bottom: {SPACE_LG}px;
-    """
+    return f'<div style="margin-top: {SPACE_LG}px; margin-bottom: {SPACE_LG}px;"></div>'
 
 
 def get_badge_style(color: str = PRIMARY_COLOR) -> str:

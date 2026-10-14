@@ -1,0 +1,808 @@
+{
+ "verb": "return",
+ "freq": 10606571,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 65,
+   "mean_logdice": 1.325,
+   "prominence_score": 8.008,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 33.89,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "IR",
+     "logdice": 10.49,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "unto",
+     "logdice": 5.98,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "along",
+     "logdice": 4.96,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "whole",
+     "logdice": 4.51,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "bench",
+     "logdice": 4.32,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "list",
+     "logdice": 3.67,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 3.58,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "over",
+     "logdice": 2.55,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "in",
+     "logdice": 2.5,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 7999,
+     "slot_logdice": 0.08,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "unto",
+       "logdice": 5.98
+      },
+      {
+       "word": "along",
+       "logdice": 4.96
+      },
+      {
+       "word": "whole",
+       "logdice": 4.51
+      },
+      {
+       "word": "over",
+       "logdice": 2.55
+      },
+      {
+       "word": "in",
+       "logdice": 2.5
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 101,
+     "slot_logdice": 0.0,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "IR",
+       "logdice": 10.49
+      },
+      {
+       "word": "bench",
+       "logdice": 4.32
+      },
+      {
+       "word": "list",
+       "logdice": 3.67
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4625058,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 33.89
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 3.58
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.2
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.18
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.03
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 138,
+   "mean_logdice": 4.036,
+   "prominence_score": 28.731,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 33.89,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "home",
+     "logdice": 10.07,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "unto",
+     "logdice": 8.69,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "favor",
+     "logdice": 8.37,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "value",
+     "logdice": 8.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ridge",
+     "logdice": 8.11,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "result",
+     "logdice": 7.96,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "call",
+     "logdice": 7.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "verdict",
+     "logdice": 7.71,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "object",
+     "logdice": 7.53,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 2757386,
+     "slot_logdice": 26.0,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "home",
+       "logdice": 10.07
+      },
+      {
+       "word": "favor",
+       "logdice": 8.37
+      },
+      {
+       "word": "value",
+       "logdice": 8.35
+      },
+      {
+       "word": "result",
+       "logdice": 7.96
+      },
+      {
+       "word": "call",
+       "logdice": 7.94
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 739,
+     "slot_logdice": 0.01,
+     "n_collocates": 16,
+     "top5": [
+      {
+       "word": "river",
+       "logdice": 7.29
+      },
+      {
+       "word": "River",
+       "logdice": 6.98
+      },
+      {
+       "word": "front",
+       "logdice": 6.0
+      },
+      {
+       "word": "Street",
+       "logdice": 5.97
+      },
+      {
+       "word": "coast",
+       "logdice": 5.91
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 1167,
+     "slot_logdice": 0.01,
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "ridge",
+       "logdice": 8.11
+      },
+      {
+       "word": "mountain",
+       "logdice": 7.32
+      },
+      {
+       "word": "valley",
+       "logdice": 7.32
+      },
+      {
+       "word": "Lane",
+       "logdice": 7.01
+      },
+      {
+       "word": "river",
+       "logdice": 6.93
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4625058,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 33.89
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 3.58
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.2
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.18
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.03
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 7479,
+     "slot_logdice": 0.07,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "unto",
+       "logdice": 8.69
+      },
+      {
+       "word": "along",
+       "logdice": 5.59
+      },
+      {
+       "word": "upon",
+       "logdice": 4.47
+      },
+      {
+       "word": "around",
+       "logdice": 3.2
+      },
+      {
+       "word": "down",
+       "logdice": 2.74
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 229,
+   "mean_logdice": 5.942,
+   "prominence_score": 46.616,
+   "top_evidence": [
+    {
+     "word": "false",
+     "logdice": 11.12,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "unopposed",
+     "logdice": 10.0,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "null",
+     "logdice": 9.73,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "complete",
+     "logdice": 9.65,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "corresponding",
+     "logdice": 8.91,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "unopened",
+     "logdice": 8.76,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "empty-handed",
+     "logdice": 8.73,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "sign",
+     "logdice": 8.72,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "leave",
+     "logdice": 8.57,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "function",
+     "logdice": 8.49,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 1541179,
+     "slot_logdice": 14.53,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "home",
+       "logdice": 8.06
+      },
+      {
+       "word": "safely",
+       "logdice": 7.9
+      },
+      {
+       "word": "then",
+       "logdice": 7.45
+      },
+      {
+       "word": "again",
+       "logdice": 7.38
+      },
+      {
+       "word": "eventually",
+       "logdice": 7.31
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 112568,
+     "slot_logdice": 1.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "false",
+       "logdice": 11.12
+      },
+      {
+       "word": "unopposed",
+       "logdice": 10.0
+      },
+      {
+       "word": "null",
+       "logdice": 9.73
+      },
+      {
+       "word": "empty-handed",
+       "logdice": 8.73
+      },
+      {
+       "word": "unopened",
+       "logdice": 7.58
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 2.15
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1833405,
+     "slot_logdice": 17.29,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "function",
+       "logdice": 8.49
+      },
+      {
+       "word": "jury",
+       "logdice": 7.53
+      },
+      {
+       "word": "method",
+       "logdice": 7.31
+      },
+      {
+       "word": "soldier",
+       "logdice": 6.68
+      },
+      {
+       "word": "query",
+       "logdice": 6.39
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 237124,
+     "slot_logdice": 2.24,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "complete",
+       "logdice": 9.65
+      },
+      {
+       "word": "sign",
+       "logdice": 8.72
+      },
+      {
+       "word": "leave",
+       "logdice": 8.57
+      },
+      {
+       "word": "recover",
+       "logdice": 8.14
+      },
+      {
+       "word": "exchange",
+       "logdice": 8.13
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 17816,
+     "slot_logdice": 0.17,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "corresponding",
+       "logdice": 8.91
+      },
+      {
+       "word": "unopened",
+       "logdice": 8.76
+      },
+      {
+       "word": "unharmed",
+       "logdice": 8.14
+      },
+      {
+       "word": "unchanged",
+       "logdice": 7.92
+      },
+      {
+       "word": "unused",
+       "logdice": 7.63
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 180,
+   "mean_logdice": 4.081,
+   "prominence_score": 30.608,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 33.89,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "home",
+     "logdice": 10.07,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "unto",
+     "logdice": 8.69,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "function",
+     "logdice": 8.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "favor",
+     "logdice": 8.37,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "value",
+     "logdice": 8.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "result",
+     "logdice": 7.96,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "call",
+     "logdice": 7.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "verdict",
+     "logdice": 7.71,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "object",
+     "logdice": 7.53,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 2757386,
+     "slot_logdice": 26.0,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "home",
+       "logdice": 10.07
+      },
+      {
+       "word": "favor",
+       "logdice": 8.37
+      },
+      {
+       "word": "value",
+       "logdice": 8.35
+      },
+      {
+       "word": "result",
+       "logdice": 7.96
+      },
+      {
+       "word": "call",
+       "logdice": 7.94
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 256048,
+     "slot_logdice": 2.41,
+     "n_collocates": 27,
+     "top5": [
+      {
+       "word": "them",
+       "logdice": 5.26
+      },
+      {
+       "word": "it",
+       "logdice": 5.25
+      },
+      {
+       "word": "he",
+       "logdice": 4.55
+      },
+      {
+       "word": "her",
+       "logdice": 4.36
+      },
+      {
+       "word": "him",
+       "logdice": 4.14
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 1553942,
+     "slot_logdice": 14.65,
+     "n_collocates": 24,
+     "top5": [
+      {
+       "word": "he",
+       "logdice": 6.57
+      },
+      {
+       "word": "she",
+       "logdice": 6.21
+      },
+      {
+       "word": "him",
+       "logdice": 5.92
+      },
+      {
+       "word": "us",
+       "logdice": 5.48
+      },
+      {
+       "word": "them",
+       "logdice": 5.4
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1833405,
+     "slot_logdice": 17.29,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "function",
+       "logdice": 8.49
+      },
+      {
+       "word": "jury",
+       "logdice": 7.53
+      },
+      {
+       "word": "method",
+       "logdice": 7.31
+      },
+      {
+       "word": "soldier",
+       "logdice": 6.68
+      },
+      {
+       "word": "query",
+       "logdice": 6.39
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4625058,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 33.89
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 3.58
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.2
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.18
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.03
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 7479,
+     "slot_logdice": 0.07,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "unto",
+       "logdice": 8.69
+      },
+      {
+       "word": "along",
+       "logdice": 5.59
+      },
+      {
+       "word": "upon",
+       "logdice": 4.47
+      },
+      {
+       "word": "around",
+       "logdice": 3.2
+      },
+      {
+       "word": "down",
+       "logdice": 2.74
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

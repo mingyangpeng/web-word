@@ -1,0 +1,18 @@
+{
+  "criteria": "1003大纲§4.1：兼顾高频-中频-低频梯度、物理位移与隐喻引申并存、多义跨度大（39义位→1义位）、习语与使役用法覆盖；共12词",
+  "selected_at": "2026-10-05",
+  "verbs": [
+    {"verb": "run",    "freq": 24647035, "senses": 39, "rationale": "高频多义之最：物理奔跑+经营隐喻（run a company）+使役（run a program）"},
+    {"verb": "walk",   "freq": 8765069,  "senses": 24, "rationale": "高频；使役（walk the dog/walk sb home）；习语16条；隐喻（walk free）"},
+    {"verb": "fly",    "freq": 4437420,  "senses": 35, "rationale": "高频多义：物理飞行+时间飞逝+逃离；习语20条"},
+    {"verb": "drop",   "freq": 5347289,  "senses": 33, "rationale": "高频强使役（drop the ball/prices）；隐喻（drop a subject）；习语18条"},
+    {"verb": "jump",   "freq": 2672920,  "senses": 29, "rationale": "高频；物理跳+隐喻（jump to conclusions/queue）；习语16条"},
+    {"verb": "roll",   "freq": 2802559,  "senses": 28, "rationale": "中高频；物理滚动+隐喻（rolling stones/roll out）；习语13条"},
+    {"verb": "charge", "freq": 4187712,  "senses": 12, "rationale": "中频；冲锋（物理）+收费/指控（跨域引申）；使役；无习语对照"},
+    {"verb": "sweep",  "freq": 795730,   "senses": 18, "rationale": "中频；物理扫过+隐喻（sweeping changes/sweep to victory）"},
+    {"verb": "drift",  "freq": 525134,   "senses": 6,  "rationale": "中频；物理漂浮+渐变隐喻（drift apart）"},
+    {"verb": "sneak",  "freq": 424207,   "senses": 4,  "rationale": "中低频；潜行方式+sneak peek 隐喻"},
+    {"verb": "limp",   "freq": 87339,    "senses": 2,  "rationale": "低频典型方式词：跛行方式在词根——方式伴随图式纯型对照"},
+    {"verb": "dart",   "freq": 107794,   "senses": 2,  "rationale": "低频快速方式词：与高频奔跑类构成频率梯度对照"}
+  ]
+}

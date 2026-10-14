@@ -1,0 +1,684 @@
+{
+ "verb": "desert",
+ "freq": 255528,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 2,
+   "slots_defined": 5,
+   "coverage": 0.4,
+   "n_types": 28,
+   "mean_logdice": 0.219,
+   "prominence_score": 1.062,
+   "top_evidence": [
+    {
+     "word": "\"%w\" by ...",
+     "logdice": 1.61,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "aside",
+     "logdice": 0.96,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 0.66,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 0.64,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 0.47,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.4,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.4,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 0.34,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" during ...",
+     "logdice": 0.17,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" as ...",
+     "logdice": 0.12,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 206,
+     "slot_logdice": 0.08,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "aside",
+       "logdice": 0.96
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 13216,
+     "slot_logdice": "",
+     "n_collocates": 27,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 1.61
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.66
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.64
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.47
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.4
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 3,
+   "slots_defined": 7,
+   "coverage": 0.429,
+   "n_types": 78,
+   "mean_logdice": 3.538,
+   "prominence_score": 22.306,
+   "top_evidence": [
+    {
+     "word": "beach",
+     "logdice": 8.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "island",
+     "logdice": 8.69,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "street",
+     "logdice": 7.97,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Village",
+     "logdice": 7.23,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "village",
+     "logdice": 7.07,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "highway",
+     "logdice": 6.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "road",
+     "logdice": 6.3,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "corridor",
+     "logdice": 6.22,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "alley",
+     "logdice": 6.17,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 6.16,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 138134,
+     "slot_logdice": 54.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "beach",
+       "logdice": 8.7
+      },
+      {
+       "word": "island",
+       "logdice": 8.69
+      },
+      {
+       "word": "street",
+       "logdice": 7.97
+      },
+      {
+       "word": "Village",
+       "logdice": 7.23
+      },
+      {
+       "word": "village",
+       "logdice": 7.07
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 13216,
+     "slot_logdice": "",
+     "n_collocates": 27,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 1.61
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.66
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.64
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.47
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.4
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 112,
+     "slot_logdice": 0.04,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 1.54
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 171,
+   "mean_logdice": 4.327,
+   "prominence_score": 32.13,
+   "top_evidence": [
+    {
+     "word": "forsake",
+     "logdice": 8.31,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "betray",
+     "logdice": 8.2,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "defect",
+     "logdice": 8.03,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "mutiny",
+     "logdice": 7.97,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "overgrow",
+     "logdice": 7.92,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ruin",
+     "logdice": 7.72,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "abandon",
+     "logdice": 7.64,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "dilapidate",
+     "logdice": 7.58,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "surrender",
+     "logdice": 6.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "widow",
+     "logdice": 6.9,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 45475,
+     "slot_logdice": 17.8,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "eerily",
+       "logdice": 6.68
+      },
+      {
+       "word": "basely",
+       "logdice": 5.89
+      },
+      {
+       "word": "practically",
+       "logdice": 5.4
+      },
+      {
+       "word": "virtually",
+       "logdice": 5.01
+      },
+      {
+       "word": "strangely",
+       "logdice": 4.51
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 368,
+     "slot_logdice": 0.14,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "wholesale",
+       "logdice": 4.23
+      },
+      {
+       "word": "flat",
+       "logdice": 0.62
+      },
+      {
+       "word": "due",
+       "logdice": 0.52
+      },
+      {
+       "word": "other",
+       "logdice": 0.36
+      },
+      {
+       "word": "dry",
+       "logdice": 0.3
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 3.64
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 25505,
+     "slot_logdice": 9.98,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Bergdahl",
+       "logdice": 5.73
+      },
+      {
+       "word": "seaman",
+       "logdice": 5.68
+      },
+      {
+       "word": "inhabitant",
+       "logdice": 5.65
+      },
+      {
+       "word": "muse",
+       "logdice": 5.59
+      },
+      {
+       "word": "rat",
+       "logdice": 5.53
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 7493,
+     "slot_logdice": 2.93,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "forsake",
+       "logdice": 8.31
+      },
+      {
+       "word": "betray",
+       "logdice": 8.2
+      },
+      {
+       "word": "defect",
+       "logdice": 8.03
+      },
+      {
+       "word": "mutiny",
+       "logdice": 7.97
+      },
+      {
+       "word": "overgrow",
+       "logdice": 7.92
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 671,
+     "slot_logdice": 0.26,
+     "n_collocates": 16,
+     "top5": [
+      {
+       "word": "devoid",
+       "logdice": 5.21
+      },
+      {
+       "word": "next",
+       "logdice": 3.66
+      },
+      {
+       "word": "east",
+       "logdice": 3.65
+      },
+      {
+       "word": "top",
+       "logdice": 3.27
+      },
+      {
+       "word": "adjacent",
+       "logdice": 3.26
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 138,
+   "mean_logdice": 3.678,
+   "prominence_score": 26.183,
+   "top_evidence": [
+    {
+     "word": "beach",
+     "logdice": 8.7,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "island",
+     "logdice": 8.69,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "street",
+     "logdice": 7.97,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Village",
+     "logdice": 7.23,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "village",
+     "logdice": 7.07,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "highway",
+     "logdice": 6.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "road",
+     "logdice": 6.3,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "corridor",
+     "logdice": 6.22,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "alley",
+     "logdice": 6.17,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 6.16,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 138134,
+     "slot_logdice": 54.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "beach",
+       "logdice": 8.7
+      },
+      {
+       "word": "island",
+       "logdice": 8.69
+      },
+      {
+       "word": "street",
+       "logdice": 7.97
+      },
+      {
+       "word": "Village",
+       "logdice": 7.23
+      },
+      {
+       "word": "village",
+       "logdice": 7.07
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 25422,
+     "slot_logdice": 9.95,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 3.4
+      },
+      {
+       "word": "her",
+       "logdice": 3.28
+      },
+      {
+       "word": "thee",
+       "logdice": 3.2
+      },
+      {
+       "word": "me",
+       "logdice": 1.51
+      },
+      {
+       "word": "us",
+       "logdice": 1.4
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 15458,
+     "slot_logdice": 6.05,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "himself",
+       "logdice": 1.65
+      },
+      {
+       "word": "herself",
+       "logdice": 1.29
+      },
+      {
+       "word": "her",
+       "logdice": 0.72
+      },
+      {
+       "word": "them",
+       "logdice": 0.66
+      },
+      {
+       "word": "themselves",
+       "logdice": 0.57
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 25505,
+     "slot_logdice": 9.98,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Bergdahl",
+       "logdice": 5.73
+      },
+      {
+       "word": "seaman",
+       "logdice": 5.68
+      },
+      {
+       "word": "inhabitant",
+       "logdice": 5.65
+      },
+      {
+       "word": "muse",
+       "logdice": 5.59
+      },
+      {
+       "word": "rat",
+       "logdice": 5.53
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 13216,
+     "slot_logdice": "",
+     "n_collocates": 27,
+     "top5": [
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 1.61
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.66
+      },
+      {
+       "word": "\"%w\" from ...",
+       "logdice": 0.64
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 0.47
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.4
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 112,
+     "slot_logdice": 0.04,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "along",
+       "logdice": 1.54
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

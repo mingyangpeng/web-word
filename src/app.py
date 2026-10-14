@@ -15,11 +15,17 @@ logger = logging.getLogger(__name__)
 from src.mysql_db import (
     init_database, get_stats, get_hot_verbs, get_feedback_data,
     insert_feedback, get_definition_by_verb, insert_definition,
-    log_usage, get_synonyms, get_cluster_graph, get_cluster_graph_by_id, list_clusters,
-    get_full_word_graph, get_senses,
+    log_usage, get_synonyms, get_cluster_graph, get_cluster_graph_by_id,
+    get_full_word_graph, get_senses, get_oald_senses,
+    get_corpus_overview, get_corpus_word_stats, get_corpus_schema_scores,
+    get_corpus_schema_evidence, get_corpus_collocations, corpus_dataset_ready,
+    get_annotation_progress, update_sense_annotation, get_annotation_export_rows,
+    update_collocation_annotations,
+    domain_family_ready, get_domain_family_overview, get_domain_family_senses,
+    get_domain_family_examples,
 )
-from src.cluster_graph import render_cluster_graph_svg
-from src.graph_export import ensure_graph_html
+from src.graph_export import ensure_graph_html, ensure_cluster_html
+from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator
@@ -227,8 +233,7 @@ def search_verb() -> None:
     if value and 1 <= len(value) <= 50:
         st.session_state.verb_result = value
         st.session_state.show_result = True
-        # 让词簇图谱跟随新查的词，否则会停在用户上次手动选的簇上
-        st.session_state.pop("cluster_selector", None)
+        st.session_state["page"] = "search"  # 从图谱页发起搜索时切回搜索页
         _record_query(value)
 
 
@@ -237,8 +242,7 @@ def select_example_verb(verb: str) -> None:
     st.session_state.verb_result = verb
     st.session_state.show_result = True
     st.session_state["搜索动词"] = verb
-    # 同上：换词就让图谱回到该词所在的簇
-    st.session_state.pop("cluster_selector", None)
+    st.session_state["page"] = "search"  # 从图谱页点热门词时切回搜索页
     _record_query(verb)
 
 
@@ -291,11 +295,13 @@ def render_semantic_table(semantic_data):
         # 奇偶行背景色
         bg_color = "#f7fafc" if i % 2 == 0 else "#ffffff"
 
+        # 行内容来自 DB/LLM，渲染进 unsafe_allow_html=True 前必须转义
+        stype, sdesc = _html_escape(str(semantic_type)), _html_escape(str(description))
         html += f'''
         <tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 12px; color: {color}; font-weight: 500;">{semantic_type}</td>
+            <td style="padding: 12px; color: {color}; font-weight: 500;">{stype}</td>
             <td style="padding: 12px; font-size: 1.2em;">{emoji}</td>
-            <td style="padding: 12px; color: #2d3748;">{description}</td>
+            <td style="padding: 12px; color: #2d3748;">{sdesc}</td>
         </tr>'''
 
     html += '</tbody></table>'
@@ -354,7 +360,8 @@ def render_card_prototype(verb):
     '''
 
     if semantic_table:
-        html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>动词:</strong> ' + verb + '</p>'
+        html += ('<p style="color: #2d3748; margin-bottom: 12px;"><strong>动词:</strong> '
+                 + _html_escape(str(verb)) + '</p>')
         html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>事件类型:</strong> 基于运动事件类型学的位移事件分析</p>'
         html += '<p style="color: #2d3748;"><strong>语义要素分解:</strong></p>'
         html += render_semantic_table(semantic_table)
@@ -393,6 +400,7 @@ def render_card_annotation(verb):
     def field(label, value, color="#2d3748"):
         if not value:
             return ""
+        value = _html_escape(str(value))  # DB/LLM 文本进 unsafe_allow_html 前转义
         return (f'<p style="color: #2d3748; margin-bottom: 8px;">'
                 f'<strong>{label}：</strong><span style="color: {color};">{value}</span></p>')
 
@@ -508,13 +516,13 @@ def render_card_core(verb):
     if traditional:
         html += '<div style="background-color: #edf2f7; padding: 12px; border-radius: 8px; margin-bottom: 16px;">'
         html += '<h5 style="color: #2d3748; margin: 0 0 8px 0;">📋 传统释义</h5>'
-        html += '<p style="color: #4a5568; margin: 0;">' + traditional + '</p>'
+        html += '<p style="color: #4a5568; margin: 0;">' + _html_escape(str(traditional)) + '</p>'
         html += '</div>'
 
     if optimized:
         html += '<div style="background-color: #c6f6d5; padding: 12px; border-radius: 8px;">'
         html += '<h5 style="color: #22543d; margin: 0 0 8px 0;">✅ 优化释义 (语义分解)</h5>'
-        html += '<p style="color: #2f855a; margin: 0;">' + optimized + '</p>'
+        html += '<p style="color: #2f855a; margin: 0;">' + _html_escape(str(optimized)) + '</p>'
         html += '</div>'
 
     html += '</div>'
@@ -556,7 +564,7 @@ def render_card_example(verb):
     if example:
         html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>例句:</strong></p>'
         html += (f'<div style="background-color: #faf5ff; padding: 12px; border-radius: 8px; '
-                 f'margin-bottom: 16px; color: #4a5568; line-height: 1.8;">{example}</div>')
+                 f'margin-bottom: 16px; color: #4a5568; line-height: 1.8;">{_html_escape(str(example))}</div>')
     else:
         html += ('<p style="color: #718096; margin-bottom: 16px;">'
                  '该动词暂无例句数据（可用管理员录入或等待大模型生成）</p>')
@@ -566,7 +574,7 @@ def render_card_example(verb):
         html += '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">'
         for rel in relatives:
             html += (f'<span style="background-color: #9f7aea; color: white; padding: 4px 12px; '
-                     f'border-radius: 12px; font-size: 0.9em;">{rel}</span>')
+                     f'border-radius: 12px; font-size: 0.9em;">{_html_escape(str(rel))}</span>')
         html += '</div>'
         html += ('<p style="color: #718096; font-size: 0.9em;">'
                  '这些动词同属一个次语义范畴，可点击示例库或在搜索框输入词名逐一对比差异。</p>')
@@ -576,147 +584,6 @@ def render_card_example(verb):
 
     html += '</div>'
     return html
-
-# ============================================
-# 词簇关系图谱（graphify 风格的词与词关系可视化）
-# ============================================
-def render_cluster_graph_section(verb: str) -> None:
-    """
-    渲染「当前查询词 + 其所属词簇」的完全图，并支持切换到任意其它簇。
-
-    这是词与词关系在**页面上的接口**。之前它只存在于命令行（graphify query /
-    explain）和文件产物（data/word_graph.json），页面上看不到任何一张图。
-
-    三条进入路径：
-      1. 默认 —— 跟随当前查询词，画它所在的簇；
-      2. 「切换词簇」下拉框 —— 直接打开任意一个簇（25 个），不必先搜一个别的词；
-      3. 展开簇内成员列表 —— 点任一词即切换查询，图谱随之前进到它的簇。
-
-    Args:
-        verb: 当前查询的动词
-    """
-    st.markdown(f"<h3 style='{HEADER_H3}'>🕸️ 词与词关系图谱</h3>", unsafe_allow_html=True)
-
-    if not DB_AVAILABLE:
-        st.info("数据库不可用，无法展示词簇图谱（离线模式下仅提供释义）。")
-        return
-
-    # --- 簇选择器 ---
-    # key="cluster_selector" 由 Streamlit 管理；search_verb / select_example_verb
-    # 会在换词时 pop 掉它，从而回到「跟随当前词」的默认行为。
-    try:
-        clusters = list_clusters()
-    except Exception as e:
-        logger.error(f"读取词簇列表失败: {e}")
-        clusters = []
-
-    follow_label = f"跟随当前词「{verb}」"
-    if clusters:
-        options = [follow_label] + [
-            f"{c['label']}（{c['size']} 词 / {c['edge_count']} 边）" for c in clusters
-        ]
-        label_to_id = {
-            f"{c['label']}（{c['size']} 词 / {c['edge_count']} 边）": c["id"]
-            for c in clusters
-        }
-
-        picked = st.selectbox(
-            "切换词簇",
-            options=options,
-            index=0,
-            key="cluster_selector",
-            help="默认跟随当前查询词所在的簇；也可以直接选任意一个簇来浏览其完全图。",
-        )
-
-        if picked != follow_label:
-            cluster_id = label_to_id.get(picked)
-            try:
-                graph = get_cluster_graph_by_id(cluster_id)
-            except Exception as e:
-                logger.error(f"按簇 id 取图失败 ({cluster_id}): {e}")
-                graph = None
-        else:
-            graph = get_cluster_graph(verb)
-    else:
-        graph = get_cluster_graph(verb)
-
-    if not graph or not graph.get("nodes"):
-        st.info(
-            f"「{verb}」暂无词簇数据。词簇来自词库的次语义范畴划分；"
-            "运行 `python scripts/load_word_library.py` 可载入 155 词词库及其词间关系。"
-        )
-        return
-
-    cluster = graph.get("cluster") or {}
-    size = cluster.get("size", len(graph["nodes"]))
-    edges = graph.get("complete_edge_count", 0)
-    center = graph.get("center") or verb
-
-    # 用户是「查到某个词」进来的，还是自己选了别的簇 —— 文案要区分开，
-    # 否则在别的簇里看到「」属于该词簇」会让人以为查错了词。
-    if center == verb:
-        intro = (
-            f"「<strong>{verb}</strong>」属于词簇 "
-            f"<strong>{cluster.get('label', '未分组')}</strong>"
-        )
-    else:
-        intro = (
-            f"正在浏览词簇 <strong>{cluster.get('label', '未分组')}</strong>"
-            f"（当前高亮 <strong>{center}</strong>，非本次查询词「{verb}」）"
-        )
-
-    st.markdown(
-        f"<p style='{BODY_BASE}'>{intro} —— 簇内 {size} 个动词语义相近，"
-        f"两两互为近义（完全图，共 {edges} 条边）。</p>",
-        unsafe_allow_html=True,
-    )
-
-    # --- 视图控制 ---
-    c1, c2, c3 = st.columns([2, 1, 1])
-    with c1:
-        mode = st.radio(
-            "图谱视图",
-            options=["完整簇完全图", "只显示中心词连线"],
-            index=0,
-            horizontal=True,
-            key="cluster_graph_mode",
-            help="完整簇显示簇内所有词两两相连；只显示中心词连线则突出当前词与谁相关。",
-        )
-    with c2:
-        st.metric("簇大小", size)
-    with c3:
-        st.metric("完全图边数", edges)
-
-    highlight_only = mode == "只显示中心词连线"
-
-    if size > 18:
-        st.caption(
-            f"该簇有 {size} 个词、{edges} 条边（= C({size},2)），全部标名会互相压盖；"
-            "当前只标注中心词，其余节点可用鼠标悬停查看词名。"
-            f"{'（已切换为只显示中心词连线）' if highlight_only else ''}"
-        )
-
-    svg = render_cluster_graph_svg(graph, highlight_only_center=highlight_only)
-    st.markdown(f"<div style='margin:8px 0;'>{svg}</div>", unsafe_allow_html=True)
-
-    with st.expander(f"查看簇内全部 {size} 个动词（点击可直接查询）", expanded=size <= 12):
-        members = [n["id"] for n in graph["nodes"]]
-        # 按每行 6 个铺按钮，点击即切换查询词
-        per_row = 6
-        for i in range(0, len(members), per_row):
-            row = members[i:i + per_row]
-            cols = st.columns(per_row)
-            for col, member in zip(cols, row):
-                with col:
-                    label = f"📍 {member}" if member == center else member
-                    st.button(
-                        label,
-                        key=f"cluster_member_{member}",
-                        use_container_width=True,
-                        on_click=select_example_verb,
-                        args=(member,),
-                    )
-
 
 # ============================================
 # 示例库渲染函数
@@ -859,6 +726,22 @@ def _restore_trad_opt(chinese_ndef: str):
 
 def get_display_definition(verb: str) -> Dict[str, Any]:
     """
+    Single source of truth for verb definitions（带会话级缓存的对外入口）。
+
+    结果页三张卡片各调用一次本函数；DB 未命中时解析要走 LLM，
+    不缓存的话一次 rerun 最多触发 3 次模型调用。会话内按 verb 缓存，
+    灌库更新数据后新会话自然刷新。
+    """
+    _cache = st.session_state.setdefault("_display_def_cache", {})
+    if verb in _cache:
+        return _cache[verb]
+    resolved = _resolve_display_definition(verb)
+    _cache[verb] = resolved
+    return resolved
+
+
+def _resolve_display_definition(verb: str) -> Dict[str, Any]:
+    """
     Single source of truth for verb definitions (Phase 5 tracer).
 
     Resolution priority (D-02): DB hit → live LLM → MOCK_DEFINITIONS → fallback.
@@ -870,6 +753,7 @@ def get_display_definition(verb: str) -> Dict[str, Any]:
         Normalized dict {traditional, optimized, semantic_table, example}.
         Never raises; on total failure returns the absolute fallback shape.
     """
+
     # (0) Entry validation (T-05-01 mitigation): reject malformed verb, never
     #     feed it into the LLM prompt, and bypass straight to the fallback.
     ok, err = InputValidator.validate_string(verb, max_length=50)
@@ -941,12 +825,13 @@ def get_display_definition(verb: str) -> Dict[str, Any]:
 
     # (6) Absolute last resort.
     fb = get_fallback_definition(verb)
-    return {
+    result_dict = {
         "traditional": fb.get("chinese_ndef", ""),
         "optimized": fb.get("chinese_ndef", ""),
         "semantic_table": fb.get("semantic_table", {}),
         "example": fb.get("example", ""),
     }
+    return result_dict
 
 
 def mysql_db_persist(verb: str, normalized: Dict[str, Any]) -> bool:
@@ -1308,13 +1193,16 @@ def render_sidebar():
     st.sidebar.button("◀", key="collapse_sidebar", help="折叠侧边栏",
                       on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", True))
 
-    # 页面切换：搜索页 ↔ 交互式知识图谱页
-    _page = st.session_state.get("page", "search")
+    # 页面切换：搜索页 ↔ 交互式知识图谱页。
+    # 不要再传 index=：key="page" 一旦存在于 session_state，再传 index 会在
+    # 旧版 Streamlit 上抛 StreamlitAPIException、新版上打重复赋值警告。
+    st.session_state.setdefault("page", "search")
     st.sidebar.radio(
         "页面",
-        options=["search", "graph"],
-        index=0 if _page != "graph" else 1,
-        format_func=lambda v: "🔍 搜索释义" if v == "search" else "🕸️ 知识图谱",
+        options=["search", "graph", "corpus", "domain", "annotate"],
+        format_func=lambda v: {"search": "🔍 搜索释义", "graph": "🕸️ 知识图谱",
+                               "corpus": "📊 语料数据集", "domain": "🧭 域系初判",
+                               "annotate": "🏷️ 标注平台"}[v],
         key="page",
         horizontal=True,
     )
@@ -1417,7 +1305,7 @@ def render_main_area():
 
     # 欢迎消息（当没有结果时显示）
     if not hasattr(st.session_state, 'show_result') or not st.session_state.show_result:
-        st.markdown(get_section_spacing())
+        st.markdown(get_section_spacing(), unsafe_allow_html=True)
         st.markdown(f"""
         <div style='{get_card_style()}'>
             <h2 style='{HEADER_H3}'>🏃 动词释义优化器</h2>
@@ -1449,6 +1337,7 @@ def render_main_area():
             ("annotation", "义位标注", "🏷️", render_card_annotation),
             ("core", "核心释义与多维辨异", "📚", render_card_core),
             ("example", "图式示例", "🖼️", render_card_example),
+            ("corpus", "语料库证据 (enTenTen21)", "🌐", render_card_corpus),
         ):
             render_card_header(card_key, title, icon)
             if st.session_state.card_expanded.get(card_key, True):
@@ -1456,9 +1345,11 @@ def render_main_area():
                 with st.container(key=f"card_body_{card_key}"):
                     st.markdown(body_renderer(verb), unsafe_allow_html=True)
 
-        # 词簇关系图谱（graphify 风格的词与词关系可视化）
+        # 词间关系：内嵌当前词所在词簇的交互图（vis-network 力导向布局，
+        # 中心词高亮、悬停显名、默认只画中心连线，簇内两两连线页内展开 ——
+        # 避免旧版 SVG 完全图挤成毛球）。全库地图仍由「知识图谱」页承担。
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
-        render_cluster_graph_section(verb)
+        render_word_relation_section(verb)
 
         # 示例库
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
@@ -1495,21 +1386,27 @@ def render_main_area():
             if rating > 0 and feedback_text.strip():
                 if DB_AVAILABLE:
                     try:
-                        insert_feedback(verb, rating, feedback_text.strip())
-                        st.success("✅ 反馈已成功提交！感谢您的参与！")
+                        ok = insert_feedback(verb, rating, feedback_text.strip())
                     except Exception as e:
-                        st.error(f"反馈提交失败：{e}")
+                        logger.error(f"反馈插入异常: {e}")
+                        ok = False
+                    if ok:
+                        st.success("✅ 反馈已成功提交！感谢您的参与！")
+                    else:
+                        st.error("反馈提交失败（数据库写入未成功），请稍后重试")
                 else:
                     st.success("✅ 反馈已记录（离线模式，未持久化）！")
+                    ok = True
 
-                # 更新 session_state 状态
-                st.session_state.feedback_submitted = True
-                st.session_state.last_feedback = {
-                    "verb": verb,
-                    "rating": rating,
-                    "feedback": feedback_text,
-                    "timestamp": datetime.datetime.now().isoformat()
-                }
+                # 只有真正写入成功才标记"已提交"，避免假成功卡片
+                if ok:
+                    st.session_state.feedback_submitted = True
+                    st.session_state.last_feedback = {
+                        "verb": verb,
+                        "rating": rating,
+                        "feedback": feedback_text,
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }
             else:
                 st.warning("⚠️ 请先评分并填写反馈内容")
 
@@ -1525,10 +1422,10 @@ def render_main_area():
                     f"""
                     <div style='{get_card_style()}'>
                         <span style='{badge_style}'>已提交</span>
-                        <p style='{BODY_BASE}'><strong>动词:</strong> {fb['verb']}</p>
+                        <p style='{BODY_BASE}'><strong>动词:</strong> {_html_escape(str(fb['verb']))}</p>
                         <p style='{BODY_BASE}'><strong>评分:</strong> {'⭐' * fb['rating']} ({fb['rating']}/5)</p>
-                        <p style='{BODY_BASE}'><strong>反馈:</strong> {fb['feedback']}</p>
-                        <p style='{BODY_BASE}'><strong>时间:</strong> {fb['timestamp']}</p>
+                        <p style='{BODY_BASE}'><strong>反馈:</strong> {_html_escape(str(fb['feedback']))}</p>
+                        <p style='{BODY_BASE}'><strong>时间:</strong> {_html_escape(str(fb['timestamp']))}</p>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -1542,9 +1439,8 @@ def render_interactive_graph_page() -> None:
     """
     全屏交互式词间关系图谱页（graphify 风格的力导向图）。
 
-    与 render_cluster_graph_section 的分工：
-      * 区块内的 SVG —— 跟着当前查询词走，几十个节点，一眼看清谁连谁；
-      * 本页 —— 全库 155 词 / 2143 边的语义地图，可搜索、可点选、可按簇过滤。
+    词间关系的唯一入口：全库 136 词 / 1780 边的语义地图，
+    可搜索、可点选、可按簇过滤。搜索页只保留一个跳转按钮到本页。
 
     实现要点：图谱渲染成**静态 HTML 文件**放进 src/static/，用 iframe 引用。
     不用 components.html(html_string) 的原因是 Streamlit 每次交互重跑脚本时，
@@ -1623,9 +1519,673 @@ def _pick_cluster_verb(cluster_id: int) -> None:
     st.session_state.verb_result = verb
     st.session_state.show_result = True
     st.session_state["搜索动词"] = verb
-    st.session_state.pop("cluster_selector", None)
     st.session_state["page"] = "search"
     _record_query(verb)
+
+
+# ============================================
+# 语料数据集页（Sketch Engine enTenTen21 → 页面展示）
+# ============================================
+def render_corpus_dataset_page() -> None:
+    """📊 语料数据集：136 动词的词频、四图式重心得分与搭配明细浏览。
+
+    数据来自 output/ 语料包灌入的 corpus_* 表（scripts/load_corpus_dataset.py）。
+    语义类别/保留标记两列留在库里供人工标注回写，页面原样展示当前值。
+    """
+    st.markdown(f"<h1 style='{HEADER_H1}'>📊 语料数据集</h1>", unsafe_allow_html=True)
+
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，无法展示语料数据集（离线模式下仅提供释义）。")
+        return
+    if not corpus_dataset_ready():
+        st.info(
+            "语料数据集尚未灌入。运行 "
+            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
+            "从 output/ 语料包加载。"
+        )
+        return
+
+    overview = get_corpus_overview()
+    if not overview:
+        st.warning("corpus_word_stats 为空。")
+        return
+
+    import pandas as pd
+
+    total_coll = sum(r["collocate_count"] for r in overview)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("动词", len(overview))
+    c2.metric("搭配词型总数", f"{total_coll:,}")
+    c3.metric("图式得分行", len(overview) * 4)
+    c4.metric("语料库", "enTenTen21")
+
+    df = pd.DataFrame(overview)
+    df = df.rename(columns={
+        "verb": "动词", "lpos": "词性", "freq": "总频次", "relfreq": "每百万频次",
+        "slot_count": "槽位数", "collocate_count": "搭配词型",
+        "candidate_schema": "候选凸显图式(AI初筛)", "max_score": "最高图式得分",
+    })
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>总表（按频次降序）</h3>", unsafe_allow_html=True)
+    kw = st.text_input("筛选动词", key="corpus_filter", placeholder="输入关键字筛选…")
+    view = df[df["动词"].str.contains(kw, case=False, na=False)] if kw else df
+    st.dataframe(
+        view,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "总频次": st.column_config.NumberColumn(format="%,d"),
+            "每百万频次": st.column_config.NumberColumn(format="%.1f"),
+            "最高图式得分": st.column_config.NumberColumn(format="%.2f"),
+        },
+    )
+    st.caption("候选凸显图式为 AI 初筛（未语义归类），最终图式标签以义位标注为准。")
+
+    # ---- 逐词下钻 ----
+    st.markdown(f"<h3 style='{HEADER_H3}'>逐词详情</h3>", unsafe_allow_html=True)
+    verbs = [r["verb"] for r in overview]
+    picked = st.selectbox("选择动词", options=verbs, index=verbs.index("walk") if "walk" in verbs else 0)
+
+    stats = get_corpus_word_stats(picked) or {}
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("总频次", f"{stats.get('freq', 0):,}")
+    m2.metric("每百万频次", f"{(stats.get('relfreq') or 0):.1f}")
+    m3.metric("槽位数", stats.get("slot_count", 0))
+    m4.metric("搭配词型", f"{stats.get('collocate_count', 0):,}")
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>四类意象图式重心（AI初筛）</h3>", unsafe_allow_html=True)
+    scores = get_corpus_schema_scores(picked)
+    if scores:
+        sc_df = pd.DataFrame(scores).rename(columns={
+            "schema_name": "意象图式", "slots_present": "覆盖槽位",
+            "slots_defined": "定义槽位", "coverage": "覆盖率",
+            "n_types": "搭配词数N", "mean_logdice": "Mean_logDice",
+            "prominence_score": "重心得分S", "cand_rank": "候选排名",
+        })
+        st.bar_chart(sc_df.set_index("意象图式")["重心得分S"], height=220)
+        st.dataframe(sc_df, use_container_width=True, hide_index=True)
+    else:
+        st.info(f"「{picked}」暂无图式得分数据。")
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>图式证据搭配（每图式 Top5）</h3>", unsafe_allow_html=True)
+    evidence = get_corpus_schema_evidence(picked, top_n=5)
+    if evidence:
+        ev_df = pd.DataFrame(evidence).rename(columns={
+            "schema_name": "意象图式", "rank_no": "排名", "word": "证据搭配词",
+            "logdice": "logDice", "slot": "所在槽位",
+        })
+        st.dataframe(ev_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("暂无图式证据数据。")
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>搭配明细（按槽位，可编辑）</h3>", unsafe_allow_html=True)
+    st.caption("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
+               "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。")
+    slots = sorted({r["slot"] for r in get_corpus_collocations(picked, limit=2000)})
+    if slots:
+        default_slot = "objects of \"%w\"" if "objects of \"%w\"" in slots else slots[0]
+        slot = st.selectbox("选择槽位", options=slots, index=slots.index(default_slot))
+        colls = get_corpus_collocations(picked, slot=slot, limit=100)
+        coll_df = pd.DataFrame(colls).rename(columns={
+            "id": "_id", "slot": "槽位", "rank_in_slot": "排名", "collocate": "搭配词",
+            "logdice": "logDice", "cooccur_count": "搭配频次",
+            "typical_combo": "典型组合", "combo_freq": "组合频次",
+            "semantic_category": "语义类别(人工)", "keep_flag": "处理(人工)",
+        })
+        edited = st.data_editor(
+            coll_df,
+            use_container_width=True,
+            hide_index=True,
+            key=f"coll_editor_{picked}_{slot}",
+            disabled=["槽位", "排名", "搭配词", "logDice", "搭配频次", "典型组合", "组合频次"],
+            column_config={
+                "语义类别(人工)": st.column_config.TextColumn(width="medium"),
+                "处理(人工)": st.column_config.SelectboxColumn(
+                    options=["", "保留", "剔除"], width="small"),
+            },
+        )
+        if st.button("💾 保存本槽位语义归类", key=f"coll_save_{picked}_{slot}"):
+            changed = []
+            for _, row in edited.iterrows():
+                # 用 id 对齐原始行，仅保存真正修改过的行
+                orig_row = next((c for c in colls if c["id"] == row["_id"]), None)
+                if orig_row is None:
+                    continue
+                if ((orig_row.get("semantic_category") or "") != (row["语义类别(人工)"] or "")
+                        or (orig_row.get("keep_flag") or "") != (row["处理(人工)"] or "")):
+                    changed.append({
+                        "id": int(row["_id"]),
+                        "semantic_category": row["语义类别(人工)"],
+                        "keep_flag": row["处理(人工)"],
+                    })
+            if changed:
+                n = update_collocation_annotations(changed)
+                st.success(f"✅ 已保存 {n} 条归类（进入 PS 计算口径）")
+            else:
+                st.info("没有修改需要保存")
+
+        n_keep = int((edited["处理(人工)"] == "保留").sum())
+        st.caption(f"当前槽位：{len(edited)} 行，标记「保留」{n_keep} 行 —— "
+                   f"PS 口径 N={n_keep}，Mean_logDice 按「保留」行的 logDice 均值计。")
+    else:
+        st.info("暂无搭配明细数据。")
+
+
+def render_card_corpus(verb: str) -> str:
+    """结果页「语料库证据」卡片：词频概览 + 四图式得分 + 每图式 Top3 证据。"""
+    if not DB_AVAILABLE:
+        return ('<div style="padding: 20px;"><p style="color: #718096;">'
+                '数据库不可用，无法展示语料证据。</p></div>')
+
+    stats = get_corpus_word_stats(verb)
+    scores = get_corpus_schema_scores(verb)
+    evidence = get_corpus_schema_evidence(verb, top_n=3)
+
+    html = '''
+    <div style="padding: 20px;">
+        <h4 style="color: #3182ce; font-weight: 600; margin: 0 0 16px 0;">🌐 语料库证据（enTenTen21）</h4>
+    '''
+
+    if not stats:
+        html += ('<p style="color: #718096;">该词暂无语料数据。'
+                 '运行 scripts/load_corpus_dataset.py 从 output/ 语料包加载。</p>')
+        html += "</div>"
+        return html
+
+    html += ('<p style="color: #2d3748; margin-bottom: 8px;">'
+             '<strong>总频次:</strong> {:,} &nbsp;|&nbsp; '
+             '<strong>每百万词频次:</strong> {:.1f} &nbsp;|&nbsp; '
+             '<strong>槽位数:</strong> {} &nbsp;|&nbsp; '
+             '<strong>搭配词型:</strong> {:,}</p>').format(
+        stats.get("freq") or 0, stats.get("relfreq") or 0.0,
+        stats.get("slot_count") or 0, stats.get("collocate_count") or 0)
+
+    if scores:
+        cand = next((s for s in scores if s["cand_rank"] == 1), None)
+        if cand:
+            html += ('<p style="color: #2d3748; margin-bottom: 8px;">'
+                     '<strong>候选凸显图式（AI初筛）:</strong> '
+                     '<span style="color: #3182ce; font-weight: 600;">{}</span></p>').format(
+                _html_escape(str(cand["schema_name"])))
+        html += ('<table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">'
+                 '<tr style="background-color: #ebf8ff;">'
+                 '<th style="padding: 6px; text-align: left;">意象图式</th>'
+                 '<th style="padding: 6px;">覆盖率</th><th style="padding: 6px;">N</th>'
+                 '<th style="padding: 6px;">Mean_logDice</th><th style="padding: 6px;">重心得分S</th>'
+                 '</tr>')
+        for s in scores:
+            html += ('<tr style="border-bottom: 1px solid #e2e8f0;">'
+                     '<td style="padding: 6px;">{}</td>'
+                     '<td style="padding: 6px; text-align: center;">{:.0%}</td>'
+                     '<td style="padding: 6px; text-align: center;">{}</td>'
+                     '<td style="padding: 6px; text-align: center;">{:.2f}</td>'
+                     '<td style="padding: 6px; text-align: center; font-weight: 600;">{:.2f}</td>'
+                     '</tr>').format(
+                _html_escape(str(s["schema_name"])), s.get("coverage") or 0,
+                s.get("n_types") or 0, s.get("mean_logdice") or 0.0,
+                s.get("prominence_score") or 0.0)
+        html += '</table>'
+
+    if evidence:
+        by_schema = {}
+        for e in evidence:
+            by_schema.setdefault(e["schema_name"], []).append(e)
+        html += '<p style="color: #2d3748; margin-bottom: 4px;"><strong>图式证据搭配（Top3）:</strong></p>'
+        for schema, items in by_schema.items():
+            words = "、".join(
+                f'{_html_escape(str(x["word"]))}（{x.get("logdice") or 0:.1f}）'
+                for x in items)
+            html += (f'<p style="color: #4a5568; margin: 0 0 6px 0; font-size: 0.95em;">'
+                     f'<strong>{_html_escape(str(schema))}：</strong>{words}</p>')
+
+    html += ('<p style="color: #a0aec0; font-size: 0.85em; margin: 8px 0 0 0;">'
+             '候选图式为 AI 初筛（未语义归类），详见「语料数据集」页；'
+             '最终图式标签以义位人工标注为准。</p>')
+    html += "</div>"
+    return html
+
+
+# ============================================
+# 词与词关系区块（当前词的词簇交互图）
+# ============================================
+def render_word_relation_section(verb: str) -> None:
+    """
+    渲染「当前查询词 + 其所属词簇」的交互式图谱（vis-network iframe）。
+
+    设计要点（相对旧版内嵌 SVG 的改进）：
+      * 静态文件 + st.iframe：Streamlit 重跑脚本不会重置图谱的拖拽/缩放状态
+        （与知识图谱页同一模式）；
+      * 中心词高亮、全部节点标名（力导向布局摊得开，不再互相压盖）；
+      * 默认只画「中心词↔成员」连线，簇内两两连线由 iframe 内按钮展开，
+        纯前端切换，不触发 Streamlit 重跑。
+
+    Args:
+        verb: 当前查询的动词
+    """
+    st.markdown(f"<h3 style='{HEADER_H3}'>🕸️ 词与词关系</h3>", unsafe_allow_html=True)
+
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，无法展示词簇图谱（离线模式下仅提供释义）。")
+        return
+
+    try:
+        graph = get_cluster_graph(verb)
+    except Exception as e:
+        logger.error(f"读取词簇图失败 for '{verb}': {e}")
+        graph = None
+
+    if not graph or not graph.get("nodes"):
+        st.info(
+            f"「{verb}」暂无词簇数据。词簇来自词库的次语义范畴划分；"
+            "运行 `python scripts/load_word_library.py` 可载入词库及其词间关系。"
+        )
+        return
+
+    cluster = graph.get("cluster") or {}
+    size = cluster.get("size", len(graph["nodes"]))
+    intro = (
+        f"「<strong>{_html_escape(str(verb))}</strong>」属于词簇 "
+        f"<strong>{_html_escape(str(cluster.get('label', '未分组')))}</strong>"
+        f" —— 簇内 {size} 个动词语义相近，两两互为近义。"
+    )
+    st.markdown(f"<p style='{BODY_BASE}'>{intro}</p>", unsafe_allow_html=True)
+
+    url = ensure_cluster_html(graph)
+    if url:
+        st.iframe(url, height=520)
+    else:
+        st.warning("词簇图生成失败，请检查 `src/static/` 是否可写。")
+
+    # 簇内成员快跳（点击即切换查询词，图谱随之前进到该词为中心的视图）
+    members = [n["id"] for n in graph["nodes"]]
+    with st.expander(f"查看簇内全部 {size} 个动词（点击可直接查询）", expanded=False):
+        per_row = 6
+        for i in range(0, len(members), per_row):
+            row = members[i:i + per_row]
+            cols = st.columns(per_row)
+            for col, member in zip(cols, row):
+                with col:
+                    label = f"📍 {member}" if member == verb else member
+                    st.button(
+                        label,
+                        key=f"cluster_member_{member}",
+                        use_container_width=True,
+                        on_click=select_example_verb,
+                        args=(member,),
+                    )
+
+    # 切页必须在 on_click 回调里改 session_state —— 按钮渲染时机晚于
+    # 侧栏 radio(key="page")，在正文里直接赋值会触发 StreamlitAPIException。
+    st.button(
+        "🗺️ 打开全库知识图谱",
+        key="goto_graph_page",
+        help="全库 136 词 / 1780 条词间关系的语义地图（可搜索、可按簇过滤）",
+        on_click=lambda: st.session_state.update(page="graph"),
+    )
+
+
+# ============================================
+# 域—系初判页（domain_family_senses · 词目层初判预览 v0.2）
+# ============================================
+def render_domain_family_page() -> None:
+    """🧭 域系初判：352 保留义位按词目层初判归入三域十二系的浏览与对照。
+
+    数据来自 docs/域系初判表v0.2.xlsx（scripts/load_domain_family.py 灌入）。
+    口径：词目层初判预览——义位图式暂取词目初判，最终域—系以义位层
+    人工标注后重聚类为准；R2/R3 行携带筛选规则理由。
+    """
+    st.markdown(f"<h1 style='{HEADER_H1}'>🧭 域系初判</h1>", unsafe_allow_html=True)
+
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，无法展示域系初判（离线模式下仅提供释义）。")
+        return
+    if not domain_family_ready():
+        st.info(
+            "域系初判数据尚未灌入。运行 "
+            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
+            "从 docs/域系初判表v0.2.xlsx 加载。"
+        )
+        return
+
+    import pandas as pd
+
+    overview = get_domain_family_overview()
+    if not overview:
+        st.warning("domain_family_senses 为空。")
+        return
+
+    total = sum(r["n_senses"] for r in overview)
+    n_verbs = len({r["family"] for r in overview})
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("保留义位", total)
+    c2.metric("认知域", len({r["domain"] for r in overview}))
+    c3.metric("语义系", len({r["family"] for r in overview}))
+    c4.metric("口径", "词目层初判 v0.2")
+
+    st.caption(
+        "⚠️ 词目层初判预览：义位图式暂取词目初判，非义位层标注结果；"
+        "最终域—系体系以义位层人工标注后重聚类为准（见标注平台）。"
+    )
+
+    # ---- 总览表（域 → 系 → 数量）----
+    st.markdown(f"<h3 style='{HEADER_H3}'>三域十二系总览</h3>", unsafe_allow_html=True)
+    df = pd.DataFrame(overview).rename(columns={
+        "domain": "认知域（初判）", "family": "语义系（初判）",
+        "n_senses": "义位数", "n_verbs": "词数",
+    })
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.bar_chart(df.set_index("语义系（初判）")["义位数"], height=260)
+
+    # ---- 逐义位明细（域/系/词三级过滤）----
+    st.markdown(f"<h3 style='{HEADER_H3}'>逐义位明细</h3>", unsafe_allow_html=True)
+    domains = ["全部"] + sorted({r["domain"] for r in overview})
+    fcol1, fcol2, fcol3 = st.columns(3)
+    sel_domain = fcol1.selectbox("认知域", options=domains, key="df_domain")
+    families = ["全部"]
+    if sel_domain != "全部":
+        families += sorted({r["family"] for r in overview if r["domain"] == sel_domain})
+    else:
+        families += sorted({r["family"] for r in overview})
+    sel_family = fcol2.selectbox("语义系", options=families, key="df_family")
+    kw = fcol3.text_input("词目筛选", key="df_verb", placeholder="输入动词…")
+
+    senses = get_domain_family_senses(
+        domain=None if sel_domain == "全部" else sel_domain,
+        family=None if sel_family == "全部" else sel_family,
+    )
+    sdf = pd.DataFrame(senses).rename(columns={
+        "word": "词目", "sense_num": "义项序号", "sense_id": "SenseID",
+        "definition": "英文释义", "definition_cn": "中文释义",
+        "example": "例句（首条）",
+        "lemma_schema": "词目层初判图式", "domain": "域", "family": "系",
+        "sense_annotation": "义位层标注（待人工）",
+        "rule_tag": "规则", "rule_note": "规则理由",
+        "source": "数据来源", "updated_at": "最后修改",
+        "freq": "语料频次", "schema_scores": "四图式得分",
+    })
+    # 展示列序：词目 + 义项序号（组合键）在前，SenseID 生成列随后
+    col_order = ["词目", "义项序号", "SenseID", "英文释义", "中文释义",
+                 "词目层初判图式", "域", "系", "义位层标注（待人工）",
+                 "语料频次", "四图式得分", "规则", "规则理由", "数据来源", "最后修改"]
+    sdf = sdf[[c for c in col_order if c in sdf.columns]]
+    if "语料频次" in sdf.columns:
+        sdf["语料频次"] = pd.to_numeric(sdf["语料频次"], errors="coerce")
+    if kw:
+        sdf = sdf[sdf["词目"].str.contains(kw, case=False, na=False)]
+    st.caption(f"当前筛选 {len(sdf)} 条义位。")
+    st.dataframe(
+        sdf, use_container_width=True, hide_index=True,
+        column_config={
+            "英文释义": st.column_config.TextColumn(width="medium"),
+            "例句（首条）": st.column_config.TextColumn(width="medium"),
+            "规则理由": st.column_config.TextColumn(width="medium"),
+        },
+    )
+
+    # ---- 单义位下钻 ----
+    if not sdf.empty:
+        st.markdown(f"<h3 style='{HEADER_H3}'>义位详情</h3>", unsafe_allow_html=True)
+        sid = st.selectbox(
+            "选择义位（word + 义项序号）",
+            options=[f"{w} · S{n}" for w, n in zip(sdf["词目"], sdf["义项序号"])],
+            key="df_sense",
+        )
+        _w, _n = sid.rsplit(" · S", 1)
+        row = sdf[(sdf["词目"] == _w) & (sdf["义项序号"] == int(_n))].iloc[0]
+        b1, b2, b3 = st.columns(3)
+        b1.metric("认知域（初判）", row["域"])
+        b2.metric("语义系（初判）", row["系"])
+        b3.metric("筛选规则", row["规则"])
+        st.markdown(f"**SenseID**：{row['SenseID']}（word=`{_w}`，序号={_n}）")
+        st.markdown(f"**数据来源**：{row.get('数据来源') or '—'}　·　**最后修改**：{row.get('最后修改') or '—'}")
+        # 语料证据（wordsketch，enTenTen21）
+        freq_v = row.get("语料频次")
+        if freq_v is not None and not pd.isna(freq_v):
+            st.markdown(
+                f"**语料频次（enTenTen21）**：{int(freq_v):,}")
+            scores = row.get("四图式得分")
+            if isinstance(scores, str):
+                try:
+                    scores = json.loads(scores)
+                except json.JSONDecodeError:
+                    scores = None
+            if isinstance(scores, dict) and scores:
+                best = max(scores, key=scores.get)
+                parts = "　".join(f"{k} {v}" for k, v in
+                                 sorted(scores.items(), key=lambda x: -x[1]))
+                st.markdown(f"**四图式重心得分（词目层初筛）**：{parts}")
+                st.caption(f"候选凸显图式：{best}（未语义归类的 AI 初筛，仅作参考）")
+        else:
+            st.caption("该词目暂无语料证据（35 个路径/互动词待 Sketch Engine 检索）。")
+        st.markdown(f"**英文释义**：{row['英文释义'] or '—'}")
+        if row.get("中文释义"):
+            st.markdown(f"**中文释义**：{row['中文释义']}")
+        # 全部例句（英文 + 中文翻译逐条对齐，来自例句子表）
+        exs = get_domain_family_examples(_w, int(_n))
+        if exs:
+            st.markdown(f"**例句（{len(exs)} 条）**")
+            for ex in exs:
+                st.markdown(f"- {ex['example_en'] or '—'}")
+                if ex.get("example_cn"):
+                    st.markdown(f"  - ↳ {ex['example_cn']}")
+            src_note = "、".join(sorted({str(e.get("source") or "—") for e in exs}))
+            st.caption(f"例句来源：{src_note}（dictionary.db 例句带已审校中文翻译；OALD10 例句翻译待补）")
+        if row["规则理由"]:
+            st.info(f"筛选规则理由：{row['规则理由']}")
+        st.caption(
+            "该义位的最终图式标签请在「🏷️ 标注平台」中人工复核确定；"
+            "此处初判归属仅作对照参考。"
+        )
+
+
+# ============================================
+# MOVECAT 标注平台（义位准入 + 图式五维标注 + 进度/导出）
+# ============================================
+LEVEL_OPTIONS = ["", "Y", "拓展", "N"]
+LEVEL_LABELS = {"": "（未标注）", "Y": "Y · 原型物理位移义",
+                "拓展": "拓展 · 隐喻引申义", "N": "N · 非位移剔除"}
+SCHEMA_OPTIONS = ["", "源点脱离图式", "终点抵达图式", "方式伴随图式", "互动位移图式"]
+ALIGNMENT_OPTIONS = ["", "完全对齐", "部分对齐", "零对齐"]
+
+
+def render_annotation_page() -> None:
+    """
+    🏷️ 标注平台（MOVECAT 原型核心模块）。
+
+    对应标注手册（docs/义项判定标准修改稿.docx）的义位级操作：
+      标准1 准入标签（Y/拓展/N）→ 标准2 意象图式（四选一）→
+      标准4 英汉对齐（三选一）→ 汉语句法特征 / 译义转化策略；
+      边界争议打存疑标记进仲裁清单。判定依据 = OALD 释义 + 例句，
+      页面同屏提供语料证据（候选图式 + 重心得分）辅助判断。
+    """
+    import pandas as pd
+
+    st.markdown(f"<h1 style='{HEADER_H1}'>🏷️ 标注平台</h1>", unsafe_allow_html=True)
+    st.caption("义位准入 → 意象图式 → 英汉对齐 → 句法特征/译义策略；"
+               "依据 OALD 释义与例句判定，存疑案例打标进仲裁清单。"
+               "完整标准见 docs/义项判定标准修改稿.docx。")
+
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，标注平台不可用。")
+        return
+
+    progress = get_annotation_progress()
+    if not progress:
+        st.info("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。")
+        return
+
+    total = sum(int(r["total"]) for r in progress)
+    reviewed = sum(int(r["reviewed"] or 0) for r in progress)   # 人工复核（经标注平台保存）
+    # 词库初标数（prototype_level 预填）当前未单独展示：初标≠人工复核，避免口径混淆
+    flagged = sum(int(r["flagged"]) for r in progress)          # 待复核/存疑清单
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("义位总数", total)
+    c2.metric("人工已复核", reviewed, f"{reviewed / total:.0%}" if total else None)
+    c3.metric("待复核清单", flagged)
+    c4.metric("习语义项", sum(int(r["idioms"] or 0) for r in progress))
+    st.progress(reviewed / total if total else 0.0)
+
+    # ---- 动词选择（带各自进度）----
+    label_map = {
+        r["verb"]: f"{r['verb']}（{r['total']} 义位 · {int(r['reviewed'] or 0)} 已复核"
+                   f"{' · ' + str(int(r['flagged'])) + ' 待复核' if int(r['flagged']) else ''}）"
+        for r in progress
+    }
+    verbs = [r["verb"] for r in progress]
+
+    # 试点子集（docs/1003 大纲 §4.1：10–12 词，标准与理由见 data/corpus/pilot_verbs.json）
+    _pilot_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "data", "corpus", "pilot_verbs.json")
+    try:
+        with open(_pilot_path, encoding="utf-8") as _f:
+            PILOT_VERBS = [v["verb"] for v in json.load(_f)["verbs"]]
+    except (OSError, json.JSONDecodeError, KeyError):
+        PILOT_VERBS = []
+    pilot_only = st.checkbox("仅显示试点动词（12 词，见 pilot_verbs.json）",
+                             value=bool(PILOT_VERBS), key="pilot_only")
+    if pilot_only and PILOT_VERBS:
+        verbs = [v for v in verbs if v in PILOT_VERBS] or verbs
+
+    picked_verb = st.selectbox("选择动词", options=verbs,
+                               format_func=lambda v: label_map.get(v, v),
+                               index=verbs.index("walk") if "walk" in verbs else 0)
+
+    senses = get_oald_senses(picked_verb)
+    if not senses:
+        st.warning(f"「{picked_verb}」无 OALD 义位数据（132 词覆盖；scutter/kayak/oar/dodder 需补录）。")
+        return
+
+    # ---- 语料证据辅助（判定依据之一）----
+    cstats = get_corpus_word_stats(picked_verb)
+    cscores = get_corpus_schema_scores(picked_verb)
+    if cstats and cscores:
+        cand = next((s for s in cscores if s["cand_rank"] == 1), None)
+        st.info(
+            "🌐 语料证据（enTenTen21，辅助判断）："
+            f"总频次 {(cstats.get('freq') or 0):,} · 每百万 {(cstats.get('relfreq') or 0):.1f} · "
+            f"候选凸显图式（AI初筛）：**{cand['schema_name'] if cand else '—'}**"
+            f"（S={cand['prominence_score']:.2f}）" if cand else "🌐 语料证据：暂无",
+            icon="🔎",
+        )
+
+    # ---- 义位选择 ----
+    only_open = st.checkbox("只看待标注/存疑义位", value=False)
+    def _status(s):
+        if s.get("needs_review"):
+            return "❓存疑"
+        return {"Y": "✅Y", "拓展": "✅拓展", "N": "✅N"}.get(
+            (s.get("prototype_level") or "").strip(), "⬜未标")
+
+    sense_opts = [
+        f"{picked_verb}-S{s['sense_index']} · {_status(s)} · {(s.get('en_ndef') or '')[:40]}"
+        for s in senses
+    ]
+    if only_open:
+        keep = [i for i, s in enumerate(senses)
+                if not (s.get("prototype_level") or "").strip() or s.get("needs_review")]
+        pairs = [(sense_opts[i], senses[i]) for i in keep]
+    else:
+        pairs = list(zip(sense_opts, senses))
+    if not pairs:
+        st.success("该筛选条件下没有待处理义位 🎉")
+        return
+    chosen = st.selectbox("选择义位（SenseID）", options=[p[0] for p in pairs])
+    sense = dict(pairs[[p[0] for p in pairs].index(chosen)][1])
+
+    sid = sense["id"]
+    sense_id_label = f"{picked_verb}-S{sense['sense_index']}"
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>义位 {sense_id_label}</h3>", unsafe_allow_html=True)
+    idiom = bool(sense.get("is_idiom"))
+    if idiom:
+        st.warning("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或拓展")
+    st.markdown(
+        f"<div style='{get_card_style()}'>"
+        f"<p style='{BODY_BASE}'><strong>英文释义：</strong>{_html_escape(str(sense.get('definition') or '—'))}</p>"
+        f"<p style='{BODY_BASE}'><strong>语法码：</strong>{_html_escape(str(sense.get('grammar') or '—'))}</p>"
+        f"<p style='{BODY_BASE}'><strong>语义分组：</strong>{_html_escape(str(sense.get('sense_group') or '—'))}</p>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    exs = sense.get("examples") or []
+    if exs:
+        with st.expander(f"真实例句（{len(exs)} 条）——判定证据"):
+            for e in exs:
+                st.markdown(f"- {_html_escape(str(e))}")
+
+    # ---- LLM 初筛草稿（候选参考，非最终判定）----
+    if sense.get("llm_tag"):
+        _draft = (
+            f"🤖 **LLM 初筛草稿（候选参考，须人工确认）**：准入 **{sense['llm_tag']}**"
+            f" · 图式 **{sense.get('llm_schema') or '—'}**"
+            f" · 对齐 **{sense.get('llm_align') or '—'}**"
+        )
+        st.info(_draft, icon="🤖")
+        if sense.get("llm_reason"):
+            st.markdown(f"<div style='{get_card_style()}'>"
+                        f"<p style='{BODY_BASE}'><strong>初筛理由：</strong>"
+                        f"{_html_escape(str(sense['llm_reason']))}</p>"
+                        + (f"<p style='{BODY_BASE}'><strong>存疑点：</strong>"
+                           f"{_html_escape(str(sense['llm_doubt']))}</p>"
+                           if sense.get("llm_doubt") else "")
+                        + "</div>", unsafe_allow_html=True)
+
+    # ---- 五维标注表单 ----
+    st.markdown(f"<h3 style='{HEADER_H3}'>图式五维标注</h3>", unsafe_allow_html=True)
+    with st.form(f"ann_form_{sid}"):
+        f1, f2 = st.columns(2)
+        # 默认值优先级：人工已保存的标注 > LLM 初筛草稿 > 空
+        _cur_level = (sense.get("prototype_level") or "").strip()
+        _draft_level = (sense.get("llm_tag") or "").strip()
+        _init_level = _cur_level if _cur_level in LEVEL_OPTIONS else (
+            _draft_level if _draft_level in LEVEL_OPTIONS else "")
+        level = f1.radio("准入标签（标准1）", options=LEVEL_OPTIONS,
+                         index=LEVEL_OPTIONS.index(_init_level),
+                         format_func=lambda v: LEVEL_LABELS[v], horizontal=True)
+        _cur_schema = (sense.get("image_schema") or "").strip()
+        _draft_schema = (sense.get("llm_schema") or "").strip()
+        _init_schema = _cur_schema if _cur_schema in SCHEMA_OPTIONS else (
+            _draft_schema if _draft_schema in SCHEMA_OPTIONS else "")
+        schema = f2.selectbox("意象图式（标准2，四选一）", options=SCHEMA_OPTIONS,
+                              index=SCHEMA_OPTIONS.index(_init_schema))
+        _cur_align = (sense.get("alignment") or "").strip()
+        _draft_align = (sense.get("llm_align") or "").strip()
+        _init_align = _cur_align if _cur_align in ALIGNMENT_OPTIONS else (
+            _draft_align if _draft_align in ALIGNMENT_OPTIONS else "")
+        align = st.selectbox("英汉对齐等级（标准4）", options=ALIGNMENT_OPTIONS,
+                             index=ALIGNMENT_OPTIONS.index(_init_align))
+        cn_syn = st.text_input("汉语句法特征", value=sense.get("cn_syntax") or "",
+                               placeholder="如：强制趋向补语 / 需“把”字句 / 动词可独立作谓语")
+        strategy = st.text_input("译义转化策略", value=sense.get("translation_strategy") or "",
+                                 placeholder="如：保留原图式 / 增补方式要素 / 舍弃方式语义")
+        review = st.checkbox("❓ 复核后仍存疑（边界案例，进仲裁清单）",
+                             value=bool(sense.get("needs_review")))
+        saved = st.form_submit_button("💾 保存本义位标注", type="primary")
+        if saved:
+            ok = update_sense_annotation(
+                sid,
+                level.strip(), schema.strip(), align.strip(),
+                cn_syn.strip(), strategy.strip(), review,
+            )
+            if ok:
+                st.success(f"✅ {sense_id_label} 标注已保存")
+                st.session_state.pop("_display_def_cache", None)
+            else:
+                st.error("保存失败（数据库写入未成功），请重试")
+
+    # ---- 导出 ----
+    st.markdown(f"<h3 style='{HEADER_H3}'>📤 导出标注资源</h3>", unsafe_allow_html=True)
+    rows = get_annotation_export_rows()
+    if rows:
+        export_df = pd.DataFrame(rows)
+        export_df.insert(2, "SenseID", export_df["verb"] + "-S" + export_df["sense_index"].astype(str))
+        csv = export_df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            "导出全部义位标注 (CSV)", data=csv,
+            file_name=f"movecat_annotations_{datetime.datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+        )
+        st.caption(f"共 {len(rows)} 条义位（含未标注行，便于核对覆盖面）。")
 
 
 # ============================================
@@ -1634,8 +2194,15 @@ def _pick_cluster_verb(cluster_id: int) -> None:
 def main():
     """主函数：按 session_state["page"] 分派到搜索页或图谱页。"""
     render_sidebar()
-    if st.session_state.get("page") == "graph":
+    _page = st.session_state.get("page")
+    if _page == "graph":
         render_interactive_graph_page()
+    elif _page == "corpus":
+        render_corpus_dataset_page()
+    elif _page == "domain":
+        render_domain_family_page()
+    elif _page == "annotate":
+        render_annotation_page()
     else:
         render_main_area()
 

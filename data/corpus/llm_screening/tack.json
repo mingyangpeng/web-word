@@ -1,0 +1,19 @@
+{
+ "verb": "tack",
+ "model": "glm-5.3",
+ "screened_at": "2026-10-10 09:50",
+ "n_senses": 1,
+ "results": {
+  "tack-S3": {
+   "准入标签": "Y",
+   "理由": "运动体为实体（帆船），通过将船头转入并穿过风向实现航向改变，涉及三维物理空间中的实际位移与路径调整，激活源点-路径-终点框架。",
+   "意象图式候选标签": "方式伴随图式",
+   "英汉对齐候选等级": "部分对齐",
+   "备注存疑点": "汉语常规表达“抢风调向/换舷转向”侧重航向改变结果，对“穿过风向、风从另一侧吹帆”这一方式细节常需句法增补说明，语义要素存在缺失。",
+   "raw": "准入标签：Y\n理由：运动体为实体（帆船），通过将船头转入并穿过风向实现航向改变，涉及三维物理空间中的实际位移与路径调整，激活源点-路径-终点框架。\n意象图式候选标签：方式伴随图式\n英汉对齐候选等级：部分对齐\n备注存疑点：汉语常规表达“抢风调向/换舷转向”侧重航向改变结果，对“穿过风向、风从另一侧吹帆”这一方式细节常需句法增补说明，语义要素存在缺失。",
+   "sense_id": "tack-S3",
+   "definition": "to change the direction of a sailing boat by turning the front of the boat into and through the wind, so that the wind blows onto the sails from the opposite side; to do this several times in order to travel in the direction that the wind is coming from"
+  }
+ },
+ "errors": []
+}

@@ -1,0 +1,668 @@
+{
+ "verb": "taxi",
+ "freq": 29868,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 29,
+   "mean_logdice": 1.246,
+   "prominence_score": 6.115,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 12.27,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "runway",
+     "logdice": 10.01,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 2.15,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" for ...",
+     "logdice": 1.91,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 1.33,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" onto ...",
+     "logdice": 0.95,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" at ...",
+     "logdice": 0.85,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "over",
+     "logdice": 0.77,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" from ...",
+     "logdice": 0.69,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "in",
+     "logdice": 0.59,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 3168,
+     "slot_logdice": 10.61,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 0.77
+      },
+      {
+       "word": "in",
+       "logdice": 0.59
+      },
+      {
+       "word": "out",
+       "logdice": 0.54
+      },
+      {
+       "word": "across",
+       "logdice": 0.52
+      },
+      {
+       "word": "around",
+       "logdice": 0.36
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 144,
+     "slot_logdice": 0.48,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "runway",
+       "logdice": 10.01
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 6987,
+     "slot_logdice": "",
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 12.27
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.15
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.91
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.33
+      },
+      {
+       "word": "\"%w\" onto ...",
+       "logdice": 0.95
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 82,
+   "mean_logdice": 2.542,
+   "prominence_score": 16.205,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 12.27,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "runway",
+     "logdice": 11.16,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "tarmac",
+     "logdice": 9.26,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "taxiway",
+     "logdice": 8.87,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "takeoff",
+     "logdice": 7.36,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "strip",
+     "logdice": 7.12,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "take-off",
+     "logdice": 6.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hydroaeroplane",
+     "logdice": 6.25,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ramp",
+     "logdice": 6.22,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "crosswind",
+     "logdice": 5.73,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 4695,
+     "slot_logdice": 15.72,
+     "n_collocates": 48,
+     "top5": [
+      {
+       "word": "takeoff",
+       "logdice": 7.36
+      },
+      {
+       "word": "take-off",
+       "logdice": 6.87
+      },
+      {
+       "word": "hydroaeroplane",
+       "logdice": 6.25
+      },
+      {
+       "word": "crosswind",
+       "logdice": 5.73
+      },
+      {
+       "word": "airplane",
+       "logdice": 5.64
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 40,
+     "slot_logdice": 0.13,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "runway",
+       "logdice": 9.53
+      },
+      {
+       "word": "ramp",
+       "logdice": 6.22
+      },
+      {
+       "word": "river",
+       "logdice": 3.47
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 594,
+     "slot_logdice": 1.99,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "runway",
+       "logdice": 11.16
+      },
+      {
+       "word": "tarmac",
+       "logdice": 9.26
+      },
+      {
+       "word": "taxiway",
+       "logdice": 8.87
+      },
+      {
+       "word": "strip",
+       "logdice": 7.12
+      },
+      {
+       "word": "ramp",
+       "logdice": 5.35
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 6987,
+     "slot_logdice": "",
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 12.27
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.15
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.91
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.33
+      },
+      {
+       "word": "\"%w\" onto ...",
+       "logdice": 0.95
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1368,
+     "slot_logdice": 4.58,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.52
+      },
+      {
+       "word": "down",
+       "logdice": 1.43
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 89,
+   "mean_logdice": 3.292,
+   "prominence_score": 21.372,
+   "top_evidence": [
+    {
+     "word": "land",
+     "logdice": 7.93,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "bus",
+     "logdice": 7.85,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "taxi",
+     "logdice": 7.23,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ACA726",
+     "logdice": 6.6,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hover",
+     "logdice": 6.5,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "idle",
+     "logdice": 6.33,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "seaplane",
+     "logdice": 6.27,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "747",
+     "logdice": 6.22,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Curtiss",
+     "logdice": 5.99,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "tow",
+     "logdice": 5.93,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 3850,
+     "slot_logdice": 12.89,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "downwind",
+       "logdice": 5.89
+      },
+      {
+       "word": "underneath",
+       "logdice": 1.95
+      },
+      {
+       "word": "inadvertently",
+       "logdice": 1.16
+      },
+      {
+       "word": "slowly",
+       "logdice": 0.99
+      },
+      {
+       "word": "back",
+       "logdice": 0.72
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 193,
+     "slot_logdice": 0.65,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 3.11
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.91
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.07
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 3005,
+     "slot_logdice": 10.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ACA726",
+       "logdice": 6.6
+      },
+      {
+       "word": "hover",
+       "logdice": 6.5
+      },
+      {
+       "word": "seaplane",
+       "logdice": 6.27
+      },
+      {
+       "word": "747",
+       "logdice": 6.22
+      },
+      {
+       "word": "Curtiss",
+       "logdice": 5.99
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 1092,
+     "slot_logdice": 3.66,
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "land",
+       "logdice": 7.93
+      },
+      {
+       "word": "bus",
+       "logdice": 7.85
+      },
+      {
+       "word": "taxi",
+       "logdice": 7.23
+      },
+      {
+       "word": "idle",
+       "logdice": 6.33
+      },
+      {
+       "word": "tow",
+       "logdice": 5.93
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 105,
+   "mean_logdice": 2.729,
+   "prominence_score": 18.361,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 12.27,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "takeoff",
+     "logdice": 7.36,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "take-off",
+     "logdice": 6.87,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ACA726",
+     "logdice": 6.6,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hover",
+     "logdice": 6.5,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "seaplane",
+     "logdice": 6.27,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hydroaeroplane",
+     "logdice": 6.25,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "747",
+     "logdice": 6.22,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Curtiss",
+     "logdice": 5.99,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "RNVR",
+     "logdice": 5.86,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 4695,
+     "slot_logdice": 15.72,
+     "n_collocates": 48,
+     "top5": [
+      {
+       "word": "takeoff",
+       "logdice": 7.36
+      },
+      {
+       "word": "take-off",
+       "logdice": 6.87
+      },
+      {
+       "word": "hydroaeroplane",
+       "logdice": 6.25
+      },
+      {
+       "word": "crosswind",
+       "logdice": 5.73
+      },
+      {
+       "word": "airplane",
+       "logdice": 5.64
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 3005,
+     "slot_logdice": 10.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ACA726",
+       "logdice": 6.6
+      },
+      {
+       "word": "hover",
+       "logdice": 6.5
+      },
+      {
+       "word": "seaplane",
+       "logdice": 6.27
+      },
+      {
+       "word": "747",
+       "logdice": 6.22
+      },
+      {
+       "word": "Curtiss",
+       "logdice": 5.99
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 6987,
+     "slot_logdice": "",
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 12.27
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 2.15
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 1.91
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 1.33
+      },
+      {
+       "word": "\"%w\" onto ...",
+       "logdice": 0.95
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 1368,
+     "slot_logdice": 4.58,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 1.52
+      },
+      {
+       "word": "down",
+       "logdice": 1.43
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

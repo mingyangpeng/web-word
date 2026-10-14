@@ -1,0 +1,832 @@
+{
+ "verb": "stomp",
+ "freq": 181648,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "源点脱离图式",
+  "互动位移图式",
+  "终点抵达图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 103,
+   "mean_logdice": 4.376,
+   "prominence_score": 29.323,
+   "top_evidence": [
+    {
+     "word": "Records",
+     "logdice": 10.59,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "stigma",
+     "logdice": 9.49,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "hunger",
+     "logdice": 8.82,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "ember",
+     "logdice": 8.56,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "dissent",
+     "logdice": 8.5,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "rope",
+     "logdice": 8.47,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "flame",
+     "logdice": 8.31,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "cigarette",
+     "logdice": 7.99,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "rhythm",
+     "logdice": 7.94,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "beat",
+     "logdice": 7.83,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 17182,
+     "slot_logdice": 9.46,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 4.59
+      },
+      {
+       "word": "off",
+       "logdice": 4.29
+      },
+      {
+       "word": "over",
+       "logdice": 3.17
+      },
+      {
+       "word": "on",
+       "logdice": 3.13
+      },
+      {
+       "word": "upon",
+       "logdice": 3.01
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 351,
+     "slot_logdice": 0.19,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "Records",
+       "logdice": 10.59
+      },
+      {
+       "word": "rope",
+       "logdice": 8.47
+      },
+      {
+       "word": "apron",
+       "logdice": 7.48
+      },
+      {
+       "word": "snow",
+       "logdice": 7.47
+      },
+      {
+       "word": "mound",
+       "logdice": 7.0
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 1435,
+     "slot_logdice": 0.79,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "stigma",
+       "logdice": 9.49
+      },
+      {
+       "word": "hunger",
+       "logdice": 8.82
+      },
+      {
+       "word": "ember",
+       "logdice": 8.56
+      },
+      {
+       "word": "dissent",
+       "logdice": 8.5
+      },
+      {
+       "word": "flame",
+       "logdice": 8.31
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 20770,
+     "slot_logdice": "",
+     "n_collocates": 28,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 6.25
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.04
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.81
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.55
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 105,
+   "mean_logdice": 3.661,
+   "prominence_score": 24.63,
+   "top_evidence": [
+    {
+     "word": "Grounds",
+     "logdice": 8.65,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "snow",
+     "logdice": 8.42,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Yard",
+     "logdice": 8.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hoof",
+     "logdice": 7.91,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "catwalk",
+     "logdice": 7.81,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "runway",
+     "logdice": 7.73,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "mudhole",
+     "logdice": 7.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "stair",
+     "logdice": 7.61,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "hall",
+     "logdice": 7.59,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "grass",
+     "logdice": 7.31,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 41704,
+     "slot_logdice": 22.96,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Grounds",
+       "logdice": 8.65
+      },
+      {
+       "word": "Yard",
+       "logdice": 8.35
+      },
+      {
+       "word": "hoof",
+       "logdice": 7.91
+      },
+      {
+       "word": "mudhole",
+       "logdice": 7.61
+      },
+      {
+       "word": "foot",
+       "logdice": 7.24
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 595,
+     "slot_logdice": 0.33,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "stair",
+       "logdice": 7.61
+      },
+      {
+       "word": "hall",
+       "logdice": 7.59
+      },
+      {
+       "word": "step",
+       "logdice": 6.55
+      },
+      {
+       "word": "staircase",
+       "logdice": 6.55
+      },
+      {
+       "word": "aisle",
+       "logdice": 6.05
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 883,
+     "slot_logdice": 0.49,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "snow",
+       "logdice": 8.42
+      },
+      {
+       "word": "catwalk",
+       "logdice": 7.81
+      },
+      {
+       "word": "runway",
+       "logdice": 7.73
+      },
+      {
+       "word": "grass",
+       "logdice": 7.31
+      },
+      {
+       "word": "stair",
+       "logdice": 6.79
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 20770,
+     "slot_logdice": "",
+     "n_collocates": 28,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 6.25
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.04
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.81
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.55
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 9046,
+     "slot_logdice": 4.98,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.99
+      },
+      {
+       "word": "down",
+       "logdice": 2.74
+      },
+      {
+       "word": "out",
+       "logdice": 2.47
+      },
+      {
+       "word": "along",
+       "logdice": 1.72
+      },
+      {
+       "word": "upon",
+       "logdice": 1.51
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 163,
+   "mean_logdice": 4.967,
+   "prominence_score": 36.543,
+   "top_evidence": [
+    {
+     "word": "stomp",
+     "logdice": 10.22,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Ponderosa",
+     "logdice": 9.7,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "clap",
+     "logdice": 9.26,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Curb",
+     "logdice": 9.17,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "curb",
+     "logdice": 9.0,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "romp",
+     "logdice": 8.67,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "HX",
+     "logdice": 8.47,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "kick",
+     "logdice": 8.41,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "grape",
+     "logdice": 7.94,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "chomp",
+     "logdice": 7.82,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 20679,
+     "slot_logdice": 11.38,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "angrily",
+       "logdice": 6.33
+      },
+      {
+       "word": "double",
+       "logdice": 5.85
+      },
+      {
+       "word": "upstairs",
+       "logdice": 5.03
+      },
+      {
+       "word": "viciously",
+       "logdice": 4.78
+      },
+      {
+       "word": "mercilessly",
+       "logdice": 4.66
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 784,
+     "slot_logdice": 0.43,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "upstairs",
+       "logdice": 3.94
+      },
+      {
+       "word": "classic",
+       "logdice": 3.76
+      },
+      {
+       "word": "future",
+       "logdice": 3.67
+      },
+      {
+       "word": "past",
+       "logdice": 3.01
+      },
+      {
+       "word": "flat",
+       "logdice": 2.52
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.44
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 32358,
+     "slot_logdice": 17.81,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Ponderosa",
+       "logdice": 9.7
+      },
+      {
+       "word": "Curb",
+       "logdice": 9.17
+      },
+      {
+       "word": "curb",
+       "logdice": 9.0
+      },
+      {
+       "word": "HX",
+       "logdice": 8.47
+      },
+      {
+       "word": "grape",
+       "logdice": 7.94
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 12629,
+     "slot_logdice": 6.95,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "stomp",
+       "logdice": 10.22
+      },
+      {
+       "word": "clap",
+       "logdice": 9.26
+      },
+      {
+       "word": "romp",
+       "logdice": 8.67
+      },
+      {
+       "word": "kick",
+       "logdice": 8.41
+      },
+      {
+       "word": "chomp",
+       "logdice": 7.82
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 507,
+     "slot_logdice": 0.28,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "flat",
+       "logdice": 7.09
+      },
+      {
+       "word": "dead",
+       "logdice": 1.74
+      },
+      {
+       "word": "hard",
+       "logdice": 1.54
+      },
+      {
+       "word": "next",
+       "logdice": 1.13
+      },
+      {
+       "word": "good",
+       "logdice": 0.54
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 135,
+   "mean_logdice": 3.968,
+   "prominence_score": 28.121,
+   "top_evidence": [
+    {
+     "word": "Ponderosa",
+     "logdice": 9.7,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Curb",
+     "logdice": 9.17,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "curb",
+     "logdice": 9.0,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Grounds",
+     "logdice": 8.65,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "HX",
+     "logdice": 8.47,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Yard",
+     "logdice": 8.35,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "grape",
+     "logdice": 7.94,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hoof",
+     "logdice": 7.91,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "mudhole",
+     "logdice": 7.61,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "foot",
+     "logdice": 7.24,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 41704,
+     "slot_logdice": 22.96,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Grounds",
+       "logdice": 8.65
+      },
+      {
+       "word": "Yard",
+       "logdice": 8.35
+      },
+      {
+       "word": "hoof",
+       "logdice": 7.91
+      },
+      {
+       "word": "mudhole",
+       "logdice": 7.61
+      },
+      {
+       "word": "foot",
+       "logdice": 7.24
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 5891,
+     "slot_logdice": 3.24,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "we",
+       "logdice": 0.42
+      },
+      {
+       "word": "him",
+       "logdice": 0.33
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 18836,
+     "slot_logdice": 10.37,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 1.27
+      },
+      {
+       "word": "her",
+       "logdice": 1.1
+      },
+      {
+       "word": "she",
+       "logdice": 0.67
+      },
+      {
+       "word": "one",
+       "logdice": 0.41
+      },
+      {
+       "word": "he",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 32358,
+     "slot_logdice": 17.81,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Ponderosa",
+       "logdice": 9.7
+      },
+      {
+       "word": "Curb",
+       "logdice": 9.17
+      },
+      {
+       "word": "curb",
+       "logdice": 9.0
+      },
+      {
+       "word": "HX",
+       "logdice": 8.47
+      },
+      {
+       "word": "grape",
+       "logdice": 7.94
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 20770,
+     "slot_logdice": "",
+     "n_collocates": 28,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 6.25
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 1.04
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.81
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.66
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 0.55
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 9046,
+     "slot_logdice": 4.98,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.99
+      },
+      {
+       "word": "down",
+       "logdice": 2.74
+      },
+      {
+       "word": "out",
+       "logdice": 2.47
+      },
+      {
+       "word": "along",
+       "logdice": 1.72
+      },
+      {
+       "word": "upon",
+       "logdice": 1.51
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

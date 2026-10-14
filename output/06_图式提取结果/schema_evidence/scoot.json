@@ -1,0 +1,808 @@
+{
+ "verb": "scoot",
+ "freq": 43375,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 5,
+   "slots_defined": 5,
+   "coverage": 1.0,
+   "n_types": 51,
+   "mean_logdice": 2.003,
+   "prominence_score": 11.419,
+   "top_evidence": [
+    {
+     "word": "inch",
+     "logdice": 9.77,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "bed",
+     "logdice": 7.76,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "lap",
+     "logdice": 7.75,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "front",
+     "logdice": 6.74,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "chair",
+     "logdice": 5.97,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "bit",
+     "logdice": 5.33,
+     "slot": "objects of \"%w away\""
+    },
+    {
+     "word": "door",
+     "logdice": 5.32,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "couch",
+     "logdice": 5.15,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "table",
+     "logdice": 4.24,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "over",
+     "logdice": 4.15,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 9103,
+     "slot_logdice": 20.99,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "over",
+       "logdice": 4.15
+      },
+      {
+       "word": "around",
+       "logdice": 3.49
+      },
+      {
+       "word": "along",
+       "logdice": 3.21
+      },
+      {
+       "word": "across",
+       "logdice": 2.63
+      },
+      {
+       "word": "away",
+       "logdice": 2.21
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w away\"",
+     "slot_freq": 14,
+     "slot_logdice": 0.03,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "inch",
+       "logdice": 9.77
+      },
+      {
+       "word": "bit",
+       "logdice": 5.33
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 208,
+     "slot_logdice": 0.48,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "bed",
+       "logdice": 7.76
+      },
+      {
+       "word": "lap",
+       "logdice": 7.75
+      },
+      {
+       "word": "front",
+       "logdice": 6.74
+      },
+      {
+       "word": "chair",
+       "logdice": 5.59
+      },
+      {
+       "word": "couch",
+       "logdice": 5.15
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 146,
+     "slot_logdice": 0.34,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "chair",
+       "logdice": 5.97
+      },
+      {
+       "word": "door",
+       "logdice": 5.32
+      },
+      {
+       "word": "side",
+       "logdice": 2.41
+      },
+      {
+       "word": "way",
+       "logdice": 0.18
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4551,
+     "slot_logdice": "",
+     "n_collocates": 26,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.22
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.54
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.37
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.79
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.59
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 105,
+   "mean_logdice": 2.613,
+   "prominence_score": 17.58,
+   "top_evidence": [
+    {
+     "word": "McNairy",
+     "logdice": 10.45,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "couch",
+     "logdice": 9.29,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "bed",
+     "logdice": 9.09,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "bench",
+     "logdice": 8.46,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "sideline",
+     "logdice": 7.52,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "slide",
+     "logdice": 6.24,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "row",
+     "logdice": 5.67,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "aisle",
+     "logdice": 5.59,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "Hanover",
+     "logdice": 5.38,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "chair",
+     "logdice": 5.28,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3872,
+     "slot_logdice": 8.93,
+     "n_collocates": 46,
+     "top5": [
+      {
+       "word": "McNairy",
+       "logdice": 10.45
+      },
+      {
+       "word": "Hanover",
+       "logdice": 5.38
+      },
+      {
+       "word": "chair",
+       "logdice": 5.28
+      },
+      {
+       "word": "butt",
+       "logdice": 4.62
+      },
+      {
+       "word": "stool",
+       "logdice": 4.52
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 214,
+     "slot_logdice": 0.49,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "bed",
+       "logdice": 7.1
+      },
+      {
+       "word": "aisle",
+       "logdice": 5.59
+      },
+      {
+       "word": "coast",
+       "logdice": 4.82
+      },
+      {
+       "word": "ramp",
+       "logdice": 4.61
+      },
+      {
+       "word": "close",
+       "logdice": 4.19
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 402,
+     "slot_logdice": 0.93,
+     "n_collocates": 25,
+     "top5": [
+      {
+       "word": "couch",
+       "logdice": 9.29
+      },
+      {
+       "word": "bed",
+       "logdice": 9.09
+      },
+      {
+       "word": "bench",
+       "logdice": 8.46
+      },
+      {
+       "word": "sideline",
+       "logdice": 7.52
+      },
+      {
+       "word": "slide",
+       "logdice": 6.24
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4551,
+     "slot_logdice": "",
+     "n_collocates": 26,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.22
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.54
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.37
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.79
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.59
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3613,
+     "slot_logdice": 8.33,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.69
+      },
+      {
+       "word": "along",
+       "logdice": 3.1
+      },
+      {
+       "word": "over",
+       "logdice": 2.28
+      },
+      {
+       "word": "down",
+       "logdice": 1.6
+      },
+      {
+       "word": "off",
+       "logdice": 0.52
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 149,
+   "mean_logdice": 2.772,
+   "prominence_score": 20.039,
+   "top_evidence": [
+    {
+     "word": "scoot",
+     "logdice": 7.98,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "skate",
+     "logdice": 7.84,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cycle",
+     "logdice": 7.25,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "crawl",
+     "logdice": 7.18,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "scamper",
+     "logdice": 6.53,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "shimmy",
+     "logdice": 5.86,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ocelot",
+     "logdice": 5.78,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "wheel",
+     "logdice": 5.74,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "pedal",
+     "logdice": 5.42,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "backwards",
+     "logdice": 5.41,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 10681,
+     "slot_logdice": 24.62,
+     "n_collocates": 44,
+     "top5": [
+      {
+       "word": "backwards",
+       "logdice": 5.41
+      },
+      {
+       "word": "backward",
+       "logdice": 4.71
+      },
+      {
+       "word": "sideways",
+       "logdice": 4.2
+      },
+      {
+       "word": "gingerly",
+       "logdice": 3.24
+      },
+      {
+       "word": "along",
+       "logdice": 2.83
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 798,
+     "slot_logdice": 1.84,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "backwards",
+       "logdice": 3.84
+      },
+      {
+       "word": "past",
+       "logdice": 3.64
+      },
+      {
+       "word": "close",
+       "logdice": 1.82
+      },
+      {
+       "word": "next",
+       "logdice": 1.81
+      },
+      {
+       "word": "further",
+       "logdice": 1.63
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "as reflexive",
+       "logdice": 1.2
+      },
+      {
+       "word": "in passive",
+       "logdice": 0.27
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4062,
+     "slot_logdice": 9.36,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ocelot",
+       "logdice": 5.78
+      },
+      {
+       "word": "Boot",
+       "logdice": 4.91
+      },
+      {
+       "word": "Mattie",
+       "logdice": 4.55
+      },
+      {
+       "word": "bum",
+       "logdice": 3.89
+      },
+      {
+       "word": "Gabrielle",
+       "logdice": 3.74
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 1940,
+     "slot_logdice": 4.47,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "scoot",
+       "logdice": 7.98
+      },
+      {
+       "word": "skate",
+       "logdice": 7.84
+      },
+      {
+       "word": "cycle",
+       "logdice": 7.25
+      },
+      {
+       "word": "crawl",
+       "logdice": 7.18
+      },
+      {
+       "word": "scamper",
+       "logdice": 6.53
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 134,
+     "slot_logdice": 0.31,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "backwards",
+       "logdice": 5.29
+      },
+      {
+       "word": "close",
+       "logdice": 3.37
+      },
+      {
+       "word": "next",
+       "logdice": 1.8
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 125,
+   "mean_logdice": 2.194,
+   "prominence_score": 15.306,
+   "top_evidence": [
+    {
+     "word": "McNairy",
+     "logdice": 10.45,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ocelot",
+     "logdice": 5.78,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Hanover",
+     "logdice": 5.38,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "chair",
+     "logdice": 5.28,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Boot",
+     "logdice": 4.91,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "butt",
+     "logdice": 4.62,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Mattie",
+     "logdice": 4.55,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "stool",
+     "logdice": 4.52,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "bum",
+     "logdice": 4.22,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Gabrielle",
+     "logdice": 3.74,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3872,
+     "slot_logdice": 8.93,
+     "n_collocates": 46,
+     "top5": [
+      {
+       "word": "McNairy",
+       "logdice": 10.45
+      },
+      {
+       "word": "Hanover",
+       "logdice": 5.38
+      },
+      {
+       "word": "chair",
+       "logdice": 5.28
+      },
+      {
+       "word": "butt",
+       "logdice": 4.62
+      },
+      {
+       "word": "stool",
+       "logdice": 4.52
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 1773,
+     "slot_logdice": 4.09,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "herself",
+       "logdice": 1.68
+      },
+      {
+       "word": "himself",
+       "logdice": 0.52
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4062,
+     "slot_logdice": 9.36,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ocelot",
+       "logdice": 5.78
+      },
+      {
+       "word": "Boot",
+       "logdice": 4.91
+      },
+      {
+       "word": "Mattie",
+       "logdice": 4.55
+      },
+      {
+       "word": "bum",
+       "logdice": 3.89
+      },
+      {
+       "word": "Gabrielle",
+       "logdice": 3.74
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4551,
+     "slot_logdice": "",
+     "n_collocates": 26,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.22
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.54
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.37
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 0.79
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.59
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3613,
+     "slot_logdice": 8.33,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.69
+      },
+      {
+       "word": "along",
+       "logdice": 3.1
+      },
+      {
+       "word": "over",
+       "logdice": 2.28
+      },
+      {
+       "word": "down",
+       "logdice": 1.6
+      },
+      {
+       "word": "off",
+       "logdice": 0.52
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

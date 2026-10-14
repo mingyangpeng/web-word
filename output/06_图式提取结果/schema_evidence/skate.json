@@ -1,0 +1,792 @@
+{
+ "verb": "skate",
+ "freq": 172685,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 49,
+   "mean_logdice": 1.206,
+   "prominence_score": 6.806,
+   "top_evidence": [
+    {
+     "word": "ice",
+     "logdice": 11.12,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "ramp",
+     "logdice": 7.04,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 4.22,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "track",
+     "logdice": 3.68,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "around",
+     "logdice": 3.46,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 3.21,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "away",
+     "logdice": 2.84,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "along",
+     "logdice": 2.41,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "over",
+     "logdice": 2.3,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "through",
+     "logdice": 2.14,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 5895,
+     "slot_logdice": 3.41,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.46
+      },
+      {
+       "word": "away",
+       "logdice": 2.84
+      },
+      {
+       "word": "along",
+       "logdice": 2.41
+      },
+      {
+       "word": "over",
+       "logdice": 2.3
+      },
+      {
+       "word": "through",
+       "logdice": 2.14
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 284,
+     "slot_logdice": 0.16,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "ice",
+       "logdice": 11.12
+      },
+      {
+       "word": "ramp",
+       "logdice": 7.04
+      },
+      {
+       "word": "track",
+       "logdice": 3.68
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 12,
+     "slot_logdice": 0.01,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 1.99
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 28472,
+     "slot_logdice": "",
+     "n_collocates": 36,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 4.22
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.21
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.08
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.67
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 1.35
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 113,
+   "mean_logdice": 3.502,
+   "prominence_score": 23.928,
+   "top_evidence": [
+    {
+     "word": "rink",
+     "logdice": 11.2,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "ice",
+     "logdice": 10.91,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Rink",
+     "logdice": 8.92,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "wing",
+     "logdice": 8.9,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Wide",
+     "logdice": 8.11,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "slot",
+     "logdice": 7.9,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "board",
+     "logdice": 7.1,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "canal",
+     "logdice": 6.99,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "Club",
+     "logdice": 6.85,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "championship",
+     "logdice": 6.63,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 50621,
+     "slot_logdice": 29.31,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "rink",
+       "logdice": 11.2
+      },
+      {
+       "word": "Rink",
+       "logdice": 8.92
+      },
+      {
+       "word": "Wide",
+       "logdice": 8.11
+      },
+      {
+       "word": "Club",
+       "logdice": 6.85
+      },
+      {
+       "word": "championship",
+       "logdice": 6.63
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 312,
+     "slot_logdice": 0.18,
+     "n_collocates": 9,
+     "top5": [
+      {
+       "word": "ice",
+       "logdice": 10.07
+      },
+      {
+       "word": "wing",
+       "logdice": 7.42
+      },
+      {
+       "word": "ramp",
+       "logdice": 5.25
+      },
+      {
+       "word": "level",
+       "logdice": 5.14
+      },
+      {
+       "word": "hill",
+       "logdice": 4.83
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 674,
+     "slot_logdice": 0.39,
+     "n_collocates": 21,
+     "top5": [
+      {
+       "word": "ice",
+       "logdice": 10.91
+      },
+      {
+       "word": "wing",
+       "logdice": 8.9
+      },
+      {
+       "word": "slot",
+       "logdice": 7.9
+      },
+      {
+       "word": "board",
+       "logdice": 7.1
+      },
+      {
+       "word": "canal",
+       "logdice": 6.99
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 28472,
+     "slot_logdice": "",
+     "n_collocates": 36,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 4.22
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.21
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.08
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.67
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 1.35
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3549,
+     "slot_logdice": 2.06,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.78
+      },
+      {
+       "word": "down",
+       "logdice": 1.99
+      },
+      {
+       "word": "over",
+       "logdice": 1.37
+      },
+      {
+       "word": "along",
+       "logdice": 0.85
+      },
+      {
+       "word": "off",
+       "logdice": 0.59
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 189,
+   "mean_logdice": 4.302,
+   "prominence_score": 32.565,
+   "top_evidence": [
+    {
+     "word": "Figure",
+     "logdice": 9.84,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "roller",
+     "logdice": 9.56,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "ice",
+     "logdice": 9.02,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "toboggan",
+     "logdice": 8.83,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "ski",
+     "logdice": 8.55,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "surf",
+     "logdice": 8.5,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "skate",
+     "logdice": 8.35,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "snowshoe",
+     "logdice": 8.22,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "inline",
+     "logdice": 8.05,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Ice",
+     "logdice": 7.95,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 28899,
+     "slot_logdice": 16.74,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "backwards",
+       "logdice": 5.99
+      },
+      {
+       "word": "backward",
+       "logdice": 5.62
+      },
+      {
+       "word": "cleanly",
+       "logdice": 5.44
+      },
+      {
+       "word": "competitively",
+       "logdice": 5.17
+      },
+      {
+       "word": "free",
+       "logdice": 4.7
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 3767,
+     "slot_logdice": 2.18,
+     "n_collocates": 42,
+     "top5": [
+      {
+       "word": "4-on-4",
+       "logdice": 7.16
+      },
+      {
+       "word": "South",
+       "logdice": 6.21
+      },
+      {
+       "word": "rental",
+       "logdice": 6.15
+      },
+      {
+       "word": "vert",
+       "logdice": 5.86
+      },
+      {
+       "word": "North",
+       "logdice": 5.71
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.08
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.09
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 33423,
+     "slot_logdice": 19.35,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Figure",
+       "logdice": 9.84
+      },
+      {
+       "word": "roller",
+       "logdice": 9.56
+      },
+      {
+       "word": "ice",
+       "logdice": 9.02
+      },
+      {
+       "word": "inline",
+       "logdice": 8.05
+      },
+      {
+       "word": "Ice",
+       "logdice": 7.95
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 7474,
+     "slot_logdice": 4.33,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "toboggan",
+       "logdice": 8.83
+      },
+      {
+       "word": "ski",
+       "logdice": 8.55
+      },
+      {
+       "word": "surf",
+       "logdice": 8.5
+      },
+      {
+       "word": "skate",
+       "logdice": 8.35
+      },
+      {
+       "word": "snowshoe",
+       "logdice": 8.22
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 223,
+     "slot_logdice": 0.13,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "last",
+       "logdice": 1.82
+      },
+      {
+       "word": "complete",
+       "logdice": 1.67
+      },
+      {
+       "word": "open",
+       "logdice": 0.45
+      },
+      {
+       "word": "next",
+       "logdice": 0.37
+      },
+      {
+       "word": "close",
+       "logdice": 0.28
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 140,
+   "mean_logdice": 3.647,
+   "prominence_score": 26.041,
+   "top_evidence": [
+    {
+     "word": "rink",
+     "logdice": 11.2,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Figure",
+     "logdice": 9.84,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "roller",
+     "logdice": 9.56,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "ice",
+     "logdice": 9.02,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Rink",
+     "logdice": 8.92,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Wide",
+     "logdice": 8.11,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "inline",
+     "logdice": 8.05,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Ice",
+     "logdice": 7.95,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Roller",
+     "logdice": 7.49,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "speed",
+     "logdice": 7.32,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 50621,
+     "slot_logdice": 29.31,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "rink",
+       "logdice": 11.2
+      },
+      {
+       "word": "Rink",
+       "logdice": 8.92
+      },
+      {
+       "word": "Wide",
+       "logdice": 8.11
+      },
+      {
+       "word": "Club",
+       "logdice": 6.85
+      },
+      {
+       "word": "championship",
+       "logdice": 6.63
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 21190,
+     "slot_logdice": 12.27,
+     "n_collocates": 6,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 1.83
+      },
+      {
+       "word": "myself",
+       "logdice": 0.5
+      },
+      {
+       "word": "them",
+       "logdice": 0.25
+      },
+      {
+       "word": "himself",
+       "logdice": 0.14
+      },
+      {
+       "word": "yourself",
+       "logdice": 0.11
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 33423,
+     "slot_logdice": 19.35,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "Figure",
+       "logdice": 9.84
+      },
+      {
+       "word": "roller",
+       "logdice": 9.56
+      },
+      {
+       "word": "ice",
+       "logdice": 9.02
+      },
+      {
+       "word": "inline",
+       "logdice": 8.05
+      },
+      {
+       "word": "Ice",
+       "logdice": 7.95
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 28472,
+     "slot_logdice": "",
+     "n_collocates": 36,
+     "top5": [
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 4.22
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.21
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 2.08
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.67
+      },
+      {
+       "word": "\"%w\" at ...",
+       "logdice": 1.35
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3549,
+     "slot_logdice": 2.06,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.78
+      },
+      {
+       "word": "down",
+       "logdice": 1.99
+      },
+      {
+       "word": "over",
+       "logdice": 1.37
+      },
+      {
+       "word": "along",
+       "logdice": 0.85
+      },
+      {
+       "word": "off",
+       "logdice": 0.59
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

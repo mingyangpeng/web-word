@@ -1,0 +1,808 @@
+{
+ "verb": "track",
+ "freq": 2859859,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 65,
+   "mean_logdice": 0.841,
+   "prominence_score": 5.086,
+   "top_evidence": [
+    {
+     "word": "album",
+     "logdice": 9.47,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "CD",
+     "logdice": 8.46,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "down",
+     "logdice": 7.28,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "coast",
+     "logdice": 4.71,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "along",
+     "logdice": 3.85,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "across",
+     "logdice": 2.83,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "through",
+     "logdice": 2.26,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "in",
+     "logdice": 2.11,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "off",
+     "logdice": 1.7,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "on",
+     "logdice": 1.65,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 52281,
+     "slot_logdice": 1.83,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 7.28
+      },
+      {
+       "word": "along",
+       "logdice": 3.85
+      },
+      {
+       "word": "across",
+       "logdice": 2.83
+      },
+      {
+       "word": "through",
+       "logdice": 2.26
+      },
+      {
+       "word": "in",
+       "logdice": 2.11
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 199,
+     "slot_logdice": 0.01,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "album",
+       "logdice": 9.47
+      },
+      {
+       "word": "CD",
+       "logdice": 8.46
+      },
+      {
+       "word": "coast",
+       "logdice": 4.71
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 144091,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.8
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 0.73
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.58
+      },
+      {
+       "word": "\"%w\" of ...",
+       "logdice": 0.57
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.37
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 165,
+   "mean_logdice": 4.423,
+   "prominence_score": 32.622,
+   "top_evidence": [
+    {
+     "word": "source",
+     "logdice": 9.79,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "down",
+     "logdice": 9.72,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "killer",
+     "logdice": 9.49,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "copy",
+     "logdice": 9.33,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "progress",
+     "logdice": 9.2,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "problem",
+     "logdice": 9.15,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "information",
+     "logdice": 8.92,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "people",
+     "logdice": 8.76,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "man",
+     "logdice": 8.6,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "bug",
+     "logdice": 8.44,
+     "slot": "objects of \"%w down\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1479288,
+     "slot_logdice": 51.73,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "progress",
+       "logdice": 9.2
+      },
+      {
+       "word": "movement",
+       "logdice": 7.84
+      },
+      {
+       "word": "performance",
+       "logdice": 6.96
+      },
+      {
+       "word": "usage",
+       "logdice": 6.92
+      },
+      {
+       "word": "metric",
+       "logdice": 6.89
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 299,
+     "slot_logdice": 0.01,
+     "n_collocates": 8,
+     "top5": [
+      {
+       "word": "Coast",
+       "logdice": 8.38
+      },
+      {
+       "word": "coast",
+       "logdice": 7.29
+      },
+      {
+       "word": "snow",
+       "logdice": 7.09
+      },
+      {
+       "word": "floor",
+       "logdice": 5.02
+      },
+      {
+       "word": "side",
+       "logdice": 4.72
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 129998,
+     "slot_logdice": 4.55,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "source",
+       "logdice": 9.79
+      },
+      {
+       "word": "killer",
+       "logdice": 9.49
+      },
+      {
+       "word": "copy",
+       "logdice": 9.33
+      },
+      {
+       "word": "problem",
+       "logdice": 9.15
+      },
+      {
+       "word": "information",
+       "logdice": 8.92
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 144091,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.8
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 0.73
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.58
+      },
+      {
+       "word": "\"%w\" of ...",
+       "logdice": 0.57
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.37
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 226706,
+     "slot_logdice": 7.93,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 9.72
+      },
+      {
+       "word": "through",
+       "logdice": 3.29
+      },
+      {
+       "word": "along",
+       "logdice": 2.77
+      },
+      {
+       "word": "in",
+       "logdice": 2.47
+      },
+      {
+       "word": "on",
+       "logdice": 2.19
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 238,
+   "mean_logdice": 5.541,
+   "prominence_score": 43.775,
+   "top_evidence": [
+    {
+     "word": "railroad",
+     "logdice": 9.67,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "monitor",
+     "logdice": 9.6,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "report",
+     "logdice": 9.52,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "trace",
+     "logdice": 9.21,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "measure",
+     "logdice": 8.8,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "detect",
+     "logdice": 8.65,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "GPS",
+     "logdice": 8.64,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "manage",
+     "logdice": 8.45,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "identify",
+     "logdice": 8.21,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "fast",
+     "logdice": 8.13,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 334718,
+     "slot_logdice": 11.7,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "fast",
+       "logdice": 8.13
+      },
+      {
+       "word": "accurately",
+       "logdice": 7.61
+      },
+      {
+       "word": "closely",
+       "logdice": 6.74
+      },
+      {
+       "word": "off",
+       "logdice": 6.5
+      },
+      {
+       "word": "automatically",
+       "logdice": 6.03
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 20065,
+     "slot_logdice": 0.7,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "armored",
+       "logdice": 7.26
+      },
+      {
+       "word": "northwestward",
+       "logdice": 6.3
+      },
+      {
+       "word": "west-northwest",
+       "logdice": 6.03
+      },
+      {
+       "word": "unreleased",
+       "logdice": 5.95
+      },
+      {
+       "word": "northeastward",
+       "logdice": 5.92
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.18
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.07
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 596640,
+     "slot_logdice": 20.86,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "railroad",
+       "logdice": 9.67
+      },
+      {
+       "word": "GPS",
+       "logdice": 8.64
+      },
+      {
+       "word": "bonus",
+       "logdice": 7.97
+      },
+      {
+       "word": "train",
+       "logdice": 7.77
+      },
+      {
+       "word": "railway",
+       "logdice": 7.68
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 230504,
+     "slot_logdice": 8.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "monitor",
+       "logdice": 9.6
+      },
+      {
+       "word": "report",
+       "logdice": 9.52
+      },
+      {
+       "word": "trace",
+       "logdice": 9.21
+      },
+      {
+       "word": "measure",
+       "logdice": 8.8
+      },
+      {
+       "word": "detect",
+       "logdice": 8.65
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 14939,
+     "slot_logdice": 0.52,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "laden",
+       "logdice": 6.63
+      },
+      {
+       "word": "online",
+       "logdice": 6.47
+      },
+      {
+       "word": "nationwide",
+       "logdice": 6.41
+      },
+      {
+       "word": "daily",
+       "logdice": 6.4
+      },
+      {
+       "word": "monthly",
+       "logdice": 6.29
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 179,
+   "mean_logdice": 3.644,
+   "prominence_score": 27.299,
+   "top_evidence": [
+    {
+     "word": "down",
+     "logdice": 9.72,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "railroad",
+     "logdice": 9.67,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "progress",
+     "logdice": 9.2,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "GPS",
+     "logdice": 8.64,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "bonus",
+     "logdice": 7.97,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "movement",
+     "logdice": 7.84,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "train",
+     "logdice": 7.77,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "railway",
+     "logdice": 7.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "applicant",
+     "logdice": 7.04,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "performance",
+     "logdice": 6.96,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 1479288,
+     "slot_logdice": 51.73,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "progress",
+       "logdice": 9.2
+      },
+      {
+       "word": "movement",
+       "logdice": 7.84
+      },
+      {
+       "word": "performance",
+       "logdice": 6.96
+      },
+      {
+       "word": "usage",
+       "logdice": 6.92
+      },
+      {
+       "word": "metric",
+       "logdice": 6.89
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 119893,
+     "slot_logdice": 4.19,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "her",
+       "logdice": 4.58
+      },
+      {
+       "word": "him",
+       "logdice": 4.49
+      },
+      {
+       "word": "them",
+       "logdice": 4.35
+      },
+      {
+       "word": "one",
+       "logdice": 4.17
+      },
+      {
+       "word": "we",
+       "logdice": 3.88
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 162798,
+     "slot_logdice": 5.69,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "her",
+       "logdice": 4.08
+      },
+      {
+       "word": "us",
+       "logdice": 3.94
+      },
+      {
+       "word": "me",
+       "logdice": 3.26
+      },
+      {
+       "word": "them",
+       "logdice": 3.26
+      },
+      {
+       "word": "him",
+       "logdice": 3.23
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 596640,
+     "slot_logdice": 20.86,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "railroad",
+       "logdice": 9.67
+      },
+      {
+       "word": "GPS",
+       "logdice": 8.64
+      },
+      {
+       "word": "bonus",
+       "logdice": 7.97
+      },
+      {
+       "word": "train",
+       "logdice": 7.77
+      },
+      {
+       "word": "railway",
+       "logdice": 7.68
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 144091,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 0.8
+      },
+      {
+       "word": "\"%w\" by ...",
+       "logdice": 0.73
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.58
+      },
+      {
+       "word": "\"%w\" of ...",
+       "logdice": 0.57
+      },
+      {
+       "word": "\"%w\" for ...",
+       "logdice": 0.37
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 226706,
+     "slot_logdice": 7.93,
+     "n_collocates": 11,
+     "top5": [
+      {
+       "word": "down",
+       "logdice": 9.72
+      },
+      {
+       "word": "through",
+       "logdice": 3.29
+      },
+      {
+       "word": "along",
+       "logdice": 2.77
+      },
+      {
+       "word": "in",
+       "logdice": 2.47
+      },
+      {
+       "word": "on",
+       "logdice": 2.19
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

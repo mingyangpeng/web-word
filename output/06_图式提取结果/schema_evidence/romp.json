@@ -1,0 +1,680 @@
+{
+ "verb": "romp",
+ "freq": 30159,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "互动位移图式",
+  "终点抵达图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 25,
+   "mean_logdice": 1.368,
+   "prominence_score": 6.432,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 8.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "leash",
+     "logdice": 7.45,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "around",
+     "logdice": 3.77,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 3.7,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 2.89,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" with ...",
+     "logdice": 1.78,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "along",
+     "logdice": 1.51,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "away",
+     "logdice": 1.08,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "through",
+     "logdice": 0.98,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" on ...",
+     "logdice": 0.92,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 2468,
+     "slot_logdice": 8.18,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 3.77
+      },
+      {
+       "word": "along",
+       "logdice": 1.51
+      },
+      {
+       "word": "away",
+       "logdice": 1.08
+      },
+      {
+       "word": "through",
+       "logdice": 0.98
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 11,
+     "slot_logdice": 0.04,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "leash",
+       "logdice": 7.45
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 5863,
+     "slot_logdice": "",
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 8.36
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.7
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.89
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.78
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.92
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 62,
+   "mean_logdice": 1.77,
+   "prominence_score": 10.583,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 8.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "off-leash",
+     "logdice": 7.16,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "stomping",
+     "logdice": 6.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "pitch",
+     "logdice": 6.08,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "lane",
+     "logdice": 5.4,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "HOME",
+     "logdice": 5.15,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "field",
+     "logdice": 3.86,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "\"%w\" in ...",
+     "logdice": 3.7,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "donkey",
+     "logdice": 3.54,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Beat",
+     "logdice": 3.47,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3915,
+     "slot_logdice": 12.98,
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "off-leash",
+       "logdice": 7.16
+      },
+      {
+       "word": "stomping",
+       "logdice": 6.67
+      },
+      {
+       "word": "HOME",
+       "logdice": 5.15
+      },
+      {
+       "word": "donkey",
+       "logdice": 3.54
+      },
+      {
+       "word": "Beat",
+       "logdice": 3.47
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 22,
+     "slot_logdice": 0.07,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "pitch",
+       "logdice": 6.08
+      },
+      {
+       "word": "hill",
+       "logdice": 2.84
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 42,
+     "slot_logdice": 0.14,
+     "n_collocates": 3,
+     "top5": [
+      {
+       "word": "lane",
+       "logdice": 5.4
+      },
+      {
+       "word": "field",
+       "logdice": 3.86
+      },
+      {
+       "word": "road",
+       "logdice": 1.21
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 5863,
+     "slot_logdice": "",
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 8.36
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.7
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.89
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.78
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.92
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 863,
+     "slot_logdice": 2.86,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 2.88
+      },
+      {
+       "word": "in",
+       "logdice": 0.45
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 124,
+   "mean_logdice": 3.56,
+   "prominence_score": 24.798,
+   "top_evidence": [
+    {
+     "word": "leash-free",
+     "logdice": 8.98,
+     "slot": "adjectives after \"%w\""
+    },
+    {
+     "word": "stomp",
+     "logdice": 8.67,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frolic",
+     "logdice": 8.22,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "frolick",
+     "logdice": 7.94,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "rollick",
+     "logdice": 7.52,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "victorious",
+     "logdice": 7.44,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "roam",
+     "logdice": 7.22,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "cavort",
+     "logdice": 6.96,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "gambol",
+     "logdice": 6.88,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "all-age",
+     "logdice": 6.87,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 3333,
+     "slot_logdice": 11.05,
+     "n_collocates": 19,
+     "top5": [
+      {
+       "word": "joyously",
+       "logdice": 5.13
+      },
+      {
+       "word": "merrily",
+       "logdice": 4.9
+      },
+      {
+       "word": "playfully",
+       "logdice": 4.6
+      },
+      {
+       "word": "gaily",
+       "logdice": 4.32
+      },
+      {
+       "word": "joyfully",
+       "logdice": 4.07
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 322,
+     "slot_logdice": 1.07,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "leash-free",
+       "logdice": 8.98
+      },
+      {
+       "word": "victorious",
+       "logdice": 3.95
+      },
+      {
+       "word": "naked",
+       "logdice": 3.53
+      },
+      {
+       "word": "nude",
+       "logdice": 3.19
+      },
+      {
+       "word": "unchallenged",
+       "logdice": 2.96
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 2.25
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.02
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4272,
+     "slot_logdice": 14.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "all-age",
+       "logdice": 6.87
+      },
+      {
+       "word": "steampunk",
+       "logdice": 6.44
+      },
+      {
+       "word": "off-leash",
+       "logdice": 6.05
+      },
+      {
+       "word": "softcore",
+       "logdice": 5.86
+      },
+      {
+       "word": "sci-fi",
+       "logdice": 5.84
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 2440,
+     "slot_logdice": 8.09,
+     "n_collocates": 46,
+     "top5": [
+      {
+       "word": "stomp",
+       "logdice": 8.67
+      },
+      {
+       "word": "frolic",
+       "logdice": 8.22
+      },
+      {
+       "word": "frolick",
+       "logdice": 7.94
+      },
+      {
+       "word": "rollick",
+       "logdice": 7.52
+      },
+      {
+       "word": "roam",
+       "logdice": 7.22
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 19,
+     "slot_logdice": 0.06,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "victorious",
+       "logdice": 7.44
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 102,
+   "mean_logdice": 2.514,
+   "prominence_score": 16.811,
+   "top_evidence": [
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 8.36,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "off-leash",
+     "logdice": 7.16,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "all-age",
+     "logdice": 6.87,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "stomping",
+     "logdice": 6.67,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "steampunk",
+     "logdice": 6.44,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "softcore",
+     "logdice": 5.86,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "sci-fi",
+     "logdice": 5.84,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Harrox",
+     "logdice": 5.82,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "action-filled",
+     "logdice": 5.74,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "cyberpunk",
+     "logdice": 5.31,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 3915,
+     "slot_logdice": 12.98,
+     "n_collocates": 35,
+     "top5": [
+      {
+       "word": "off-leash",
+       "logdice": 7.16
+      },
+      {
+       "word": "stomping",
+       "logdice": 6.67
+      },
+      {
+       "word": "HOME",
+       "logdice": 5.15
+      },
+      {
+       "word": "donkey",
+       "logdice": 3.54
+      },
+      {
+       "word": "Beat",
+       "logdice": 3.47
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 4272,
+     "slot_logdice": 14.16,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "all-age",
+       "logdice": 6.87
+      },
+      {
+       "word": "steampunk",
+       "logdice": 6.44
+      },
+      {
+       "word": "off-leash",
+       "logdice": 6.05
+      },
+      {
+       "word": "softcore",
+       "logdice": 5.86
+      },
+      {
+       "word": "sci-fi",
+       "logdice": 5.84
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 5863,
+     "slot_logdice": "",
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 8.36
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 3.7
+      },
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 2.89
+      },
+      {
+       "word": "\"%w\" with ...",
+       "logdice": 1.78
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 0.92
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 863,
+     "slot_logdice": 2.86,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 2.88
+      },
+      {
+       "word": "in",
+       "logdice": 0.45
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

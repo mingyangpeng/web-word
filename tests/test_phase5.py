@@ -34,6 +34,21 @@ _LIVE_UNREACHABLE = (
 
 
 @pytest.fixture(autouse=True)
+def _clear_display_def_cache():
+    """清掉 get_display_definition 的会话级缓存。
+
+    get_display_definition 现在按 verb 缓存解析结果（避免一次 rerun 里
+    三张卡片各触发一次 LLM）。bare 模式下 st.session_state 是进程级全局，
+    不清的话同 verb 的适配器分支测试会互相读到上一步的缓存结果。
+    """
+    import streamlit as st
+
+    st.session_state.pop("_display_def_cache", None)
+    yield
+    st.session_state.pop("_display_def_cache", None)
+
+
+@pytest.fixture(autouse=True)
 def _no_external_io(monkeypatch):
     """默认把所有外部依赖替换为「不可达」，各用例再按需覆盖。
 

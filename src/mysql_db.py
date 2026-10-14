@@ -126,7 +126,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 「词间关系」成为可直接查询 / 导出 / 喂给图谱工具的一等数据，而不是每次现场 JOIN 生成。
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 8
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -312,7 +312,104 @@ CREATE_TABLES_SQL = [
         device_info VARCHAR(255),
         INDEX idx_usage_logs_verb (verb(50)),
         INDEX idx_usage_logs_query_time (query_time)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 语料库词频概览（数据源：output/05_原始数据/wsketch_full，
+    #     Sketch Engine enTenTen21 Word Sketch，由 scripts/load_corpus_dataset.py 灌入）---
+    """CREATE TABLE IF NOT EXISTS corpus_word_stats (
+        verb VARCHAR(50) PRIMARY KEY,
+        lpos VARCHAR(10) NOT NULL DEFAULT '-v',
+        freq BIGINT NOT NULL DEFAULT 0,
+        relfreq FLOAT NULL COMMENT '每百万词频次',
+        slot_count INT NOT NULL DEFAULT 0 COMMENT '语法关系(槽位)数',
+        collocate_count INT NOT NULL DEFAULT 0 COMMENT '搭配词型总数',
+        candidate_schema VARCHAR(32) NULL COMMENT 'AI初筛候选凸显图式',
+        retrieved_at DATE NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 语料搭配明细（每槽位前 50 个搭配词，语义归类列人工填写后回写）---
+    """CREATE TABLE IF NOT EXISTS corpus_collocations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        verb VARCHAR(50) NOT NULL,
+        slot VARCHAR(190) NOT NULL,
+        rank_in_slot INT NOT NULL,
+        collocate VARCHAR(190) NOT NULL,
+        logdice FLOAT NULL,
+        cooccur_count BIGINT NULL,
+        typical_combo VARCHAR(255) NULL,
+        combo_freq INT NULL,
+        semantic_category VARCHAR(64) NULL COMMENT '语义类别(人工)',
+        keep_flag VARCHAR(8) NULL COMMENT '保留/剔除(人工)',
+        INDEX idx_cc_verb_slot (verb, slot),
+        INDEX idx_cc_collocate (collocate(64))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 意象图式重心得分（AI 初筛，S = Mean_logDice × log2(N+1)）---
+    """CREATE TABLE IF NOT EXISTS word_schema_scores (
+        verb VARCHAR(50) NOT NULL,
+        schema_name VARCHAR(32) NOT NULL,
+        slots_present INT NOT NULL,
+        slots_defined INT NOT NULL,
+        coverage FLOAT NULL,
+        n_types INT NOT NULL DEFAULT 0,
+        mean_logdice FLOAT NULL,
+        prominence_score FLOAT NULL,
+        cand_rank INT NOT NULL,
+        PRIMARY KEY (verb, schema_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 图式证据搭配（每图式 Top10 证据词及其槽位）---
+    """CREATE TABLE IF NOT EXISTS corpus_schema_evidence (
+        verb VARCHAR(50) NOT NULL,
+        schema_name VARCHAR(32) NOT NULL,
+        rank_no INT NOT NULL,
+        word VARCHAR(190) NOT NULL,
+        logdice FLOAT NULL,
+        slot VARCHAR(190) NOT NULL,
+        PRIMARY KEY (verb, schema_name, rank_no)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 域—系初判（v0.2：352 保留义位按词目层初判归域归系，页面展示与标注对照）---
+    # 主键 = (word, sense_num)：SenseID「动词-Sn」拆成词目 + 义位序号两列，
+    # 组合键定位单词义项；sense_id 保留为 STORED 生成列（word-Sn），兼容旧引用。
+    # 中文释义 + 多条例句（含中文翻译）拆子表 domain_family_examples，
+    # 例句与翻译逐条对齐（同序号同行），避免 JSON 列不可查询、不可索引。
+    """CREATE TABLE IF NOT EXISTS domain_family_senses (
+        word VARCHAR(50) NOT NULL COMMENT '词目（SenseID 的动词部分）',
+        sense_num INT NOT NULL COMMENT '义位序号（SenseID 的 Sn 部分）',
+        sense_id VARCHAR(64) AS (CONCAT(word, '-S', sense_num)) STORED
+            COMMENT '生成列：动词-Sn，全数据集主键',
+        definition TEXT NULL COMMENT 'OALD10 英文释义',
+        definition_cn TEXT NULL COMMENT '中文释义（dictionary.db 已审校释义，覆盖 17 词 246 义位）',
+        example TEXT NULL COMMENT '首条例句（英文，冗余自子表第 1 条，便于列表速览）',
+        lemma_schema VARCHAR(32) NULL COMMENT '词目层初判图式',
+        domain VARCHAR(32) NOT NULL COMMENT '认知域（初判）',
+        family VARCHAR(32) NOT NULL COMMENT '语义系（初判）',
+        sense_annotation VARCHAR(32) NULL COMMENT '义位层标注（待人工，初判表预留列）',
+        rule_tag VARCHAR(8) NOT NULL DEFAULT 'R0' COMMENT '筛选规则标签：R0 常规/R2 明确保留/R3 边界复核',
+        rule_note VARCHAR(500) NULL COMMENT 'R2/R3 的判定理由（完整文本）',
+        source VARCHAR(32) NOT NULL DEFAULT '域系初判表v0.2'
+            COMMENT '本行数据来源（xlsx 版本 / 人工修订 / LLM 初筛）',
+        loaded_at DATE NULL COMMENT '首次灌入日期',
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间（自动更新）',
+        PRIMARY KEY (word, sense_num)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 域—系初判·例句子表（多条例句 + 对应中文翻译，逐条对齐）---
+    """CREATE TABLE IF NOT EXISTS domain_family_examples (
+        word VARCHAR(50) NOT NULL COMMENT '词目（与主表组合键对应）',
+        sense_num INT NOT NULL COMMENT '义位序号',
+        ex_num INT NOT NULL COMMENT '例句序号（1 起，与中文翻译同序号对齐）',
+        example_en TEXT NULL COMMENT '英文例句',
+        example_cn TEXT NULL COMMENT '中文翻译（与 example_en 同行对齐；缺失为 NULL）',
+        source VARCHAR(32) NULL COMMENT '例句来源：OALD10 / dictionary.db / corpus',
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间（自动更新）',
+        PRIMARY KEY (word, sense_num, ex_num),
+        FOREIGN KEY (word, sense_num) REFERENCES domain_family_senses(word, sense_num)
+            ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 ]
 
 # 只读视图：用「簇成员两两配对」推导完全图，作为 word_relations 物化表的对照实现。
@@ -579,11 +676,24 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
         )
         summary["stale_oald_rows"] = stale
 
-    # --- 5. 记录版本 ---
+    # --- v6 → v7：oald_senses.human_reviewed（人工复核标记）---
+    #
+    # needs_review 的预灌语义是「待人工复核」（灌库默认全 1），与标注平台上
+    # 研究者主动打的「存疑边界案例」是两件事 —— 之前共用一列导致"存疑"指标
+    # 恒等于总义位数。现在用 human_reviewed 记录"该义位已经人工标注保存过"，
+    # needs_review 回归其本义：复核后仍存疑、需进仲裁清单。
+    if not _column_exists(cursor, "oald_senses", "human_reviewed"):
+        cursor.execute(
+            "ALTER TABLE oald_senses ADD COLUMN "
+            "human_reviewed TINYINT(1) NOT NULL DEFAULT 0"
+        )
+        summary["actions"].append("oald_senses.human_reviewed added")
+
+    # --- 6. 记录版本 ---
     cursor.execute(
         """INSERT INTO schema_migrations (version, name) VALUES (%s, %s)
            ON DUPLICATE KEY UPDATE name = VALUES(name)""",
-        (SCHEMA_VERSION, "oald_senses table"),
+        (SCHEMA_VERSION, "oald_senses.human_reviewed column"),
     )
     return summary
 
@@ -611,6 +721,8 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
         return False
 
     for attempt in range(1, max_retries + 1):
+        conn = None
+        cursor = None
         try:
             # Create connection without database (to create it)
             conn = pymysql.connect(
@@ -624,14 +736,15 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
 
             cursor = conn.cursor()
 
-            # Create database if not exists
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DATABASE} "
+            # Create database if not exists（库名来自配置，反引号包裹：
+            # 含连字符/保留字也不炸，且与全文件"标识符一律显式处理"的约定一致）
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DATABASE}` "
                           f"CHARACTER SET {MYSQL_CHARSET} "
                           f"COLLATE {MYSQL_COLLATION}")
             logger.info(f"Database '{MYSQL_DATABASE}' ready")
 
             # Use the database
-            cursor.execute(f"USE {MYSQL_DATABASE}")
+            cursor.execute(f"USE `{MYSQL_DATABASE}`")
 
             # Create tables
             for table_sql in CREATE_TABLES_SQL:
@@ -648,8 +761,14 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
             for view_sql in CREATE_VIEWS_SQL:
                 cursor.execute(view_sql)
 
-            cursor.close()
-            conn.close()
+            # 查询日志保留期：usage_logs 被 get_stats/get_hot_verbs 每次 rerun
+            # 全表扫描，不清理会无限增长。启动时清一次 365 天前的记录。
+            try:
+                removed = clear_old_usage_logs(365)
+                if removed:
+                    logger.info(f"Cleaned {removed} usage_logs entries older than 365 days")
+            except Exception as e:
+                logger.warning(f"usage_logs retention skipped: {e}")
 
             return True
 
@@ -668,6 +787,19 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
             else:
                 logger.error(f"MySQL initialization failed after {max_retries} attempts")
                 return False
+        finally:
+            # 失败重试路径也要释放连接 —— 之前只有成功路径才 close，
+            # 最多连漏 3 条 socket 等服务端超时。
+            if cursor:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     return False
 
@@ -675,90 +807,136 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
 # ============================================
 # 数据库连接池
 # ============================================
-_connection_pool = None
+# ============================================
+# 连接池（真实实现）
+# ============================================
+# 之前这里的"池"只是一个空列表，get_db_cursor 每次都新建 TCP 连接 +
+# 完成一次 auth 握手 —— Streamlit 每次交互重跑脚本，侧栏统计就要开 2-3 条
+# 新连接。现在用 LifoQueue 维护复用连接：取出时 ping(reconnect=True) 保活，
+# 用完归还；线程安全（多 session 并发各自独占取出的连接）。
+import queue as _queue
+import threading as _threading
+
+_connection_pools: dict = {}
+_pool_lock = _threading.Lock()
+
+# 会话时区：TIMESTAMP 列的读写都按它换算。容器默认 UTC，而应用用户在
+# UTC+8 —— 不固定时区会让"今日查询次数"在每天 0:00-8:00 之间算错。
+MYSQL_TIME_ZONE = os.getenv("MYSQL_TIME_ZONE", "+08:00")
+
+
+def _pool_key():
+    """池按键区分（host, port, db, user）—— 测试会 monkeypatch MYSQL_DATABASE
+    指向迁移测试库，键隔离保证不会把测试库的连接还给业务库的池里复用。"""
+    return (MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER)
+
 
 def get_connection_pool():
-    """
-    Get or create a connection pool.
-
-    Note: PyMySQL 1.1.0 does not support ConnectionPool,
-    so we'll manage connections manually.
-    """
-    global _connection_pool
-
-    if _connection_pool is not None:
-        return _connection_pool
+    """获取（或惰性创建）当前配置对应的连接池。返回 None 表示 PyMySQL 不可用。"""
+    key = _pool_key()
 
     if not PYMYSQL_AVAILABLE:
         return None
 
-    try:
-        _connection_pool = []
-        logger.info("Connection pool created (manual management)")
-        return _connection_pool
-    except pymysql.Error as e:
-        logger.error(f"Failed to create connection pool: {e}")
-        return None
+    with _pool_lock:
+        pool = _connection_pools.get(key)
+        if pool is None:
+            pool = _queue.LifoQueue(maxsize=10)
+            _connection_pools[key] = pool
+    return pool
+
+
+def _new_connection(autocommit: bool = True):
+    """新建一条连接（统一出口，便于集中设置会话参数）。"""
+    return pymysql.connect(
+        host=MYSQL_HOST,
+        port=MYSQL_PORT,
+        user=MYSQL_USER,
+        password=MYSQL_PASSWORD,
+        database=MYSQL_DATABASE,
+        charset=MYSQL_CHARSET,
+        cursorclass=DictCursor,
+        autocommit=autocommit,
+        init_command=f"SET time_zone = '{MYSQL_TIME_ZONE}'" if MYSQL_TIME_ZONE else None,
+    )
 
 
 @contextmanager
-def get_db_cursor():
+def get_db_cursor(autocommit: bool = True):
     """
     Context manager for database cursor.
 
     Yields:
         DictCursor or None if database unavailable
+
+    autocommit=False 时，退出 with 块自动 commit；异常路径自动 rollback。
+    供"先删后插"的多语句写操作使用，保证原子性。
     """
     conn = None
     cursor = None
 
     try:
-        # Try connection pool first
         pool = get_connection_pool()
         if pool is not None:
-            # Manual connection management
-            conn = pymysql.connect(
-                host=MYSQL_HOST,
-                port=MYSQL_PORT,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                database=MYSQL_DATABASE,
-                charset=MYSQL_CHARSET,
-                cursorclass=DictCursor,
-                autocommit=True
-            )
-            cursor = conn.cursor()
+            try:
+                conn = pool.get_nowait()
+                conn.ping(reconnect=True)  # 复用前保活：服务端超时断开则重连
+            except _queue.Empty:
+                conn = None
+            except pymysql.Error:
+                # 取出的连接已死且重连失败：丢弃，走新建
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                conn = None
+        if conn is None:
+            conn = _new_connection(autocommit=autocommit)
         else:
-            # Fallback: direct connection for testing
-            conn = pymysql.connect(
-                host=MYSQL_HOST,
-                port=MYSQL_PORT,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                database=MYSQL_DATABASE,
-                charset=MYSQL_CHARSET,
-                cursorclass=DictCursor,
-                autocommit=True
-            )
-            cursor = conn.cursor()
+            conn.autocommit(autocommit)
+        cursor = conn.cursor()
 
         yield cursor
 
+        if not autocommit:
+            conn.commit()
+
     except pymysql.Error as e:
-        if conn:
-            conn.rollback()
+        if conn and not autocommit:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         logger.error(f"Database error: {e}")
         raise
     except Exception as e:
-        if conn:
-            conn.rollback()
+        if conn and not autocommit:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         logger.error(f"Unexpected error: {e}")
         raise
     finally:
         if cursor:
-            cursor.close()
+            try:
+                cursor.close()
+            except Exception:
+                pass
         if conn:
-            conn.close()
+            pool = get_connection_pool()
+            if pool is not None and not pool.full():
+                try:
+                    pool.put_nowait(conn)
+                    conn = None
+                except Exception:
+                    pass
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 
 # ============================================
@@ -826,7 +1004,10 @@ def insert_definition(verb: str, chinese_ndef: str, semantic_table: Dict[str, st
             updates = [
                 "chinese_ndef = VALUES(chinese_ndef)",
                 "semantic_table = VALUES(semantic_table)",
-                "example_sentence = VALUES(example_sentence)",
+                # 例句为空时不覆盖 —— LLM 路径常带空 example，别把库里已有的
+                # 真实例句冲掉
+                ("example_sentence = COALESCE(NULLIF(VALUES(example_sentence), ''),"
+                 " example_sentence)"),
                 "model_version = VALUES(model_version)",
                 "cluster_id = COALESCE(VALUES(cluster_id), cluster_id)",
             ]
@@ -880,7 +1061,8 @@ def replace_word_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int
         实际写入的行数；失败返回 0
     """
     try:
-        with get_db_cursor() as cursor:
+        # 先删后插必须原子：中途失败不能留下"义位被删光"的中间态
+        with get_db_cursor(autocommit=False) as cursor:
             cursor.execute(
                 "DELETE FROM word_senses WHERE definition_id = %s", (definition_id,)
             )
@@ -941,7 +1123,8 @@ def replace_oald_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int
         实际写入的行数；失败返回 0
     """
     try:
-        with get_db_cursor() as cursor:
+        # 先删后插必须原子
+        with get_db_cursor(autocommit=False) as cursor:
             cursor.execute(
                 "DELETE FROM oald_senses WHERE definition_id = %s", (definition_id,)
             )
@@ -1017,8 +1200,13 @@ def get_oald_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
-                """SELECT s.* FROM oald_senses s
+                """SELECT s.*,
+                          df.llm_tag, df.llm_schema, df.llm_align,
+                          df.llm_reason, df.llm_doubt
+                   FROM oald_senses s
                    JOIN definitions d ON d.id = s.definition_id
+                   LEFT JOIN domain_family_senses df
+                          ON df.word = d.verb AND df.sense_num = s.sense_index
                    WHERE d.verb = %s
                    ORDER BY s.sense_index
                    LIMIT %s""",
@@ -1301,7 +1489,8 @@ def clear_all_word_data() -> Dict[str, int]:
     """
     removed: Dict[str, int] = {}
     try:
-        with get_db_cursor() as cursor:
+        # 整体清库必须原子：多张表要么一起清掉，要么都不动
+        with get_db_cursor(autocommit=False) as cursor:
             for table in ("word_relations", "oald_senses", "word_senses"):
                 cursor.execute(f"SELECT COUNT(*) AS n FROM {table}")
                 removed[table] = int(cursor.fetchone()["n"] or 0)
@@ -1355,7 +1544,8 @@ def replace_word_relations(relations: List[tuple]) -> int:
     if not relations:
         return 0
     try:
-        with get_db_cursor() as cursor:
+        # 清空重建必须原子：中途失败不能留下一张空图
+        with get_db_cursor(autocommit=False) as cursor:
             # 动词名 -> id 映射（一次查完，避免 N 次单查）
             cursor.execute("SELECT id, verb FROM definitions")
             verb_ids = {row["verb"]: row["id"] for row in cursor.fetchall()}
@@ -1453,8 +1643,10 @@ def _build_cluster_graph(cursor, cluster_id: int, center, max_members: int) -> D
         }
 
     cursor.execute(
-        """SELECT id, verb FROM definitions
-           WHERE cluster_id = %s ORDER BY verb""",
+        """SELECT d.id, d.verb, d.chinese_ndef, d.en_ndef,
+                  d.sense_brief, d.image_schema, d.example_sentence
+           FROM definitions d
+           WHERE d.cluster_id = %s ORDER BY d.verb""",
         (cluster_id,),
     )
     members = cursor.fetchall()
@@ -1476,6 +1668,13 @@ def _build_cluster_graph(cursor, cluster_id: int, center, max_members: int) -> D
             "label": m["verb"],
             "is_center": bool(center) and m["verb"] == center,
             "cluster_id": cluster_id,
+            # 浮层卡片明细（与知识图谱页 nodeDetailHTML 同源字段）
+            "chinese_ndef": m.get("chinese_ndef") or "",
+            "en_ndef": m.get("en_ndef") or "",
+            "sense_brief": m.get("sense_brief") or "",
+            "image_schema": m.get("image_schema") or "",
+            "example_sentence": m.get("example_sentence") or "",
+            "sub_cat": cluster_row["sub_cat"],
         }
         for m in members
     ]
@@ -1986,9 +2185,12 @@ def get_stats() -> Dict[str, Any]:
             cursor.execute("SELECT COUNT(*) AS n FROM usage_logs")
             total_queries = int(cursor.fetchone()['n'] or 0)
 
-            # 今日查询次数
+            # 今日查询次数 —— 用 sargable 范围谓词（不用 DATE() 包列），
+            # 会话时区已在连接 init_command 固定为应用时区
             cursor.execute(
-                "SELECT COUNT(*) AS n FROM usage_logs WHERE DATE(query_time) = CURDATE()"
+                "SELECT COUNT(*) AS n FROM usage_logs "
+                "WHERE query_time >= CURDATE() "
+                "  AND query_time < CURDATE() + INTERVAL 1 DAY"
             )
             queries_today = int(cursor.fetchone()['n'] or 0)
 
@@ -2121,4 +2323,432 @@ def clear_old_usage_logs(days: int = 30) -> int:
             return deleted
     except pymysql.Error as e:
         logger.error(f"Failed to clear old usage logs: {e}")
+        return 0
+
+
+# ============================================
+# 语料数据集（Sketch Engine enTenTen21 → 页面展示）
+# 数据源：output/05_原始数据/wsketch_full/*.json 与
+#        output/06_图式提取结果/schema_evidence/*.json，
+# 由 scripts/load_corpus_dataset.py 灌入。语义类别/保留标记列留给人工回写。
+# ============================================
+
+def replace_corpus_word_stats(rows: List[Dict[str, Any]]) -> int:
+    """全量替换语料词频概览（136 词）。rows: dict(verb,lpos,freq,relfreq,
+    slot_count,collocate_count,candidate_schema,retrieved_at)。"""
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.execute("DELETE FROM corpus_word_stats")
+            if rows:
+                cursor.executemany(
+                    """INSERT INTO corpus_word_stats
+                       (verb, lpos, freq, relfreq, slot_count, collocate_count,
+                        candidate_schema, retrieved_at)
+                       VALUES (%(verb)s, %(lpos)s, %(freq)s, %(relfreq)s,
+                               %(slot_count)s, %(collocate_count)s,
+                               %(candidate_schema)s, %(retrieved_at)s)""",
+                    rows,
+                )
+            return len(rows)
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace corpus_word_stats: {e}")
+        return 0
+
+
+def replace_corpus_collocations(rows: List[Dict[str, Any]]) -> int:
+    """全量替换语料搭配明细（约 5 万行，事务保证不留半截数据）。"""
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.execute("DELETE FROM corpus_collocations")
+            if rows:
+                cursor.executemany(
+                    """INSERT INTO corpus_collocations
+                       (verb, slot, rank_in_slot, collocate, logdice,
+                        cooccur_count, typical_combo, combo_freq)
+                       VALUES (%(verb)s, %(slot)s, %(rank_in_slot)s, %(collocate)s,
+                               %(logdice)s, %(cooccur_count)s, %(typical_combo)s,
+                               %(combo_freq)s)""",
+                    rows,
+                )
+            return len(rows)
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace corpus_collocations: {e}")
+        return 0
+
+
+def replace_corpus_schema_scores(rows: List[Dict[str, Any]]) -> int:
+    """全量替换图式重心得分（136 词 × 4 图式）。"""
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.execute("DELETE FROM word_schema_scores")
+            if rows:
+                cursor.executemany(
+                    """INSERT INTO word_schema_scores
+                       (verb, schema_name, slots_present, slots_defined, coverage,
+                        n_types, mean_logdice, prominence_score, cand_rank)
+                       VALUES (%(verb)s, %(schema_name)s, %(slots_present)s,
+                               %(slots_defined)s, %(coverage)s, %(n_types)s,
+                               %(mean_logdice)s, %(prominence_score)s, %(cand_rank)s)""",
+                    rows,
+                )
+            return len(rows)
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace word_schema_scores: {e}")
+        return 0
+
+
+def replace_corpus_schema_evidence(rows: List[Dict[str, Any]]) -> int:
+    """全量替换图式证据搭配（每图式 Top10）。"""
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.execute("DELETE FROM corpus_schema_evidence")
+            if rows:
+                cursor.executemany(
+                    """INSERT INTO corpus_schema_evidence
+                       (verb, schema_name, rank_no, word, logdice, slot)
+                       VALUES (%(verb)s, %(schema_name)s, %(rank_no)s,
+                               %(word)s, %(logdice)s, %(slot)s)""",
+                    rows,
+                )
+            return len(rows)
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace corpus_schema_evidence: {e}")
+        return 0
+
+
+def get_corpus_overview() -> List[Dict[str, Any]]:
+    """语料数据集总表（136 词 × 频次/候选图式/四图式最高得分）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT s.verb, s.lpos, s.freq, s.relfreq, s.slot_count,
+                          s.collocate_count, s.candidate_schema,
+                          MAX(w.prominence_score) AS max_score
+                   FROM corpus_word_stats s
+                   LEFT JOIN word_schema_scores w ON w.verb = s.verb
+                   GROUP BY s.verb, s.lpos, s.freq, s.relfreq, s.slot_count,
+                            s.collocate_count, s.candidate_schema
+                   ORDER BY s.freq DESC"""
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get corpus overview: {e}")
+        return []
+
+
+def get_corpus_word_stats(verb: str) -> Optional[Dict[str, Any]]:
+    """单词语料概览行。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT verb, lpos, freq, relfreq, slot_count, collocate_count, "
+                "candidate_schema, retrieved_at FROM corpus_word_stats WHERE verb = %s",
+                (verb,),
+            )
+            return cursor.fetchone()
+    except pymysql.Error as e:
+        logger.error(f"Failed to get corpus stats for '{verb}': {e}")
+        return None
+
+
+def get_corpus_schema_scores(verb: str) -> List[Dict[str, Any]]:
+    """单词的四图式得分（按得分降序）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT schema_name, slots_present, slots_defined, coverage,
+                          n_types, mean_logdice, prominence_score, cand_rank
+                   FROM word_schema_scores WHERE verb = %s
+                   ORDER BY prominence_score DESC""",
+                (verb,),
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get schema scores for '{verb}': {e}")
+        return []
+
+
+def get_corpus_schema_evidence(verb: str, top_n: int = 5) -> List[Dict[str, Any]]:
+    """单词的图式证据搭配（每图式前 top_n 条，按图式+排名排序）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT schema_name, rank_no, word, logdice, slot
+                   FROM corpus_schema_evidence
+                   WHERE verb = %s AND rank_no <= %s
+                   ORDER BY schema_name, rank_no""",
+                (verb, top_n),
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get schema evidence for '{verb}': {e}")
+        return []
+
+
+def get_corpus_collocations(verb: str, slot: Optional[str] = None,
+                            limit: int = 200) -> List[Dict[str, Any]]:
+    """单词的搭配明细（可按槽位过滤，logDice 降序即原始排名）。"""
+    try:
+        with get_db_cursor() as cursor:
+            if slot:
+                cursor.execute(
+                    """SELECT id, slot, rank_in_slot, collocate, logdice, cooccur_count,
+                              typical_combo, combo_freq, semantic_category, keep_flag
+                       FROM corpus_collocations
+                       WHERE verb = %s AND slot = %s
+                       ORDER BY slot, rank_in_slot LIMIT %s""",
+                    (verb, slot, limit),
+                )
+            else:
+                cursor.execute(
+                    """SELECT id, slot, rank_in_slot, collocate, logdice, cooccur_count,
+                              typical_combo, combo_freq, semantic_category, keep_flag
+                       FROM corpus_collocations
+                       WHERE verb = %s
+                       ORDER BY slot, rank_in_slot LIMIT %s""",
+                    (verb, limit),
+                )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get collocations for '{verb}': {e}")
+        return []
+
+
+def corpus_dataset_ready() -> bool:
+    """语料数据集是否已灌入（corpus_word_stats 有数据）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS n FROM corpus_word_stats")
+            return int(cursor.fetchone()["n"] or 0) > 0
+    except (pymysql.Error, Exception) as e:
+        logger.debug(f"corpus dataset check failed: {e}")
+        return False
+
+
+# ============================================
+# 域—系初判（domain_family_senses，v0.2 词目层初判预览）
+# ============================================
+
+def replace_domain_family_senses(rows: List[Dict[str, Any]],
+                                 example_rows: Optional[List[Dict[str, Any]]] = None) -> int:
+    """全量替换域—系初判义位表与例句子表（docs/域系初判表v0.2.xlsx 灌入）。
+
+    主表行结构：word / sense_num / definition / definition_cn / example /
+    lemma_schema / domain / family / sense_annotation / rule_tag / rule_note /
+    source / loaded_at（sense_id 为生成列，不写入；updated_at 自动维护）。
+    例句行结构：word / sense_num / ex_num / example_en / example_cn / source，
+    与主表同事务写入，外键级联删除。
+    """
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.execute("DELETE FROM domain_family_examples")
+            cursor.execute("DELETE FROM domain_family_senses")
+            if rows:
+                cursor.executemany(
+                    """INSERT INTO domain_family_senses
+                       (word, sense_num, definition, definition_cn, example,
+                        lemma_schema, domain, family, sense_annotation,
+                        rule_tag, rule_note, source, loaded_at)
+                       VALUES (%(word)s, %(sense_num)s, %(definition)s,
+                               %(definition_cn)s, %(example)s,
+                               %(lemma_schema)s, %(domain)s,
+                               %(family)s, %(sense_annotation)s,
+                               %(rule_tag)s, %(rule_note)s, %(source)s,
+                               %(loaded_at)s)""",
+                    rows,
+                )
+            if example_rows:
+                cursor.executemany(
+                    """INSERT INTO domain_family_examples
+                       (word, sense_num, ex_num, example_en, example_cn, source)
+                       VALUES (%(word)s, %(sense_num)s, %(ex_num)s,
+                               %(example_en)s, %(example_cn)s, %(source)s)""",
+                    example_rows,
+                )
+            return len(rows)
+    except pymysql.Error as e:
+        logger.error(f"Failed to replace domain_family_senses: {e}")
+        return 0
+
+
+def domain_family_ready() -> bool:
+    """域—系初判数据是否已灌入。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS n FROM domain_family_senses")
+            return int(cursor.fetchone()["n"] or 0) > 0
+    except (pymysql.Error, Exception) as e:
+        logger.debug(f"domain_family check failed: {e}")
+        return False
+
+
+def get_domain_family_overview() -> List[Dict[str, Any]]:
+    """域—系总览：域 → 系 → 义位数（按义位数降序）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT domain, family, COUNT(*) AS n_senses,
+                          COUNT(DISTINCT word) AS n_verbs
+                   FROM domain_family_senses
+                   GROUP BY domain, family
+                   ORDER BY FIELD(domain, '方式位移域', '路径位移域', '互动位移域'),
+                            n_senses DESC"""
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get domain family overview: {e}")
+        return []
+
+
+def get_domain_family_senses(domain: Optional[str] = None,
+                             family: Optional[str] = None,
+                             word: Optional[str] = None) -> List[Dict[str, Any]]:
+    """域—系逐义位明细，支持按域/系/词过滤（word + sense_num 排序）。
+
+    组合键 (word, sense_num) 定位单词义项；sense_id 为生成列一并返回。
+    """
+    conditions, params = [], []
+    if domain:
+        conditions.append("domain = %s")
+        params.append(domain)
+    if family:
+        conditions.append("family = %s")
+        params.append(family)
+    if word:
+        conditions.append("word = %s")
+        params.append(word)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                f"""SELECT word, sense_num, sense_id, definition, definition_cn,
+                           example, lemma_schema, domain, family, sense_annotation,
+                           rule_tag, rule_note, source, loaded_at, updated_at,
+                           freq, schema_scores
+                    FROM domain_family_senses {where}
+                    ORDER BY word, sense_num""",
+                tuple(params),
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get domain family senses: {e}")
+        return []
+
+
+def get_domain_family_examples(word: str, sense_num: int) -> List[Dict[str, Any]]:
+    """某义位的全部例句（英文 + 中文翻译，按 ex_num 升序，逐条对齐）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT ex_num, example_en, example_cn, source
+                   FROM domain_family_examples
+                   WHERE word = %s AND sense_num = %s
+                   ORDER BY ex_num""",
+                (word, sense_num),
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get domain family examples: {e}")
+        return []
+
+
+# ============================================
+# MOVECAT 标注平台（义位准入 / 图式五维标注 / 进度与导出）
+# ============================================
+
+def get_annotation_progress() -> List[Dict[str, Any]]:
+    """逐动词标注进度（oald_senses，132 词 665 义位 = SenseID 体系的数据基础）：
+    义位总数 / 已标注（prototype_level 非空）/ 存疑数。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT d.verb,
+                          COUNT(*) AS total,
+                          SUM(s.prototype_level IS NOT NULL
+                              AND s.prototype_level <> '') AS annotated,
+                          SUM(s.human_reviewed = 1) AS reviewed,
+                          SUM(s.needs_review = 1) AS flagged,
+                          SUM(s.is_idiom = 1) AS idioms
+                   FROM oald_senses s
+                   JOIN definitions d ON d.id = s.definition_id
+                   GROUP BY d.verb ORDER BY d.verb"""
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get annotation progress: {e}")
+        return []
+
+
+def update_sense_annotation(sense_id: int, prototype_level: Optional[str],
+                            image_schema: Optional[str], alignment: Optional[str],
+                            cn_syntax: Optional[str],
+                            translation_strategy: Optional[str],
+                            needs_review: bool) -> bool:
+    """写入一条 OALD 义位的图式五维标注（空串归一为 NULL = 未标注）。
+
+    注意：MySQL UPDATE 默认只计"值有变化"的行为 affected —— 原样复核保存会
+    返回 0，因此以"未抛异常"为成功，不能用 rowcount>0 判断。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """UPDATE oald_senses SET
+                       prototype_level = NULLIF(%s, ''),
+                       image_schema = NULLIF(%s, ''),
+                       alignment = NULLIF(%s, ''),
+                       cn_syntax = NULLIF(%s, ''),
+                       translation_strategy = NULLIF(%s, ''),
+                       needs_review = %s,
+                       human_reviewed = 1
+                   WHERE id = %s""",
+                (prototype_level, image_schema, alignment,
+                 cn_syntax, translation_strategy,
+                 1 if needs_review else 0, sense_id),
+            )
+            return True
+    except pymysql.Error as e:
+        logger.error(f"Failed to update sense annotation (id={sense_id}): {e}")
+        return False
+
+
+def get_annotation_export_rows() -> List[Dict[str, Any]]:
+    """导出用：全部义位的标注资源（词典学研究的结构化产出）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT d.verb, s.sense_index, s.definition AS en_ndef,
+                          s.grammar AS construction, s.is_idiom,
+                          s.prototype_level, s.image_schema,
+                          s.alignment, s.cn_syntax, s.translation_strategy,
+                          s.needs_review, s.source
+                   FROM oald_senses s
+                   JOIN definitions d ON d.id = s.definition_id
+                   ORDER BY d.verb, s.sense_index"""
+            )
+            return list(cursor.fetchall())
+    except pymysql.Error as e:
+        logger.error(f"Failed to get annotation export rows: {e}")
+        return []
+
+
+def update_collocation_annotations(rows: List[Dict[str, Any]]) -> int:
+    """批量回写搭配词的人工概念归类（语义类别 + 保留/剔除）。
+
+    rows: [{"id": int, "semantic_category": str|None, "keep_flag": str|None}, ...]
+    语义类别进入 PS 计算口径（保留集合的 N 与 Mean_logDice）。
+    """
+    if not rows:
+        return 0
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.executemany(
+                """UPDATE corpus_collocations
+                   SET semantic_category = NULLIF(%s, ''),
+                       keep_flag = NULLIF(%s, '')
+                   WHERE id = %s""",
+                [(r["semantic_category"] or "", r["keep_flag"] or "", r["id"])
+                 for r in rows],
+            )
+            return len(rows)
+    except pymysql.Error as e:
+        logger.error(f"Failed to update collocation annotations: {e}")
         return 0

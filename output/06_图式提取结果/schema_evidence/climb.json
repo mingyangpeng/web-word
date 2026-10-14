@@ -1,0 +1,844 @@
+{
+ "verb": "climb",
+ "freq": 2117914,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "方式伴随图式",
+ "ranking": [
+  "方式伴随图式",
+  "终点抵达图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 4,
+   "slots_defined": 5,
+   "coverage": 0.8,
+   "n_types": 126,
+   "mean_logdice": 3.91,
+   "prominence_score": 27.329,
+   "top_evidence": [
+    {
+     "word": "low",
+     "logdice": 10.61,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "canvas",
+     "logdice": 10.21,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bed",
+     "logdice": 9.87,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "lap",
+     "logdice": 9.04,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "bottom",
+     "logdice": 8.71,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "window",
+     "logdice": 8.71,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "bike",
+     "logdice": 8.63,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "level",
+     "logdice": 8.54,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "soapbox",
+     "logdice": 8.42,
+     "slot": "objects of \"%w off\""
+    },
+    {
+     "word": "cruise",
+     "logdice": 8.34,
+     "slot": "objects of \"%w out\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 177231,
+     "slot_logdice": 8.37,
+     "n_collocates": 13,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 6.07
+      },
+      {
+       "word": "in",
+       "logdice": 6.06
+      },
+      {
+       "word": "down",
+       "logdice": 5.88
+      },
+      {
+       "word": "out",
+       "logdice": 5.45
+      },
+      {
+       "word": "over",
+       "logdice": 4.88
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w off\"",
+     "slot_freq": 3171,
+     "slot_logdice": 0.15,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "low",
+       "logdice": 10.61
+      },
+      {
+       "word": "canvas",
+       "logdice": 10.21
+      },
+      {
+       "word": "bed",
+       "logdice": 9.87
+      },
+      {
+       "word": "lap",
+       "logdice": 9.04
+      },
+      {
+       "word": "bottom",
+       "logdice": 8.71
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 2498,
+     "slot_logdice": 0.12,
+     "n_collocates": 17,
+     "top5": [
+      {
+       "word": "window",
+       "logdice": 8.71
+      },
+      {
+       "word": "cruise",
+       "logdice": 8.34
+      },
+      {
+       "word": "hatch",
+       "logdice": 8.27
+      },
+      {
+       "word": "roof",
+       "logdice": 7.34
+      },
+      {
+       "word": "side",
+       "logdice": 7.08
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 337816,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.95
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 2.47
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.79
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 1.02
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 157,
+   "mean_logdice": 4.791,
+   "prominence_score": 34.993,
+   "top_evidence": [
+    {
+     "word": "ladder",
+     "logdice": 12.26,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "tree",
+     "logdice": 10.29,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "stair",
+     "logdice": 10.13,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "wall",
+     "logdice": 10.05,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "rope",
+     "logdice": 10.02,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "mountain",
+     "logdice": 9.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hill",
+     "logdice": 9.8,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "side",
+     "logdice": 9.74,
+     "slot": "objects of \"%w up\""
+    },
+    {
+     "word": "cliff",
+     "logdice": 9.7,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "step",
+     "logdice": 9.26,
+     "slot": "objects of \"%w up\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 700114,
+     "slot_logdice": 33.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ladder",
+       "logdice": 10.51
+      },
+      {
+       "word": "stair",
+       "logdice": 10.13
+      },
+      {
+       "word": "mountain",
+       "logdice": 9.94
+      },
+      {
+       "word": "hill",
+       "logdice": 9.42
+      },
+      {
+       "word": "wall",
+       "logdice": 9.11
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 62079,
+     "slot_logdice": 2.93,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ladder",
+       "logdice": 11.37
+      },
+      {
+       "word": "tree",
+       "logdice": 10.29
+      },
+      {
+       "word": "wall",
+       "logdice": 10.05
+      },
+      {
+       "word": "hill",
+       "logdice": 9.8
+      },
+      {
+       "word": "side",
+       "logdice": 9.74
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 10492,
+     "slot_logdice": 0.5,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ladder",
+       "logdice": 12.26
+      },
+      {
+       "word": "rope",
+       "logdice": 10.02
+      },
+      {
+       "word": "cliff",
+       "logdice": 9.7
+      },
+      {
+       "word": "chimney",
+       "logdice": 9.2
+      },
+      {
+       "word": "rock",
+       "logdice": 8.96
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 337816,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.95
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 2.47
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.79
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 1.02
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 100083,
+     "slot_logdice": 4.73,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 6.41
+      },
+      {
+       "word": "over",
+       "logdice": 5.64
+      },
+      {
+       "word": "down",
+       "logdice": 5.57
+      },
+      {
+       "word": "around",
+       "logdice": 4.22
+      },
+      {
+       "word": "upon",
+       "logdice": 4.09
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 229,
+   "mean_logdice": 5.433,
+   "prominence_score": 42.625,
+   "top_evidence": [
+    {
+     "word": "rock",
+     "logdice": 10.4,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "hike",
+     "logdice": 10.1,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "improbable",
+     "logdice": 10.01,
+     "slot": "complements of \"%w\""
+    },
+    {
+     "word": "descend",
+     "logdice": 9.95,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "jump",
+     "logdice": 9.45,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "mountaineer",
+     "logdice": 9.32,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "climb",
+     "logdice": 9.19,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "trek",
+     "logdice": 9.09,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "aboard",
+     "logdice": 9.01,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "ski",
+     "logdice": 8.89,
+     "slot": "\"%w\" and/or ..."
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 294871,
+     "slot_logdice": 13.92,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "aboard",
+       "logdice": 9.01
+      },
+      {
+       "word": "steeply",
+       "logdice": 8.66
+      },
+      {
+       "word": "steadily",
+       "logdice": 8.38
+      },
+      {
+       "word": "uphill",
+       "logdice": 7.59
+      },
+      {
+       "word": "upward",
+       "logdice": 6.79
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 31723,
+     "slot_logdice": 1.5,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "uphill",
+       "logdice": 7.97
+      },
+      {
+       "word": "high",
+       "logdice": 7.47
+      },
+      {
+       "word": "onboard",
+       "logdice": 7.47
+      },
+      {
+       "word": "trad",
+       "logdice": 6.85
+      },
+      {
+       "word": "steep",
+       "logdice": 6.46
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 0.06
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 433630,
+     "slot_logdice": 20.47,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "rock",
+       "logdice": 10.4
+      },
+      {
+       "word": "mountain",
+       "logdice": 8.76
+      },
+      {
+       "word": "hill",
+       "logdice": 8.4
+      },
+      {
+       "word": "Rock",
+       "logdice": 8.13
+      },
+      {
+       "word": "ice",
+       "logdice": 8.1
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 93170,
+     "slot_logdice": 4.4,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "hike",
+       "logdice": 10.1
+      },
+      {
+       "word": "descend",
+       "logdice": 9.95
+      },
+      {
+       "word": "jump",
+       "logdice": 9.45
+      },
+      {
+       "word": "mountaineer",
+       "logdice": 9.32
+      },
+      {
+       "word": "climb",
+       "logdice": 9.19
+      }
+     ]
+    },
+    {
+     "slot": "complements of \"%w\"",
+     "slot_freq": 5412,
+     "slot_logdice": 0.26,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "improbable",
+       "logdice": 10.01
+      },
+      {
+       "word": "steep",
+       "logdice": 7.37
+      },
+      {
+       "word": "unaided",
+       "logdice": 7.17
+      },
+      {
+       "word": "native",
+       "logdice": 7.12
+      },
+      {
+       "word": "dihedral",
+       "logdice": 6.96
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 6,
+   "slots_defined": 6,
+   "coverage": 1.0,
+   "n_types": 170,
+   "mean_logdice": 4.002,
+   "prominence_score": 29.684,
+   "top_evidence": [
+    {
+     "word": "ladder",
+     "logdice": 10.51,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "rock",
+     "logdice": 10.4,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "stair",
+     "logdice": 10.13,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "mountain",
+     "logdice": 9.94,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "hill",
+     "logdice": 9.42,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "wall",
+     "logdice": 9.11,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "tree",
+     "logdice": 8.79,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Everest",
+     "logdice": 8.57,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Rock",
+     "logdice": 8.13,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "ice",
+     "logdice": 8.1,
+     "slot": "subjects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 700114,
+     "slot_logdice": 33.06,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "ladder",
+       "logdice": 10.51
+      },
+      {
+       "word": "stair",
+       "logdice": 10.13
+      },
+      {
+       "word": "mountain",
+       "logdice": 9.94
+      },
+      {
+       "word": "hill",
+       "logdice": 9.42
+      },
+      {
+       "word": "wall",
+       "logdice": 9.11
+      }
+     ]
+    },
+    {
+     "slot": "pronominal objects of \"%w\"",
+     "slot_freq": 23363,
+     "slot_logdice": 1.1,
+     "n_collocates": 7,
+     "top5": [
+      {
+       "word": "we",
+       "logdice": 2.63
+      },
+      {
+       "word": "one",
+       "logdice": 2.5
+      },
+      {
+       "word": "it",
+       "logdice": 2.15
+      },
+      {
+       "word": "she",
+       "logdice": 2.13
+      },
+      {
+       "word": "itself",
+       "logdice": 1.57
+      }
+     ]
+    },
+    {
+     "slot": "pronominal subjects of \"%w\"",
+     "slot_freq": 242000,
+     "slot_logdice": 11.43,
+     "n_collocates": 23,
+     "top5": [
+      {
+       "word": "him",
+       "logdice": 4.3
+      },
+      {
+       "word": "myself",
+       "logdice": 3.7
+      },
+      {
+       "word": "yourself",
+       "logdice": 3.66
+      },
+      {
+       "word": "them",
+       "logdice": 3.51
+      },
+      {
+       "word": "ourselves",
+       "logdice": 3.48
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 433630,
+     "slot_logdice": 20.47,
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "rock",
+       "logdice": 10.4
+      },
+      {
+       "word": "mountain",
+       "logdice": 8.76
+      },
+      {
+       "word": "hill",
+       "logdice": 8.4
+      },
+      {
+       "word": "Rock",
+       "logdice": 8.13
+      },
+      {
+       "word": "ice",
+       "logdice": 8.1
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 337816,
+     "slot_logdice": "",
+     "n_collocates": 50,
+     "top5": [
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.95
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 2.47
+      },
+      {
+       "word": "\"%w\" on ...",
+       "logdice": 1.88
+      },
+      {
+       "word": "\"%w\" in ...",
+       "logdice": 1.79
+      },
+      {
+       "word": "\"%w\" over ...",
+       "logdice": 1.02
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 100083,
+     "slot_logdice": 4.73,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "up",
+       "logdice": 6.41
+      },
+      {
+       "word": "over",
+       "logdice": 5.64
+      },
+      {
+       "word": "down",
+       "logdice": 5.57
+      },
+      {
+       "word": "around",
+       "logdice": 4.22
+      },
+      {
+       "word": "upon",
+       "logdice": 4.09
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

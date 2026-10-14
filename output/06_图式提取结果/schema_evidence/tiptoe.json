@@ -1,0 +1,676 @@
+{
+ "verb": "tiptoe",
+ "freq": 23484,
+ "lpos": "-v",
+ "corpus": "enTenTen21",
+ "retrieved": "2026-09-30",
+ "formulas": {
+  "prominence_score": "S = Mean_logDice × log2(N+1)，N 为该图式证据槽位去重搭配词型数（未语义归类）",
+  "note": "AI 初筛原始版：未做语义归类，结果仅作候选参考，最终图式标签须人工判定（义项判定标准修改稿 标准2）"
+ },
+ "candidate_schema": "终点抵达图式",
+ "ranking": [
+  "终点抵达图式",
+  "方式伴随图式",
+  "互动位移图式",
+  "源点脱离图式"
+ ],
+ "schemas": {
+  "源点脱离图式": {
+   "slots_present": 3,
+   "slots_defined": 5,
+   "coverage": 0.6,
+   "n_types": 26,
+   "mean_logdice": 1.11,
+   "prominence_score": 5.278,
+   "top_evidence": [
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 4.51,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" into ...",
+     "logdice": 3.8,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "\"%w\" to ...",
+     "logdice": 3.74,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "door",
+     "logdice": 3.62,
+     "slot": "objects of \"%w out\""
+    },
+    {
+     "word": "around",
+     "logdice": 2.95,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "across",
+     "logdice": 1.71,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" around ...",
+     "logdice": 1.6,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "over",
+     "logdice": 1.36,
+     "slot": "particles after \"%w\""
+    },
+    {
+     "word": "\"%w\" across ...",
+     "logdice": 1.34,
+     "slot": "prepositional phrases"
+    },
+    {
+     "word": "away",
+     "logdice": 0.9,
+     "slot": "particles after \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "particles after \"%w\"",
+     "slot_freq": 3054,
+     "slot_logdice": 13.0,
+     "n_collocates": 5,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 2.95
+      },
+      {
+       "word": "across",
+       "logdice": 1.71
+      },
+      {
+       "word": "over",
+       "logdice": 1.36
+      },
+      {
+       "word": "away",
+       "logdice": 0.9
+      },
+      {
+       "word": "in",
+       "logdice": 0.47
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w out\"",
+     "slot_freq": 42,
+     "slot_logdice": 0.18,
+     "n_collocates": 1,
+     "top5": [
+      {
+       "word": "door",
+       "logdice": 3.62
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4199,
+     "slot_logdice": "",
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 4.51
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.8
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.74
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.6
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.34
+      }
+     ]
+    }
+   ]
+  },
+  "终点抵达图式": {
+   "slots_present": 5,
+   "slots_defined": 7,
+   "coverage": 0.714,
+   "n_types": 42,
+   "mean_logdice": 2.896,
+   "prominence_score": 15.715,
+   "top_evidence": [
+    {
+     "word": "tawara",
+     "logdice": 9.4,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "sideline",
+     "logdice": 8.53,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "staircase",
+     "logdice": 6.73,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hall",
+     "logdice": 6.64,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "hallway",
+     "logdice": 6.45,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "passage",
+     "logdice": 6.34,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "stair",
+     "logdice": 6.3,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "corridor",
+     "logdice": 5.37,
+     "slot": "objects of \"%w down\""
+    },
+    {
+     "word": "around",
+     "logdice": 5.04,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "downstairs",
+     "logdice": 4.99,
+     "slot": "objects of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 933,
+     "slot_logdice": 3.97,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "tawara",
+       "logdice": 9.4
+      },
+      {
+       "word": "sideline",
+       "logdice": 6.27
+      },
+      {
+       "word": "downstairs",
+       "logdice": 4.99
+      },
+      {
+       "word": "tightrope",
+       "logdice": 4.85
+      },
+      {
+       "word": "Tale",
+       "logdice": 4.63
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w up\"",
+     "slot_freq": 135,
+     "slot_logdice": 0.57,
+     "n_collocates": 4,
+     "top5": [
+      {
+       "word": "stair",
+       "logdice": 5.75
+      },
+      {
+       "word": "staircase",
+       "logdice": 5.15
+      },
+      {
+       "word": "step",
+       "logdice": 4.76
+      },
+      {
+       "word": "spine",
+       "logdice": 4.7
+      }
+     ]
+    },
+    {
+     "slot": "objects of \"%w down\"",
+     "slot_freq": 474,
+     "slot_logdice": 2.02,
+     "n_collocates": 12,
+     "top5": [
+      {
+       "word": "sideline",
+       "logdice": 8.53
+      },
+      {
+       "word": "staircase",
+       "logdice": 6.73
+      },
+      {
+       "word": "hall",
+       "logdice": 6.64
+      },
+      {
+       "word": "hallway",
+       "logdice": 6.45
+      },
+      {
+       "word": "passage",
+       "logdice": 6.34
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4199,
+     "slot_logdice": "",
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 4.51
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.8
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.74
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.6
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.34
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3254,
+     "slot_logdice": 13.86,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.04
+      },
+      {
+       "word": "down",
+       "logdice": 1.21
+      }
+     ]
+    }
+   ]
+  },
+  "方式伴随图式": {
+   "slots_present": 5,
+   "slots_defined": 6,
+   "coverage": 0.833,
+   "n_types": 68,
+   "mean_logdice": 2.526,
+   "prominence_score": 15.431,
+   "top_evidence": [
+    {
+     "word": "tiptoe",
+     "logdice": 10.0,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "gingerly",
+     "logdice": 7.08,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "Catherwood",
+     "logdice": 6.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "gallop",
+     "logdice": 6.38,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "HMS",
+     "logdice": 5.94,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "whisper",
+     "logdice": 5.83,
+     "slot": "\"%w\" and/or ..."
+    },
+    {
+     "word": "Timmy",
+     "logdice": 5.27,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "timidly",
+     "logdice": 5.07,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "downstairs",
+     "logdice": 4.82,
+     "slot": "modifiers of \"%w\""
+    },
+    {
+     "word": "daintily",
+     "logdice": 4.79,
+     "slot": "modifiers of \"%w\""
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "modifiers of \"%w\"",
+     "slot_freq": 5051,
+     "slot_logdice": 21.51,
+     "n_collocates": 32,
+     "top5": [
+      {
+       "word": "gingerly",
+       "logdice": 7.08
+      },
+      {
+       "word": "timidly",
+       "logdice": 5.07
+      },
+      {
+       "word": "downstairs",
+       "logdice": 4.82
+      },
+      {
+       "word": "daintily",
+       "logdice": 4.79
+      },
+      {
+       "word": "stealthily",
+       "logdice": 4.73
+      }
+     ]
+    },
+    {
+     "slot": "adjectives after \"%w\"",
+     "slot_freq": 158,
+     "slot_logdice": 0.67,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "past",
+       "logdice": 2.99
+      },
+      {
+       "word": "near",
+       "logdice": 0.05
+      }
+     ]
+    },
+    {
+     "slot": "usage patterns",
+     "slot_freq": 0,
+     "slot_logdice": "",
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "in passive",
+       "logdice": 1.76
+      },
+      {
+       "word": "as reflexive",
+       "logdice": 0.03
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1200,
+     "slot_logdice": 5.11,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "Catherwood",
+       "logdice": 6.68
+      },
+      {
+       "word": "HMS",
+       "logdice": 5.94
+      },
+      {
+       "word": "Timmy",
+       "logdice": 5.27
+      },
+      {
+       "word": "Tiffany",
+       "logdice": 2.5
+      },
+      {
+       "word": "Mario",
+       "logdice": 1.78
+      }
+     ]
+    },
+    {
+     "slot": "\"%w\" and/or ...",
+     "slot_freq": 321,
+     "slot_logdice": 1.37,
+     "n_collocates": 18,
+     "top5": [
+      {
+       "word": "tiptoe",
+       "logdice": 10.0
+      },
+      {
+       "word": "gallop",
+       "logdice": 6.38
+      },
+      {
+       "word": "whisper",
+       "logdice": 5.83
+      },
+      {
+       "word": "hop",
+       "logdice": 4.58
+      },
+      {
+       "word": "stomp",
+       "logdice": 4.33
+      }
+     ]
+    }
+   ]
+  },
+  "互动位移图式": {
+   "slots_present": 4,
+   "slots_defined": 6,
+   "coverage": 0.667,
+   "n_types": 46,
+   "mean_logdice": 2.025,
+   "prominence_score": 11.25,
+   "top_evidence": [
+    {
+     "word": "tawara",
+     "logdice": 9.4,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Catherwood",
+     "logdice": 6.68,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "sideline",
+     "logdice": 6.27,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "HMS",
+     "logdice": 5.94,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "Timmy",
+     "logdice": 5.27,
+     "slot": "subjects of \"%w\""
+    },
+    {
+     "word": "around",
+     "logdice": 5.04,
+     "slot": "particles after \"%w\" with object"
+    },
+    {
+     "word": "downstairs",
+     "logdice": 4.99,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "tightrope",
+     "logdice": 4.85,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "Tale",
+     "logdice": 4.63,
+     "slot": "objects of \"%w\""
+    },
+    {
+     "word": "\"%w\" through ...",
+     "logdice": 4.51,
+     "slot": "prepositional phrases"
+    }
+   ],
+   "slot_details": [
+    {
+     "slot": "objects of \"%w\"",
+     "slot_freq": 933,
+     "slot_logdice": 3.97,
+     "n_collocates": 10,
+     "top5": [
+      {
+       "word": "tawara",
+       "logdice": 9.4
+      },
+      {
+       "word": "sideline",
+       "logdice": 6.27
+      },
+      {
+       "word": "downstairs",
+       "logdice": 4.99
+      },
+      {
+       "word": "tightrope",
+       "logdice": 4.85
+      },
+      {
+       "word": "Tale",
+       "logdice": 4.63
+      }
+     ]
+    },
+    {
+     "slot": "subjects of \"%w\"",
+     "slot_freq": 1200,
+     "slot_logdice": 5.11,
+     "n_collocates": 14,
+     "top5": [
+      {
+       "word": "Catherwood",
+       "logdice": 6.68
+      },
+      {
+       "word": "HMS",
+       "logdice": 5.94
+      },
+      {
+       "word": "Timmy",
+       "logdice": 5.27
+      },
+      {
+       "word": "Tiffany",
+       "logdice": 2.5
+      },
+      {
+       "word": "Mario",
+       "logdice": 1.78
+      }
+     ]
+    },
+    {
+     "slot": "prepositional phrases",
+     "slot_freq": 4199,
+     "slot_logdice": "",
+     "n_collocates": 20,
+     "top5": [
+      {
+       "word": "\"%w\" through ...",
+       "logdice": 4.51
+      },
+      {
+       "word": "\"%w\" into ...",
+       "logdice": 3.8
+      },
+      {
+       "word": "\"%w\" to ...",
+       "logdice": 3.74
+      },
+      {
+       "word": "\"%w\" around ...",
+       "logdice": 1.6
+      },
+      {
+       "word": "\"%w\" across ...",
+       "logdice": 1.34
+      }
+     ]
+    },
+    {
+     "slot": "particles after \"%w\" with object",
+     "slot_freq": 3254,
+     "slot_logdice": 13.86,
+     "n_collocates": 2,
+     "top5": [
+      {
+       "word": "around",
+       "logdice": 5.04
+      },
+      {
+       "word": "down",
+       "logdice": 1.21
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
