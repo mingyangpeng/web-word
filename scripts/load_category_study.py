@@ -384,7 +384,7 @@ def main() -> int:
             print(f"源文件不存在: {xlsx}")
             return 1
 
-    if args.if_empty and mysql_db.category_study_ready(args.category):
+    if args.if_empty and category_study.category_study_ready(args.category):
         print(f"范畴 {args.category} 已有数据，跳过（--if-empty）。")
         return 0
 
