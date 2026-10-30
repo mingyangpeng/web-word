@@ -15,6 +15,70 @@ DB_PORT=3306
 db_up()   { "$MYSQL_BIN/mysqladmin" --protocol=tcp -h 127.0.0.1 -P "$DB_PORT" ping >/dev/null 2>&1; }
 app_up()  { lsof -iTCP:"$APP_PORT" -sTCP:LISTEN >/dev/null 2>&1; }
 
+# ---------- 0. MySQL 二进制定位 ----------
+# 优先项目约定的 /opt/homebrew/opt/mysql@8.0；找不到时回退 PATH（Linux/其它安装）。
+if [ ! -x "$MYSQL_BIN/mysql" ]; then
+  MYSQL_BIN="$(command -v mysql | xargs dirname | xargs dirname | xargs dirname 2>/dev/null)"
+fi
+
+# ---------- 0.5 root 密码自动探测 ----------
+# 首次运行时自动判断 root 密码，探测顺序：
+#   1. 环境变量 MYSQL_ROOT_PASSWORD（.env 可配）
+#   2. 免密（socket / TCP 免密）
+#   3. 常见密码清单（rootpass123 / p / root / password / 空）
+# 探测结果写进 data/.mysql_root_ok 标记文件（含密码），下次直接用；
+# 探测不到时提示用户设置 MYSQL_ROOT_PASSWORD 后重跑，不阻塞已有账号的场景。
+ROOT_PW_FILE="$PWD/data/.mysql_root_pw"
+root_pw=""
+
+try_root() {  # try_root <密码> → 0 成功
+  local pw="$1"
+  if [ -z "$pw" ]; then
+    "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u root \
+        -e "SELECT 1" >/dev/null 2>&1
+  else
+    "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u root -p"$pw" \
+        -e "SELECT 1" >/dev/null 2>&1
+  fi
+}
+
+probe_root_pw() {
+  # 已有缓存标记且仍有效 → 直接用
+  if [ -s "$ROOT_PW_FILE" ] && try_root "$(cat "$ROOT_PW_FILE")"; then
+    root_pw="$(cat "$ROOT_PW_FILE")"
+    return 0
+  fi
+  # 环境变量
+  if [ -n "${MYSQL_ROOT_PASSWORD:-}" ] && try_root "$MYSQL_ROOT_PASSWORD"; then
+    root_pw="$MYSQL_ROOT_PASSWORD"
+    printf '%s' "$root_pw" > "$ROOT_PW_FILE"; chmod 600 "$ROOT_PW_FILE"
+    return 0
+  fi
+  # 免密
+  if try_root ""; then
+    root_pw=""
+    printf '%s' "$root_pw" > "$ROOT_PW_FILE"; chmod 600 "$ROOT_PW_FILE"
+    return 0
+  fi
+  # 常见密码
+  for pw in rootpass123 p root password admin mysql 123456; do
+    if try_root "$pw"; then
+      root_pw="$pw"
+      printf '%s' "$root_pw" > "$ROOT_PW_FILE"; chmod 600 "$ROOT_PW_FILE"
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_root_sql() {  # run_root_sql <sql 文件>
+  if [ -z "$root_pw" ]; then
+    "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u root < "$1" 2>/dev/null
+  else
+    "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u root -p"$root_pw" < "$1" 2>/dev/null
+  fi
+}
+
 wait_db() {  # 最多等 60s
   for _ in $(seq 1 60); do
     db_up && return 0
@@ -55,20 +119,26 @@ else
   echo "      MySQL 就绪"
 fi
 
-# ---------- 2. 确保库/用户存在（幂等，root 免密时才执行）----------
-if ! "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u web_word_user -pwebword123 \
+# ---------- 2. 确保库/用户存在（幂等；root 密码自动探测）----------
+if "$MYSQL_BIN/mysql" --protocol=tcp -h 127.0.0.1 -u web_word_user -pwebword123 \
      -e "SELECT 1" web_word_db >/dev/null 2>&1; then
-  echo "[2/3] 首次配置：建库授权（scripts/grant_local_mysql.sql）..."
-  if "$MYSQL_BIN/mysql" -u root < scripts/grant_local_mysql.sql >/dev/null 2>&1 \
-     || "$MYSQL_BIN/mysql" -u root -prootpass123 < scripts/grant_local_mysql.sql >/dev/null 2>&1; then
-    echo "      授权完成"
+  echo "[2/3] 数据库账号可用"
+else
+  echo "[2/3] 首次配置：探测 root 密码并建库授权..."
+  if probe_root_pw; then
+    if run_root_sql scripts/grant_local_mysql.sql; then
+      echo "      授权完成（root 密码已自动探测并缓存到 data/.mysql_root_pw）"
+    else
+      echo "      ⚠ 授权 SQL 执行失败（root 可连但授权报错），请手动检查："
+      echo "        $MYSQL_BIN/mysql -u root -p < scripts/grant_local_mysql.sql"
+      exit 1
+    fi
   else
-    echo "      ⚠ root 连不上（免密/rootpass123 都失败），请手动执行："
-    echo "        $MYSQL_BIN/mysql -u root -p < scripts/grant_local_mysql.sql"
+    echo "      ⚠ root 密码探测失败（免密/常见密码都不对）。两种解法："
+    echo "        a) 在 .env 里加一行 MYSQL_ROOT_PASSWORD=<密码> 后重跑 ./start"
+    echo "        b) 手动执行: $MYSQL_BIN/mysql -u root -p < scripts/grant_local_mysql.sql"
     exit 1
   fi
-else
-  echo "[2/3] 数据库账号可用"
 fi
 
 # ---------- 3. 灌库（幂等：已有数据则跳过）----------
