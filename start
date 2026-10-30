@@ -87,6 +87,14 @@ else
   echo "[3.5] ⚠ 语料数据集灌入失败（继续启动，看 $LOGDIR/load_corpus.log）"
 fi
 
+# ---------- 3.6 范畴深挖（data/d1/ 跑范畴 xlsx → categories/cs_* 表，幂等）----------
+if MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py --if-empty \
+     >> "$LOGDIR/load_category_study.log" 2>&1; then
+  echo "[3.6] 范畴深挖数据检查完成（详见 $LOGDIR/load_category_study.log）"
+else
+  echo "[3.6] ⚠ 范畴深挖灌入失败（继续启动，看 $LOGDIR/load_category_study.log）"
+fi
+
 # ---------- 4. Streamlit ----------
 if app_up; then
   echo "[+] 应用已在运行 → http://localhost:$APP_PORT"
