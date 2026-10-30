@@ -126,7 +126,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 「词间关系」成为可直接查询 / 导出 / 喂给图谱工具的一等数据，而不是每次现场 JOIN 生成。
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -428,6 +428,18 @@ CREATE_VIEWS_SQL = [
     """
 ]
 
+# 范畴深挖（category study）8 表：categories / cs_lexemes / cs_senses /
+# cs_sense_features / cs_cluster_runs / cs_clusters / cs_cluster_members /
+# cs_cluster_alignment。表结构单一来源在 src/category_study.py —— 这里在
+# init_database 时 import 并追加，避免循环依赖（category_study 只用本模块的
+# get_db_cursor）。v9 迁移即「建表」，新表无历史数据，无需 ALTER。
+def _register_category_study_tables() -> None:
+    try:
+        from src import category_study
+        category_study.register_tables()
+    except ImportError as e:
+        logger.warning(f"category_study module unavailable, skip its tables: {e}")
+
 # ============================================
 # 结构迁移
 # ============================================
@@ -693,7 +705,7 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
     cursor.execute(
         """INSERT INTO schema_migrations (version, name) VALUES (%s, %s)
            ON DUPLICATE KEY UPDATE name = VALUES(name)""",
-        (SCHEMA_VERSION, "oald_senses.human_reviewed column"),
+        (SCHEMA_VERSION, "category study tables (categories/cs_*)"),
     )
     return summary
 
@@ -745,6 +757,9 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
 
             # Use the database
             cursor.execute(f"USE `{MYSQL_DATABASE}`")
+
+            # 范畴深挖 8 表（v9）：注册进 CREATE_TABLES_SQL 再统一建表
+            _register_category_study_tables()
 
             # Create tables
             for table_sql in CREATE_TABLES_SQL:

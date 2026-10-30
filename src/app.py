@@ -25,6 +25,7 @@ from src.mysql_db import (
     get_domain_family_examples,
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
+from src.category_study_page import render_category_study_page
 from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
@@ -1199,10 +1200,11 @@ def render_sidebar():
     st.session_state.setdefault("page", "search")
     st.sidebar.radio(
         "页面",
-        options=["search", "graph", "corpus", "domain", "annotate"],
+        options=["search", "graph", "corpus", "domain", "annotate", "category"],
         format_func=lambda v: {"search": "🔍 搜索释义", "graph": "🕸️ 知识图谱",
                                "corpus": "📊 语料数据集", "domain": "🧭 域系初判",
-                               "annotate": "🏷️ 标注平台"}[v],
+                               "annotate": "🏷️ 标注平台",
+                               "category": "🏃‍♀️ 范畴深挖"}[v],
         key="page",
         horizontal=True,
     )
@@ -2203,6 +2205,8 @@ def main():
         render_domain_family_page()
     elif _page == "annotate":
         render_annotation_page()
+    elif _page == "category":
+        render_category_study_page()
     else:
         render_main_area()
 
