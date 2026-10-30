@@ -40,6 +40,8 @@ data/mysql/
 # 运行期日志与缓存
 data/logs/
 data/cache/
+# ./start 自动探测的 root 密码缓存（机器本地敏感信息）
+data/.mysql_root_pw
 # 第三方大词典（197MB，无法入库；且它本就是 *.db，词库已把所需释义固化
 # 进 data/motion_verbs_extracted.json，因此新机器无需它即可建库）
 data/dictionary.db
