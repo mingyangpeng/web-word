@@ -53,8 +53,14 @@ pytest tests/test_phase5.py -k degradation
 |------|----------|
 | `tests/test_phase5.py` | 释义分级策略（DB → 实时 LLM → MOCK → 兜底）、LLM 结果持久化契约、缺少 API key / 调用异常时不崩溃 |
 | `tests/test_phase4.py` | Phase 4 界面打磨：侧边栏折叠、统计区、热门动词前端筛选（AppTest） |
+| `tests/test_pages.py` | 六页路由冒烟（search/graph/corpus/domain/annotate/category，AppTest） |
 | `tests/test_search_bar.py` | 固定置顶搜索栏回归测试 |
 | `tests/test_security.py` | 输入校验（SQL 注入 / XSS）、密钥掩码 |
+| `tests/test_schema.py` | 建表 SQL 结构、迁移幂等、簇完全图、词间关系约束（假游标单元测试） |
+| `tests/test_migration_integration.py` | 真实 MySQL 上的 v1→当前迁移：业务数据不丢、旧表清理、幂等（无 DB 则 skip） |
+| `tests/test_word_source.py` | 词表数据源：Levin 筛选表解析、释义优先级链 |
+| `tests/test_category_study.py` | 范畴深挖：d1 xlsx 解析锚点、8 表灌入/查询/幂等、图式推导与对齐分布（无 DB 则数据层 skip） |
+| `tests/test_zh_dict.py` | 《现汉7》词典：mdx 解析锚点（跑6义项/同形词/裸义项号）、拼音声调与 CJK 扩展区唯一键、例句回挂（业务数据备份/恢复隔离） |
 
 > 2026-09 清理：`tests/test_api.py`（测试旧版 `src/api.py`，该模块已删除）与
 > `tests/conftest.py`（`test_db` fixture 是无人使用的空实现）已一并移除，

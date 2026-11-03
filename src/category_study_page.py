@@ -611,6 +611,71 @@ def render_overview_view(data: Dict[str, Any]) -> None:
         st.caption("证据链：《现汉7》释义+例句；《现代汉语规范词典》对查与 "
                    "BCC 语料核查待补。◇号隐喻例不计入判定。")
 
+    # ---- 《现汉7》词典原文对照（zh_dict_* 表，甄别证据源）----
+    _render_zh_dict_evidence(data)
+
+
+def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
+    """汉语义位的《现汉7》词典原文对照：逐义位展示词典释义/例句/语域/比喻标记。
+
+    cs_senses 是研究加工层（甄别/编码后的义位），zh_dict_* 是词典原始层 ——
+    这里把两层按 (lemma, sense_no) 关联，让甄别表的每条判定都能回查词典证据。
+    """
+    try:
+        from src.zh_dict import zh_dict_ready, lookup_lemma
+    except ImportError:
+        return
+    if not zh_dict_ready():
+        return
+
+    with st.expander("📖 《现汉7》词典原文对照（甄别证据源）", expanded=False):
+        zh_senses = [s for s in data["senses"] if s["language"] == "zh"]
+        if not zh_senses:
+            st.caption("无汉语义位。")
+            return
+        lemma = st.selectbox(
+            "词条", options=sorted({s["lemma"] for s in zh_senses}),
+            key="cs_zh_dict_lemma")
+        entries = lookup_lemma(lemma)
+        if not entries:
+            st.caption(f"《现汉7》未收录「{lemma}」。")
+            return
+
+        # 该词条在范畴内的研究义位（对照判定与编码）
+        studied = {s["sense_no"]: s for s in zh_senses if s["lemma"] == lemma}
+
+        for e in entries:
+            st.markdown(
+                f"**{e['lemma']}** [{e['pinyin']}]"
+                + (f" {e['pos']}" if e["pos"] else "")
+                + ("（～儿）" if e["erhua"] else "")
+                + (f" <span style='color:#718096;font-size:0.85em;'>"
+                   f"{e['cross_ref']}</span>" if e["cross_ref"] else ""),
+                unsafe_allow_html=True)
+            for s in e["senses"]:
+                no = s["sense_no"] or "—"
+                badges = ""
+                if s["register"]:
+                    badges += _badge(s["register"], "#805ad5")
+                if s["is_metaphor"]:
+                    badges += _badge("含比喻例", "#ed8936")
+                # 研究层对照：该义项在甄别表里的判定
+                study = studied.get(s["sense_no"]) if s["sense_no"] else None
+                if study:
+                    badges += _badge(
+                        f"甄别:{study['status']}",
+                        STATUS_COLORS.get(study["status"], "#4a5568"))
+                    if study.get("cluster"):
+                        badges += _badge(
+                            f"簇{study['cluster']['cluster_no']}", "#2b6cb0")
+                st.markdown(
+                    f"&nbsp;&nbsp;**{no}** {s['definition']} {badges}",
+                    unsafe_allow_html=True)
+                if s["examples"]:
+                    for ex in s["examples"]:
+                        mark = "◇" if ex["is_metaphor"] else "·"
+                        st.caption(f"　{mark} {ex['example']}")
+
 
 # ============================================
 # 页面入口

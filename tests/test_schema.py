@@ -15,7 +15,6 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
-import src.cluster_graph as cg  # noqa: E402
 import src.graph_export as ge  # noqa: E402
 import src.oald_senses as oald  # noqa: E402
 import src.word_source as ws  # noqa: E402
@@ -306,70 +305,6 @@ class TestListClusters:
 # ============================================
 # SVG 渲染
 # ============================================
-class TestClusterGraphSvg:
-    def _graph(self, members, center="abandon"):
-        links = []
-        for i, a in enumerate(members):
-            for b in members[i + 1:]:
-                links.append({"source": a, "target": b, "relation": "近义"})
-        return {
-            "center": center,
-            "cluster": {"label": "路径聚焦类 / 处所脱离", "sub_cat": "处所脱离",
-                        "size": len(members)},
-            "nodes": [{"id": m, "label": m, "is_center": m == center}
-                      for m in members],
-            "links": links,
-            "truncated": False,
-            "complete_edge_count": len(links),
-        }
-
-    def test_renders_one_circle_and_label_per_node(self):
-        svg = cg.render_cluster_graph_svg(self._graph(["abandon", "desert", "leave"]))
-        assert svg.count("<circle") == 3
-        assert svg.count("<line") == 3
-        for verb in ("abandon", "desert", "leave"):
-            assert verb in svg
-
-    def test_complete_graph_draws_all_edges_including_non_center(self):
-        """完全图的关键：非中心词之间也要有边（desert–leave）。"""
-        g = self._graph(["abandon", "desert", "leave"])
-        svg = cg.render_cluster_graph_svg(g)
-        # 3 个节点 3 条边 —— 若只画中心词连线就只会是 2 条
-        assert svg.count("<line") == 3
-
-    def test_highlight_only_center_drops_other_edges(self):
-        g = self._graph(["abandon", "desert", "leave"])
-        svg = cg.render_cluster_graph_svg(g, highlight_only_center=True)
-        assert svg.count("<line") == 2
-
-    def test_empty_graph_returns_message_not_crash(self):
-        svg = cg.render_cluster_graph_svg(
-            {"nodes": [], "links": [], "cluster": None, "center": "x"}
-        )
-        assert "<svg" not in svg
-        assert "没有可展示的词簇图谱" in svg
-
-    def test_large_cluster_only_labels_center(self):
-        members = [f"v{i:02d}" for i in range(56)]
-        svg = cg.render_cluster_graph_svg(self._graph(members, center="v00"))
-        assert svg.count("<circle") == 56
-        assert svg.count("<line") == 1540
-        # 大簇只标中心词，其余靠 <title> hover
-        assert svg.count("<text") == 1
-        assert svg.count("<title") == 56
-
-    def test_escapes_html_in_verb_names(self):
-        g = self._graph(["<script>", "safe"], center="<script>")
-        svg = cg.render_cluster_graph_svg(g)
-        assert "<script>" not in svg
-        assert "&lt;script&gt;" in svg
-
-    def test_truncation_is_reported(self):
-        members = [f"v{i:03d}" for i in range(120)]
-        g = self._graph(members, center="v000")
-        svg = cg.render_cluster_graph_svg(g, max_draw_nodes=20)
-        assert "节点数超过绘制上限" in svg
-
 
 class TestSidebarStatsContract:
     """页面空统计的键必须与 mysql_db.get_stats 一致，否则侧边栏会 KeyError。"""

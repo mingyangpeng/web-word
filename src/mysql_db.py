@@ -126,7 +126,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 「词间关系」成为可直接查询 / 导出 / 喂给图谱工具的一等数据，而不是每次现场 JOIN 生成。
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 11
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -440,6 +440,15 @@ def _register_category_study_tables() -> None:
     except ImportError as e:
         logger.warning(f"category_study module unavailable, skip its tables: {e}")
 
+# 《现汉7》中文词典 3 表（v10）：zh_dict_entries / zh_dict_senses /
+# zh_dict_examples。表结构单一来源在 src/zh_dict.py，注册机制同上。
+def _register_zh_dict_tables() -> None:
+    try:
+        from src import zh_dict
+        zh_dict.register_tables()
+    except ImportError as e:
+        logger.warning(f"zh_dict module unavailable, skip its tables: {e}")
+
 # ============================================
 # 结构迁移
 # ============================================
@@ -701,11 +710,46 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
         )
         summary["actions"].append("oald_senses.human_reviewed added")
 
+    # --- v10 → v11：domain_family_senses 的 LLM 初筛草稿列 ---
+    #
+    # 标注平台（app.py get_oald_senses 的 JOIN）读取 df.llm_tag / llm_schema /
+    # llm_align / llm_reason / llm_doubt，把 data/corpus/llm_screening/*.json 的
+    # 初筛结果显示为「LLM 初筛草稿（候选参考）」。这些列曾在旧库手工加过、
+    # 但从未进过建表/迁移 —— 新机器重建的库缺列，标注页直接 SQL 报错。
+    # v11 补上迁移；数据由 scripts/load_llm_screening.py 灌入（幂等）。
+    # llm_* 各列初筛输出均可能带理由长文本（实测最长 136 字符）→ 全 TEXT。
+    for col, comment in (
+        ("llm_tag", "LLM 初筛选标签（Y/N/边界；初筛输出可能带理由）"),
+        ("llm_schema", "LLM 图式候选标签（初筛输出可能带理由，较长）"),
+        ("llm_align", "LLM 英汉对齐候选等级（初筛输出可能带理由）"),
+        ("llm_reason", "LLM 判定理由"),
+        ("llm_doubt", "LLM 存疑点"),
+    ):
+        if not _column_exists(cursor, "domain_family_senses", col):
+            cursor.execute(
+                f"ALTER TABLE domain_family_senses ADD COLUMN {col} TEXT "
+                f"COMMENT '{comment}'")
+            summary["actions"].append(f"domain_family_senses.{col} added")
+
+    # 同批补齐的还有语料证据列（update_domain_family_data.py 写入）：
+    # freq（enTenTen21 词目频次）与 schema_scores（四图式重心得分 JSON）——
+    # 与 llm_* 一样曾在旧库手工加过、未进迁移。
+    if not _column_exists(cursor, "domain_family_senses", "freq"):
+        cursor.execute(
+            "ALTER TABLE domain_family_senses ADD COLUMN freq BIGINT "
+            "DEFAULT NULL COMMENT 'enTenTen21 词目频次（未检索为 NULL）'")
+        summary["actions"].append("domain_family_senses.freq added")
+    if not _column_exists(cursor, "domain_family_senses", "schema_scores"):
+        cursor.execute(
+            "ALTER TABLE domain_family_senses ADD COLUMN schema_scores JSON "
+            "DEFAULT NULL COMMENT '四图式重心得分（wordsketch 证据关联）'")
+        summary["actions"].append("domain_family_senses.schema_scores added")
+
     # --- 6. 记录版本 ---
     cursor.execute(
         """INSERT INTO schema_migrations (version, name) VALUES (%s, %s)
            ON DUPLICATE KEY UPDATE name = VALUES(name)""",
-        (SCHEMA_VERSION, "category study tables (categories/cs_*)"),
+        (SCHEMA_VERSION, "domain_family llm_* draft columns"),
     )
     return summary
 
@@ -758,8 +802,9 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
             # Use the database
             cursor.execute(f"USE `{MYSQL_DATABASE}`")
 
-            # 范畴深挖 8 表（v9）：注册进 CREATE_TABLES_SQL 再统一建表
+            # 范畴深挖 8 表（v9）+ 现汉7 词典 3 表（v10）：注册进 CREATE_TABLES_SQL 再统一建表
             _register_category_study_tables()
+            _register_zh_dict_tables()
 
             # Create tables
             for table_sql in CREATE_TABLES_SQL:

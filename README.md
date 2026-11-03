@@ -55,105 +55,87 @@ docker compose down            # 停止容器，保留数据卷
 docker compose down -v         # 连数据卷一起删除（会清空数据库）
 ```
 
-### 路径 B：本地 Python + 本地 MySQL
+### 路径 B：本地 Python + 本地 MySQL（推荐，一条命令）
 
-**1）准备 MySQL 8.0 的库与账号**
-
-```bash
-mysql -u root -p
-```
-
-```sql
-CREATE DATABASE IF NOT EXISTS web_word_db
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'web_word_user'@'localhost'
-  IDENTIFIED BY 'webword123';
-GRANT ALL PRIVILEGES ON `web\_word\_db`.* TO 'web_word_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-macOS（Homebrew）如刚装完 MySQL：`brew services start mysql`。
-
-**2）安装依赖并配置环境变量**
+**新机器部署（git clone 之后只需两步）：**
 
 ```bash
+cp .env.example .env    # 编辑 .env：填入 ZHIPUAI_API_KEY（不填则 AI 释义走离线）
+./start                 # 一键完成全部工作
+```
+
+`./start` 幂等，重复执行安全，首次运行会依次：
+
+1. **加载 `.env`**（MySQL 账号 / 智谱 AI key 与模型，Streamlit 子进程自动继承）
+2. **启动项目自带的 MySQL**（Homebrew `mysql@8.0`，数据目录 `data/mysql/`，与系统 MySQL 互不干扰）
+3. **自动探测 root 密码并建库授权**（免密 → `.env` 的 `MYSQL_ROOT_PASSWORD` → 常见密码清单；探测不到会给出明确指引）
+4. **灌入全部数据**（幂等 `--if-empty`）：171 词词库 + OALD10 义项 → enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
+5. **启动 Streamlit** → <http://localhost:8501>
+
+**手动分步（需要精细控制时）：**
+
+```bash
+# 1. 准备 MySQL 8.0 的库与账号（或直接用 ./start 的自动探测）
+mysql -u root -p < scripts/grant_local_mysql.sql   # 幂等：建库+建账号+授权
+
+# 2. 安装依赖
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env
-# 编辑 .env：本地开发把 MYSQL_HOST 设为 127.0.0.1
-set -a; source .env; set +a      # 本项目没有 python-dotenv，必须手动导出
-```
+# 3. 逐项灌库（每步幂等，可加 --if-empty）
+MYSQL_HOST=127.0.0.1 python3 scripts/load_word_library.py      # 词库+义项+图谱
+MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py    # 语料数据集
+MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py    # 跑范畴深挖
+MYSQL_HOST=127.0.0.1 python3 scripts/parse_modern_chinese_dict.py  # 现汉7 mdx 解析
+MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py           # 现汉7 词典入库
 
-> Windows PowerShell：
-> ```powershell
-> Get-Content .env | Where-Object {$_ -match '^\s*[^#]'} | ForEach-Object {
->   $k,$v = $_ -split '=',2; Set-Item "env:$k" $v
-> }
-> ```
-
-**3）灌入词库（首次必做一次）**
-
-```bash
-python scripts/load_word_library.py
-```
-
-脚本会建表、写入 136 个动词的释义与语义分解、建立 8 个词义簇
-（`word_clusters`），并把簇内完全图写入 `word_relations` 表
-（实测 `definitions=136, word_clusters=8, word_relations=1780`）。
-它只读仓库内的 JSON，**不需要联网**。可重复执行；已有数据时加 `--if-empty` 可跳过写入。
-
-**4）启动应用**
-
-```bash
+# 4. 启动应用（.env 已由 ./start 场景导出；手动场景先 set -a; source .env; set +a）
 streamlit run src/app.py
 ```
-
-打开 <http://localhost:8501>。建表也由应用启动时自动完成（与灌库脚本互为幂等）。
-
-> 不想动 `.env` 也可以只临时覆盖主机名：
-> `MYSQL_HOST=127.0.0.1 streamlit run src/app.py`
-> 环境变量优先级高于 `config/config.yaml`（详见 `config/README.md`）。
 
 ## 📁 目录结构
 
 ```
 web-word/
 ├── src/                        # 应用源码
-│   ├── app.py                  # Streamlit 主应用（界面、卡片、反馈、侧边栏）
-│   ├── mysql_db.py             # MySQL 8.0 数据访问层（连接、建表、CRUD、统计）
+│   ├── app.py                  # Streamlit 主应用（六页：搜索/图谱/语料/域系/标注/范畴深挖）
+│   ├── mysql_db.py             # MySQL 8.0 数据访问层（连接、建表、迁移、CRUD、统计）
 │   ├── llm_api.py              # 智谱 AI 封装（调用、解析、MySQL 缓存、兜底释义）
 │   ├── design_system.py        # 设计系统常量与样式生成
 │   ├── security.py             # 输入校验（SQL 注入 / XSS）与密钥掩码
-│   ├── cluster_graph.py        # 词簇完全图的内联 SVG 渲染
+│   ├── word_source.py / oald_senses.py  # 词表与 OALD10 义项数据源
 │   ├── graph_export.py         # 交互式图谱（vis-network）的 HTML 导出
-│   ├── static/                 # 前端静态资源（vendored vis-network + 生成的图谱）
+│   ├── category_study.py / category_study_page.py  # 范畴深挖数据层与页面（8 表 + 四视图）
+│   ├── zh_dict.py              # 《现汉7》词典数据层（3 表）
+│   ├── static/                 # 前端静态资源（vendored vis-network；图谱 HTML 按需生成）
 │   └── .streamlit/config.toml  # Streamlit 运行配置
 ├── config/
 │   ├── config.yaml             # 应用实际读取的数据库配置（已提交）
 │   ├── config.example.yaml     # 同结构模板（含注释，推荐复制后修改）
 │   └── README.md               # 配置优先级与环境变量说明
-├── scripts/
-│   ├── entrypoint.sh           # 容器入口：等 MySQL → 首启灌词库 → 启动 Streamlit
-│   ├── wait_for_mysql.py       # TCP 探活等待 MySQL（Docker 使用）
-│   ├── init_db.sql             # 建表与授权 SQL（Compose 首启动执行）
-│   ├── load_word_library.py    # 离线灌词库（读仓库内 JSON，零网络依赖）
-│   ├── ingest_motion_verbs.py  # 解析 docx + 联网抓释义（需 python-docx、requests）
-│   ├── build_knowledge_graphs.sh  # 一键重建代码图谱 + 词间关系图谱
-│   └── get-stats.sh/.js        # 项目统计（GSD 工作流辅助）
+├── scripts/                    # 运行时脚本（./start 全部调用，幂等）
+│   ├── load_word_library.py    # 灌词库 + OALD 义项 + 词间关系（零网络依赖）
+│   ├── load_corpus_dataset.py  # 灌 enTenTen21 语料（词频/搭配/图式得分）
+│   ├── load_domain_family.py   # 灌域系初判（352 保留义位）
+│   ├── load_category_study.py  # 灌跑范畴深挖（甄别/编码/聚类/对齐）
+│   ├── parse_modern_chinese_dict.py  # 《现汉7》mdx → 结构化 JSON
+│   ├── load_zh_dict.py         # 灌《现汉7》词典 3 表
+│   ├── grant_local_mysql.sql   # 建库授权（幂等，./start 自动探测 root 密码后执行）
+│   ├── entrypoint.sh / wait_for_mysql.py / init_db.sql  # Docker 链路
+│   └── archive/                # 研究流水线脚本（export_* 系列、一次性导入，已归档）
 ├── tests/                      # pytest 测试（见「测试」）
-├── data/                       # 运行期数据目录
+├── data/                       # 运行期数据目录（种子数据随仓库分发）
 │   ├── motion_verbs_extracted.json   # 旧词库（释义兜底来源之一）
 │   ├── oxford_cache.json             # 英文释义缓存（已提交）
 │   ├── word_graph.json               # 词间关系图谱（已提交）
 │   ├── docs/                         # 原始 docx 研究资料（已提交）
+│   ├── corpus/                       # enTenTen21 语料（wsketch_full/义位标注/图式证据，已提交）
+│   ├── ModernChineseDict/            # 《现汉7》mdx 词典源（已提交；images/ 不提交）
+│   ├── d1/                           # 跑范畴英汉义位甄别+编码聚类 xlsx（已提交）
 │   ├── mysql/                        # 本机 MySQL datadir（不提交）
 │   └── dictionary.db                 # 197MB 第三方词典（不提交，建库不需要）
-├── docs/                       # 设计系统文档
-├── screenshots_final/          # 界面截图
-├── graphify-out/               # 代码图谱生成物（已忽略）
-├── .planning/                  # GSD 阶段性规划与归档
+├── docs/                       # 研究文档与设计系统文档
+├── graphify-out/               # 代码图谱生成物（已忽略，可重建）
 ├── Dockerfile / docker-compose.yml
 ├── requirements.txt
 └── README.md / CLAUDE.md / ARCHITECTURE.md / CHANGELOG.md / CONFIG.md / TESTING.md
@@ -233,7 +215,7 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 * 查看 **簇大小** 与 **完全图边数 C(n,2)**；
 * 点开 **簇内全部动词** 展开面板，点任一词即可直接切换查询（此时图谱跟随前进到该词的簇）。
 
-实现见 `src/cluster_graph.py`（内联 SVG，不依赖 CDN）：56 词大簇会画出全部 1540 条边，
+簇图由 `src/graph_export.py` 导出的 vis-network 交互 HTML 渲染（vendored，不依赖 CDN）：
 但只标注中心词，其余节点靠鼠标悬停看词名 —— 否则标签互相压盖成一团。
 
 ### 1b. 词表、义位与《英语自移移动动词词表》
@@ -440,7 +422,7 @@ uv tool install graphifyy
 export PATH="$HOME/.local/bin:$PATH"     # uv tool 的默认安装目录常不在 PATH
 
 # 重建两张图
-scripts/build_knowledge_graphs.sh
+scripts/archive/build_knowledge_graphs.sh
 
 # 也可以只重建代码图谱 / 只重建词间图谱
 scripts/build_knowledge_graphs.sh --code
@@ -621,12 +603,13 @@ docker compose down            # 停止
 
 - `data/dictionary.db`（197MB 第三方词典）**不在仓库**（体积原因）。它是释义正确性的首选来源，但只有 23 个词命中；缺失部分由旧词库与研究者标注兜底，详见 `docs/英语自移移动动词词表.docx` 的编者说明。原 155 词的释义已固化进
   `data/motion_verbs_extracted.json`，`scripts/load_word_library.py` 离线即可建库。
-  只有重跑 `scripts/ingest_motion_verbs.py`（从词典/联网补释义）时才需要它。
-- `scripts/ingest_motion_verbs.py` 会 UPSERT `definitions` 表的行。它不设置 `cluster_id`，
+  只有重跑 `scripts/archive/ingest_motion_verbs.py`（从词典/联网补释义）时才需要它。
+- `scripts/archive/ingest_motion_verbs.py`（一次性导入脚本，已归档）会 UPSERT `definitions` 表的行。它不设置 `cluster_id`，
   而 `insert_definition()` 对该列用 `COALESCE(VALUES(cluster_id), cluster_id)` ——
   传 None 时**保留库中现值**，所以重跑它不会抹掉已有的簇归属。
   但它不写 `word_relations`；若要重建词间关系，跑 `python scripts/load_word_library.py`。
-- 生成物不入库：`graphify-out/`、`.gsd/`、`.planning/milestone.lock`、`data/mysql/`。
+- 生成物不入库：`graphify-out/`、`.gsd/`、`.planning/`、`output/`、`screenshots_final/`、`data/mysql/`、
+  `data/zh_dict_senses.json`（由 mdx 源 2.5s 重生成）、`data/ModernChineseDict/images/`。
 
 > 已清理的历史包袱：`src/database.py`（旧 SQLite 模块）、`src/api.py`（第二套 LLM 封装，
 > 依赖的 `zhipuai.model_api` 在 SDK v2 已移除、实际不可用）、`tests/conftest.py`（空 fixture）、

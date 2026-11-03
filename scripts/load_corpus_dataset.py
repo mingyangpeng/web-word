@@ -58,11 +58,11 @@ def main():
     )
     evidence_dir = find_dir(
         os.path.join("output", "06_图式提取结果", "schema_evidence"),
-        os.path.join("data", "corpus", "wsketch_full"),
+        os.path.join("data", "corpus", "schema_evidence"),
     )
     if not sketch_dir or not evidence_dir:
-        print("✗ 找不到数据目录（output/05_原始数据/wsketch_full 与 "
-              "output/06_图式提取结果/schema_evidence）")
+        print("✗ 找不到数据目录（data/corpus/wsketch_full 与 "
+              "data/corpus/schema_evidence；或旧版 output/ 包）")
         return 1
 
     if not mysql_db.init_database():

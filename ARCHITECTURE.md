@@ -144,7 +144,7 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 |------|------|------|
 | 数据 | `get_cluster_graph(verb)` / `get_cluster_graph_by_id(id)` / `list_clusters()` | 返回 `{nodes, links}`（结构对齐 graphify 的 graph.json） |
 | 文件 | `data/word_graph.json`（`scripts/load_word_library.py` 生成） | 审阅、导出、喂给 graphify CLI |
-| 页面（单簇） | `app.py: render_cluster_graph_section()` + `src/cluster_graph.py` | 跟随查询词，内联 SVG 完全图，可切换簇 / 切换视图 / 点击成员切词 |
+| 页面（单簇） | `app.py` + `src/graph_export.py`（vis-network HTML，vendored） | 跟随查询词的交互完全图，可切换簇 / 缩放 / 点击成员切词 |
 | 页面（全库） | `app.py: render_interactive_graph_page()` + `src/graph_export.py` | graphify 风格力导向图：136 词 / 1780 边，可搜索、点选、按簇过滤；静态 HTML + iframe，数据指纹命名 |
 
 页面渲染刻意不用 vis-network + iframe（graphify 的 `graph.html` 是那套）：本项目已确立

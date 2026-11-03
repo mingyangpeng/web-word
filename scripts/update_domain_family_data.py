@@ -30,8 +30,20 @@ import yaml  # noqa: E402
 from openpyxl import load_workbook  # noqa: E402
 
 WL_XLSX = ROOT / "docs" / "词表义项清单.xlsx"
-WSKETCH_DIR = ROOT / "output" / "05_原始数据" / "wsketch_full"
-SCHEMA_EVIDENCE = ROOT / "output" / "06_图式提取结果" / "schema_evidence"
+
+
+def _find_dir(*candidates):
+    """语料目录：优先旧版 output/ 包，回退 data/corpus/（内容一致，git 只跟踪后者）。"""
+    for p in candidates:
+        if p.is_dir():
+            return p
+    return candidates[-1]
+
+
+WSKETCH_DIR = _find_dir(ROOT / "output" / "05_原始数据" / "wsketch_full",
+                        ROOT / "data" / "corpus" / "wsketch_full")
+SCHEMA_EVIDENCE = _find_dir(ROOT / "output" / "06_图式提取结果" / "schema_evidence",
+                            ROOT / "data" / "corpus" / "schema_evidence")
 
 
 def _conn():
