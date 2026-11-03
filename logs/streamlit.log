@@ -1,0 +1,15 @@
+2026-06-03 22:24:40.572 Uvicorn server started on 127.0.0.1:8501
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://127.0.0.1:8501
+
+  Stopping...
+2026-06-03 22:40:37.683 Uvicorn server started on 127.0.0.1:8501
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://127.0.0.1:8501
+
+2026-06-03 22:59:18.452 Session with id a2c3c611-53a0-48cd-855b-a0fbcb0f440e is already connected! Connecting to a new session.
+2026-06-03 22:59:25 [INFO] data.word_database: 数据库连接池已创建（size=5，host=localhost）

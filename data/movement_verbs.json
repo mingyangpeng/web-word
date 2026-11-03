@@ -1,0 +1,839 @@
+[
+  {
+    "word": "arrive",
+    "chinese": "到达",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (at, in)",
+    "meaning": "[+位移] [+终点]",
+    "note": "不及物，范畴原型"
+  },
+  {
+    "word": "reach",
+    "chinese": "到达",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+终点]",
+    "note": "及物到达，构式变体"
+  },
+  {
+    "word": "return",
+    "chinese": "返回",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (to)",
+    "meaning": "[+位移] [+终点] [+返回]",
+    "note": "终点为起始点，图式特殊"
+  },
+  {
+    "word": "come",
+    "chinese": "来类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (to)",
+    "meaning": "[+位移] [+趋近] [+指示]",
+    "note": "指示路径动词"
+  },
+  {
+    "word": "go",
+    "chinese": "去类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (to)",
+    "meaning": "[+位移] [+远离] [+指示]",
+    "note": "指示路径动词"
+  },
+  {
+    "word": "enter",
+    "chinese": "进入类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V NP / PP (into)",
+    "meaning": "[+位移] [+进入] [+边界跨越]",
+    "note": "及物/不及物均可"
+  },
+  {
+    "word": "exit",
+    "chinese": "外出离场类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V NP / PP (from)",
+    "meaning": "[+位移] [+外出] [+边界跨越]",
+    "note": "及物/不及物均可"
+  },
+  {
+    "word": "ascend",
+    "chinese": "上升类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (up, to)",
+    "meaning": "[+位移] [+上升]",
+    "note": "垂直上升"
+  },
+  {
+    "word": "rise",
+    "chinese": "上升类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (up, to)",
+    "meaning": "[+位移] [+上升]",
+    "note": "垂直上升"
+  },
+  {
+    "word": "climb",
+    "chinese": "上升类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V NP / PP (up)",
+    "meaning": "[+位移] [+上升]",
+    "note": "方向主导，方式附带"
+  },
+  {
+    "word": "fall",
+    "chinese": "下降类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (down, into)",
+    "meaning": "[+位移] [+下降]",
+    "note": "垂直下降"
+  },
+  {
+    "word": "descend",
+    "chinese": "下降类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V NP / PP (down)",
+    "meaning": "[+位移] [+下降]",
+    "note": "可及物"
+  },
+  {
+    "word": "plunge",
+    "chinese": "下降类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (into, down)",
+    "meaning": "[+位移] [+下降]",
+    "note": "急速下坠"
+  },
+  {
+    "word": "tumble",
+    "chinese": "下降类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (down, into)",
+    "meaning": "[+位移] [+下降]",
+    "note": "跌跌撞撞"
+  },
+  {
+    "word": "advance",
+    "chinese": "前进类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (to, toward)",
+    "meaning": "[+位移] [+前进]",
+    "note": "向前移动"
+  },
+  {
+    "word": "recede",
+    "chinese": "后退类",
+    "category": "路径聚焦类",
+    "subclass": "终点类",
+    "formula": "NP V PP (from)",
+    "meaning": "[+位移] [+后退]",
+    "note": "向后退"
+  },
+  {
+    "word": "leave",
+    "chinese": "脱离类",
+    "category": "路径聚焦类",
+    "subclass": "来源类",
+    "formula": "NP V NP / PP (from)",
+    "meaning": "[+位移] [+离开]",
+    "note": "范畴原型"
+  },
+  {
+    "word": "abandon",
+    "chinese": "脱离类",
+    "category": "路径聚焦类",
+    "subclass": "来源类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+离开]",
+    "note": "放弃位置"
+  },
+  {
+    "word": "desert",
+    "chinese": "脱离类",
+    "category": "路径聚焦类",
+    "subclass": "来源类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+离开]",
+    "note": "抛弃位置"
+  },
+  {
+    "word": "depart",
+    "chinese": "逃离类",
+    "category": "路径聚焦类",
+    "subclass": "来源类",
+    "formula": "NP V PP (from, for)",
+    "meaning": "[+位移] [+离开] [+出发]",
+    "note": "语义焦点为脱离"
+  },
+  {
+    "word": "escape",
+    "chinese": "逃离类",
+    "category": "路径聚焦类",
+    "subclass": "来源类",
+    "formula": "NP V PP (from) / NP V NP",
+    "meaning": "[+位移] [+离开] [+逃离]",
+    "note": "逃离危险"
+  },
+  {
+    "word": "flee",
+    "chinese": "逃离类",
+    "category": "路径聚焦类",
+    "subclass": "来源类",
+    "formula": "NP V PP (from) / NP V NP",
+    "meaning": "[+位移] [+离开] [+逃离]",
+    "note": "快速逃离"
+  },
+  {
+    "word": "roll",
+    "chinese": "滚动滑行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, down)",
+    "meaning": "[+位移] [+方式] [+滚动]",
+    "note": "51.3.1与51.3.2重叠"
+  },
+  {
+    "word": "slide",
+    "chinese": "滚动滑行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, down)",
+    "meaning": "[+位移] [+方式] [+滑行]",
+    "note": "平面滑动"
+  },
+  {
+    "word": "bounce",
+    "chinese": "滚动滑行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, into)",
+    "meaning": "[+位移] [+方式] [+弹跳]",
+    "note": "有弹性"
+  },
+  {
+    "word": "drift",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+漂流]",
+    "note": "随波逐流"
+  },
+  {
+    "word": "float",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+漂浮]",
+    "note": "水面漂浮"
+  },
+  {
+    "word": "glide",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, through)",
+    "meaning": "[+位移] [+方式] [+滑翔]",
+    "note": "无动力滑行"
+  },
+  {
+    "word": "swing",
+    "chinese": "滚动滑行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, into)",
+    "meaning": "[+位移] [+方式] [+摆动]",
+    "note": "来回移动"
+  },
+  {
+    "word": "walk",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, along)",
+    "meaning": "[+位移] [+方式] [+行走]",
+    "note": "范畴原型"
+  },
+  {
+    "word": "stride",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, along)",
+    "meaning": "[+位移] [+方式] [+行走] [+昂首阔步]",
+    "note": "大步向前"
+  },
+  {
+    "word": "run",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, along)",
+    "meaning": "[+位移] [+方式] [+奔跑]",
+    "note": "快速移动"
+  },
+  {
+    "word": "trot",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+小跑]",
+    "note": "轻快跑步"
+  },
+  {
+    "word": "gallop",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+飞奔]",
+    "note": "快速奔驰"
+  },
+  {
+    "word": "jog",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+慢跑]",
+    "note": "中速跑步"
+  },
+  {
+    "word": "sprint",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+冲刺]",
+    "note": "最快速度"
+  },
+  {
+    "word": "march",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+行军]",
+    "note": "军队行进"
+  },
+  {
+    "word": "tramp",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+重步行走]",
+    "note": "沉重脚步"
+  },
+  {
+    "word": "stomp",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+跺脚]",
+    "note": "用力踏地"
+  },
+  {
+    "word": "step",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+迈步]",
+    "note": "基本移动"
+  },
+  {
+    "word": "hop",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+单足跳]",
+    "note": "一次一只脚"
+  },
+  {
+    "word": "skip",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+蹦跳]",
+    "note": "两脚交替跳"
+  },
+  {
+    "word": "jump",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+跳跃]",
+    "note": "垂直上升"
+  },
+  {
+    "word": "leap",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+飞跃]",
+    "note": "大跨步跳"
+  },
+  {
+    "word": "vault",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+跳越]",
+    "note": "越过障碍"
+  },
+  {
+    "word": "spring",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+弹跳]",
+    "note": "有弹性跳跃"
+  },
+  {
+    "word": "hurdle",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+跨栏]",
+    "note": "跨越障碍"
+  },
+  {
+    "word": "scramble",
+    "chinese": "匍匐爬行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+攀爬]",
+    "note": "手脚并用"
+  },
+  {
+    "word": "scurry",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+急奔]",
+    "note": "快速小跑"
+  },
+  {
+    "word": "dodge",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+闪避]",
+    "note": "避免接触"
+  },
+  {
+    "word": "zigzag",
+    "chinese": "陆地行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+之字形]",
+    "note": "来回移动"
+  },
+  {
+    "word": "fly",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, over)",
+    "meaning": "[+位移] [+方式] [+飞行]",
+    "note": "空中移动"
+  },
+  {
+    "word": "soar",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+翱翔]",
+    "note": "滑翔飞行"
+  },
+  {
+    "word": "sail",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, into)",
+    "meaning": "[+位移] [+方式] [+运载工具]",
+    "note": "乘船"
+  },
+  {
+    "word": "hover",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+悬停]",
+    "note": "空中停止"
+  },
+  {
+    "word": "swim",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, through)",
+    "meaning": "[+位移] [+方式] [+游动]",
+    "note": "水中移动"
+  },
+  {
+    "word": "dive",
+    "chinese": "飞行游动类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (into)",
+    "meaning": "[+位移] [+方式] [+潜水]",
+    "note": "向下入水"
+  },
+  {
+    "word": "crawl",
+    "chinese": "匍匐爬行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, through)",
+    "meaning": "[+位移] [+方式] [+爬行]",
+    "note": "范畴原型"
+  },
+  {
+    "word": "creep",
+    "chinese": "匍匐爬行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, along)",
+    "meaning": "[+位移] [+方式] [+爬行] [+缓慢]",
+    "note": "缓慢爬行"
+  },
+  {
+    "word": "clamber",
+    "chinese": "匍匐爬行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+攀爬（费力）]",
+    "note": "费力攀爬"
+  },
+  {
+    "word": "slither",
+    "chinese": "匍匐爬行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+蜿蜒]",
+    "note": "蛇形移动"
+  },
+  {
+    "word": "snake",
+    "chinese": "匍匐爬行类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+蛇行]",
+    "note": "蜿蜒移动"
+  },
+  {
+    "word": "travel",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, through)",
+    "meaning": "[+位移] [+方式] [+长途]",
+    "note": "长途旅行"
+  },
+  {
+    "word": "journey",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+旅程]",
+    "note": "长途旅行"
+  },
+  {
+    "word": "trek",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+艰苦跋涉]",
+    "note": "艰难徒步"
+  },
+  {
+    "word": "hike",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+徒步]",
+    "note": "户外行走"
+  },
+  {
+    "word": "backpack",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+长途] [+背包远足]",
+    "note": "徒步旅行"
+  },
+  {
+    "word": "trudge",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+跋涉]",
+    "note": "艰难行走"
+  },
+  {
+    "word": "migrate",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+迁徙]",
+    "note": "群体移动"
+  },
+  {
+    "word": "commute",
+    "chinese": "长途行进类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+通勤]",
+    "note": "往返工作"
+  },
+  {
+    "word": "drive",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+驾驶]",
+    "note": "汽车驾驶"
+  },
+  {
+    "word": "ride",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, along)",
+    "meaning": "[+位移] [+方式] [+运载工具]",
+    "note": "乘坐工具"
+  },
+  {
+    "word": "ski",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, down)",
+    "meaning": "[+位移] [+方式] [+运载工具]",
+    "note": "滑雪"
+  },
+  {
+    "word": "skate",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across, along)",
+    "meaning": "[+位移] [+方式] [+滑冰]",
+    "note": "冰上滑行"
+  },
+  {
+    "word": "board",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+滑板]",
+    "note": "滑板运动"
+  },
+  {
+    "word": "surf",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP (across)",
+    "meaning": "[+位移] [+方式] [+冲浪]",
+    "note": "水上冲浪"
+  },
+  {
+    "word": "skateboard",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+滑板车]",
+    "note": "滑板车"
+  },
+  {
+    "word": "cycle",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+骑行]",
+    "note": "自行车"
+  },
+  {
+    "word": "motor",
+    "chinese": "运载工具类",
+    "category": "方式聚焦类",
+    "subclass": "方式类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+方式] [+驾驶]",
+    "note": "摩托骑行"
+  },
+  {
+    "word": "chase",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP / after NP",
+    "meaning": "[+位移] [+目的] [+追赶]",
+    "note": "范畴原型"
+  },
+  {
+    "word": "pursue",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+目的] [+追赶]",
+    "note": "持续追赶"
+  },
+  {
+    "word": "follow",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+目的] [+跟随]",
+    "note": "紧随其后"
+  },
+  {
+    "word": "shadow",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+目的] [+跟随] [+隐秘]",
+    "note": "暗中跟随"
+  },
+  {
+    "word": "tail",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+目的] [+跟随] [+尾随]",
+    "note": "在后面跟随"
+  },
+  {
+    "word": "track",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+目的] [+跟随] [+追踪]",
+    "note": "追踪线索"
+  },
+  {
+    "word": "trail",
+    "chinese": "目的类",
+    "category": "关联聚焦类",
+    "subclass": "目的类",
+    "formula": "NP V NP",
+    "meaning": "[+位移] [+目的] [+跟随] [+拖后]",
+    "note": "落后跟随"
+  },
+  {
+    "word": "accompany",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V NP PP (to, into)",
+    "meaning": "[+位移] [+参与者] [+陪同]",
+    "note": "陪同某人"
+  },
+  {
+    "word": "conduct",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V NP PP (to, into)",
+    "meaning": "[+位移] [+参与者] [+陪同] [+正式]",
+    "note": "引导者"
+  },
+  {
+    "word": "escort",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V NP PP (to, from)",
+    "meaning": "[+位移] [+参与者] [+陪同] [+护送]",
+    "note": "护送保护"
+  },
+  {
+    "word": "guide",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V NP PP (to, through)",
+    "meaning": "[+位移] [+参与者] [+引领]",
+    "note": "向导"
+  },
+  {
+    "word": "lead",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V NP PP (to, through)",
+    "meaning": "[+位移] [+参与者] [+引领]",
+    "note": "领导"
+  },
+  {
+    "word": "shepherd",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V NP PP (to, through)",
+    "meaning": "[+位移] [+参与者] [+引领] [+引导]",
+    "note": "牧羊人"
+  },
+  {
+    "word": "wait",
+    "chinese": "参与者类",
+    "category": "关联聚焦类",
+    "subclass": "参与者类",
+    "formula": "NP V PP",
+    "meaning": "[+位移] [+参与者] [+等候]",
+    "note": "等待移动"
+  }
+]
