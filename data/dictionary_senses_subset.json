@@ -1,0 +1,4266 @@
+{
+ "chase": [
+  {
+   "ch_ndef": "追逐；追赶；追击〔某人或某物〕",
+   "en_ndef": "sb chases (after) sb/sth they run after them in order to catch them",
+   "construction": "sb chases (after) sb/sth",
+   "examples": [
+    "A pack of hounds chased the deer.",
+    "She saw a pretty dragonfly, and chased after it."
+   ],
+   "ch_examples": [
+    "一群猎犬追捕那头鹿。",
+    "她看见了一只美丽的蜻蜓，就追着它跑。"
+   ],
+   "synonyms": [
+    "hunt",
+    "trace",
+    "pursue"
+   ],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "追求；争取〔金钱；事业或成功等〕",
+   "en_ndef": "sb chases (after) sth such as money, career, or success they try hard to get or achieve it",
+   "construction": "sb chases (after) sth such as money, career, or success",
+   "examples": [
+    "to chase (after) fame and profit/material possessions/pleasure",
+    "I know you chase that dream of yours, but it’s going to be no use doing it."
+   ],
+   "ch_examples": [
+    "追求名利/物质财富/享乐",
+    "我知道你追求你的梦想，但这样做是没用的。"
+   ],
+   "synonyms": [
+    "pursue",
+    "seek",
+    "run after"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "求爱；追求〔某人〕",
+   "en_ndef": "sb chases (after) sb they pursue someone for the sake of romance or sex",
+   "construction": "sb chases (after) sb",
+   "examples": [
+    "He was too busy chasing every pretty girl he saw.",
+    "All he does is drink too much, gamble away any money he gets, and chase after women."
+   ],
+   "ch_examples": [
+    "他正忙着追求见到的每一位漂亮姑娘。",
+    "他只是成天喝酒，一有钱就去赌博，还老是玩女人。"
+   ],
+   "synonyms": [
+    "court",
+    "woo",
+    "pursue"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔某人〕奔忙；急奔",
+   "en_ndef": "sb chases around/about they run or rush somewhere",
+   "construction": "sb chases around/about",
+   "examples": [
+    "I chased around all day looking for a job."
+   ],
+   "ch_examples": [
+    "我为找工作奔波了一整天。"
+   ],
+   "synonyms": [
+    "dash",
+    "scurry",
+    "hurry"
+   ],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "向〔某人〕追讨或索要（钱、信息等）",
+   "en_ndef": "sb chases sb up they try to get in touch with them to seek something such as information or money",
+   "construction": "sb chases sb up",
+   "examples": [
+    "Tom hasn't handed in his homework yet—you’d better chase him up."
+   ],
+   "ch_examples": [
+    "汤姆还没交作业呢，你最好催催他。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  }
+ ],
+ "follow": [
+  {
+   "ch_ndef": "跟随〔某人〕；跟着",
+   "en_ndef": "follow sb to move behind them in the same direction",
+   "construction": "",
+   "examples": [
+    "You go first, I'll follow.",
+    "She followed behind her son, making sure he got to the school safely.",
+    "The others followed him into the dark room."
+   ],
+   "ch_examples": [
+    "你先走，我跟着。",
+    "她跟在儿子后边，确定他安全到达学校。",
+    "其他人跟着他进了暗室。"
+   ],
+   "synonyms": [
+    "come after",
+    "go behind"
+   ],
+   "antonyms": [
+    "lead",
+    "precede"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "〔警察等〕跟踪〔某人〕；监视",
+   "en_ndef": "sb such as a police officer follows sb else, they move behind or stay around in order to watch or catch that person",
+   "construction": "sb such as a police officer follows sb else,",
+   "examples": [
+    "The policeman followed the thief until he stole another bike."
+   ],
+   "ch_examples": [
+    "警察一直跟着他，直到他又偷了一辆自行车。"
+   ],
+   "synonyms": [
+    "shadow",
+    "chase",
+    "trail",
+    "pursue"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "（时间或顺序上）在〔某事〕后发生；接着",
+   "en_ndef": "follow sth to come after it in time or order",
+   "construction": "follow sth",
+   "examples": [
+    "The lunch will follow a brief business meeting.",
+    "The lightning was soon followed by/with thunder.",
+    "The debate was immediately followed by another one.",
+    "The speeches will follow shortly.",
+    "Further details about the meeting will follow in due course."
+   ],
+   "ch_examples": [
+    "一个简短的商务会议之后，是午餐时间。",
+    "闪电之后接着马上是雷鸣。",
+    "辩论一轮紧接着一轮。",
+    "演讲马上开始。",
+    "在适当的时候会给出更多会议详情。"
+   ],
+   "synonyms": [],
+   "antonyms": [
+    "precede"
+   ],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "沿着〔道路；河道等〕行进",
+   "en_ndef": "follow a road or river etc to go along it",
+   "construction": "follow a road or river etc",
+   "examples": [
+    "She followed the river and finally found the source of the pollution.",
+    "I didn't follow my parents' path."
+   ],
+   "ch_examples": [
+    "她沿着河走，最后终于发现了污染的源头。",
+    "〖喻〗我没有走跟父母一样的路。"
+   ],
+   "synonyms": [
+    "take",
+    "succeed"
+   ],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "听从〔建议等〕；遵循〔指令等〕；遵守〔规定等〕",
+   "en_ndef": "follow sth such as advice, an instruction, order, or rule to conform to it and obey it",
+   "construction": "follow sth such as advice, an instruction, order, or rule",
+   "examples": [
+    "Follow the instructions on the label.按照标签上的使用说明去做。",
+    "Just follow your instinct.相信你的直觉吧。",
+    "I decided to follow the doctor's advice.我决定听取医生的意见。"
+   ],
+   "ch_examples": [
+    "",
+    "",
+    ""
+   ],
+   "synonyms": [
+    "observe",
+    "obey",
+    "abide by",
+    "comply with",
+    "conform to"
+   ],
+   "antonyms": [
+    "defy",
+    "disobey"
+   ],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "效仿〔榜样等〕；赶〔时髦〕",
+   "en_ndef": "follow an example or fashion etc to act the same way as it",
+   "construction": "follow an example or fashion etc",
+   "examples": [
+    "Why not try to follow her example and just relax?",
+    "She does not follow fashion like many girls."
+   ],
+   "ch_examples": [
+    "为什么不尝试像她那样放松一点呢？",
+    "她没像很多女孩那样去赶时髦。"
+   ],
+   "synonyms": [
+    "copy"
+   ],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "经营；从事",
+   "en_ndef": "to take something as one's job or trade",
+   "construction": "",
+   "examples": [
+    "to follow a profession"
+   ],
+   "ch_examples": [
+    "从事一项职业"
+   ],
+   "synonyms": [
+    "pursue"
+   ],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "认真倾听，注视〔某人或某事〕",
+   "en_ndef": "follow sb/sth to watch or listen to them carefully",
+   "construction": "follow sb/sth",
+   "examples": [
+    "The students are following every word of the teacher intently."
+   ],
+   "ch_examples": [
+    "学生们仔细听着老师讲的每一句话。"
+   ],
+   "synonyms": [
+    "pay attention to"
+   ],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "听懂，明白〔某人观点或话语等〕",
+   "en_ndef": "follow sth such as sb’s opinion or words to understand it",
+   "construction": "follow sth such as sb’s opinion or words",
+   "examples": [
+    "I couldn't follow his point at all.",
+    "I just don't follow because he speaks too fast."
+   ],
+   "ch_examples": [
+    "我根本不明白他的观点。",
+    "他说得太快了，我听不懂。"
+   ],
+   "synonyms": [
+    "comprehend",
+    "grasp",
+    "fathom"
+   ],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "（因兴趣而）密切关注；连续观看〔电视节目；比赛等〕",
+   "en_ndef": "sb follows a television program or match etc, they pay close attention to it regularly because they are interested in it",
+   "construction": "sb follows a television program or match etc,",
+   "examples": [
+    "The young man followed the tournament closely.",
+    "Many teenagers have been following the soap opera."
+   ],
+   "ch_examples": [
+    "年轻人密切关注着锦标赛的进程。",
+    "很多青少年都在追着看那部肥皂剧。"
+   ],
+   "synonyms": [
+    "watch"
+   ],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "边听人朗读边跟着阅读〔文章等〕；边听演奏边跟着唱〔乐谱〕",
+   "en_ndef": "sb follows a text or musical score etc, they read it while listening to the same text being spoken or the music being performed",
+   "construction": "sb follows a text or musical score etc,",
+   "examples": [
+    "Follow the text while the teacher reads it out to you."
+   ],
+   "ch_examples": [
+    "看着课文，听老师给你们朗读。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "因…发生",
+   "en_ndef": "to happen as a result of another thing",
+   "construction": "",
+   "examples": [
+    "He died following a car accident.",
+    "There followed a long talk about religion between them."
+   ],
+   "ch_examples": [
+    "他死于一次意外车祸。",
+    "结果他们进行了一次有关宗教的长谈。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 12
+  },
+  {
+   "ch_ndef": "是…的必然结果",
+   "en_ndef": "to be a logical result of something",
+   "construction": "",
+   "examples": [
+    "You cannot predict all the consequences that follow from the fact.",
+    "Because something is important, it doesn't follow that we should require everyone to study it."
+   ],
+   "ch_examples": [
+    "你不可能预料到这件事情会产生的所有后果。",
+    "即便某样东西很重要，我们也不应该要求每一个人都去学习。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 13
+  },
+  {
+   "ch_ndef": "沿袭，沿用〔某种模式〕",
+   "en_ndef": "follow a pattern or course etc to develop or happen in a particular way",
+   "construction": "follow a pattern or course etc",
+   "examples": [
+    "Most exams follow the pattern of earlier years.",
+    "Unfortunately, developments did not follow the same course in the other countries."
+   ],
+   "ch_examples": [
+    "大多数的考试仍然沿用前些年的方式。",
+    "遗憾的是，其他国家的发展没有以同样的模式进行。"
+   ],
+   "synonyms": [
+    "continue to use",
+    "imitate"
+   ],
+   "antonyms": [],
+   "sense_index": 14
+  },
+  {
+   "ch_ndef": "信仰〔宗教〕；追随〔思想〕",
+   "en_ndef": "sb follows a religion or a set of ideas, they believe in it and act as being guided by it",
+   "construction": "sb follows a religion or a set of ideas,",
+   "examples": [
+    "A growing number of Africans follow Christianity."
+   ],
+   "ch_examples": [
+    "越来越多的非洲人信仰基督教。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 15
+  },
+  {
+   "ch_ndef": "（在电影或书中）描述（真人，真事）；演绎",
+   "en_ndef": "to describe a true story or a real person in a movie or book",
+   "construction": "",
+   "examples": [
+    "This documentary film follows scientists to Antarctica."
+   ],
+   "ch_examples": [
+    "这部记录片记录了到南极洲考察的科学家们的故事。"
+   ],
+   "synonyms": [
+    "illustrate"
+   ],
+   "antonyms": [],
+   "sense_index": 16
+  }
+ ],
+ "pursue": [
+  {
+   "ch_ndef": "追求〔目标〕",
+   "en_ndef": "sb pursues sth such as a goal/an aim/an objective they continue doing it or trying to achieve it over a long period of time",
+   "construction": "sb pursues sth such as a goal/an aim/an objective",
+   "examples": [
+    "We pursue customer satisfaction with our products."
+   ],
+   "ch_examples": [
+    "我们追求客户对我们产品的满意。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "追捕，追击〔人；动物〕",
+   "en_ndef": "sb pursues people or animals etc. they chase or follow them, in order to catch them, attack them etc.",
+   "construction": "sb pursues people or animals etc.",
+   "examples": [
+    "They went far into the forest to pursue the wounded bear."
+   ],
+   "ch_examples": [
+    "他们深入森林，追捕那只受伤的熊。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "追求〔人〕",
+   "en_ndef": "sb pursue sb they keep trying to persuade them to join in a relationship",
+   "construction": "sb pursue sb",
+   "examples": [
+    "I was pleased, but somewhat embarrassed, when she pursued me."
+   ],
+   "ch_examples": [
+    "当她追求我的时候，我感到高兴，又有点尴尬。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 3
+  }
+ ],
+ "charge": [
+  {
+   "ch_ndef": "〔某人向他人〕要价，收费",
+   "en_ndef": "sb charges (sb/sth) some money for sth they ask the person for a particular amount of money for certain goods or services",
+   "construction": "sb charges (sb/sth) some money for sth",
+   "examples": [
+    "They charged us an additional payment for shipment.",
+    "We charge a small fee for our service.",
+    "How much did he charge you for repairing the car?",
+    "From now on the museum will not charge for admission."
+   ],
+   "ch_examples": [
+    "他们又我方收取了额外的装载费用。",
+    "我们收少量的劳务费。",
+    "修车他收了你多少钱?",
+    "从现在开始，博物馆将不再收取入场费。"
+   ],
+   "synonyms": [
+    "levy",
+    "bill",
+    "invoice"
+   ],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "〔某人〕起诉；指控；谴责；批评〔某人或其行为〕",
+   "en_ndef": "sb charges sb with sth or with doing sth they state that the person has done something wrong, or officially claim that the person is guilty of a crime",
+   "construction": "sb charges sb with sth or with doing sth",
+   "examples": [
+    "The doctor has been charged with malpractice.",
+    "The ex-soldiers are charged with crimes against humanity.",
+    "Critics charged the writer with a lack of originality."
+   ],
+   "ch_examples": [
+    "这个医生被指控非法经营。",
+    "退伍士兵被控反人道主义。",
+    "评论家批评这位作家缺少独创性。"
+   ],
+   "synonyms": [
+    "accuse",
+    "indict",
+    "arraign"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "使承担（任务或责任）",
+   "en_ndef": "charge sb with sth, or to do sth to ask them to be responsible for it",
+   "construction": "charge sb with sth, or to do sth",
+   "examples": [
+    "The visitor centre charged him with the task of watching the young swimmers."
+   ],
+   "ch_examples": [
+    "游客中心让他负责看护年幼游泳者。"
+   ],
+   "synonyms": [
+    "entrust",
+    "shoulder",
+    "saddle"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔某人向他人或某物〕冲锋，进攻；冲进〔某处〕",
+   "en_ndef": "sb charges into/down/at sb/sth they rush forward very fast, usu. in an attack",
+   "construction": "sb charges into/down/at sb/sth",
+   "examples": [
+    "The soldiers charged forward to seize the enemy's position.",
+    "Dogs were trained to charge at intruders.",
+    "He came charging into my office and demanded an explanation."
+   ],
+   "ch_examples": [
+    "士兵们发起冲锋，欲夺敌人的阵地。",
+    "狗被训练来攻击闯入者。",
+    "他冲进我的办公室，要求一个解释。"
+   ],
+   "synonyms": [
+    "assault",
+    "attack",
+    "swoop"
+   ],
+   "antonyms": [
+    "retreat"
+   ],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "〔某人〕给〔电池，电池装置〕充电",
+   "en_ndef": "sb charges sth such as a battery (up) they put electricity into it",
+   "construction": "sb charges sth such as a battery (up)",
+   "examples": [
+    "When should we charge the battery (up)?",
+    "Does your car battery charge easily?"
+   ],
+   "ch_examples": [
+    "什么时候给电池充电？",
+    "你那辆汽车的蓄电池容易充电吗？"
+   ],
+   "synonyms": [
+    "electrify",
+    "generate"
+   ],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "使〔某人〕充满〔情感〕",
+   "en_ndef": "sb is charged with sth such as strong emotion or feelings they are filled with it",
+   "construction": "sb is charged with sth such as strong emotion or feelings",
+   "examples": [
+    "His voice was untrained, but was charged with feeling.",
+    "The official is charged with ignorance and malice."
+   ],
+   "ch_examples": [
+    "他的音色并不纯熟，但充满感情。",
+    "这位官员充满了蔑视和恶意。"
+   ],
+   "synonyms": [
+    "suffuse",
+    "pervade",
+    "permeate"
+   ],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "给〔杯子〕斟满；倒满（酒或水等）",
+   "en_ndef": "sb charges a glass they fill it with wine or other liquids",
+   "construction": "sb charges a glass",
+   "examples": [
+    "Charge your glasses and drink to their happiness."
+   ],
+   "ch_examples": [
+    "斟满酒祝他们幸福。"
+   ],
+   "synonyms": [
+    "stuff",
+    "load"
+   ],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "给〔枪或炮〕装〔弹药〕",
+   "en_ndef": "sb charges a gun or piece of artillery etc (with gunpowder, bullets, or cannonballs etc） they load it (with that thing)",
+   "construction": "sb charges a gun or piece of artillery etc (with gunpowder, bullets, or cannonballs etc）",
+   "examples": [
+    "to charge a firearm with ammunition"
+   ],
+   "ch_examples": [
+    "往枪里装火药"
+   ],
+   "synonyms": [
+    "arm",
+    "prepare to fire"
+   ],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "把〔某物〕记在〔某人帐上〕；赊购〔某物〕",
+   "en_ndef": "sb charges sth (up) (to sth, usu. one's account) they record the cost of it in an account so that they can pay for it later",
+   "construction": "sb charges sth (up) (to sth, usu. one's account)",
+   "examples": [
+    "Please charge the wine (up) to our account.",
+    "I paid cash for the stockings but charged the new coat."
+   ],
+   "ch_examples": [
+    "请把这些酒记在我们帐上。",
+    "我买袜子付了现金但新外套是赊购的。"
+   ],
+   "synonyms": [
+    "purchase on credit"
+   ],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "让〔某人〕激动；激发〔某人〕",
+   "en_ndef": "sb charges sb up they make them excited",
+   "construction": "sb charges sb up",
+   "examples": [
+    "He needs wine to charge himself up.",
+    "A good speaker should know how to charge up a crowd."
+   ],
+   "ch_examples": [
+    "他需要酒来使自己兴奋。",
+    "一位好的演说者应该知道如何鼓动听众。"
+   ],
+   "synonyms": [
+    "arouse",
+    "stir up",
+    "cheer up"
+   ],
+   "antonyms": [],
+   "sense_index": 10
+  }
+ ],
+ "run": [
+  {
+   "ch_ndef": "跑；奔跑",
+   "en_ndef": "sb runs they move by rapidly moving their legs up and down, faster than when walking",
+   "construction": "sb runs",
+   "examples": [
+    "She ran to her father and gave him a hug."
+   ],
+   "ch_examples": [
+    "她跑向父亲，给了他一个拥抱。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "跑（一段距离）",
+   "en_ndef": "to cover a mentioned distance by running",
+   "construction": "",
+   "examples": [
+    "Jack ran two miles in under 10 minutes."
+   ],
+   "ch_examples": [
+    "杰克用了不到十分钟跑完了两英里。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "跑步；做跑步运动",
+   "en_ndef": "（又作go running） to run as an exercise or sport",
+   "construction": "",
+   "examples": [
+    "All of us will go running tomorrow."
+   ],
+   "ch_examples": [
+    "我们所有人明天都会去跑步。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "参加赛跑",
+   "en_ndef": "sb runs (in sth) they compete in a race",
+   "construction": "sb runs (in sth)",
+   "examples": [
+    "Diana will be running in the 100 metres tomorrow.",
+    "He decided to run the marathon this year."
+   ],
+   "ch_examples": [
+    "戴安娜明天要参加100米赛跑。",
+    "他决定今年参加马拉松比赛。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "开始（比赛）；使（比赛）开始",
+   "en_ndef": "(usu passive) to make a race occur",
+   "construction": "",
+   "examples": [
+    "The Triple Crown will be run over the next month.",
+    "The race will be run in spite of the rain."
+   ],
+   "ch_examples": [
+    "三冠王争夺将会在下月开始。",
+    "比赛将冒雨进行。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "sth runs",
+   "construction": "sth runs",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "经营〔商业〕；组织〔活动〕；管理〔组织或国家〕",
+   "en_ndef": "run a business, activity, organization, or country to manage or control it",
+   "construction": "run a business, activity, organization, or country",
+   "examples": [
+    "She is able to run a hotel.",
+    "a state-run company"
+   ],
+   "ch_examples": [
+    "她有能力经营旅店。",
+    "一家国营企业"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "办报；办杂志",
+   "en_ndef": "sb runs a newspaper, magazine etc they print and publish it",
+   "construction": "sb runs a newspaper, magazine etc",
+   "examples": [
+    "We had to run our newspaper at a loss the first year."
+   ],
+   "ch_examples": [
+    "我们不得不在第一年亏损的情况下办报。"
+   ],
+   "synonyms": [
+    "operate",
+    "publish"
+   ],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "拥有；使用〔车辆或机器等〕",
+   "en_ndef": "sb runs a vehicle or machine they own or operate it",
+   "construction": "sb runs a vehicle or machine",
+   "examples": [
+    "He can't afford to run a car on his salary."
+   ],
+   "ch_examples": [
+    "他的工资养不起汽车。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "〔某人〕（使）运转；运行；操作〔引擎或机器等〕",
+   "en_ndef": "sth runs an engine or machine it makes that thing go or function",
+   "construction": "sth runs an engine or machine",
+   "examples": [
+    "The washing machine is run by a small electric motor."
+   ],
+   "ch_examples": [
+    "洗衣机由一台小电动机驱动。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "〔公交车或火车〕（按某路线）行驶",
+   "en_ndef": "(of a bus or train) to travel on a regular route, or to make it travel this way",
+   "construction": "",
+   "examples": [
+    "Trains from Nanjing to Shanghai run every hour."
+   ],
+   "ch_examples": [
+    "从南京到上海的火车每小时发一趟。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "开车送",
+   "en_ndef": "sb runs sb they drive them to a place in a motor vehicle",
+   "construction": "sb runs sb",
+   "examples": [
+    "Shall I run you to school?"
+   ],
+   "ch_examples": [
+    "我开车送你上学吧？"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 12
+  },
+  {
+   "ch_ndef": "（向某处）快速移动",
+   "en_ndef": "to go or move, esp. in a particular direction",
+   "construction": "",
+   "examples": [
+    "Would you like to run to the harbour to look at the ships?"
+   ],
+   "ch_examples": [
+    "你想不想开车到码头看看船?"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 13
+  },
+  {
+   "ch_ndef": "移动（某物）",
+   "en_ndef": "to make something move in a certain direction or manner",
+   "construction": "",
+   "examples": [
+    "She ran her fingers gently over the baby’s head."
+   ],
+   "ch_examples": [
+    "她用手指轻抚婴儿的脸。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 14
+  },
+  {
+   "ch_ndef": "（使）导向；引导；（使) 伸展；延伸",
+   "en_ndef": "to extend from one place to another, or to make something do this",
+   "construction": "",
+   "examples": [
+    "The power lines ran directly in front of the house.",
+    "He ran a cable from the lights to the stage."
+   ],
+   "ch_examples": [
+    "电线直接拉到了房子前面。",
+    "他拉了条灯光电缆到舞台上。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 15
+  },
+  {
+   "ch_ndef": "（尤指在美国）参加竞选",
+   "en_ndef": "sb runs for sb/sth or sb runs in sth they compete as a candidate in an election",
+   "construction": "sb runs for sb/sth or sb runs in sth",
+   "examples": [
+    "He has decided to run for President."
+   ],
+   "ch_examples": [
+    "他决定竞选总统。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 16
+  },
+  {
+   "ch_ndef": "跑〔某段距离〕",
+   "en_ndef": "to travel a particular distance by running",
+   "construction": "",
+   "examples": [
+    "I lacked the stamina to run the whole length of the race."
+   ],
+   "ch_examples": [
+    "我没有跑全程的耐力。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 17
+  },
+  {
+   "ch_ndef": "迅速赶往；匆忙跑〔到另一处〕",
+   "en_ndef": "to hurry from one place to another",
+   "construction": "",
+   "examples": [
+    "One should not run during a fire drill."
+   ],
+   "ch_examples": [
+    "消防演习时不可到处乱跑。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 18
+  },
+  {
+   "ch_ndef": "持续；延续",
+   "en_ndef": "sb runs for sth they continue, function, operate, or are valid for a particular period of time",
+   "construction": "sb runs for sth",
+   "examples": [
+    "The film has run for a month.",
+    "He was given two 12-month sentences to run concurrently."
+   ],
+   "ch_examples": [
+    "这部电影已连续放映了一个月。",
+    "他被处以两次12个月监禁，刑期同时执行。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 19
+  },
+  {
+   "ch_ndef": "走私；非法携运；秘密携带〔枪支；毒品等〕",
+   "en_ndef": "sb runs sth such as guns, drugs etc they secretly and illegally bring, send, or take it into a country",
+   "construction": "sb runs sth such as guns, drugs etc",
+   "examples": [
+    "He ran guns across the border until he was captured."
+   ],
+   "ch_examples": [
+    "他在边境间走私枪支直到被捕。"
+   ],
+   "synonyms": [
+    "smuggle"
+   ],
+   "antonyms": [],
+   "sense_index": 20
+  },
+  {
+   "ch_ndef": "〔叙述；陈述等〕有某样言词；内容等",
+   "en_ndef": "(of a story or argument etc) to have a mentioned wording, content etc",
+   "construction": "",
+   "examples": [
+    "The story runs that she killed her husband."
+   ],
+   "ch_examples": [
+    "有报道说，她杀了丈夫。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 21
+  },
+  {
+   "ch_ndef": "〔液体〕流动；流淌",
+   "en_ndef": "a liquid runs it moves continuously",
+   "construction": "a liquid runs",
+   "examples": [
+    "Water is running down the walls."
+   ],
+   "ch_examples": [
+    "水正从墙上流下来。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 22
+  },
+  {
+   "ch_ndef": "使（液体）流动",
+   "en_ndef": "sb runs sth for sb or sb runs sth they make liquid move continuously for a purpose",
+   "construction": "sb runs sth for sb or sb runs sth",
+   "examples": [
+    "Run some clean water through and then you'll see the true colour of the stone.",
+    "He ran the hot tap.",
+    "She'll run you a bath."
+   ],
+   "ch_examples": [
+    "清水冲刷过后，石头的真正颜色才能看出来。",
+    "他拧开热水龙头。",
+    "她去给你放洗澡水。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 23
+  },
+  {
+   "ch_ndef": "放出；输出（液体）",
+   "en_ndef": "to send out liquid in a continuous movement",
+   "construction": "",
+   "examples": [
+    "The tap is running."
+   ],
+   "ch_examples": [
+    "水龙头在流水。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 24
+  },
+  {
+   "ch_ndef": "被〔液体〕覆盖；流满",
+   "en_ndef": "sb or part of sb runs with a liquid they are covered with it in motion",
+   "construction": "sb or part of sb runs with a liquid",
+   "examples": [
+    "The boy’s face was running with sweat.",
+    "Her back was running with blood."
+   ],
+   "ch_examples": [
+    "这个男孩满脸是汗。",
+    "她的背部满是血。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 25
+  },
+  {
+   "ch_ndef": "掉；褪〔色〕",
+   "en_ndef": "a colour runs it dissolves in water",
+   "construction": "a colour runs",
+   "examples": [
+    "The pink of the towel ran during the laundry."
+   ],
+   "ch_examples": [
+    "粉红色毛巾在洗衣店褪了色。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 26
+  },
+  {
+   "ch_ndef": "〔固体〕熔化",
+   "en_ndef": "(of a solid substance) to dissolve",
+   "construction": "",
+   "examples": [
+    "The ice began to run."
+   ],
+   "ch_examples": [
+    "冰开始融化了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 27
+  },
+  {
+   "ch_ndef": "达到；接近（某程度）",
+   "en_ndef": "sth/sb runs at sth they are at or near a particular level",
+   "construction": "sth/sb runs at sth",
+   "examples": [
+    "The engine ran at a steady 60 km/h."
+   ],
+   "ch_examples": [
+    "发动机平稳运行时达到60千米/小时。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 28
+  },
+  {
+   "ch_ndef": "发表；刊登〔文章；故事〕",
+   "en_ndef": "sb runs an item or a story they print, publish, or broadcast it",
+   "construction": "sb runs an item or a story",
+   "examples": [
+    "The editor decided not to run the story."
+   ],
+   "ch_examples": [
+    "编辑决定不刊载这篇报道。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 29
+  },
+  {
+   "ch_ndef": "（对…）进行〔测试或检验〕",
+   "en_ndef": "sb runs a test or check on sth they try to see if it works or functions well",
+   "construction": "sb runs a test or check on sth",
+   "examples": [
+    "The doctors ran a test on his liver function."
+   ],
+   "ch_examples": [
+    "医生对他的肝功能进行检查。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 30
+  },
+  {
+   "ch_ndef": "〔裤袜或长袜〕脱丝；抽丝",
+   "en_ndef": "tights or stockings run they have long narrow holes",
+   "construction": "tights or stockings run",
+   "examples": [
+    "She noticed her stockings had run."
+   ],
+   "ch_examples": [
+    "她发现她的长筒袜脱丝了。"
+   ],
+   "synonyms": [
+    "ladder"
+   ],
+   "antonyms": [],
+   "sense_index": 31
+  }
+ ],
+ "move": [
+  {
+   "ch_ndef": "〔某人〕（使某物）改变位置；移动",
+   "en_ndef": "sb moves sb/sth, or sb moves they make them or it change their position from one place to another",
+   "construction": "sb moves sb/sth, or sb moves",
+   "examples": [
+    "He is going to move his furniture tomorrow.",
+    "I could hear someone moving around in the room above last night."
+   ],
+   "ch_examples": [
+    "他打算明天挪一下家具位置。",
+    "我昨晚听见楼上有人来回走动。"
+   ],
+   "synonyms": [
+    "migrate",
+    "shift",
+    "remove"
+   ],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "搬家；迁居；搬迁",
+   "en_ndef": "sb or an institution moves or sb moves to a place they go to live or work in a different place or they change their original location or place",
+   "construction": "sb or an institution moves or sb moves to a place",
+   "examples": [
+    "We are moving next week.",
+    "They are going to move to a new house next week."
+   ],
+   "ch_examples": [
+    "我们下星期搬家。",
+    "下星期他们将迁入新居。"
+   ],
+   "synonyms": [
+    "remove"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "使变换；调动〔工作等〕",
+   "en_ndef": "move sb from sth, esp. a job to make them change a position to make them have another job position",
+   "construction": "move sb from sth, esp. a job",
+   "examples": [
+    "Yuvi was moved up from the manager post to the senior manager position."
+   ],
+   "ch_examples": [
+    "余维从经理升为高级经理。"
+   ],
+   "synonyms": [
+    "go",
+    "run"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔形势；过程等〕进步；有进展",
+   "en_ndef": "a situation or process moves (on/ahead) it makes progress or it has improvement",
+   "construction": "a situation or process moves (on/ahead)",
+   "examples": [
+    "Unluckily, things are not moving as fast as we hoped.",
+    "Stock prices moved ahead yesterday."
+   ],
+   "ch_examples": [
+    "不幸的是，事情并未如我们所愿进展迅速。",
+    "股票价格昨天上涨了。"
+   ],
+   "synonyms": [
+    "go",
+    "run"
+   ],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "〔某事〕感动；打动〔某人〕",
+   "en_ndef": "sth moves sb it causes them to have strong feelings, esp. sadness or sympathy",
+   "construction": "sth moves sb",
+   "examples": [
+    "The news moved him very much.",
+    "The story of the old woman's sufferings moved us deeply."
+   ],
+   "ch_examples": [
+    "这消息令他深受感动。",
+    "那个老妇人历经的苦难深深打动了我们。"
+   ],
+   "synonyms": [
+    "affect",
+    "touch",
+    "inspire"
+   ],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "〔某事或人〕驱使；迫使",
+   "en_ndef": "sth/sb moves sb (to do sth) they cause them to do it because of or under the push of certain emotionsand feelings",
+   "construction": "sth/sb moves sb (to do sth)",
+   "examples": [
+    "His deep love of music moved him to take  lessons."
+   ],
+   "ch_examples": [
+    "由于热爱音乐，他修了相关课程。"
+   ],
+   "synonyms": [
+    "excite",
+    "arouse",
+    "incite",
+    "provoke",
+    "stimulate",
+    "stir"
+   ],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "〔尤指会议上〕提出；提议〔建议；草案等〕",
+   "en_ndef": "sb moves a motion, amendment, etc. they formally propose a suggestion concerning it usu. at a meeting",
+   "construction": "sb moves a motion, amendment, etc.",
+   "examples": [
+    "I move that the matter be discussed after lunch."
+   ],
+   "ch_examples": [
+    "我建议午饭后再讨论此事。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "改变；变化",
+   "en_ndef": "sth or sb moves sb else it/they change(s) their mind and decision",
+   "construction": "sth or sb moves sb else",
+   "examples": [
+    "The boss's made up her mind and nothing can move her."
+   ],
+   "ch_examples": [
+    "老板主意已定，绝不再变。"
+   ],
+   "synonyms": [
+    "shift"
+   ],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "采取行动；做（某事）",
+   "en_ndef": "to take action to deal withsomething",
+   "construction": "",
+   "examples": [
+    "Unless the government move quickly, there will be a strike.",
+    "The company has moved to cut losses."
+   ],
+   "ch_examples": [
+    "政府若不尽快采取措施，就要发生罢工了。",
+    "公司已采取行动减少损失。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "（象棋等棋盘游戏中）〔某人〕下；走；移动〔棋子〕",
+   "en_ndef": "sb moves a piece (in chess or other board games) they change the position of it",
+   "construction": "sb moves a piece",
+   "examples": [
+    "to move a piece",
+    "It's your turn to move, please."
+   ],
+   "ch_examples": [
+    "（下棋）走一棋子",
+    "轮到你走了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 10
+  }
+ ],
+ "fly": [
+  {
+   "ch_ndef": "〔飞行器；鸟或昆虫等〕飞，飞行；飞翔",
+   "en_ndef": "sth such as an aircraft, bird, or insect flies, it moves through the air",
+   "construction": "sth such as an aircraft, bird, or insect flies,",
+   "examples": [
+    "Overhead a plane flew.",
+    "A blackbird flew by with a twig in her beak.",
+    "The bee flew off as we approached."
+   ],
+   "ch_examples": [
+    "上空飞过一架飞机。",
+    "一只黑鸟飞过，嘴里叼着一根细小的枝条。",
+    "我们一靠近，蜜蜂就飞走了。"
+   ],
+   "synonyms": [
+    "aviate",
+    "hover",
+    "glide"
+   ],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "乘飞机旅行",
+   "en_ndef": "sb flies (from/to a place), they travel there by plane",
+   "construction": "sb flies (from/to a place),",
+   "examples": [
+    "She has just flown in from Huhhot and she is very tired.",
+    "She flew back to Beijing on Friday.",
+    "We are flying home this afternoon."
+   ],
+   "ch_examples": [
+    "她刚从呼和浩特坐飞机过来，因此非常累。",
+    "她周五乘飞机回到北京。",
+    "我们今天下午就飞回去。"
+   ],
+   "synonyms": [
+    "travel by air, jet"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "乘坐〔某航空公司〕的飞机",
+   "en_ndef": "sb flies an airline etc, they use it when travelling",
+   "construction": "sb flies an airline etc,",
+   "examples": [
+    "He always flies Air China.",
+    "I have never flown a first class."
+   ],
+   "ch_examples": [
+    "他总是乘坐中国国际航空公司的班机。",
+    "我从未坐过头等舱。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "乘飞行器飞越〔海洋；山脉或国家等〕",
+   "en_ndef": "fly a place such as an ocean, mountain, or country to cross it in an aircraft",
+   "construction": "fly a place such as an ocean, mountain, or country",
+   "examples": [
+    "to fly the Pacific"
+   ],
+   "ch_examples": [
+    "飞越太平洋"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "驾驶〔飞机等〕；放〔风筝〕",
+   "en_ndef": "sb flies an aircraft or kite etc, they operate it and move it through the air",
+   "construction": "sb flies an aircraft or kite etc,",
+   "examples": [
+    "The pilot was flying the plane fairly close to the ground.",
+    "Kids are flying kites on the lawn.",
+    "Some rich men learn to fly."
+   ],
+   "ch_examples": [
+    "飞行员正在贴近地面飞行。",
+    "孩子们正在草坪上放风筝。",
+    "一些富人学着开飞机。"
+   ],
+   "synonyms": [
+    "pilote",
+    "glide",
+    "steer"
+   ],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "升起，悬挂〔旗帜〕；〔旗帜〕飘扬",
+   "en_ndef": "sb flies a flag, or a flag flies, it is fixed to the top of a pole by someone and waves in the wind",
+   "construction": "sb flies a flag, or a flag flies,",
+   "examples": [
+    "to fly the Chinese flag",
+    "He could also see another ship flying the Swedish flag in the east.",
+    "All flags in the nation were flying at half mast, mourning the death of the great man."
+   ],
+   "ch_examples": [
+    "升起中国国旗",
+    "他看到东边有另外一艘船也飘着瑞典国旗。",
+    "全国降半旗，向这位伟人致哀。"
+   ],
+   "synonyms": [
+    "hang",
+    "flutter",
+    "flap"
+   ],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "空运〔人或货物〕；用飞机运送",
+   "en_ndef": "fly people or goods to transport them by plane",
+   "construction": "fly people or goods",
+   "examples": [
+    "The wounded will be flown home by air ambulance on Monday.",
+    "Fresh fruits are flown in daily to meet the local need."
+   ],
+   "ch_examples": [
+    "伤员将于周一通过空中救护车被送回家。",
+    "为了满足当地需求，每天都有新鲜水果被空运过来。"
+   ],
+   "synonyms": [
+    "airlift",
+    "convey",
+    "freight"
+   ],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "快速移动；飞奔，疾行〔出/到/过某处〕",
+   "en_ndef": "sb/sth flies out/in/past, they move quickly",
+   "construction": "sb/sth flies out/in/past,",
+   "examples": [
+    "The dog flew out through the front door.",
+    "She screamed as the ball flew past her."
+   ],
+   "ch_examples": [
+    "狗从前门飞奔出去。",
+    "球从她身旁飞过时，她尖声大叫。"
+   ],
+   "synonyms": [
+    "hurry",
+    "run",
+    "dash"
+   ],
+   "antonyms": [
+    "drag"
+   ],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "〔门；某人眼睛〕快速打开；突然打开；突然睁开",
+   "en_ndef": "a door or one's eyes fly open, they are opened suddenly",
+   "construction": "a door or one's eyes fly open,",
+   "examples": [
+    "Her bedroom door flew open and she burst out.",
+    "Her eyes flew open in surprise."
+   ],
+   "ch_examples": [
+    "她的房门突然打开，她冲了出来。",
+    "她很吃惊，突然睁大了眼睛。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "〔时间〕飞逝",
+   "en_ndef": "time flies (by/past), it seems to pass very quickly",
+   "construction": "time flies (by/past),",
+   "examples": [
+    "How time flies!",
+    "The four years in college flew by."
+   ],
+   "ch_examples": [
+    "时间过得真快啊！",
+    "大学四年很快过去了。"
+   ],
+   "synonyms": [
+    "go quickly",
+    "slip past",
+    "rush past"
+   ],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "〔头发等〕扬起，飘动",
+   "en_ndef": "sth such as one's hair flies, it is blown and moves around freely in the wind",
+   "construction": "sth such as one's hair flies,",
+   "examples": [
+    "She stands on the deck with her hair flying in the wind."
+   ],
+   "ch_examples": [
+    "她站在甲板上，头发随风飘扬。"
+   ],
+   "synonyms": [
+    "float",
+    "flow",
+    "flutter"
+   ],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "〔谣言〕满天飞，广为流传",
+   "en_ndef": "a rumour flies (about sb/sth), it is talked about by many people",
+   "construction": "a rumour flies (about sb/sth),",
+   "examples": [
+    "Rumours are flying that the president is to resign."
+   ],
+   "ch_examples": [
+    "总统即将辞职的谣言满天飞。"
+   ],
+   "synonyms": [
+    "diffuse",
+    "spread"
+   ],
+   "antonyms": [],
+   "sense_index": 12
+  },
+  {
+   "ch_ndef": "逃跑；逃走",
+   "en_ndef": "to escape",
+   "construction": "",
+   "examples": [
+    "He flew the country with all the money from the bank robbery."
+   ],
+   "ch_examples": [
+    "他带着从银行抢来的所有钱逃到国外去了。"
+   ],
+   "synonyms": [
+    "flee",
+    "evade"
+   ],
+   "antonyms": [],
+   "sense_index": 13
+  }
+ ],
+ "abandon": [
+  {
+   "ch_ndef": "〔某人〕舍弃〔汽车；房子等〕；离弃〔某地〕",
+   "en_ndef": "sb abandons a car, house, place etc, they desert or leave it behind esp. because it is dangerous or no longer can be used",
+   "construction": "sb abandons a car, house, place etc,",
+   "examples": [
+    "The kidnapper abandoned his car in the northern suburb of the city.",
+    "The earthquake forced the residents to abandon their village.",
+    "They had to abandon their property to the invaders."
+   ],
+   "ch_examples": [
+    "绑匪把他的小车丢弃在城市北郊。",
+    "地震迫使村民们离弃了他们的村庄。",
+    "他们被迫丢弃财产，让入侵者占为己有。"
+   ],
+   "synonyms": [
+    "forsake",
+    "discard"
+   ],
+   "antonyms": [
+    "keep",
+    "retain"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "抛弃，遗弃〔某人或动物〕",
+   "en_ndef": "sb abandons a person or animal etc, they stop supporting or caring for them",
+   "construction": "sb abandons a person or animal etc,",
+   "examples": [
+    "Tom was unwilling to abandon his  dog even when there wasn’t enough food to feed both of them.",
+    "The baby was abandoned to the care of strangers."
+   ],
+   "ch_examples": [
+    "即使没有足够的食物喂养它们，汤姆也不想丢弃他的狗。",
+    "婴儿被抛弃后，留给陌生人照顾。"
+   ],
+   "synonyms": [
+    "desert",
+    "forsake"
+   ],
+   "antonyms": [
+    "support",
+    "maintain"
+   ],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "〔某人〕放弃〔计划；信念；习惯等〕",
+   "en_ndef": "sb abandons sth such as a plan, belief, or habit, they give it up for a long time or even forever",
+   "construction": "sb abandons sth such as a plan, belief, or habit,",
+   "examples": [
+    "to abandon a league game",
+    "to abandon the nuclear program",
+    "The company abandoned its recruitment plan because of the economic recession.",
+    "Strong beliefs in their labour union were abandoned when they accepted their employer’s offer."
+   ],
+   "ch_examples": [
+    "放弃联赛",
+    "放弃核计划",
+    "经济衰退使得该公司放弃了招聘计划。",
+    "当他们接受雇主的 提议是，这些工人不再相信工会了。"
+   ],
+   "synonyms": [
+    "abnegate",
+    "relinquish"
+   ],
+   "antonyms": [
+    "advocate",
+    "keep",
+    "maintain"
+   ],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔某人〕沉迷于〔享乐等〕；陷入〔绝望等〕",
+   "en_ndef": "sb abandons themselves to sth such as pleasure, despair, or grief, they are mentally controlled by it",
+   "construction": "sb abandons themselves to sth such as pleasure, despair, or grief,",
+   "examples": [
+    "He didn’t abandon himself to pleasure even after he had much success in his business."
+   ],
+   "ch_examples": [
+    "即使生意做大后，他也没有放纵自己去享乐。"
+   ],
+   "synonyms": [
+    "indulge"
+   ],
+   "antonyms": [],
+   "sense_index": 4
+  }
+ ],
+ "escape": [
+  {
+   "ch_ndef": "〔某人从某地或某处〕逃离；溜走；逃脱〔监禁；搜查等〕",
+   "en_ndef": "sb escapes (from a place, person, custody, or unpleasant situation etc), they succeed in getting away from that place or person to gain freedom or safety etc",
+   "construction": "sb escapes (from a place, person, custody, or unpleasant situation etc),",
+   "examples": [
+    "Barely two days later two criminals escaped from police custody.",
+    "Though he might escape from confinement, he could not escape from himself.",
+    "She escaped from reality into her own fantasy world.",
+    "The war criminal escaped to another country."
+   ],
+   "ch_examples": [
+    "仅仅过了两天，两名罪犯逃脱了警察的拘捕。",
+    "尽管他可以逃离囚禁，但他却无法超脱自己。",
+    "她逃离现实进入自己的幻想世界。",
+    "战犯逃往了另一个国家。"
+   ],
+   "synonyms": [
+    "flee",
+    "abscond",
+    "run away",
+    "slip away"
+   ],
+   "antonyms": [
+    "stay"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "〔某物〕被忽视；未被〔某人〕注意到；被遗忘",
+   "en_ndef": "sth escapes sb or sb's notice/attention/memory etc, they are not noticed or forgetten",
+   "construction": "sth escapes sb or sb's notice/attention/memory etc,",
+   "examples": [
+    "Nothing escapes her.",
+    "The ant escaped my notice.",
+    "Her name escaped my memory for a moment."
+   ],
+   "ch_examples": [
+    "没有什么事情能够逃脱她的注意。",
+    "我没注意到那只蚂蚁。",
+    "我一时想不起她的名字。"
+   ],
+   "synonyms": [
+    "be forgotten by",
+    "baffle",
+    "elude"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "〔气体；液体；光或热等〕泄露；逸出",
+   "en_ndef": "sth such as gas, liquid, light,or heat escapes from /into/through sth, it comes out usu. through a hole or crack",
+   "construction": "sth such as gas, liquid, light,or heat escapes from /into/through sth,",
+   "examples": [
+    "Water is escaping from the broken pipe.",
+    "Toxic waste is escaping into the river.",
+    "A bit of light escaped through the cracks."
+   ],
+   "ch_examples": [
+    "水从破裂的管子里冒了出来。",
+    "有毒废物排泄到河里。",
+    "缝隙中透出一点光线。"
+   ],
+   "synonyms": [
+    "drain",
+    "leak",
+    "exude"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  }
+ ],
+ "leave": [
+  {
+   "ch_ndef": "离去；离开",
+   "en_ndef": "sb leaves sb else or someplace, they go away from that person or place",
+   "construction": "sb leaves sb else or someplace,",
+   "examples": [
+    "I think it's time for us to leave now.",
+    "He asked us to leave his office."
+   ],
+   "ch_examples": [
+    "我想我们该走了。",
+    "他要求我们离开他的办公室。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "（永久）离开（如离家；离职；毕业等）",
+   "en_ndef": "sb leaves someplace such as home, company, school, they stop living, working or studying there permanently",
+   "construction": "sb leaves someplace such as home, company, school,",
+   "examples": [
+    "She left home when she was 18.",
+    "He took up news writing after he left school."
+   ],
+   "ch_examples": [
+    "她18岁就从家里搬出来了。",
+    "他毕业后从事新闻写作。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "遗弃；抛弃（妻子；丈夫；伴侣等）",
+   "en_ndef": "sb leaves sb else usu. their partner, they stop living with or having a relationship with them",
+   "construction": "sb leaves sb else usu. their partner,",
+   "examples": [
+    "Mary was always threatening to leave her boyfriend.",
+    "He left his wife for another woman."
+   ],
+   "ch_examples": [
+    "玛丽总是威胁她男朋友说要离开他。",
+    "他为了另一个女人抛弃了他的妻子。"
+   ],
+   "synonyms": [
+    "abandon",
+    "forsake"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "留着〔某事〕暂时不做",
+   "en_ndef": "leave sth to not do or deal with it for the time being",
+   "construction": "leave sth",
+   "examples": [
+    "Leave the dishes--I'll wash them up when I’m free."
+   ],
+   "ch_examples": [
+    "盘子先搁着吧，等我有空的时候就洗。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "让〔某人或某物〕保留；处于〔某种状态;某地〕",
+   "en_ndef": "leave sb/sth in a particular condition, place etc to make or allow them or it to remain in that condition, place etc",
+   "construction": "leave sb/sth in a particular condition, place etc",
+   "examples": [
+    "The dog got lost because the children left the door open when they got out.",
+    "She could leave the children alone at home without fear.",
+    "He left us waiting outside his office."
+   ],
+   "ch_examples": [
+    "那条狗走丢了，因为孩子们出去时把门开着。",
+    "她会毫不担心地把孩子单独留在家里。",
+    "他让我们在办公室外面等着。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "留下（某种结果）；造成（某种后果）",
+   "en_ndef": "sb/sth leaves sth or leave sb with sth or in a particular state, they or it brings that result or causes that consequence",
+   "construction": "sb/sth leaves sth or leave sb with sth or in a particular state,",
+   "examples": [
+    "The red wine leaf a stain on my white coat.",
+    "The injury left him with a permanent limp.",
+    "The above-mentioned incidents left 66 dead and 20 injured."
+   ],
+   "ch_examples": [
+    "红酒在我的白大衣上留下了污渍。",
+    "那次受伤让他永远瘸了。",
+    "上述事件造成66人死亡，20人受伤。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "留下；剩下（备用）",
+   "en_ndef": "sb leave sth or have sth left, they do not use up it or keep it for future use",
+   "construction": "sb leave sth or have sth left,",
+   "examples": [
+    "How many 15-dollar tickets do you have left?",
+    "He was not hungry, so he left half the food for the next day."
+   ],
+   "ch_examples": [
+    "你还剩多少张15美元的票?",
+    "他不饿，所以留了一半食物第二天吃。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "落下，忘了带〔某物/某人〕",
+   "en_ndef": "sb leave sth/sb in a certain place, they go away from that place without taking it or them with themselves usu. because they forget to take it",
+   "construction": "sb leave sth/sb in a certain place,",
+   "examples": [
+    "I've left my bag on the plane."
+   ],
+   "ch_examples": [
+    "我把包落在飞机上了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "剩下；余下",
+   "en_ndef": "to have a particular amount remaining after subtracting a smaller number from a bigger number",
+   "construction": "",
+   "examples": [
+    "Two from five leaves three."
+   ],
+   "ch_examples": [
+    "5减2得3。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "（把某事）委托；交给（某人负责）；让（某人负责做某事）",
+   "en_ndef": "leave sth to/with sb; leave sb to do sth to allow them to take charge of it",
+   "construction": "leave sth to/with sb; leave sb to do sth",
+   "examples": [
+    "Just leave it to me, and I'll make a good job of it.",
+    "we'd better leave her to make her own choice."
+   ],
+   "ch_examples": [
+    "交给我吧，我会把它做好的。",
+    "我们最好让她自己选择。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "（死后）留下〔家人〕",
+   "en_ndef": "sb leaves a wife, children etc, they have family remaining after their death",
+   "construction": "sb leaves a wife, children etc,",
+   "examples": [
+    "He leaves his wife alone after the plane crash."
+   ],
+   "ch_examples": [
+    "他飞机失事后留下妻子一个人。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "（去世时）遗赠，遗留给〔某人〕",
+   "en_ndef": "sb leave sb else sth, they give it to them in a will",
+   "construction": "sb leave sb else sth,",
+   "examples": [
+    "She left her daughter $1 million."
+   ],
+   "ch_examples": [
+    "她留给女儿100万美元。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 12
+  },
+  {
+   "ch_ndef": "（给某人）留下〔信息，便条等〕",
+   "en_ndef": "sb leaves sb else sth such as message, note; sb leaves sth such as message, note for/with sb, they deliver it to them or put it somewhere for them to get it later",
+   "construction": "sb leaves sb else sth such as message, note; sb leaves sth such as message, note for/with sb,",
+   "examples": [
+    "This note was left for you by Anna, who was here a moment ago."
+   ],
+   "ch_examples": [
+    "这张纸条是安娜留给你的，她刚才还在这儿。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 13
+  }
+ ],
+ "advance": [
+  {
+   "ch_ndef": "〔人群；士兵〕向〔某地；某人〕行进，前进；进攻",
+   "en_ndef": "troups or soldiers advance (on/towards) a place or person, they move forward to them/it usu. to attack",
+   "construction": "troups or soldiers advance (on/towards) a place or person,",
+   "examples": [
+    "The troops started to advance at dawn.",
+    "The news came that a line of enemy tanks were advancing towards our position.",
+    "Our team has planned to advance 30 miles per hour in the desert."
+   ],
+   "ch_examples": [
+    "部队一大早就出发了。",
+    "消息传来，敌人的一列坦克正向我们的阵地袭来。",
+    "我们队已经计划好在沙漠里每小时前进30英里。"
+   ],
+   "synonyms": [
+    "march",
+    "raid",
+    "attack"
+   ],
+   "antonyms": [
+    "retreat",
+    "recede",
+    "withdraw"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "取得〔技术等〕进步；发展〔经济；教育等〕；促进",
+   "en_ndef": "advance (in) sth such as the economy, technology, and education to (make it) improve or progress",
+   "construction": "advance (in) sth such as the economy, technology, and education",
+   "examples": [
+    "The biotech industry has greatly advanced in recent years.",
+    "Recent theories advanced our knowledge of the universe.",
+    "The aim of her going abroad is to advance her studies."
+   ],
+   "ch_examples": [
+    "生物科技产业最近几年发展很快。",
+    "最近的理论提升了我们对宇宙的了解。",
+    "她出国的目的是提升学业。"
+   ],
+   "synonyms": [
+    "accelerate",
+    "promote",
+    "boost"
+   ],
+   "antonyms": [
+    "hinder",
+    "block"
+   ],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "〔某人〕提出〔想法；计划；理论等〕；建议",
+   "en_ndef": "sb advances an idea, plan, suggestion, or theory etc, they put it forward for other people to discuss, comment, or use",
+   "construction": "sb advances an idea, plan, suggestion, or theory etc,",
+   "examples": [
+    "She tried to advance a new theory in physics 10 years ago.",
+    "He advanced many reasonable proposals."
+   ],
+   "ch_examples": [
+    "10年前她就试图提出一种物理学新理论。",
+    "他提出了许多合理化建议。"
+   ],
+   "synonyms": [
+    "suggest",
+    "propose",
+    "present"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "向〔某人〕预付〔款项〕；预付〔工资〕",
+   "en_ndef": "sb advances money to sb else, they pay them before the due date",
+   "construction": "sb advances money to sb else,",
+   "examples": [
+    "The company could not advance any money to its sick workers.",
+    "You need to advance me a lot more than that."
+   ],
+   "ch_examples": [
+    "即使工人生病，这个公司也不会给他们预付工资。",
+    "你必须预付给我比那多得多的钱。"
+   ],
+   "synonyms": [
+    "prepay",
+    "lend"
+   ],
+   "antonyms": [
+    "default"
+   ],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "〔某人〕将〔会议；聚会；考试等〕提前",
+   "en_ndef": "sb advances an event such as a meeting, party, or exam, they set a time ahead or make it happen earlier",
+   "construction": "sb advances an event such as a meeting, party, or exam,",
+   "examples": [
+    "Our holiday trip had to be advanced by two days.",
+    "He rejected the idea of advancing his birthday party."
+   ],
+   "ch_examples": [
+    "我们的假期旅行提前了两天。",
+    "他拒绝把生日聚会提前。"
+   ],
+   "synonyms": [
+    "bring forward"
+   ],
+   "antonyms": [
+    "postpone",
+    "delay"
+   ],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "〔价格〕上涨；〔股票等〕升值；提高〔成本等〕",
+   "en_ndef": "sth such as the price or cost advances or is advanced, it rises",
+   "construction": "sth such as the price or cost advances or is advanced,",
+   "examples": [
+    "The news that the stocks of the company would advance made him glad."
+   ],
+   "ch_examples": [
+    "公司的股票价格要涨的消息使他生开心。"
+   ],
+   "synonyms": [
+    "increase",
+    "grow"
+   ],
+   "antonyms": [
+    "drop",
+    "lower"
+   ],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "〔某人〕把〔钟表等〕往前调；把…时间调快了",
+   "en_ndef": "sb advances a watch or clock etc, they set its time ahead",
+   "construction": "sb advances a watch or clock etc,",
+   "examples": [
+    "There is no hurry! Somebody advanced the clock.",
+    "He has a habit of advancing his digital watch five minutes."
+   ],
+   "ch_examples": [
+    "不用慌，有人把钟的时间调快了。",
+    "他习惯把他的电子表调快5分钟。"
+   ],
+   "synonyms": [
+    "move forward"
+   ],
+   "antonyms": [],
+   "sense_index": 7
+  }
+ ],
+ "arrive": [
+  {
+   "ch_ndef": "〔人或车辆〕抵达〔某地〕；到达〔某地〕（尤指旅途的终点)",
+   "en_ndef": "a person or  vehicle arrives at a place, they get to the destination, or to the end of a trip",
+   "construction": "a person or  vehicle arrives at a place,",
+   "examples": [
+    "A whole crowd of us arrived at the party uninvited.",
+    "He became a citizen a few years after he arrived in America.",
+    "Finally, the police arrived on the scene."
+   ],
+   "ch_examples": [
+    "我们这一大批不速之客来到了聚会场所。",
+    "他在到达美国几年后成为了一名美国公民。",
+    "最后警察到达了现场。"
+   ],
+   "synonyms": [
+    "reach",
+    "show up",
+    "turn up"
+   ],
+   "antonyms": [
+    "depart",
+    "leave",
+    "withdraw"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "sth arrives, it is brought or carried to a certain place",
+   "construction": "sth arrives,",
+   "examples": [
+    "The letter will arrive in seven days.",
+    "The package arrived intact."
+   ],
+   "ch_examples": [
+    "那封信将在七天以后送达。",
+    "包裹完好无损地到达。"
+   ],
+   "synonyms": [
+    "depart",
+    "leave",
+    "withdrawn"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "〔尤指所盼望的事件〕发生；〔时刻〕来到",
+   "en_ndef": "an event or moment, esp. an expected one, arrives, it comes",
+   "construction": "an event or moment, esp. an expected one, arrives,",
+   "examples": [
+    "The great day has arrived.",
+    "At last the great occasion arrived.",
+    "The craved victory arrived a week later."
+   ],
+   "ch_examples": [
+    "伟大的日子已经到来。",
+    "伟大的时刻终于来临了。",
+    "我们期盼的胜利在一周后实现了。"
+   ],
+   "synonyms": [
+    "occur",
+    "happen",
+    "befall",
+    "take place"
+   ],
+   "antonyms": [
+    "go away",
+    "suspend"
+   ],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔新事物〕出现；问世；投入使用",
+   "en_ndef": "sth new arrives, it comes into existence or is ready for use",
+   "construction": "sth new arrives,",
+   "examples": [
+    "Our new stock of autumn clothes will arrive soon.",
+    "The new product should arrive next week."
+   ],
+   "ch_examples": [
+    "我们的新款秋装很快就会到货。",
+    "新产品应该下周问世。"
+   ],
+   "synonyms": [
+    "appear",
+    "emerge",
+    "come into being"
+   ],
+   "antonyms": [
+    "disappear",
+    "extinguish",
+    "vanish"
+   ],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "〔婴儿〕出生；降临",
+   "en_ndef": "a baby arrives, it is born",
+   "construction": "a baby arrives,",
+   "examples": [
+    "Has your sister's baby arrived yet?"
+   ],
+   "ch_examples": [
+    "你妹妹的小孩出生了吗？"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "〔某人〕获得成功；得到认可",
+   "en_ndef": "sb has arrived, they have succeeded or gained acceptance",
+   "construction": "sb has arrived,",
+   "examples": [
+    "After he published his  bestseller, it was obvious he had arrived."
+   ],
+   "ch_examples": [
+    "在他的畅销书出版之后，他显然得到了认可。"
+   ],
+   "synonyms": [
+    "succeed",
+    "triumph",
+    "make good"
+   ],
+   "antonyms": [
+    "fail"
+   ],
+   "sense_index": 6
+  }
+ ],
+ "come": [
+  {
+   "ch_ndef": "来到；到达",
+   "en_ndef": "to move or travel to where the speaker is located",
+   "construction": "",
+   "examples": [
+    "Did you come to Harbin the day before yesterday?",
+    "He invited many guests to come to his home for a sumptuous dinner."
+   ],
+   "ch_examples": [
+    "你是前天来到哈尔滨的吗？",
+    "他邀请了许多客人来他家出席豪华晚宴。"
+   ],
+   "synonyms": [
+    "arrive",
+    "reach",
+    "get to"
+   ],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "行进〔一段距离〕",
+   "en_ndef": "come a certain distance to move or travel in it",
+   "construction": "come a certain distance",
+   "examples": [
+    "People come hundreds of miles to see our display.",
+    "She has come a long way in her studies."
+   ],
+   "ch_examples": [
+    "人们跋涉了几百英里来看我们的展览。",
+    "她的学业已有了长足进展。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "发生",
+   "en_ndef": "to occur or arrive in time",
+   "construction": "",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [
+    "happen",
+    "arise",
+    "take place",
+    "come about"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔某人〕来取；来做〔某事〕",
+   "en_ndef": "sb comes for/about sth, or to do sth they reach a particular place to get or do it",
+   "construction": "sb comes for/about sth, or to do sth",
+   "examples": [
+    "Many people came for drinks.",
+    "I've come about my share.",
+    "All the people from the surrounding villages come to help picking grapes.",
+    "My boyfriend told me to come swimming with him."
+   ],
+   "ch_examples": [
+    "许多人都来喝上一杯。",
+    "我是来拿我那一份的。",
+    "周围村子里的人都来帮着收葡萄。",
+    "我的男朋友让我来和他一起游泳。"
+   ],
+   "synonyms": [
+    "get here",
+    "come across"
+   ],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "位于；处于〔某位置或状态〕",
+   "en_ndef": "to reach a particular position or state",
+   "construction": "",
+   "examples": [
+    "Your shoes came untied.",
+    "Your family must always come first.",
+    "Why don’t you come up to Hangzhou for a few days?"
+   ],
+   "ch_examples": [
+    "你的鞋带没有系紧。",
+    "你的家庭必须始终放在第一位。",
+    "你怎么不到杭州来住几天？"
+   ],
+   "synonyms": [
+    "be",
+    "lie in"
+   ],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "达成〔某种决议；看法；结论〕；达到，进入〔终点〕",
+   "en_ndef": "come to/into a decision, view, conclusion, or end to enter into a particular step or state",
+   "construction": "come to/into a decision, view, conclusion, or end",
+   "examples": [
+    "All our plans came to naught.",
+    "The army was disbanded when the war came to an end.",
+    "He came to the conclusion that he must work harder to succeed.",
+    "The new governor came to power under the banner of equal educational opportunity."
+   ],
+   "ch_examples": [
+    "我们的计划都落空了。",
+    "战争结束时军队便被解散了。",
+    "他得出结论是，要成功就必须更加努力。",
+    "新州长是打着人人享有平等教育机会的旗号上台的。"
+   ],
+   "synonyms": [
+    "reach",
+    "arrive at",
+    "attain to"
+   ],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "〔商品或产品〕被生产；被出售；买得到",
+   "en_ndef": "sth such as goods or products comes in/with sth it is produced, sold, or available in a particular state",
+   "construction": "sth such as goods or products comes in/with sth",
+   "examples": [
+    "Toothpaste comes in a tube.",
+    "The bike does not come very expensive.",
+    "These pants come in several styles.",
+    "The model airplane kit came with clear instructions."
+   ],
+   "ch_examples": [
+    "牙膏装在软管中出售。",
+    "这个自行车不用太贵就能买到。",
+    "这些裤子有几种款式出售。",
+    "成套航模组件都附有清楚的使用说明出售。"
+   ],
+   "synonyms": [
+    "be made",
+    "be for sale",
+    "be available"
+   ],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "变成；证实是",
+   "en_ndef": "to become or turn out to be",
+   "construction": "",
+   "examples": [
+    "He was given the chance to make his dream come true."
+   ],
+   "ch_examples": [
+    "他有了圆梦的机会。"
+   ],
+   "synonyms": [
+    "turn into",
+    "change into",
+    "turn out"
+   ],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "达到〔对某事物认识，理解和相信的境界〕",
+   "en_ndef": "sb comes to realize, understand, or believe sth they reach a state where they can do it",
+   "construction": "sb comes to realize, understand, or believe sth",
+   "examples": [
+    "I have come to realize the importance of family.",
+    "You will gradually come to understand the society."
+   ],
+   "ch_examples": [
+    "我意识到了家庭的重要性。",
+    "你会慢慢理解这个社会的。"
+   ],
+   "synonyms": [
+    "get up to",
+    "arrive at",
+    "attain to"
+   ],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "〔在某人面前〕装成〔某样〕",
+   "en_ndef": "sb comes sth (with sb else) they pretend to be it",
+   "construction": "sb comes sth (with sb else)",
+   "examples": [
+    "Don’t come the old soldier over me, because I won’t accept it!"
+   ],
+   "ch_examples": [
+    "别在我面前摆老资格，我才不吃这一套呢！"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "〔某一时刻〕到来",
+   "en_ndef": "come to some time to arrive at it",
+   "construction": "come to some time",
+   "examples": [
+    "We had come to a great moment of our lives."
+   ],
+   "ch_examples": [
+    "我们已经到了生命中的重要时刻。"
+   ],
+   "synonyms": [
+    "arrive"
+   ],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "达到性高潮",
+   "en_ndef": "to have an orgasm",
+   "construction": "",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 12
+  },
+  {
+   "ch_ndef": "偶遇〔某人或某事〕",
+   "en_ndef": "sb comes across a person or a thing they meet them by accident",
+   "construction": "sb comes across a person or a thing",
+   "examples": [
+    "We've come across a lot of problems.",
+    "You may come across someone new that you have a lot in common with at a book club."
+   ],
+   "ch_examples": [
+    "我们遇到了很多的问题。",
+    "在读书会里，您有可能会遇到和您有许多共通点的新朋友。"
+   ],
+   "synonyms": [
+    "run into",
+    "run across",
+    "chance on"
+   ],
+   "antonyms": [],
+   "sense_index": 13
+  },
+  {
+   "ch_ndef": "〔某人〕提供〔某物〕",
+   "en_ndef": "sb comes across with sth they offer it",
+   "construction": "sb comes across with sth",
+   "examples": [
+    "Come across with the money!",
+    "After hours of questioning, the man suspected of kidnapping finally came across with the story."
+   ],
+   "ch_examples": [
+    "快把钱拿出来！",
+    "数小时的审讯后，绑架嫌疑人最终交代了作案的经过。"
+   ],
+   "synonyms": [
+    "hand over",
+    "give",
+    "deliver"
+   ],
+   "antonyms": [],
+   "sense_index": 14
+  },
+  {
+   "ch_ndef": "〔某人〕跟随〔某人〕",
+   "en_ndef": "sb comes after sb else they follow or run after them",
+   "construction": "sb comes after sb else",
+   "examples": [
+    "Where are the people who came after you a moment ago?"
+   ],
+   "ch_examples": [
+    "刚才跟随你的人去了哪里？"
+   ],
+   "synonyms": [
+    "pursue",
+    "tag along",
+    "run after"
+   ],
+   "antonyms": [],
+   "sense_index": 15
+  },
+  {
+   "ch_ndef": "出现",
+   "en_ndef": "sb/sth comes along they appear or emerge",
+   "construction": "sb/sth comes along",
+   "examples": [
+    "She says she's waiting for the right man to come along."
+   ],
+   "ch_examples": [
+    "她说她等待着意中人的出现。"
+   ],
+   "synonyms": [
+    "turn up",
+    "figure",
+    "shape up"
+   ],
+   "antonyms": [],
+   "sense_index": 16
+  },
+  {
+   "ch_ndef": "〔某人〕（和他人）一起",
+   "en_ndef": "sb comes along they go together with others",
+   "construction": "sb comes along",
+   "examples": [
+    "Do you want to come along?",
+    "Come along with me,you’re keeping everybody waiting."
+   ],
+   "ch_examples": [
+    "你想一起来吗？",
+    "孩子们跟我来，大家都在等你们呢。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 17
+  },
+  {
+   "ch_ndef": "〔某事〕变好",
+   "en_ndef": "sth comes along it becomes better",
+   "construction": "sth comes along",
+   "examples": [
+    "Her skiing is coming along better."
+   ],
+   "ch_examples": [
+    "她的滑雪技术变得好些。"
+   ],
+   "synonyms": [
+    "improve",
+    "get better"
+   ],
+   "antonyms": [],
+   "sense_index": 18
+  },
+  {
+   "ch_ndef": "快点",
+   "en_ndef": "come along to hurry up",
+   "construction": "come along",
+   "examples": [
+    "Come along, it's getting late!"
+   ],
+   "ch_examples": [
+    "快点，时间不早了！"
+   ],
+   "synonyms": [
+    "be quick",
+    "get a move on",
+    "speed up"
+   ],
+   "antonyms": [],
+   "sense_index": 19
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "sb comes around/round (to)",
+   "construction": "sb comes around/round (to)",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 20
+  },
+  {
+   "ch_ndef": "〔日期或事件〕又一次来临",
+   "en_ndef": "a date or regular event comes around it occurs again",
+   "construction": "a date or regular event comes around",
+   "examples": [
+    "The Mid-autumn Festival will soon come around."
+   ],
+   "ch_examples": [
+    "中秋节又快到来了。"
+   ],
+   "synonyms": [
+    "reoccur",
+    "recur",
+    "reappear"
+   ],
+   "antonyms": [],
+   "sense_index": 21
+  },
+  {
+   "ch_ndef": "扑向〔某人〕；向〔某人〕进攻",
+   "en_ndef": "sb comes at sb else they go to attack them",
+   "construction": "sb comes at sb else",
+   "examples": [
+    "He came at me with a blunt object."
+   ],
+   "ch_examples": [
+    "他用钝器向我进攻。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 22
+  },
+  {
+   "ch_ndef": "〔某人〕审视；考虑〔某一问题〕",
+   "en_ndef": "sb comes at a problem or question etc they consider it from a different angle",
+   "construction": "sb comes at a problem or question etc",
+   "examples": [
+    "He came at the dilemma by rephrasing the question."
+   ],
+   "ch_examples": [
+    "他重述问题来审视这个困境。"
+   ],
+   "synonyms": [
+    "think about",
+    "ponder"
+   ],
+   "antonyms": [],
+   "sense_index": 23
+  },
+  {
+   "ch_ndef": "〔某物〕与〔另一物〕相分离",
+   "en_ndef": "sth comes away from sth else it becomes separate from the thing",
+   "construction": "sth comes away from sth else",
+   "examples": [
+    "The dough can't come away easily from the bowl."
+   ],
+   "ch_examples": [
+    "面团和饭碗不能轻易被分开。"
+   ],
+   "synonyms": [
+    "come off",
+    "separate"
+   ],
+   "antonyms": [],
+   "sense_index": 24
+  },
+  {
+   "ch_ndef": "〔带着某种感觉〕离开某地",
+   "en_ndef": "sb comes away with a particular feeling or idea they leave a place with it",
+   "construction": "sb comes away with a particular feeling or idea",
+   "examples": [
+    "We came away with happy memories of the place."
+   ],
+   "ch_examples": [
+    "我们带着愉快的回忆离开了这个地方。"
+   ],
+   "synonyms": [
+    "leave",
+    "depart"
+   ],
+   "antonyms": [],
+   "sense_index": 25
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "sb/sth comes back",
+   "construction": "sb/sth comes back",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 26
+  },
+  {
+   "ch_ndef": "回击〔某人〕",
+   "en_ndef": "sb comes back at sb else with sth they respond to them with anger by it",
+   "construction": "sb comes back at sb else with sth",
+   "examples": [
+    "She came back at the gossips with some sharp words."
+   ],
+   "ch_examples": [
+    "她用犀利的言辞反驳了那些爱说闲话的人。"
+   ],
+   "synonyms": [
+    "refute",
+    "retort"
+   ],
+   "antonyms": [],
+   "sense_index": 27
+  },
+  {
+   "ch_ndef": "〔某人〕重新记起〔某事〕",
+   "en_ndef": "sth comes back to sb they remember or return to it",
+   "construction": "sth comes back to sb",
+   "examples": [
+    "It all comes back to me now."
+   ],
+   "ch_examples": [
+    "现在我全都想起来了。"
+   ],
+   "synonyms": [
+    "recall",
+    "remind"
+   ],
+   "antonyms": [],
+   "sense_index": 28
+  },
+  {
+   "ch_ndef": "〔某人〕回到〔主题；想法〕",
+   "en_ndef": "sb comes back to a subject or an idea they return to it",
+   "construction": "sb comes back to a subject or an idea",
+   "examples": [
+    "Now, come back to what you were saying a moment ago."
+   ],
+   "ch_examples": [
+    "现在，请回到刚才讲到的地方。"
+   ],
+   "synonyms": [
+    "go back"
+   ],
+   "antonyms": [],
+   "sense_index": 29
+  },
+  {
+   "ch_ndef": "〔某事〕交予；提交〔某人或机构〕讨论",
+   "en_ndef": "sth comes before sb/sth it is presented for discussion or judgement",
+   "construction": "sth comes before sb/sth",
+   "examples": [
+    "The subject of the highway bypass came before the committee."
+   ],
+   "ch_examples": [
+    "高速旁道的问题已交予委员会讨论。"
+   ],
+   "synonyms": [
+    "submit",
+    "present"
+   ],
+   "antonyms": [],
+   "sense_index": 30
+  },
+  {
+   "ch_ndef": "〔某事〕破坏〔两人的〕关系",
+   "en_ndef": "sth comes between two people it breaks or interferes with their relationship",
+   "construction": "sth comes between two people",
+   "examples": [
+    "The use of the car came between the newly married couple."
+   ],
+   "ch_examples": [
+    "汽车的使用破坏了这对新婚夫妇的关系。"
+   ],
+   "synonyms": [
+    "stir up trouble",
+    "sow discord"
+   ],
+   "antonyms": [],
+   "sense_index": 31
+  },
+  {
+   "ch_ndef": "拜访",
+   "en_ndef": "sb comes by/over they pay a visit",
+   "construction": "sb comes by/over",
+   "examples": [
+    "Our best friends came by last night."
+   ],
+   "ch_examples": [
+    "昨夜，我最好的朋友上门拜访。"
+   ],
+   "synonyms": [
+    "call on",
+    "visit"
+   ],
+   "antonyms": [],
+   "sense_index": 32
+  },
+  {
+   "ch_ndef": "〔某人〕得到〔某物〕",
+   "en_ndef": "sb comes by sth they gain it",
+   "construction": "sb comes by sth",
+   "examples": [
+    "He came by his fortune with little effort."
+   ],
+   "ch_examples": [
+    "他用很少的努力就发了大财。"
+   ],
+   "synonyms": [
+    "obtain",
+    "acquire",
+    "gain"
+   ],
+   "antonyms": [],
+   "sense_index": 33
+  },
+  {
+   "ch_ndef": "〔某人〕决定〔支持或反对某事〕",
+   "en_ndef": "sb comes down on st they make a decision and declare that they are in favour or not in favour of it",
+   "construction": "sb comes down on st",
+   "examples": [
+    "They came down on going away for the summer."
+   ],
+   "ch_examples": [
+    "他们决定夏天离开。"
+   ],
+   "synonyms": [
+    "decide",
+    "choose"
+   ],
+   "antonyms": [],
+   "sense_index": 34
+  },
+  {
+   "ch_ndef": "〔某物〕垂到〔某位置〕",
+   "en_ndef": "sth comes down to a position it goes down to it",
+   "construction": "sth comes down to a position",
+   "examples": [
+    "He came down to the last rung of the ladder."
+   ],
+   "ch_examples": [
+    "他下到了梯子的最后一阶。"
+   ],
+   "synonyms": [
+    "descend"
+   ],
+   "antonyms": [],
+   "sense_index": 35
+  },
+  {
+   "ch_ndef": "南下",
+   "en_ndef": "sb comes down to a place they travel south to a particular area",
+   "construction": "sb comes down to a place",
+   "examples": [
+    "We hope to come down to London next week."
+   ],
+   "ch_examples": [
+    "我们希望下星期南下到伦敦。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 36
+  },
+  {
+   "ch_ndef": "责备；惩罚〔某人〕",
+   "en_ndef": "sb comes down on sb they point out the person’s mistake or give them a punishment",
+   "construction": "sb comes down on sb",
+   "examples": [
+    "The boss came down hard on the new employee."
+   ],
+   "ch_examples": [
+    "老板重重地惩罚了新员工。"
+   ],
+   "synonyms": [
+    "reprimand",
+    "rebuke",
+    "admonish"
+   ],
+   "antonyms": [],
+   "sense_index": 37
+  },
+  {
+   "ch_ndef": "〔某物〕传承给〔某人〕",
+   "en_ndef": "sth comes down to sb it is given to them from their parents or relatives",
+   "construction": "sth comes down to sb",
+   "examples": [
+    "The house and grounds came down to him in his father's will."
+   ],
+   "ch_examples": [
+    "在父亲的遗嘱中，将房子和土地传给了他。"
+   ],
+   "synonyms": [
+    "inherit",
+    "transfer"
+   ],
+   "antonyms": [],
+   "sense_index": 38
+  },
+  {
+   "ch_ndef": "〔某事〕可归结为〔某原因〕",
+   "en_ndef": "sth comes down to sth else such as a particular reason it can be explained by that thing",
+   "construction": "sth comes down to sth else such as a particular reason",
+   "examples": [
+    "It all comes down to luck.",
+    "I guess it comes down to a simple choice: get busy living or get busy dying."
+   ],
+   "ch_examples": [
+    "这全靠运气。",
+    "生命可以归结为一种简单的选择：要么忙于生存，要么赶着去死。"
+   ],
+   "synonyms": [
+    "ascribe",
+    "amount to"
+   ],
+   "antonyms": [],
+   "sense_index": 39
+  },
+  {
+   "ch_ndef": "〔某人〕患有〔某病〕",
+   "en_ndef": "sb comes down with a disease they are infected by it",
+   "construction": "sb comes down with a disease",
+   "examples": [
+    "She came down with a bad cold."
+   ],
+   "ch_examples": [
+    "她患了重感冒。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 40
+  },
+  {
+   "ch_ndef": "〔某人通过某物〕提供帮助",
+   "en_ndef": "sb comes forward with sth they are helpful by providing it",
+   "construction": "sb comes forward with sth",
+   "examples": [
+    "She came forward with an excellent proposal."
+   ],
+   "ch_examples": [
+    "她提出一个极好的方案来提供帮助。"
+   ],
+   "synonyms": [
+    "offer one's services"
+   ],
+   "antonyms": [],
+   "sense_index": 41
+  },
+  {
+   "ch_ndef": "〔某人〕生在/曾生活在〔某地〕",
+   "en_ndef": "sb comes from a place they were born or lived there when they were young",
+   "construction": "sb comes from a place",
+   "examples": [
+    "She comes from Hunan."
+   ],
+   "ch_examples": [
+    "她出生在湖南。"
+   ],
+   "synonyms": [
+    "be from",
+    "be a native of",
+    "hail from"
+   ],
+   "antonyms": [],
+   "sense_index": 42
+  },
+  {
+   "ch_ndef": "〔某物〕源自〔某物〕",
+   "en_ndef": "sth comes from (doing)sth it happens as the result of (doing) something else",
+   "construction": "sth comes from (doing)sth",
+   "examples": [
+    "His fortune comes from good bets on the stock market."
+   ],
+   "ch_examples": [
+    "他的财富来自于股市的好运气。"
+   ],
+   "synonyms": [
+    "originate in"
+   ],
+   "antonyms": [],
+   "sense_index": 43
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "sth/sb comes in",
+   "construction": "sth/sb comes in",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 44
+  },
+  {
+   "ch_ndef": "〔某人〕参与（计划；项目；讨论等）",
+   "en_ndef": "sb comes in a plan, deal, or discussion etc they are involved in it",
+   "construction": "sb comes in a plan, deal, or discussion etc",
+   "examples": [
+    "If you want to come in on the plan, you must decide now."
+   ],
+   "ch_examples": [
+    "你要参与这项计划，就必须现在决定。"
+   ],
+   "synonyms": [
+    "be engaged in",
+    "participate in"
+   ],
+   "antonyms": [],
+   "sense_index": 45
+  },
+  {
+   "ch_ndef": "〔法律或规则〕生效",
+   "en_ndef": "a law or rule comes in it becomes effective",
+   "construction": "a law or rule comes in",
+   "examples": [
+    "The new anti-gambling law came in yesterday."
+   ],
+   "ch_examples": [
+    "新的反赌博法昨日生效。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 46
+  },
+  {
+   "ch_ndef": "〔某人〕受到〔批评，谴责；监督〕",
+   "en_ndef": "sb come in for criticism, blame, or scrutiny etc they became an object of it",
+   "construction": "sb come in for criticism, blame, or scrutiny etc",
+   "examples": [
+    "This article will come in for criticism."
+   ],
+   "ch_examples": [
+    "这篇文章将会受到批评。"
+   ],
+   "synonyms": [
+    "criticize",
+    "blame"
+   ],
+   "antonyms": [],
+   "sense_index": 47
+  },
+  {
+   "ch_ndef": "继承〔财产或土地等〕",
+   "en_ndef": "sb comes into sth such as money, land, or property they inherit it",
+   "construction": "sb comes into sth such as money, land, or property",
+   "examples": [
+    "He had come into possession of a large fortune."
+   ],
+   "ch_examples": [
+    "他得了一笔很大的财产。"
+   ],
+   "synonyms": [
+    "inherit",
+    "be bequeathed"
+   ],
+   "antonyms": [],
+   "sense_index": 48
+  },
+  {
+   "ch_ndef": "〔某物〕出现；可看到",
+   "en_ndef": "sth comes into view/sight it begins to be seen",
+   "construction": "sth comes into view/sight",
+   "examples": [
+    "The village will come into view at the next turn."
+   ],
+   "ch_examples": [
+    "拐个弯儿就可以看到村子了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 49
+  },
+  {
+   "ch_ndef": "〔某事〕是…的结果",
+   "en_ndef": "sth come of/from (doing)a thing it is the result of that thing",
+   "construction": "sth come of/from (doing)a thing",
+   "examples": [
+    "Nothing but trouble will come of this plan."
+   ],
+   "ch_examples": [
+    "这个计划只能带来麻烦。"
+   ],
+   "synonyms": [
+    "result from"
+   ],
+   "antonyms": [],
+   "sense_index": 50
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "come off (sth)",
+   "construction": "come off (sth)",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 51
+  },
+  {
+   "ch_ndef": "表现或进展良好/糟糕等",
+   "en_ndef": "sb/sth comes off well/ badly etc they fare or get on best, well，or badly",
+   "construction": "sb/sth comes off well/ badly etc",
+   "examples": [
+    "Who came off best in the debate?",
+    "The new musical play came off well."
+   ],
+   "ch_examples": [
+    "在辩论中谁表现最出色？",
+    "那台新的音乐剧很成功。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 52
+  },
+  {
+   "ch_ndef": "别胡扯了",
+   "en_ndef": "come off it used to tell somebody not to say something that one thinks or knows is untrue",
+   "construction": "come off it",
+   "examples": [
+    "Come off it! We don’t have a chance."
+   ],
+   "ch_examples": [
+    "别胡扯了！ 我们没有机会。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 53
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "come on",
+   "construction": "come on",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 54
+  },
+  {
+   "ch_ndef": "偶然遇见或发现〔某人或某事〕",
+   "en_ndef": "sb comes on/upon sb/sth they find or discover them by chance",
+   "construction": "sb comes on/upon sb/sth",
+   "examples": [
+    "I came on him in town last week."
+   ],
+   "ch_examples": [
+    "上星期我在城里碰见他。"
+   ],
+   "synonyms": [
+    "run across",
+    "come across",
+    "encounter"
+   ],
+   "antonyms": [],
+   "sense_index": 55
+  },
+  {
+   "ch_ndef": "请进（比“come in”更随和友好的说法）",
+   "en_ndef": "come on in/over/up etc used to tell someone to enter or visit",
+   "construction": "come on in/over/up etc",
+   "examples": [
+    "Come on in and make yourself at home."
+   ],
+   "ch_examples": [
+    "快请进，别拘束。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 56
+  },
+  {
+   "ch_ndef": "",
+   "en_ndef": "come out",
+   "construction": "come out",
+   "examples": [],
+   "ch_examples": [],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 57
+  },
+  {
+   "ch_ndef": "〔在测验，考试，比赛等中〕得到某名次",
+   "en_ndef": "sb comes out in a test, examination, competition etc they obtain a specific position in it",
+   "construction": "sb comes out in a test, examination, competition etc",
+   "examples": [
+    "The girl in red came out first in the contest."
+   ],
+   "ch_examples": [
+    "穿红衣服的女孩在比赛中名列第一。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 58
+  },
+  {
+   "ch_ndef": "〔对计划；主意或信仰〕公开表示赞成或反对",
+   "en_ndef": "sb comes out in favour of/ against a plan, idea, belief etc they say publicly that they strongly support or oppose it",
+   "construction": "sb comes out in favour of/ against a plan, idea, belief etc",
+   "examples": [
+    "The famous writer came out against the government.",
+    "I came out in favour of his suggestion."
+   ],
+   "ch_examples": [
+    "那个著名作家公开表示反对政府。",
+    "我对他的建议表示赞同。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 59
+  },
+  {
+   "ch_ndef": "〔总数〕达到",
+   "en_ndef": "sth comes out at a particular amount it is the amount it adds up to it",
+   "construction": "sth comes out at a particular amount",
+   "examples": [
+    "The total cost comes out at 500 RMB."
+   ],
+   "ch_examples": [
+    "总计费用为500人民币。"
+   ],
+   "synonyms": [
+    "come to"
+   ],
+   "antonyms": [],
+   "sense_index": 60
+  },
+  {
+   "ch_ndef": "〔身体局部〕布满 〔斑点；丘疹等〕",
+   "en_ndef": "sb comes out in sth such as spots or pimples it appears on their body",
+   "construction": "sb comes out in sth such as spots or pimples",
+   "examples": [
+    "Her hands came out in red spots."
+   ],
+   "ch_examples": [
+    "她手上起了红斑点。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 61
+  },
+  {
+   "ch_ndef": "再次发生",
+   "en_ndef": "come round to happen again",
+   "construction": "come round",
+   "examples": [
+    "The ball eventually came round to us."
+   ],
+   "ch_examples": [
+    "球终于又回到我们手上。（见 come around）"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 62
+  }
+ ],
+ "enter": [
+  {
+   "ch_ndef": "〔某人〕进入，进去〔某处〕",
+   "en_ndef": "sb/sth enters sth, they go into it",
+   "construction": "sb/sth enters sth,",
+   "examples": [
+    "The vessel enters the harbour.",
+    "A sense of horror entered her voice.",
+    "The economy entered a period of recession.",
+    "At that moment the memory of her former life entered her mind."
+   ],
+   "ch_examples": [
+    "游船驶入港口。",
+    "她的声音中透露着一丝恐惧。",
+    "该国的经济进入了衰退期。",
+    "那时先前生活的记忆浮现在她的脑海。"
+   ],
+   "synonyms": [
+    "go into",
+    "come into",
+    "move into"
+   ],
+   "antonyms": [
+    "get out",
+    "go out",
+    "come out"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "〔某人〕加入〔组织〕；走上〔工作岗位〕",
+   "en_ndef": "sb enters an organization or profession, they join it",
+   "construction": "sb enters an organization or profession,",
+   "examples": [
+    "He hoped to enter the department as a technician.",
+    "Women are trained to enter professions inaccessible to them before."
+   ],
+   "ch_examples": [
+    "他希望到加入这一部门当一名技术人员",
+    "妇女经过培训走上以前并不对她们开放的工作岗位。"
+   ],
+   "synonyms": [
+    "take part in"
+   ],
+   "antonyms": [
+    "quit",
+    "exit"
+   ],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "〔某人〕报名参加〔比赛；竞赛等〕",
+   "en_ndef": "sb enters (for) a race or competition etc, they register formally as a participant in it",
+   "construction": "sb enters (for) a race or competition etc,",
+   "examples": [
+    "He entered for the race/exam."
+   ],
+   "ch_examples": [
+    "他报名参加比赛/考试。"
+   ],
+   "synonyms": [
+    "enrol",
+    "participate in",
+    "take part in"
+   ],
+   "antonyms": [
+    "quit"
+   ],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔某人〕（往计算机或文档）输[记]入〔姓名；数据等〕",
+   "en_ndef": "sb enters names or data etc in(to) a computer, document or database etc, they write or keyboard them in",
+   "construction": "sb enters names or data etc in(to) a computer, document or database etc,",
+   "examples": [
+    "to enter details in a notebook",
+    "Please enter the postal code.",
+    "Please enter the password in the computer."
+   ],
+   "ch_examples": [
+    "把细目记入笔记簿",
+    "请写下邮编。",
+    "请将密码输入到电脑中。"
+   ],
+   "synonyms": [
+    "input",
+    "insert",
+    "write",
+    "record"
+   ],
+   "antonyms": [
+    "output"
+   ],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "〔某人〕提出〔某事〕",
+   "en_ndef": "sb enters sth, they state it officially",
+   "construction": "sb enters sth,",
+   "examples": [
+    "If he failed to enter a plea, he would almost inevitably be found guilty."
+   ],
+   "ch_examples": [
+    "如果不进行抗辩，他将无法避免被定罪。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  }
+ ],
+ "fall": [
+  {
+   "ch_ndef": "〔从高处〕落下；往下掉；降落",
+   "en_ndef": "fall from/out of sth to move from a higher to a lower level, usu. rapidly and without control",
+   "construction": "fall from/out of sth",
+   "examples": [
+    "A light rain was falling steadily.",
+    "Leaves were falling from the trees.",
+    "She opened the cupboard and everything fell out.",
+    "I can't find my passport —— it must have fallen out of my pocket."
+   ],
+   "ch_examples": [
+    "小雨不停地下着。",
+    "树叶从树上飘落下来。",
+    "她打开橱柜，所有东西就掉了出来。",
+    "我找不到我的护照，它肯定从我口袋里滑落了。"
+   ],
+   "synonyms": [
+    "descend"
+   ],
+   "antonyms": [
+    "rise",
+    "ascend"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "〔某物〕突然降临〔到某人头上〕；突然出现；来临",
+   "en_ndef": "sth falls on/upon/in sb/sth, it comes quickly and suddenly",
+   "construction": "sth falls on/upon/in sb/sth,",
+   "examples": [
+    "A silence suddenly fell on the students.",
+    "Fear fell upon the children.",
+    "Darkness falls quickly in winter.",
+    "It grew colder as night fell.",
+    "A sudden silence fell in the meeting room."
+   ],
+   "ch_examples": [
+    "学生们安静下来，顿然鸦雀无声。",
+    "孩子们突然感到很害怕。",
+    "冬季天黑得快。",
+    "夜幕降临，变得愈加寒冷。",
+    "会议室突然静了下来。"
+   ],
+   "synonyms": [
+    "descend",
+    "occur",
+    "arrive"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "〔人或动物〕跌倒；〔房屋等〕坍塌",
+   "en_ndef": "people, animals, or buildings etc fall down/over, they suddenly stop standing and collapse",
+   "construction": "people, animals, or buildings etc fall down/over,",
+   "examples": [
+    "She fell over and scraped her knee."
+   ],
+   "ch_examples": [
+    "她摔倒了，擦伤了膝盖。"
+   ],
+   "synonyms": [
+    "tumble",
+    "plunge",
+    "collapse"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "〔数量等〕下降；〔强度等〕减弱",
+   "en_ndef": "sth such as a number, amount, or intensity falls, it goes down to a lower level",
+   "construction": "sth such as a number, amount, or intensity falls,",
+   "examples": [
+    "The price fell from 60 per cent to 36 per cent.",
+    "The temperature fell sharply the next day.",
+    "The stock is expected to continue falling today.",
+    "Her mother's voice fell as they entered the room."
+   ],
+   "ch_examples": [
+    "价格从60%降到了36%。",
+    "第二天温度骤然下降。",
+    "预计股价今天将继续下跌。",
+    "他们走进房间时，她母亲的声音减弱了。"
+   ],
+   "synonyms": [
+    "decrease",
+    "decline",
+    "diminish"
+   ],
+   "antonyms": [
+    "increase",
+    "extend",
+    "escalate"
+   ],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "进入〔某状态〕；开始成为",
+   "en_ndef": "to pass into a particular new state",
+   "construction": "",
+   "examples": [
+    "to fall ill",
+    "The child has fallen asleep on the bed.",
+    "I fell into conversation with a foreigner on the plane.",
+    "Insects often fall prey to reptiles.",
+    "to fall victim to violence"
+   ],
+   "ch_examples": [
+    "病倒",
+    "小孩在床上睡着了。",
+    "在飞机上，我和一位老外攀谈起来。",
+    "昆虫往往成为爬行动物的猎物。",
+    "成为暴力受害者"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "属于〔某类；群体；责任范围等〕",
+   "en_ndef": "fall into/within/under a particular group, class, type, range, or area of responsibility etc to belong to it",
+   "construction": "fall into/within/under a particular group, class, type, range, or area of responsibility etc",
+   "examples": [
+    "All the members of the committee fall into two categories.",
+    "The case didn't fall within the scope of my responsibility."
+   ],
+   "ch_examples": [
+    "委员会的所有成员分属于两类。",
+    "这个案件不在我的职责受理范围之内。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "〔某物〕下垂，低垂〔至某处〕；〔朝某处〕落下",
+   "en_ndef": "sth falls (over/to/onto sth else), it hangs down loosely (on it)",
+   "construction": "sth falls (over/to/onto sth else),",
+   "examples": [
+    "The girl's hair fell over her shoulders."
+   ],
+   "ch_examples": [
+    "女孩头发披肩。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "〔某物〕向下倾斜",
+   "en_ndef": "sth falls away/off, it has an angle with one end higher and the other lower",
+   "construction": "sth falls away/off,",
+   "examples": [
+    "The land falls sharply towards the foot of the mountain."
+   ],
+   "ch_examples": [
+    "地势陡峭，伸向山脚。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "〔国家〕沦陷；〔政府〕垮台；失守",
+   "en_ndef": "sth such as a country or government falls, it is defeated and loses its position of power",
+   "construction": "sth such as a country or government falls,",
+   "examples": [
+    "The Roman Empire finally fell.",
+    "The government fell shortly for its ineffective policies."
+   ],
+   "ch_examples": [
+    "罗马帝国最终灭亡。",
+    "因政策实施无效，政府瞬即垮台。"
+   ],
+   "synonyms": [
+    "surrender",
+    "yield",
+    "submit"
+   ],
+   "antonyms": [
+    "triumph",
+    "prevail"
+   ],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "〔某人〕阵亡；被击毙",
+   "en_ndef": "sb falls, they are killed in a battle",
+   "construction": "sb falls,",
+   "examples": [
+    "He reportedly fell in the battle on June 17."
+   ],
+   "ch_examples": [
+    "据说，他阵亡于6月17日的战役之中。"
+   ],
+   "synonyms": [
+    "die",
+    "perish"
+   ],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "〔事件〕发生；〔节日等〕适逢（某时）",
+   "en_ndef": "an event or festival etc falls (on a date), it happens or occurs (at that time)",
+   "construction": "an event or festival etc falls (on a date),",
+   "examples": [
+    "Easter falls early this year.",
+    "The celebration falls on July 26."
+   ],
+   "ch_examples": [
+    "今年的复活节来得早。",
+    "庆典在7月26日举行。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "〔向某处〕移动；占据〔某位置〕",
+   "en_ndef": "fall on/over/across sth to move to or come from a particular direction",
+   "construction": "fall on/over/across sth",
+   "examples": [
+    "A beam of red light fell over the room.",
+    "A shadow fell across his face, hiding his expression."
+   ],
+   "ch_examples": [
+    "有束红色光线映入室内。",
+    "一片阴影掠过他的脸庞，遮掩了其表情。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 12
+  }
+ ],
+ "go": [
+  {
+   "ch_ndef": "去，走",
+   "en_ndef": "to move or proceed from one place to another",
+   "construction": "",
+   "examples": [
+    "Let's go home!",
+    "There's little probability that he'll go to New York tomorrow."
+   ],
+   "ch_examples": [
+    "我们回家吧！",
+    "他明天去纽约的可能性很小。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "移动；旅行；行走（指方式）",
+   "en_ndef": "to travel in a certain direction or to a certain place",
+   "construction": "",
+   "examples": [
+    "I'd better go slowly but surely.",
+    "You're going too fast."
+   ],
+   "ch_examples": [
+    "我要走得慢一点但稳当一点。",
+    "你走得太快了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "离开；离去；出发",
+   "en_ndef": "to leave some place, in favour of somewhere else",
+   "construction": "",
+   "examples": [
+    "May I go now?",
+    "I have to go.",
+    "When did she go?"
+   ],
+   "ch_examples": [
+    "我现在可以走吗?",
+    "我必须离开。",
+    "她什么时候离开的?"
+   ],
+   "synonyms": [
+    "depart"
+   ],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "（为某目的）去〔某处〕",
+   "en_ndef": "〖主英〗go to somewhere to move to a place for a particular purpose",
+   "construction": "〖主英〗go to somewhere",
+   "examples": [
+    "She never gets to go to school.",
+    "As a Christian, she goes to church on Sundays."
+   ],
+   "ch_examples": [
+    "她从来没有机会上学。",
+    "她是名基督教徒,每个星期日到教堂去做礼拜。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "去做〔某事〕",
+   "en_ndef": "go on sth to proceed to a place because of some vow or promise",
+   "construction": "go on sth",
+   "examples": [
+    "to go on a pilgrimage",
+    "He went on a hike.",
+    "You should go on a diet."
+   ],
+   "ch_examples": [
+    "去朝圣",
+    "他徒步旅行。",
+    "你应该节食。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "去参加，去从事〔某项活动〕",
+   "en_ndef": "go for sth to travel somewhere in order to take part in an activity",
+   "construction": "go for sth",
+   "examples": [
+    "Some tourists go for  sighting, others go shopping.",
+    "Let's go for a walk.",
+    "Shall we go for a picnic this Saturday?"
+   ],
+   "ch_examples": [
+    "有的旅行者去观光，还有的去购物。",
+    "我们出去散散步吧。",
+    "我们周六去野餐怎么样？"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "〔机器等〕运转，运行",
+   "en_ndef": "(usu. of a machine) to operate or function effectively",
+   "construction": "",
+   "examples": [
+    "The clock doesn't go, but I find nothing wrong with the mechanism."
+   ],
+   "ch_examples": [
+    "钟不走了，但是我并没发现装置出毛病。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "归；属",
+   "en_ndef": "to attribute a thing to something",
+   "construction": "",
+   "examples": [
+    "Thank you, but in all truth I feel the credit should go to the whole team.",
+    "Victory does not necessarily go to the strong."
+   ],
+   "ch_examples": [
+    "谢谢，但是说实话我感觉应该归功于整个团队。",
+    "胜利不一定归于强者。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 8
+  },
+  {
+   "ch_ndef": "通到；通向；延伸到",
+   "en_ndef": "to lead or extend to a place, such as a road, river, or a sign indicating its direction",
+   "construction": "",
+   "examples": [
+    "Which road goes to the Metro entrance?",
+    "The stream goes from north to south."
+   ],
+   "ch_examples": [
+    "哪条路通往地铁口？",
+    "这条河从北流向南。"
+   ],
+   "synonyms": [
+    "extend"
+   ],
+   "antonyms": [],
+   "sense_index": 9
+  },
+  {
+   "ch_ndef": "〔某物〕被发送；被传递给〔某人〕",
+   "en_ndef": "sth goes to sb, it is passed to them",
+   "construction": "sth goes to sb,",
+   "examples": [
+    "You'd better re-examine your report before it goes to the chief."
+   ],
+   "ch_examples": [
+    "你把报告送交上司之前最好再检查一遍。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 10
+  },
+  {
+   "ch_ndef": "〔某物〕被放置，被置于〔某地方",
+   "en_ndef": "sth goes to a place, it is put or placed in a place or a position〕",
+   "construction": "sth goes to a place,",
+   "examples": [
+    "This suitcase should go on the rack.",
+    "The English novels go on the bottom shelf."
+   ],
+   "ch_examples": [
+    "这只箱子应放在行李架上。",
+    "英文小说放在书架底层。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 11
+  },
+  {
+   "ch_ndef": "〔某物〕（不）适合；放（不）进〔某地〕",
+   "en_ndef": "sth cannot go in a place, it fails to fit into a particular place or space",
+   "construction": "sth cannot go in a place,",
+   "examples": [
+    "The table is too big to go in the closet."
+   ],
+   "ch_examples": [
+    "桌子太大，放不进贮藏室里。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 12
+  },
+  {
+   "ch_ndef": "（事情）进展，进行",
+   "en_ndef": "used to talk about degrees of success, progress, or difficulty",
+   "construction": "",
+   "examples": [
+    "How did the negotiation go?",
+    "In this case, things do not go so smoothly after all."
+   ],
+   "ch_examples": [
+    "谈判进展如何？",
+    "在这种情况下，事情的进展并不顺利。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 13
+  },
+  {
+   "ch_ndef": "〔某人或某物〕处于；进入，脱离〔某种状态〕",
+   "en_ndef": "go to/into sth to be in or out of a particular state",
+   "construction": "go to/into sth",
+   "examples": [
+    "to go to sleep",
+    "to go to war"
+   ],
+   "ch_examples": [
+    "入睡",
+    "开战"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 14
+  },
+  {
+   "ch_ndef": "变成，变为，变得（尤指向不好的方面）",
+   "en_ndef": "to become different, often in a less favourable state",
+   "construction": "",
+   "examples": [
+    "Keep calm when things go wrong.",
+    "My grandma's hair is going grey."
+   ],
+   "ch_examples": [
+    "出问题时要保持冷静。",
+    "奶奶的头发日渐花白。"
+   ],
+   "synonyms": [
+    "become"
+   ],
+   "antonyms": [],
+   "sense_index": 15
+  },
+  {
+   "ch_ndef": "（在某种状态下）生活，过活",
+   "en_ndef": "to live in a particular condition",
+   "construction": "",
+   "examples": [
+    "The people of this tribe used to go naked .",
+    "If I had my life to live over, I would go barefoot, earlier in the spring."
+   ],
+   "ch_examples": [
+    "这个部落里的人过去常是裸体的。",
+    "如果让我重新生活一次的话，我会在早春的日子里光着脚丫跑来跑去。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 16
+  },
+  {
+   "ch_ndef": "不见了；丢失；不复存在",
+   "en_ndef": "to disappear or to get lost",
+   "construction": "",
+   "examples": [
+    "My new watch is gone.",
+    "Has your stomachache gone?"
+   ],
+   "ch_examples": [
+    "我的新手表不见了。",
+    "你肚子痛好了吗？"
+   ],
+   "synonyms": [
+    "disappear"
+   ],
+   "antonyms": [],
+   "sense_index": 17
+  },
+  {
+   "ch_ndef": "变坏；损坏；不起作用",
+   "en_ndef": "to become worse, collapse, or to stop working properly",
+   "construction": "",
+   "examples": [
+    "His eyesight is going.",
+    "The bulb has gone."
+   ],
+   "ch_examples": [
+    "他的视力每况愈下。",
+    "电灯泡坏了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 18
+  },
+  {
+   "ch_ndef": "离去（死的委婉说法）",
+   "en_ndef": "to die",
+   "construction": "",
+   "examples": [
+    "You can take away nothing with you when you go."
+   ],
+   "ch_examples": [
+    "人死万事空。"
+   ],
+   "synonyms": [
+    "die"
+   ],
+   "antonyms": [],
+   "sense_index": 19
+  },
+  {
+   "ch_ndef": "用于〔某物或某事〕；花掉",
+   "en_ndef": "go on sth to be spent or finished on it",
+   "construction": "go on sth",
+   "examples": [
+    "This money will go on building a new school.",
+    "If you save some money each month, we can go on holiday."
+   ],
+   "ch_examples": [
+    "这笔钱将用于建一所新学校。",
+    "要是你每月能存点儿钱，咱们就可以外出度假了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 20
+  },
+  {
+   "ch_ndef": "被卖掉；被出售",
+   "en_ndef": "go (to sb) (for sth) to be sold (for a particular amount)",
+   "construction": "go (to sb) (for sth)",
+   "examples": [
+    "The watch went for $300."
+   ],
+   "ch_examples": [
+    "这挂表卖300美元。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 21
+  },
+  {
+   "ch_ndef": "有助于；促成；起作用",
+   "en_ndef": "to help or promote a thing, or to play a role in making a thing happen",
+   "construction": "",
+   "examples": [
+    "All these go to show that the leaders of local government are capable and effective.",
+    "The results went to prove him right."
+   ],
+   "ch_examples": [
+    "所有这些都说明当地政府的领导既有能力又讲实效。",
+    "结果证实了他的观点。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 22
+  },
+  {
+   "ch_ndef": "〔时间〕流逝；消逝；过去",
+   "en_ndef": "(usu. of time) to pass by or slip away quickly",
+   "construction": "",
+   "examples": [
+    "The time went fast."
+   ],
+   "ch_examples": [
+    "时间过得飞快。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 23
+  },
+  {
+   "ch_ndef": "〔某数字〕除；除尽〔另一数字〕。",
+   "en_ndef": "go (into a number), to divide a certain number, esp. an even number",
+   "construction": "go (into a number),",
+   "examples": [
+    "5 won't go into 11."
+   ],
+   "ch_examples": [
+    "5除11除不掉。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 24
+  },
+  {
+   "ch_ndef": "发出（某种声音）；做（某种动作）",
+   "en_ndef": "to give a sound or to make a movement",
+   "construction": "",
+   "examples": [
+    "The alarm clock goes \"tick-tock, tick-tock\".",
+    "The firecracker went \"bang\"."
+   ],
+   "ch_examples": [
+    "闹钟发出滴答滴答的声音。",
+    "爆竹嘣地一声响了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 25
+  },
+  {
+   "ch_ndef": "发出信号[警告]",
+   "en_ndef": "to make a sound as a signal for one to do a thing",
+   "construction": "",
+   "examples": [
+    "The whistle went for the end of the football match."
+   ],
+   "ch_examples": [
+    "哨声结束了本场足球赛。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 26
+  },
+  {
+   "ch_ndef": "开始（某一活动）",
+   "en_ndef": "to start an action or activity",
+   "construction": "",
+   "examples": [
+    "Here we go.",
+    "\"Ready, steady, go!\" is the signal to start a race."
+   ],
+   "ch_examples": [
+    "现在开始。",
+    "“各就各位，预备，跑！”是赛跑开始的信号。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 27
+  },
+  {
+   "ch_ndef": "可得到；可买到；现成可用",
+   "en_ndef": "be going being able to get, buy, access, or use",
+   "construction": "be going",
+   "examples": [
+    "Is there any beer going?"
+   ],
+   "ch_examples": [
+    "有没有啤酒？"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 28
+  },
+  {
+   "ch_ndef": "查阅",
+   "en_ndef": "to read or look at a thing, esp. in search of a particular item",
+   "construction": "",
+   "examples": [
+    "He always start the day by going through his mail.",
+    "Go over your bill before you pay."
+   ],
+   "ch_examples": [
+    "他总是每天一早就仔细查阅邮件。",
+    "付帐前先仔细看看帐单。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 29
+  },
+  {
+   "ch_ndef": "放弃；废弃",
+   "en_ndef": "（与must, can, have to连用）to get rid of a thing or to throw something away because it is of no use",
+   "construction": "",
+   "examples": [
+    "The broken chair will have to go.",
+    "These words must go."
+   ],
+   "ch_examples": [
+    "那把烂椅子必须扔掉。",
+    "这些词要删去。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 30
+  },
+  {
+   "ch_ndef": "相配，协调",
+   "en_ndef": "to fit or match with other things",
+   "construction": "",
+   "examples": [
+    "These colours go well together."
+   ],
+   "ch_examples": [
+    "这些颜色很调和。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 31
+  },
+  {
+   "ch_ndef": "剩下",
+   "en_ndef": "(used in an infinitive form) to be left",
+   "construction": "",
+   "examples": [
+    "With only one exam to go, I felt a little relieved."
+   ],
+   "ch_examples": [
+    "仅剩下一场考试了，我稍稍松了口气。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 32
+  },
+  {
+   "ch_ndef": "将要；打算〔做某事〕",
+   "en_ndef": "be going to do sth to intend to do it or it is expected to happen",
+   "construction": "be going to do sth",
+   "examples": [
+    "She is going to have a baby."
+   ],
+   "ch_examples": [
+    "她要生小孩子了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 33
+  },
+  {
+   "ch_ndef": "[常用于否定结构]忍受",
+   "en_ndef": "(usu. used in a negative structure) to stand, bear or tolerate a thing because a person dislikes or disapproves of it",
+   "construction": "",
+   "examples": [
+    "His wife can't go such behaviour."
+   ],
+   "ch_examples": [
+    "对这种行为她妻子忍受不了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 34
+  },
+  {
+   "ch_ndef": "[常用于否定结构]买得起",
+   "en_ndef": "(usu. used in a negative structure) to afford a thing, or to have the ability or enough money to buy it",
+   "construction": "",
+   "examples": [
+    "They couldn't go the price."
+   ],
+   "ch_examples": [
+    "他们出不起这个价。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 35
+  },
+  {
+   "ch_ndef": "打（赌）；叫（牌）；出（价）",
+   "en_ndef": "to bet or bid on a thing, or to offer a price to buy it",
+   "construction": "",
+   "examples": [
+    "to go $30 on the white horse",
+    "I'll go $200 on the sword."
+   ],
+   "ch_examples": [
+    "给白马下三十美元赌注",
+    "这把剑我出价二百美元。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 36
+  },
+  {
+   "ch_ndef": "承担…的责任",
+   "en_ndef": "to take on the responsibility or obligation for an action",
+   "construction": "",
+   "examples": [
+    "I will go bail for that."
+   ],
+   "ch_examples": [
+    "我愿为那件事做担保。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 37
+  },
+  {
+   "ch_ndef": "行走（一段距离）",
+   "en_ndef": "to move a particular distance",
+   "construction": "",
+   "examples": [
+    "We went 90 miles an hour."
+   ],
+   "ch_examples": [
+    "我们每小时走90英里。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 38
+  }
+ ],
+ "return": [
+  {
+   "ch_ndef": "〔某人〕〔从某处〕返回〔另一处〕",
+   "en_ndef": "sb returns (to one place)(from another) they go back there",
+   "construction": "sb returns (to one place)(from another)",
+   "examples": [
+    "The couple returned to their hometown in 1981.",
+    "When I returned to my apartment the cat meowed a welcome."
+   ],
+   "ch_examples": [
+    "这对夫妇1981年返回了故乡。",
+    "当我回到公寓，猫咪喵瞄地叫着迎接我。"
+   ],
+   "synonyms": [
+    "revert",
+    "retrovert",
+    "regress",
+    "turn back"
+   ],
+   "antonyms": [
+    "depart",
+    "leave"
+   ],
+   "sense_index": 1
+  },
+  {
+   "ch_ndef": "归还〔某物〕〔至某人，某处〕；放回；送回",
+   "en_ndef": "return sth to a place or a person to put it back or send it back to its owner",
+   "construction": "return sth to a place or a person",
+   "examples": [
+    "All books are to be returned to the library before Friday."
+   ],
+   "ch_examples": [
+    "所有书籍必须在周五前归还给图书馆。"
+   ],
+   "synonyms": [
+    "render"
+   ],
+   "antonyms": [],
+   "sense_index": 2
+  },
+  {
+   "ch_ndef": "回答；反应",
+   "en_ndef": "answer or reply",
+   "construction": "",
+   "examples": [
+    "I know you never answer my letters or return my calls."
+   ],
+   "ch_examples": [
+    "我知道你既不给我回信也不给我回电话。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 3
+  },
+  {
+   "ch_ndef": "回应",
+   "en_ndef": "to do the same thing to somebody as they have done it to you, such as smile, frown, greet, withdraw something, grant a favour etc",
+   "construction": "",
+   "examples": [
+    "The girl returned the boy’s smile.",
+    "She has done harm to me but I don’t want to do it in return."
+   ],
+   "ch_examples": [
+    "女孩对男孩微笑以示回应。",
+    "她伤害了我，但我不想对她作同样的事。"
+   ],
+   "synonyms": [
+    "retort",
+    "repay",
+    "rejoin"
+   ],
+   "antonyms": [],
+   "sense_index": 4
+  },
+  {
+   "ch_ndef": "再现；恢复",
+   "en_ndef": "a feeling such as anger, pain, suspicions etc or a situation returns it comes back again",
+   "construction": "a feeling such as anger, pain, suspicions etc or a situation returns",
+   "examples": [
+    "My toothache returned again this morning."
+   ],
+   "ch_examples": [
+    "今天早上牙痛又来了。"
+   ],
+   "synonyms": [],
+   "antonyms": [],
+   "sense_index": 5
+  },
+  {
+   "ch_ndef": "〔法官，陪审团〕宣布〔判决〕",
+   "en_ndef": "a judge/jury returns a verdict they decide whether a person is guilty or not",
+   "construction": "a judge/jury returns a verdict",
+   "examples": [
+    "The jury returned a verdict of not guilty."
+   ],
+   "ch_examples": [
+    "陪审团宣判无罪。"
+   ],
+   "synonyms": [
+    "render",
+    "deliver"
+   ],
+   "antonyms": [],
+   "sense_index": 6
+  },
+  {
+   "ch_ndef": "获利；生息",
+   "en_ndef": "to produce a financial profit, interest, or other gain",
+   "construction": "",
+   "examples": [
+    "to return a low rate of interest"
+   ],
+   "ch_examples": [
+    "获得较低利润"
+   ],
+   "synonyms": [
+    "reward",
+    "payment",
+    "pay",
+    "pay dividend"
+   ],
+   "antonyms": [],
+   "sense_index": 7
+  },
+  {
+   "ch_ndef": "选举",
+   "en_ndef": "return sb to/as sth elect somebody to an office by a vote",
+   "construction": "return sb to/as sth",
+   "examples": [
+    "Despite presiding over large-scale unemployment, the party was returned to office by a majority."
+   ],
+   "ch_examples": [
+    "尽管导致大量的失业，保守党还是被大多数人选为执政党。"
+   ],
+   "synonyms": [
+    "re-elect"
+   ],
+   "antonyms": [],
+   "sense_index": 8
+  }
+ ]
+}

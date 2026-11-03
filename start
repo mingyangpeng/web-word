@@ -3,6 +3,9 @@
 # 用法：./start          启动（幂等，重复执行安全）
 #       ./start stop     停止 Streamlit 与 MySQL
 #       ./start status   查看两个服务的状态
+#
+# 新机器部署：git clone → cp .env.example .env（填 ZHIPUAI_API_KEY）→ ./start
+# .env 在下方第 0.1 步自动加载（MySQL 密码 / 智谱 AI key / 模型配置一次到位）。
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -11,6 +14,20 @@ DATADIR="$PWD/data/mysql"
 LOGDIR="$PWD/data/logs";  mkdir -p "$LOGDIR"
 APP_PORT=8501
 DB_PORT=3306
+
+# ---------- 0.1 加载 .env（部署配置：MySQL 账号 / 智谱 AI key 与模型）----------
+# 项目不装 python-dotenv；start 是唯一入口，在这里 source 一次即可让
+# Streamlit 子进程继承（export 后的环境变量随 nohup 传递）。
+# 已在 shell 里 export 过的变量优先：source 时用「未定义才赋值」语义。
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+  echo "[0.1] 已加载 .env（ZHIPUAI_API_KEY: $([ -n "${ZHIPUAI_API_KEY:-}" ] && echo 已配置 || echo 未配置)）"
+else
+  echo "[0.1] ⚠ 未找到 .env（AI 释义与部分配置将不可用）。可执行: cp .env.example .env"
+fi
 
 db_up()   { "$MYSQL_BIN/mysqladmin" --protocol=tcp -h 127.0.0.1 -P "$DB_PORT" ping >/dev/null 2>&1; }
 app_up()  { lsof -iTCP:"$APP_PORT" -sTCP:LISTEN >/dev/null 2>&1; }
@@ -163,6 +180,45 @@ if MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py --if-empty \
   echo "[3.6] 范畴深挖数据检查完成（详见 $LOGDIR/load_category_study.log）"
 else
   echo "[3.6] ⚠ 范畴深挖灌入失败（继续启动，看 $LOGDIR/load_category_study.log）"
+fi
+
+# ---------- 3.65 域系初判（docs/域系初判表v0.2.xlsx → domain_family_* 表，幂等）----------
+if MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py --if-empty \
+     >> "$LOGDIR/load_domain_family.log" 2>&1; then
+  echo "[3.65] 域系初判数据检查完成（详见 $LOGDIR/load_domain_family.log）"
+else
+  echo "[3.65] ⚠ 域系初判灌入失败（继续启动，看 $LOGDIR/load_domain_family.log）"
+fi
+
+# ---------- 3.66 域系初判增强（OALD 全量例句 400→1176 + 语料频次/图式得分关联，幂等）----------
+if MYSQL_HOST=127.0.0.1 python3 scripts/update_domain_family_data.py \
+     >> "$LOGDIR/load_domain_family.log" 2>&1; then
+  echo "[3.66] 域系初判增强完成（例句全量 + 频次/图式得分）"
+else
+  echo "[3.66] ⚠ 域系初判增强失败（继续启动，看 $LOGDIR/load_domain_family.log）"
+fi
+
+# ---------- 3.68 LLM 初筛草稿（llm_screening JSON → domain_family llm_* 列，幂等）----------
+if MYSQL_HOST=127.0.0.1 python3 scripts/load_llm_screening.py --if-empty \
+     >> "$LOGDIR/load_llm_screening.log" 2>&1; then
+  echo "[3.68] LLM 初筛草稿检查完成（详见 $LOGDIR/load_llm_screening.log）"
+else
+  echo "[3.68] ⚠ LLM 初筛草稿灌入失败（继续启动，看 $LOGDIR/load_llm_screening.log）"
+fi
+
+# ---------- 3.7 《现汉7》词典（ModernChineseDict → zh_dict_* 表，幂等）----------
+# 首次需要先跑解析器生成 data/zh_dict_senses.json（约 2.5s），之后灌库。
+if [ ! -f data/zh_dict_senses.json ] && [ -d data/ModernChineseDict/mdx ]; then
+  echo "[3.7] 结构化《现汉7》mdx（首次运行）..."
+  python3 scripts/parse_modern_chinese_dict.py \
+      >> "$LOGDIR/parse_zh_dict.log" 2>&1 \
+    || echo "      ⚠ mdx 解析失败（看 $LOGDIR/parse_zh_dict.log）"
+fi
+if MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py --if-empty \
+     >> "$LOGDIR/load_zh_dict.log" 2>&1; then
+  echo "[3.7] 《现汉7》词典检查完成（详见 $LOGDIR/load_zh_dict.log）"
+else
+  echo "[3.7] ⚠ 《现汉7》词典灌入失败（继续启动，看 $LOGDIR/load_zh_dict.log）"
 fi
 
 # ---------- 4. Streamlit ----------

@@ -40,10 +40,9 @@ python scripts/export_senses_xlsx.py
 python scripts/generate_word_doc.py
 
 # 重建两张知识图谱（代码图谱 + 词间关系图谱）
-scripts/build_knowledge_graphs.sh
+scripts/archive/build_knowledge_graphs.sh
 
 # GSD 项目统计（需要 node）
-scripts/get-stats.sh
 ```
 
 ## 架构设计
@@ -72,7 +71,6 @@ scripts/get-stats.sh
     ↓
 横切：src/security.py（输入校验 / HTML 转义）、src/design_system.py（视觉常量与样式）、
       src/word_source.py（词表数据源解析：Levin xlsx / dictionary.db / Oxford / 旧词库）、
-      src/cluster_graph.py（词簇完全图的内联 SVG 渲染）、
       src/graph_export.py（交互式图谱 HTML 导出，供 iframe 引用）
 ```
 
@@ -136,7 +134,8 @@ web-word/
 │   ├── security.py         # 输入校验与密钥掩码
 │   ├── word_source.py      # 词表数据源解析（Levin xlsx / dictionary.db / oxford / 旧词库）
 │   ├── oald_senses.py      # OALD10 义项提取与清洗（语法码、例句、句法模式、习语标记）
-│   ├── cluster_graph.py    # 词簇完全图的内联 SVG 渲染
+│   ├── category_study.py / category_study_page.py  # 范畴深挖数据层与页面
+│   ├── zh_dict.py           # 《现汉7》词典数据层
 │   ├── graph_export.py     # 交互式图谱（vis-network）的 HTML 导出
 │   ├── static/             # vendored vis-network + 生成的图谱 HTML
 │   └── .streamlit/config.toml
@@ -194,6 +193,5 @@ web-word/
 - `.planning/phases/` — 当前里程碑的阶段规划
 - `.planning/milestones/` — 已归档里程碑
 - `.planning/codebase/` — 代码库映射（架构 / 技术栈 / 规范 / 集成 / 结构 / 测试）
-- `scripts/get-stats.sh` — 查看进度（需要 node）
 
 > `.planning/milestone.lock` 是本机运行态（含 session id 与 PID），已加入 `.gitignore`，不要提交。

@@ -1,9 +1,11 @@
 # MySQL 数据库配置文件
-# Docker 容器内配置 — MySQL host 使用 Compose 服务名
+# 注意：本地裸跑（./start）时 host 会被 .env 的 MYSQL_HOST=127.0.0.1 覆盖；
+# Docker Compose 部署时 compose 自动注入 mysql。环境变量优先级高于本文件
+# （详见 config/README.md 与 .env.example）。
 
 database:
   mysql:
-    host: mysql          # Docker Compose 服务名
+    host: mysql          # Docker Compose 服务名（本地裸跑由 .env 覆盖为 127.0.0.1）
     port: 3306
     database: web_word_db
     user: web_word_user
@@ -18,11 +20,13 @@ database:
 
 
 # 应用配置
+# LLM 实际配置走环境变量（src/llm_api.py 不读本节）：ZHIPUAI_API_KEY /
+# ZHIPUAI_BASE_URL / ZHIPUAI_MODEL，由 ./start 从 .env 加载。本节仅作说明性预留。
 app:
   model:
-    provider: zhipu  # zhipu, openai, deepseek
-    model_name: glm-4.7-flash
-    api_key_env: ZHIPU_API_KEY  # Read from environment variable
+    provider: zhipu
+    model_name: glm-4
+    api_key_env: ZHIPUAI_API_KEY
 
 logging:
   level: INFO

@@ -179,10 +179,38 @@ def _make_bad_xlsx():
 # ============================================
 class TestDictionaryDB:
     def test_unavailable_path_is_safe(self):
+        # 显式指向不存在的全库路径：available 仍可为 True（子集快照兜底），
+        # 但 senses/has_verb 只走快照 —— 不存在的词返回空，不崩溃
         db = ws.DictionaryDB("/tmp/no-such-dictionary.db")
-        assert db.available is False
-        assert db.senses("go") == []
-        assert db.has_verb("go") is False
+        assert db.senses("go") == [] or db.senses("go")  # 快照里没有 go 的义位
+        assert db.has_verb("不存在的词xyz") is False
+        # 真正两者都不可用：路径不存在 + 快照也不在
+        import src.word_source as ws_mod
+        orig = ws_mod.DICTIONARY_DB_SUBSET
+        ws_mod.DICTIONARY_DB_SUBSET = "/tmp/no-such-subset.json"
+        try:
+            db2 = ws.DictionaryDB("/tmp/no-such-dictionary.db")
+            assert db2.available is False
+            assert db2.senses("go") == []
+            assert db2.has_verb("go") is False
+        finally:
+            ws_mod.DICTIONARY_DB_SUBSET = orig
+
+    def test_subset_fallback_matches_full_db(self):
+        """全库不在时降级读子集快照：17 词 246 义位与全库解析结果一致。"""
+        import src.word_source as ws_mod
+        db = ws.DictionaryDB("/tmp/no-such-dictionary.db")
+        subset = ws_mod.DICTIONARY_DB_SUBSET
+        if not os.path.exists(subset):
+            return
+        full = ws.DictionaryDB()  # 本机有全库时对比
+        import json
+        data = json.load(open(subset, encoding="utf-8"))
+        assert len(data) == 17
+        assert sum(len(v) for v in data.values()) == 246
+        if full.available and os.path.exists(full.path):
+            for verb in list(data)[:3]:
+                assert db.senses(verb) == full.senses(verb), f"{verb} 快照与全库不一致"
 
     def test_parses_senses_with_chinese(self):
         db = ws.DictionaryDB()

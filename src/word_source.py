@@ -37,6 +37,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 LEVIN_XLSX = os.path.join(ROOT, "docs/Levin移动动词候选词筛选表.xlsx")
 DICTIONARY_DB = os.path.join(ROOT, "data/dictionary.db")
+# dictionary.db（197MB，超 GitHub 100MB 限制不入库）的**子集快照**：
+# 171 个研究动词中有义位明细的 17 词 / 246 义位（Ch-Def/En-Def/例句/近反义）。
+# 新机器没有 dictionary.db 时，DictionaryDB 降级读这份快照 —— word_senses 表
+# 与域系初判的中文例句翻译照常灌入，与有全库的机器结果一致。
+DICTIONARY_DB_SUBSET = os.path.join(ROOT, "data", "dictionary_senses_subset.json")
 OXFORD_CACHE = os.path.join(ROOT, "data/oxford_cache.json")
 
 # ---------------------------------------------------------------
@@ -283,10 +288,22 @@ class DictionaryDB:
     def __init__(self, path: str = None):
         self.path = path or DICTIONARY_DB
         self._conn: Optional[sqlite3.Connection] = None
+        # 子集快照（data/dictionary_senses_subset.json）的惰性缓存：
+        # dictionary.db 不在时降级用它，接口与全库一致
+        self._subset: Optional[Dict[str, List[Dict[str, Any]]]] = None
 
     @property
     def available(self) -> bool:
-        return os.path.exists(self.path)
+        return os.path.exists(self.path) or os.path.exists(DICTIONARY_DB_SUBSET)
+
+    def _load_subset(self) -> Dict[str, List[Dict[str, Any]]]:
+        if self._subset is None:
+            try:
+                with open(DICTIONARY_DB_SUBSET, encoding="utf-8") as f:
+                    self._subset = json.load(f)
+            except (OSError, ValueError):
+                self._subset = {}
+        return self._subset
 
     def connect(self) -> sqlite3.Connection:
         if self._conn is None:
@@ -300,8 +317,10 @@ class DictionaryDB:
             self._conn = None
 
     def has_verb(self, verb: str) -> bool:
-        if not self.available:
-            return False
+        if not os.path.exists(self.path):
+            # 全库不在 → 子集快照判定（快照只含 17 词，与全库行为对齐：
+            # 其余词本就没有义位明细）
+            return verb in self._load_subset()
         cur = self.connect().cursor()
         cur.execute(
             "SELECT 1 FROM dictionary WHERE lower(trim(lemma)) = ? AND trim(pos, char(32) || char(12288)) = 'v' LIMIT 1",
@@ -318,6 +337,9 @@ class DictionaryDB:
         用规则拼一个出来比留空更糟，因为读者无从分辨哪条是抄的、哪条是编的。
         """
         if not self.available:
+            return ""
+        if not os.path.exists(self.path):
+            # 全库不在 → 快照未含音标，按「未收录」处理（不猜、不转写）
             return ""
         cur = self.connect().cursor()
         cur.execute(
@@ -352,6 +374,9 @@ class DictionaryDB:
         """
         if not self.available:
             return []
+        if not os.path.exists(self.path):
+            # 全库不在 → 降级读子集快照（数据形态与全库解析结果一致）
+            return [dict(s) for s in self._load_subset().get(verb, [])]
         cur = self.connect().cursor()
         cur.execute(
             """SELECT xml FROM dictionary
