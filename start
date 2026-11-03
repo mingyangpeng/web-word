@@ -203,6 +203,18 @@ reassemble_dictionary_db || true
 if db_up; then
   echo "[1/3] MySQL 已在运行"
 else
+  # mysqld 8.0 对空 datadir 不做自动初始化（直接启动会 Failed to find valid
+  # data directory 退出）—— 空目录先显式 --initialize-insecure：
+  # 生成系统库，root@localhost 空密码（./start 的 root 探测会接住它）
+  if [ -z "$(ls -A "$DATADIR" 2>/dev/null)" ]; then
+    echo "[1/3] 首次运行：初始化 MySQL 数据目录（--initialize-insecure）..."
+    "$MYSQL_BIN/mysqld" \
+      --datadir="$DATADIR" \
+      --initialize-insecure \
+      --log-error="$LOGDIR/mysqld.init.err" \
+      >> "$LOGDIR/mysqld.stdout" 2>&1
+    echo "      初始化完成（root 空密码，稍后自动建库授权）"
+  fi
   echo "[1/3] 启动 MySQL（数据目录 data/mysql）..."
   "$MYSQL_BIN/mysqld" \
     --datadir="$DATADIR" \
