@@ -31,9 +31,8 @@
 ```bash
 git clone <repo-url> && cd web-word
 
-# 可选：配置智谱 API key，用于实时生成释义
-cp .env.example .env
-# 编辑 .env，填入 ZHIPUAI_API_KEY=你的key
+# `.env` 已入库（含 MySQL 密码与智谱 API key），clone 即带完整配置；
+# 如需覆盖配置再自建 `.env`（模板见 `.env.example`），不建则用仓库自带配置。
 
 docker compose up -d
 docker compose logs -f web      # 查看启动日志
@@ -57,20 +56,21 @@ docker compose down -v         # 连数据卷一起删除（会清空数据库�
 
 ### 路径 B：本地 Python + 本地 MySQL（推荐，一条命令）
 
-**新机器部署（git clone 之后只需两步）：**
+**新机器部署（git clone 之后只需一步）：**
 
 ```bash
-cp .env.example .env    # 编辑 .env：填入 ZHIPUAI_API_KEY（不填则 AI 释义走离线）
-./start                 # 一键完成全部工作
+./start                 # 一键完成全部工作（.env 已入库并由第 0.1 步自动加载）
 ```
 
-`./start` 幂等，重复执行安全，首次运行会依次：
+`.env` 已随仓库分发，无需再 `cp .env.example .env`；若某台机器没有智谱 key，
+AI 释义自动走离线兜底，不影响启动。`./start` 幂等，重复执行安全，首次运行会依次：
 
 1. **加载 `.env`**（MySQL 账号 / 智谱 AI key 与模型，Streamlit 子进程自动继承）
-2. **启动项目自带的 MySQL**（Homebrew `mysql@8.0`，数据目录 `data/mysql/`，与系统 MySQL 互不干扰）
-3. **自动探测 root 密码并建库授权**（免密 → `.env` 的 `MYSQL_ROOT_PASSWORD` → 常见密码清单；探测不到会给出明确指引）
-4. **灌入全部数据**（幂等 `--if-empty`）：171 词词库 + OALD10 义项 → enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
-5. **启动 Streamlit** → <http://localhost:8501>
+2. **Python 依赖自检 + 自动安装**（streamlit/pandas/plotly 等逐一探测，缺了按 requirements.txt 补装）
+3. **MySQL 自动安装与启动**（本机无 MySQL 时经 Homebrew 装 `mysql@8.0`；数据目录 `data/mysql/`，与系统 MySQL 互不干扰）
+4. **自动探测 root 密码并建库授权**（免密 → `.env` 的 `MYSQL_ROOT_PASSWORD` → 常见密码清单；探测不到会给出明确指引）
+5. **灌入全部数据**（幂等 `--if-empty` 七步）：171 词词库 + OALD10 义项 → enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 域系初判（含例句全量增强与 LLM 初筛草稿）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
+6. **启动 Streamlit** → <http://localhost:8501>
 
 **手动分步（需要精细控制时）：**
 
@@ -552,7 +552,7 @@ export ZHIPUAI_API_KEY=你的key
 streamlit run src/app.py
 ```
 
-或写进 `.env`（`.env` 已被 gitignore）后 `set -a; source .env; set +a`。可选调优变量见
+或写进 `.env`（已随仓库入库，`./start` 第 0.1 步自动加载）后 `set -a; source .env; set +a`。可选调优变量见
 `.env.example`：`LLM_MODEL`（默认 `glm-4`）、`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、
 `LLM_TIMEOUT`、`CACHE_TTL_HOURS`。
 
