@@ -29,14 +29,66 @@ else
   echo "[0.1] ⚠ 未找到 .env（AI 释义与部分配置将不可用）。可执行: cp .env.example .env"
 fi
 
-db_up()   { "$MYSQL_BIN/mysqladmin" --protocol=tcp -h 127.0.0.1 -P "$DB_PORT" ping >/dev/null 2>&1; }
-app_up()  { lsof -iTCP:"$APP_PORT" -sTCP:LISTEN >/dev/null 2>&1; }
+# ---------- 0.3 Python 依赖自检 + 自动安装 ----------
+# 新机器最常见的故障：pip install -r requirements.txt 没装全（历史上
+# requirements.txt 漏过 plotly / openpyxl，导致知识图谱与灌库直接崩）。
+# 这里在起应用前逐一探测关键模块；缺了直接自动补装（requirements.txt 在
+# 仓库里），装不上才给安装命令。
+DEPS_INSTALLED=1
+check_deps() {
+  local missing=()
+  for mod in streamlit pandas plotly pymysql yaml openpyxl; do
+    python3 -c "import $mod" >/dev/null 2>&1 || missing+=("$mod")
+  done
+  if [ ${#missing[@]} -gt 0 ]; then
+    echo "[0.3] 缺少 Python 依赖: ${missing[*]}，自动安装（requirements.txt）..."
+    if pip3 install -q -r requirements.txt >> "$LOGDIR/pip_install.log" 2>&1; then
+      echo "[0.3] 依赖安装完成（详见 $LOGDIR/pip_install.log）"
+      return 0
+    fi
+    echo "[0.3] ⚠ 自动安装失败，请手动执行: pip3 install -r requirements.txt"
+    echo "      （或逐个: pip3 install ${missing[*]}）"
+    return 1
+  fi
+  echo "[0.3] Python 依赖自检通过"
+  return 0
+}
+check_deps || DEPS_INSTALLED=0   # 失败不中断：后续起 MySQL 仍可进行，应用端自检再拦
+
+# ---------- 0.4 MySQL 自动安装（新机器零环境）----------
+# 本地 MySQL 不存在时：macOS + Homebrew → brew install mysql@8.0（一次性，
+# 数百 MB）；已有 MySQL 二进制则跳过；Windows/Linux 给出安装指引。
+ensure_mysql_binary() {
+  if [ -x "$MYSQL_BIN/mysql" ]; then return 0; fi
+  if [ -x "$(command -v mysql 2>/dev/null)" ]; then return 0; fi
+  echo "[0.4] 未找到 MySQL，尝试通过 Homebrew 安装 mysql@8.0（一次性，较大）..."
+  if command -v brew >/dev/null 2>&1; then
+    if brew install mysql@8.0 >> "$LOGDIR/brew_mysql.log" 2>&1; then
+      echo "      安装完成（详见 $LOGDIR/brew_mysql.log）"
+      return 0
+    fi
+    echo "      ⚠ brew install 失败（看 $LOGDIR/brew_mysql.log），请手动: brew install mysql@8.0"
+    return 1
+  fi
+  echo "      ⚠ 未找到 Homebrew。请安装 MySQL 8.0 后重跑 ./start："
+  echo "        macOS:  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\" && brew install mysql@8.0"
+  echo "        Linux:  sudo apt install mysql-server（或 docker compose up -d，仓库自带 Dockerfile）"
+  return 1
+}
+ensure_mysql_binary || true
 
 # ---------- 0. MySQL 二进制定位 ----------
 # 优先项目约定的 /opt/homebrew/opt/mysql@8.0；找不到时回退 PATH（Linux/其它安装）。
 if [ ! -x "$MYSQL_BIN/mysql" ]; then
-  MYSQL_BIN="$(command -v mysql | xargs dirname | xargs dirname | xargs dirname 2>/dev/null)"
+  MYSQL_BIN="$(command -v mysql | xargs dirname | xargs dirname | xargs dirname 2>/dev/null || true)"
 fi
+if [ ! -x "$MYSQL_BIN/mysql" ]; then
+  echo "✗ MySQL 不可用（自动安装也失败）。按上方提示安装后重跑 ./start"
+  exit 1
+fi
+
+db_up()   { "$MYSQL_BIN/mysqladmin" --protocol=tcp -h 127.0.0.1 -P "$DB_PORT" ping >/dev/null 2>&1; }
+app_up()  { lsof -iTCP:"$APP_PORT" -sTCP:LISTEN >/dev/null 2>&1; }
 
 # ---------- 0.5 root 密码自动探测 ----------
 # 首次运行时自动判断 root 密码，探测顺序：

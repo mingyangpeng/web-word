@@ -26,6 +26,7 @@ from src.mysql_db import (
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
 from src.category_study_page import render_category_study_page
+from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usage_guide
 from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
@@ -1194,17 +1195,16 @@ def render_sidebar():
     st.sidebar.button("◀", key="collapse_sidebar", help="折叠侧边栏",
                       on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", True))
 
-    # 页面切换：搜索页 ↔ 交互式知识图谱页。
+    # 页面切换：搜索页 ↔ 交互式知识图谱页等六页。
     # 不要再传 index=：key="page" 一旦存在于 session_state，再传 index 会在
     # 旧版 Streamlit 上抛 StreamlitAPIException、新版上打重复赋值警告。
+    # 选项与标签来自 page_guides.PAGE_GUIDES —— 页面 ↔ 使用说明一一对应的
+    # 单一事实来源（新增页面只在 PAGE_GUIDES 加一项）。
     st.session_state.setdefault("page", "search")
     st.sidebar.radio(
         "页面",
-        options=["search", "graph", "corpus", "domain", "annotate", "category"],
-        format_func=lambda v: {"search": "🔍 搜索释义", "graph": "🕸️ 知识图谱",
-                               "corpus": "📊 语料数据集", "domain": "🧭 域系初判",
-                               "annotate": "🏷️ 标注平台",
-                               "category": "🏃‍♀️ 范畴深挖"}[v],
+        options=PAGE_KEYS,
+        format_func=page_label,
         key="page",
         horizontal=True,
     )
@@ -1286,6 +1286,7 @@ def render_sidebar():
 # ============================================
 def render_main_area():
     """渲染主区域组件"""
+    render_page_usage_guide("search")
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃 动词释义优化器</h1>", unsafe_allow_html=True)
     st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
 
@@ -1450,6 +1451,7 @@ def render_interactive_graph_page() -> None:
     选中的节点、缩放视野全丢。静态文件 + 内容指纹 URL 则只在数据变化时重载。
     """
     st.markdown(f"<h1 style='{HEADER_H1}'>🕸️ 词间关系知识图谱</h1>", unsafe_allow_html=True)
+    render_page_usage_guide("graph")
 
     if not DB_AVAILABLE:
         st.info("数据库不可用，无法展示知识图谱（离线模式下仅提供释义）。")
@@ -1535,6 +1537,7 @@ def render_corpus_dataset_page() -> None:
     语义类别/保留标记两列留在库里供人工标注回写，页面原样展示当前值。
     """
     st.markdown(f"<h1 style='{HEADER_H1}'>📊 语料数据集</h1>", unsafe_allow_html=True)
+    render_page_usage_guide("corpus")
 
     if not DB_AVAILABLE:
         st.info("数据库不可用，无法展示语料数据集（离线模式下仅提供释义）。")
@@ -1837,6 +1840,7 @@ def render_domain_family_page() -> None:
     人工标注后重聚类为准；R2/R3 行携带筛选规则理由。
     """
     st.markdown(f"<h1 style='{HEADER_H1}'>🧭 域系初判</h1>", unsafe_allow_html=True)
+    render_page_usage_guide("domain")
 
     if not DB_AVAILABLE:
         st.info("数据库不可用，无法展示域系初判（离线模式下仅提供释义）。")
@@ -2003,6 +2007,7 @@ def render_annotation_page() -> None:
     import pandas as pd
 
     st.markdown(f"<h1 style='{HEADER_H1}'>🏷️ 标注平台</h1>", unsafe_allow_html=True)
+    render_page_usage_guide("annotate")
     st.caption("义位准入 → 意象图式 → 英汉对齐 → 句法特征/译义策略；"
                "依据 OALD 释义与例句判定，存疑案例打标进仲裁清单。"
                "完整标准见 docs/义项判定标准修改稿.docx。")
