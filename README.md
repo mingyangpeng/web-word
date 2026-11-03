@@ -60,17 +60,24 @@ docker compose down -v         # 连数据卷一起删除（会清空数据库�
 
 ```bash
 ./start                 # 一键完成全部工作（.env 已入库并由第 0.1 步自动加载）
+./start doctor          # 部署前/后体检：七类 23 项环境检查（Python/依赖/MySQL/.env/
+                        # AI 接入/种子数据/数据库基线/端口磁盘），每项带修复指引
 ```
 
 `.env` 已随仓库分发，无需再 `cp .env.example .env`；若某台机器没有智谱 key，
-AI 释义自动走离线兜底，不影响启动。`./start` 幂等，重复执行安全，首次运行会依次：
+AI 释义自动走离线兜底，不影响启动。AI 接入支持三家提供商，`llm_api.py` 按
+优先级自动选择：**智谱**（`ZHIPUAI_API_KEY`，可加 `ZHIPUAI_BASE_URL` 指向
+OpenAI 兼容网关）→ **OpenAI**（`OPENAI_API_KEY`）→ **DeepSeek**
+（`DEEPSEEK_API_KEY`），也可用 `LLM_PROVIDER=zhipu|openai|deepseek` 强制指定。
+`./start` 幂等，重复执行安全，首次运行会依次：
 
-1. **加载 `.env`**（MySQL 账号 / 智谱 AI key 与模型，Streamlit 子进程自动继承）
-2. **Python 依赖自检 + 自动安装**（streamlit/pandas/plotly 等逐一探测，缺了按 requirements.txt 补装）
+1. **加载 `.env`**（MySQL 账号 / AI key 与模型，Streamlit 子进程自动继承）
+2. **Python 依赖自检 + 自动安装**（streamlit/pandas/plotly/openpyxl 等逐一探测，缺了按 requirements.txt 补装）
 3. **MySQL 自动安装与启动**（本机无 MySQL 时经 Homebrew 装 `mysql@8.0`；数据目录 `data/mysql/`，与系统 MySQL 互不干扰）
 4. **自动探测 root 密码并建库授权**（免密 → `.env` 的 `MYSQL_ROOT_PASSWORD` → 常见密码清单；探测不到会给出明确指引）
-5. **灌入全部数据**（幂等 `--if-empty` 七步）：171 词词库 + OALD10 义项 → enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 域系初判（含例句全量增强与 LLM 初筛草稿）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
-6. **启动 Streamlit** → <http://localhost:8501>
+5. **重组 dictionary.db**（197MB 全库词典以 90MB×3 分卷随仓库分发，首启自动拼接 + sha256 校验）
+6. **灌入全部数据**（幂等 `--if-empty` 七步）：171 词词库 + OALD10 义项 → enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 域系初判（含例句全量增强与 LLM 初筛草稿）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
+7. **启动 Streamlit** → <http://localhost:8501>
 
 **手动分步（需要精细控制时）：**
 
@@ -82,14 +89,20 @@ mysql -u root -p < scripts/grant_local_mysql.sql   # 幂等：建库+建账号+�
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. 逐项灌库（每步幂等，可加 --if-empty）
+# 3. 逐项灌库（每步幂等，可加 --if-empty；顺序与 ./start 内部一致）
 MYSQL_HOST=127.0.0.1 python3 scripts/load_word_library.py      # 词库+义项+图谱
 MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py    # 语料数据集
 MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py    # 跑范畴深挖
+MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py     # 域系初判
+MYSQL_HOST=127.0.0.1 python3 scripts/update_domain_family_data.py  # 域系增强（例句全量+语料证据）
+MYSQL_HOST=127.0.0.1 python3 scripts/load_llm_screening.py     # LLM 初筛草稿列
 MYSQL_HOST=127.0.0.1 python3 scripts/parse_modern_chinese_dict.py  # 现汉7 mdx 解析
 MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py           # 现汉7 词典入库
 
-# 4. 启动应用（.env 已由 ./start 场景导出；手动场景先 set -a; source .env; set +a）
+# 4. 体检（确认 25 张表达到验收基线）
+./start doctor
+
+# 5. 启动应用（.env 已由 ./start 场景导出；手动场景先 set -a; source .env; set +a）
 streamlit run src/app.py
 ```
 
@@ -130,10 +143,12 @@ web-word/
 │   ├── word_graph.json               # 词间关系图谱（已提交）
 │   ├── docs/                         # 原始 docx 研究资料（已提交）
 │   ├── corpus/                       # enTenTen21 语料（wsketch_full/义位标注/图式证据，已提交）
-│   ├── ModernChineseDict/            # 《现汉7》mdx 词典源（已提交；images/ 不提交）
+│   ├── ModernChineseDict/            # 《现汉7》mdx 词典源 + images 释义配图（已提交）
 │   ├── d1/                           # 跑范畴英汉义位甄别+编码聚类 xlsx（已提交）
 │   ├── mysql/                        # 本机 MySQL datadir（不提交）
-│   └── dictionary.db                 # 197MB 第三方词典（不提交，建库不需要）
+│   ├── dictionary.db.part00-02       # 197MB 全库词典分卷（90MB×3 + sha256，已提交，
+│   │                                 #   ./start 首启自动重组；本体不入库）
+│   ├── dictionary_senses_subset.json # 17 词 246 义位子集快照（全库缺席时降级）
 ├── docs/                       # 研究文档与设计系统文档
 ├── graphify-out/               # 代码图谱生成物（已忽略，可重建）
 ├── Dockerfile / docker-compose.yml
@@ -609,7 +624,8 @@ docker compose down            # 停止
   传 None 时**保留库中现值**，所以重跑它不会抹掉已有的簇归属。
   但它不写 `word_relations`；若要重建词间关系，跑 `python scripts/load_word_library.py`。
 - 生成物不入库：`graphify-out/`、`.gsd/`、`.planning/`、`output/`、`screenshots_final/`、`data/mysql/`、
-  `data/zh_dict_senses.json`（由 mdx 源 2.5s 重生成）、`data/ModernChineseDict/images/`。
+  `data/zh_dict_senses.json`（由 mdx 源 2.5s 重生成）、`data/dictionary.db` 本体（由分卷重组）。
+  注意：`data/ModernChineseDict/images/` 现已随仓库分发。
 
 > 已清理的历史包袱：`src/database.py`（旧 SQLite 模块）、`src/api.py`（第二套 LLM 封装，
 > 依赖的 `zhipuai.model_api` 在 SDK v2 已移除、实际不可用）、`tests/conftest.py`（空 fixture）、
