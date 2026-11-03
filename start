@@ -4,7 +4,7 @@
 #       ./start stop     停止 Streamlit 与 MySQL
 #       ./start status   查看两个服务的状态
 #
-# 新机器部署：git clone → cp .env.example .env（填 ZHIPUAI_API_KEY）→ ./start
+# 新机器部署：git clone → ./start（.env 已入库，第 0.1 步自动加载，无需 cp）
 # .env 在下方第 0.1 步自动加载（MySQL 密码 / 智谱 AI key / 模型配置一次到位）。
 set -euo pipefail
 cd "$(dirname "$0")"
