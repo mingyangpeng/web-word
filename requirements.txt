@@ -14,13 +14,14 @@ pandas>=2.0.0
 plotly>=5.18.0
 openpyxl>=3.1.0
 
-# LLM 客户端：src/llm_api.py 只使用智谱 AI（from zhipuai import ZhipuAI）。
-# 缺少该包时应用仍能启动，会降级为离线释义（见 src/app.py 的分级策略）。
+# ============================================
+# LLM 客户端 —— 多提供商（三家都是 OpenAI 兼容接口，llm_api 按优先级自动选）
+# ============================================
+# 1. 智谱（ZHIPUAI_API_KEY，可用 ZHIPUAI_BASE_URL 指向兼容网关）
 zhipuai>=2.0.0
-
-# 可选：仅当改用旧版多提供商封装 src/api.py（openai/deepseek 分支）时需要。
-# 应用主流程 src/app.py 不导入此模块，故默认不安装。
-# openai>=1.0.0
+# 2/3. OpenAI（OPENAI_API_KEY）/ DeepSeek（DEEPSEEK_API_KEY）
+# 缺 openai SDK 时这两家不可用，但智谱照常工作，应用不崩。
+openai>=1.0.0
 
 # ============================================
 # 数据导入脚本依赖（不在应用运行时路径上）

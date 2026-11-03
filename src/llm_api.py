@@ -77,48 +77,89 @@ PROMPT_TEMPLATE = """你是一个中文释义助手。请解释以下中文动�
 """
 
 # ============================================
-# LLM Client
+# LLM Client —— 多提供商接入（智谱 / OpenAI / DeepSeek）
 # ============================================
+# 三家都走 OpenAI 兼容的 chat.completions 接口，调用代码同一份：
+#   * ZHIPUAI_API_KEY（+ 可选 ZHIPUAI_BASE_URL 自定义网关）—— 智谱 SDK
+#   * OPENAI_API_KEY（+ 可选 OPENAI_BASE_URL）—— openai SDK
+#   * DEEPSEEK_API_KEY —— openai SDK + api.deepseek.com
+# 按此优先级取第一个配置了 key 的提供商；也可用 LLM_PROVIDER 强制指定。
+# 模型名：ZHIPUAI_MODEL / OPENAI_MODEL / DEEPSEEK_MODEL，或统一的 LLM_MODEL
+# （默认 glm-4）。
 _client = None
+_client_provider = ""
+
+def _openai_sdk_available():
+    try:
+        import openai  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
 
 def get_zhipuai_client():
-    """
-    Get or create ZhipuAI client.
+    """兼容旧名：返回当前配置的 LLM 客户端（可能是智谱/OpenAI/DeepSeek 之一）。"""
+    return get_llm_client()
 
-    支持自定义网关：ZHIPUAI_BASE_URL（如 openapi.cloud-ai.cn 的 OpenAI 兼容端点）
-    未设置时用 SDK 默认（open.bigmodel.cn）。
+
+def get_llm_client():
+    """Get or create the LLM client，多提供商按优先级自动选择。
 
     Returns:
-        ZhipuAI client instance or None if unavailable
+        (client, provider) 元组；均不可用时 (None, "")。
+        旧调用方只取 client 的兼容用法见 get_zhipuai_client()。
     """
-    global _client
+    global _client, _client_provider
 
     if _client is not None:
-        return _client
+        return _client, _client_provider
 
-    if not ZHIPUAI_AVAILABLE:
-        logger.warning("ZhipuAI SDK not available")
-        return None
+    forced = os.getenv("LLM_PROVIDER", "").lower()
 
-    # 每次调用时读取 env：import 时快照会漏掉进程启动后才注入的密钥
-    api_key = os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZHIPU_API_KEY") or ""
+    # --- 1. 智谱（ZhipuAI SDK，支持自定义网关）---
+    if forced in ("", "zhipu", "zhipuai"):
+        api_key = os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZHIPU_API_KEY") or ""
+        if api_key and ZHIPUAI_AVAILABLE:
+            try:
+                base_url = os.getenv("ZHIPUAI_BASE_URL") or ""
+                kwargs = {"api_key": api_key}
+                if base_url:
+                    kwargs["base_url"] = base_url
+                _client = ZhipuAI(**kwargs)
+                _client_provider = "zhipu"
+                logger.info(f"LLM client: zhipu (base_url={base_url or 'default'})")
+                return _client, _client_provider
+            except Exception as e:
+                logger.error(f"Failed to initialize ZhipuAI client: {e}")
 
-    if not api_key:
-        logger.warning("ZHIPUAI_API_KEY not set")
-        return None
+    # --- 2. OpenAI / DeepSeek（openai SDK，OpenAI 兼容）---
+    if forced in ("", "openai", "deepseek") and _openai_sdk_available():
+        candidates = [
+            ("openai", os.getenv("OPENAI_API_KEY") or "",
+             os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"),
+            ("deepseek", os.getenv("DEEPSEEK_API_KEY") or "",
+             os.getenv("DEEPSEEK_BASE_URL") or "https://api.deepseek.com"),
+        ]
+        if forced == "openai":
+            candidates = [candidates[0]]
+        elif forced == "deepseek":
+            candidates = [candidates[1]]
+        for provider, api_key, base_url in candidates:
+            if not api_key:
+                continue
+            try:
+                from openai import OpenAI
+                _client = OpenAI(api_key=api_key, base_url=base_url,
+                                 timeout=LLM_TIMEOUT)
+                _client_provider = provider
+                logger.info(f"LLM client: {provider} (base_url={base_url})")
+                return _client, _client_provider
+            except Exception as e:
+                logger.error(f"Failed to initialize {provider} client: {e}")
 
-    try:
-        base_url = os.getenv("ZHIPUAI_BASE_URL") or ""
-        kwargs = {"api_key": api_key}
-        if base_url:
-            kwargs["base_url"] = base_url
-        _client = ZhipuAI(**kwargs)
-        logger.info(f"ZhipuAI client initialized (base_url={base_url or 'default'})")
-        return _client
-
-    except Exception as e:
-        logger.error(f"Failed to initialize ZhipuAI client: {e}")
-        return None
+    logger.warning("没有可用的 LLM 提供商（需配置 ZHIPUAI_API_KEY / "
+                   "OPENAI_API_KEY / DEEPSEEK_API_KEY 之一）")
+    return None, ""
 
 
 # ============================================
@@ -265,7 +306,7 @@ def get_definition(verb: str, force_refresh: bool = False) -> Optional[Dict[str,
 
 def _call_llm_api(verb: str) -> Optional[Dict[str, Any]]:
     """
-    Call Zhipu AI API to get definition.
+    Call the configured LLM provider (智谱 / OpenAI / DeepSeek) for a definition.
 
     Args:
         verb: The verb to define
@@ -273,18 +314,18 @@ def _call_llm_api(verb: str) -> Optional[Dict[str, Any]]:
     Returns:
         Dictionary containing definition data or None if failed
     """
-    client = get_zhipuai_client()
+    client, provider = get_llm_client()
     if not client:
-        logger.error("ZhipuAI client not available")
+        logger.error("LLM client not available")
         return None
 
     try:
         # Prepare prompt
         prompt = PROMPT_TEMPLATE.format(verb=verb)
 
-        logger.info(f"Calling Zhipu AI API for verb: {verb}")
+        logger.info(f"Calling {provider} API for verb: {verb}")
 
-        # Call API
+        # Call API（三家都是 OpenAI 兼容的 chat.completions 签名）
         response = client.chat.completions.create(
             model=LLM_MODEL,
             messages=[
@@ -299,7 +340,7 @@ def _call_llm_api(verb: str) -> Optional[Dict[str, Any]]:
         # Parse response
         content = response.choices[0].message.content.strip()
 
-        logger.info(f"Received response from Zhipu AI for '{verb}'")
+        logger.info(f"Received response from {provider} for '{verb}'")
 
         return _parse_llm_response(content, verb)
 
