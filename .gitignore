@@ -36,9 +36,8 @@ data/*
 !data/corpus/
 # 范畴深挖原始数据（跑范畴英汉义位甄别 + 编码聚类 xlsx）
 !data/d1/
-# 《现汉7》词典原始资源（mdx 源 + 结构化 JSON；images/ 93MB 不入库）
+# 《现汉7》词典原始资源（mdx 源 + images + 结构化 JSON 均入库，用户要求全量上传）
 !data/ModernChineseDict/
-data/ModernChineseDict/images/
 data/ModernChineseDict/.git/
 # 结构化 JSON 是派生数据（43MB）：由 mdx 源 2.5s 重生成（./start 3.7 步自动做），不入库
 data/zh_dict_senses.json
@@ -50,13 +49,15 @@ data/logs/
 data/cache/
 # ./start 自动探测的 root 密码缓存（机器本地敏感信息）
 data/.mysql_root_pw
-# 第三方大词典（197MB，无法入库；且它本就是 *.db，词库已把所需释义固化
-# 进 data/motion_verbs_extracted.json，因此新机器无需它即可建库）
+# 第三方大词典 dictionary.db（197MB）超 GitHub 单文件 100MB 限制 —— 以 90MB
+# 分卷（dictionary.db.part00/01/02 + sha256 校验）入库，./start 自动重组；
+# 重组出的完整文件本体不入库（避免与分卷重复占用）。
 data/dictionary.db
-# dictionary.db 的子集快照（17 词 246 义位，117KB）：新机器没有 197MB 全库时
-# word_source 降级读它，word_senses 表照常灌入 —— 必须入库
+!data/dictionary.db.part*
+!data/dictionary.db.sha256
+# dictionary.db 的子集快照（17 词 246 义位，117KB）：全库重组前的降级来源，
+# word_source 全库缺席时读它 —— 必须入库
 !data/dictionary_senses_subset.json
-*.db
 
 # Temp
 temp/
