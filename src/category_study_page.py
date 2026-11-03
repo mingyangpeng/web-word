@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 import streamlit as st
 
+from src.page_guides import render_page_usage_guide
 from src.category_study import (
     FEATURE_COLUMNS, CLUSTERING_FEATURES, VERDICT_ORDER, SCHEMA_ORDER,
     derive_image_schema, compute_schema_alignment,
@@ -685,6 +686,7 @@ def render_category_study_page() -> None:
     """🏃‍♀️ 范畴深挖页面：范畴选择 + 四视图 tab。"""
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃‍♀️ 范畴深挖</h1>",
                 unsafe_allow_html=True)
+    render_page_usage_guide("category")
 
     if not category_study_ready():
         st.info(
