@@ -11,7 +11,9 @@ venv/
 env/
 
 # Environment
-.env
+# .env 刻意入库（用户决策：新机器 clone 即带 MySQL 账号与智谱 AI key，
+# ./start 直接可用，无需手动配置）。本仓库为私有研究仓库。
+# .env.local 仍忽略（本机覆盖用）
 .env.local
 
 # IDE
