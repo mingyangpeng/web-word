@@ -19,20 +19,29 @@ COPY src/ ./src/
 COPY config/ ./config/
 COPY scripts/wait_for_mysql.py ./scripts/wait_for_mysql.py
 COPY scripts/load_word_library.py ./scripts/load_word_library.py
+COPY scripts/load_corpus_dataset.py ./scripts/load_corpus_dataset.py
+COPY scripts/load_category_study.py ./scripts/load_category_study.py
+COPY scripts/load_domain_family.py ./scripts/load_domain_family.py
+COPY scripts/update_domain_family_data.py ./scripts/update_domain_family_data.py
+COPY scripts/load_llm_screening.py ./scripts/load_llm_screening.py
+COPY scripts/parse_modern_chinese_dict.py ./scripts/parse_modern_chinese_dict.py
+COPY scripts/load_zh_dict.py ./scripts/load_zh_dict.py
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
 
-# 词库种子：容器首启由 entrypoint.sh 调 load_word_library.py --if-empty 灌入。
-# 只拷这几个必要文件，不拷 data/ 其余内容（dictionary.db 有 197MB、
-# data/mysql 是本机数据库目录，都不该进镜像）。
-#
-# 注意 **必须拷 Levin 筛选表**：现在词目与分类（三主范畴 / 十二次类）都以它为准，
-# 缺了它 load_word_library.py 会直接抛错，容器首启就灌不出词库。
-# data/dictionary.db（197MB）**刻意不进镜像** —— 它只覆盖 171 词里的 23 个，
-# 为它让镜像膨胀 200MB 不划算。缺失时释义自动降级到旧词库 / 研究者标注，
-# 来源会如实标注（见 docs/英语自移移动动词词表.docx 的编者说明）。
+# 词库种子：容器首启由 entrypoint.sh 按 ./start 同款七步幂等灌入。
+# data/mysql（本机数据库目录）与 dictionary.db 本体不进镜像；
+# 容器内 word_source 走 data/dictionary_senses_subset.json 降级
+# （17 词 246 义位，已覆盖义位标注与域系中文对照所需）。
 COPY docs/Levin移动动词候选词筛选表.xlsx ./docs/Levin移动动词候选词筛选表.xlsx
+COPY docs/output-oald10en-for-senselist-1020.xlsx ./docs/output-oald10en-for-senselist-1020.xlsx
+COPY docs/词表义项清单.xlsx ./docs/词表义项清单.xlsx
+COPY docs/域系初判表v0.2.xlsx ./docs/域系初判表v0.2.xlsx
 COPY data/motion_verbs_extracted.json ./data/motion_verbs_extracted.json
 COPY data/oxford_cache.json ./data/oxford_cache.json
+COPY data/dictionary_senses_subset.json ./data/dictionary_senses_subset.json
+COPY data/d1/ ./data/d1/
+COPY data/corpus/ ./data/corpus/
+COPY data/ModernChineseDict/mdx/ ./data/ModernChineseDict/mdx/
 
 RUN chmod +x ./scripts/entrypoint.sh
 
