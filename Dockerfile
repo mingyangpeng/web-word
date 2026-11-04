@@ -19,6 +19,7 @@ COPY src/ ./src/
 COPY config/ ./config/
 COPY scripts/wait_for_mysql.py ./scripts/wait_for_mysql.py
 COPY scripts/load_word_library.py ./scripts/load_word_library.py
+COPY scripts/load_supplemented_senses.py ./scripts/load_supplemented_senses.py
 COPY scripts/load_corpus_dataset.py ./scripts/load_corpus_dataset.py
 COPY scripts/load_category_study.py ./scripts/load_category_study.py
 COPY scripts/load_domain_family.py ./scripts/load_domain_family.py
@@ -28,7 +29,7 @@ COPY scripts/parse_modern_chinese_dict.py ./scripts/parse_modern_chinese_dict.py
 COPY scripts/load_zh_dict.py ./scripts/load_zh_dict.py
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
 
-# 词库种子：容器首启由 entrypoint.sh 按 ./start 同款七步幂等灌入。
+# 词库种子：容器首启由 entrypoint.sh 按 ./start 同款八步幂等灌入。
 # data/mysql（本机数据库目录）与 dictionary.db 本体不进镜像；
 # 容器内 word_source 走 data/dictionary_senses_subset.json 降级
 # （17 词 246 义位，已覆盖义位标注与域系中文对照所需）。

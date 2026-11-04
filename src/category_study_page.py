@@ -723,6 +723,8 @@ def render_overview_view(data: Dict[str, Any]) -> None:
 
     # ---- 《现汉7》词典原文对照（zh_dict_* 表，甄别证据源）----
     _render_zh_dict_evidence(data)
+    # ---- OALD10 词典原文对照（英语侧证据源，与《现汉7》对称）----
+    _render_en_dict_evidence(data)
 
 
 def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
@@ -785,6 +787,72 @@ def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
                     for ex in s["examples"]:
                         mark = "◇" if ex["is_metaphor"] else "·"
                         st.caption(f"　{mark} {ex['example']}")
+
+
+def _render_en_dict_evidence(data: Dict[str, Any]) -> None:
+    """英语义位的 OALD10 词典原文对照（与《现汉7》对照对称的英语侧证据源）。
+
+    cs_senses 的英语义位经 (lemma, 义项号) 关联 oald_senses —— 含 4 条
+    source=人工补充 的义位（scutter/kayak/oar/dodder，OALD10 未收录）。
+    """
+    try:
+        from src.mysql_db import get_oald_senses
+    except ImportError:
+        return
+
+    with st.expander("📖 OALD10 词典原文对照（英语侧证据源）", expanded=False):
+        en_senses = [s for s in data["senses"] if s["language"] == "en"]
+        if not en_senses:
+            st.caption("无英语义位。")
+            return
+        lemma = st.selectbox(
+            "词目", options=sorted({s["lemma"] for s in en_senses}),
+            key="cs_en_dict_lemma")
+        entries = get_oald_senses(lemma)
+        if not entries:
+            st.caption(f"OALD10 未收录「{lemma}」。")
+            return
+
+        # 该词目在范畴内的研究义位：义项号 → 研究行（对照甄别与簇）
+        studied = {}
+        for s in en_senses:
+            if s["lemma"] == lemma:
+                try:
+                    studied[int(s["sense_no"])] = s
+                except (TypeError, ValueError):
+                    pass
+
+        from html import escape as _esc
+        for e in entries:
+            src_tag = ""
+            if e.get("source") and e["source"] != "OALD10":
+                src_tag = _badge(f"来源:{e['source']}", "#ed8936")
+            head = f"**{lemma}** 义项 {e['sense_index']} {src_tag}"
+            if e.get("grammar"):
+                head += f" <span style='color:#718096;font-size:0.85em;'>"                         f"[{_esc(e['grammar'])}]</span>"
+            if e.get("sense_group"):
+                head += f" <span style='color:#718096;font-size:0.85em;'>"                         f"({_esc(e['sense_group'])})</span>"
+            st.markdown(head, unsafe_allow_html=True)
+            if e.get("definition"):
+                st.markdown(f"&nbsp;&nbsp;{e['definition']}",
+                            unsafe_allow_html=True)
+            study = studied.get(int(e["sense_index"]))
+            if study:
+                badges = _badge(
+                    f"甄别:{study['status']}",
+                    STATUS_COLORS.get(study["status"], "#4a5568"))
+                if study.get("cluster"):
+                    badges += _badge(
+                        f"簇{study['cluster']['cluster_no']}", "#2b6cb0")
+                feats = study.get("features") or {}
+                active = [f"{c}={feats[c]}" for c in
+                          ("P1", "P2", "P3", "P5", "C1") if feats.get(c)]
+                if active:
+                    badges += _badge("编码 " + " ".join(active), "#6b46c1")
+                st.caption(f"　研究层: {study['sense_label']} {badges}")
+            if e.get("examples"):
+                for ex in e["examples"][:4]:
+                    st.caption(f"　· {ex}")
 
 
 # ============================================

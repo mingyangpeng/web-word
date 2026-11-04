@@ -44,8 +44,12 @@ MySQL 由 Compose 自动起（`mysql:8.0`，服务名 `mysql`），数据写入�
 `web-word-mysql-data`，首次启动执行 `scripts/init_db.sql` 建表。`docker-compose.yml`
 会给 web 容器注入 `MYSQL_HOST=mysql` 等环境变量，**不需要改 `config/config.yaml`**。
 
-**词库无需手工导入**：容器首启时 `entrypoint.sh` 会自动灌入 136 个动词及其词间近义关系
-（`--if-empty` 幂等，已有数据则跳过）。起来就能直接搜索，例如输入 `dash` 或 `climb`。
+**词库无需手工导入**：容器首启时 `entrypoint.sh` 会按与 `./develop.sh` 相同的八步幂等灌入
+全量数据（词库/人工补充义位/语料/跑范畴/域系/LLM 初筛/《现汉7》，`--if-empty`
+已有数据则跳过）。起来就能直接搜索，例如输入 `dash` 或 `climb`。
+
+**与本机裸跑（路径 B）并存时**：两者默认都占 3306 与 8501 —— 先 `./start.sh stop`
+再 `docker compose up -d`；或写 override 文件改宿主机映射端口（容器内部不受影响）。
 
 停止与清理：
 
@@ -618,8 +622,9 @@ docker compose down            # 停止
 ```
 
 - web 容器启动流程：`scripts/entrypoint.sh` → `scripts/wait_for_mysql.py` 探活
-  `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ `scripts/load_word_library.py --if-empty`
-  **首次启动自动灌入 136 词词库与词间近义关系** → `streamlit run src/app.py`。
+  `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ 八步幂等灌库（与 `./develop.sh` 的
+  `run_all_loaders` 同源同序：词库 / 人工补充义位 / 语料 / 跑范畴 / 域系初判 /
+  域系增强 / LLM 初筛 / 《现汉7》）→ `streamlit run src/app.py`。
 - `--if-empty` 是幂等的：`definitions` 表已有数据就跳过，不会覆盖运营中新增或修改的词条。
   因此 `docker compose up` 起来即有完整词库，无需手工执行任何灌库命令。
 - 探活超时或灌库失败都不会失败退出，而是以 **离线模式** 启动应用。
@@ -628,7 +633,8 @@ docker compose down            # 停止
 
 ## 📌 已知遗留
 
-- `data/dictionary.db`（197MB 第三方词典）**不在仓库**（体积原因）。它是释义正确性的首选来源，但只有 23 个词命中；缺失部分由旧词库与研究者标注兜底，详见 `docs/英语自移移动动词词表.docx` 的编者说明。原 155 词的释义已固化进
+- `data/dictionary.db`（197MB 第三方词典）**本体不入库**，按 90MB 分卷
+  （`dictionary.db.part00-02` + sha256）随仓库分发，部署时自动重组校验。它是释义正确性的首选来源，但只有 23 个词命中；缺失部分由旧词库与研究者标注兜底，详见 `docs/英语自移移动动词词表.docx` 的编者说明。原 155 词的释义已固化进
   `data/motion_verbs_extracted.json`，`scripts/load_word_library.py` 离线即可建库。
   只有重跑 `scripts/archive/ingest_motion_verbs.py`（从词典/联网补释义）时才需要它。
 - `scripts/archive/ingest_motion_verbs.py`（一次性导入脚本，已归档）会 UPSERT `definitions` 表的行。它不设置 `cluster_id`，
