@@ -2059,7 +2059,9 @@ def render_annotation_page() -> None:
 
     senses = get_oald_senses(picked_verb)
     if not senses:
-        st.warning(f"「{picked_verb}」无 OALD 义位数据（132 词覆盖；scutter/kayak/oar/dodder 需补录）。")
+        st.warning(f"「{picked_verb}」无 OALD 义位数据。"
+                   f"（研究词表 996 义位 = 992 OALD + 4 人工补充"
+                   f" scutter/kayak/oar/dodder，均已在库。）")
         return
 
     # ---- 语料证据辅助（判定依据之一）----

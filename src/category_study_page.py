@@ -1,4 +1,4 @@
-"""范畴深挖页面组 —— 跑范畴英汉对比研究的四个视图（Streamlit）。
+"""范畴深挖页面组 —— 跑范畴英汉对比研究的五个视图（Streamlit）。
 
 数据来自 data/d1/ 两个 xlsx（scripts/load_category_study.py 灌入
 categories / cs_* 8 表，见 src/category_study.py）。页面结构：
@@ -6,12 +6,15 @@ categories / cs_* 8 表，见 src/category_study.py）。页面结构：
   视图1 双语聚类对比面板  英 5 簇 vs 汉 5 簇卡片对照，成员可展开
   视图2 编码矩阵热图      32×18 / 19×18 特征矩阵着色网格（plotly）
   视图3 跨语言对齐        英簇↔汉簇二部图（连线按 Gower 距离着色）+ 雷达叠加
-  视图4 范畴总览与甄别清单 统计卡 + 英汉双清单对照表
+  视图4 图式对齐          双层对齐机制 + 四类图式中英对照 + 特征均值对比
+                          + 《现汉7》词典证据链
+  视图5 范畴总览与甄别清单 统计卡 + 英汉双清单对照表
 
 由 app.py 的 render_category_study_page() 分派（session_state["cs_view"]）。
 """
 
 import logging
+import statistics
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -30,11 +33,12 @@ from src.design_system import HEADER_H1, HEADER_H3
 logger = logging.getLogger(__name__)
 
 # 视图清单（页面顶部 tab 顺序 = 用户选定的实现顺序）
-VIEWS = ["cluster", "matrix", "align", "overview"]
+VIEWS = ["cluster", "matrix", "align", "schema", "overview"]
 VIEW_LABELS = {
     "cluster": "🫱🫲 双语聚类对比",
     "matrix": "🔥 编码矩阵热图",
     "align": "🔀 跨语言对齐",
+    "schema": "⚖️ 图式对齐",
     "overview": "📋 范畴总览与甄别清单",
 }
 
@@ -405,10 +409,6 @@ def render_alignment_view(data: Dict[str, Any]) -> None:
     # ---- 簇画像雷达叠加（完全对齐簇对）----
     _render_radar_overlay(data)
 
-    # ---- 图式层对齐（中英四类图式对照）----
-    st.divider()
-    _render_schema_alignment(data)
-
 
 def _render_schema_alignment(data: Dict[str, Any]) -> None:
     """图式层中英对齐：四类图式矩阵 + 逐图式成员清单。
@@ -548,7 +548,116 @@ def _render_radar_overlay(data: Dict[str, Any]) -> None:
 
 
 # ============================================
-# 视图4：范畴总览与甄别清单
+# 视图4：图式对齐（双层对齐机制 + 图式层对照 + 证据链）
+# ============================================
+
+def _render_feature_mean_chart(senses: List[Dict[str, Any]]) -> None:
+    """双语 15 维聚类特征均值对比（/2 归一）：方式维度趋同、路径维度分歧的直观图。"""
+    by_lang: Dict[str, List[Dict[str, int]]] = {"en": [], "zh": []}
+    for s in senses:
+        feats = s.get("features") or {}
+        if feats:
+            by_lang[s["language"]].append(feats)
+    if not by_lang["en"] or not by_lang["zh"]:
+        return
+
+    label_of = {f["code"]: f["label"] for f in FEATURE_COLUMNS}
+    rows = []
+    for code in CLUSTERING_FEATURES:
+        em = statistics.mean(f.get(code, 0) for f in by_lang["en"]) / 2
+        zm = statistics.mean(f.get(code, 0) for f in by_lang["zh"]) / 2
+        rows.append({"特征": code, "英语": em, "汉语": zm})
+    df = pd.DataFrame(rows).iloc[::-1]  # 横条自下而上按 P1..C1 顺序
+
+    try:
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=[label_of[c] for c in df["特征"]], x=df["英语"],
+            name="英语侧", orientation="h", marker_color="#2b6cb0"))
+        fig.add_trace(go.Bar(
+            y=[label_of[c] for c in df["特征"]], x=df["汉语"],
+            name="汉语侧", orientation="h", marker_color="#ed8936"))
+        fig.update_layout(
+            barmode="group", height=max(420, 26 * len(df)),
+            margin=dict(l=10, r=10, t=10, b=10),
+            xaxis=dict(title="特征均值（/2 归一）"), plot_bgcolor="#ffffff",
+            legend=dict(orientation="h", yanchor="bottom", y=1.0),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    except ImportError:
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+    # 差异要点：路径三特征贡献主要分歧（P1 汉语高，P2/P3 英语独有）
+    top = sorted(rows, key=lambda r: abs(r["英语"] - r["汉语"]), reverse=True)[:3]
+    st.caption(
+        "差异最大的 3 个特征：" +
+        "；".join(f"{label_of[r['特征']]}（英 {r['英语']:.3f} / 汉 {r['汉语']:.3f}）"
+                  for r in top) +
+        "——方式/介质/动因维度双语趋同（M3a 完全一致），路径维度系统性分歧。"
+    )
+
+
+def _render_zh_dict_chain() -> None:
+    """《现汉7》词典证据链：词典原始层规模 + 与研究加工层的回链说明。"""
+    from src.zh_dict import get_zh_dict_stats, zh_dict_ready
+    st.markdown(f"<h3 style='{HEADER_H3}'>《现汉7》词典证据链"
+                f"（汉语侧证据源）</h3>", unsafe_allow_html=True)
+    if not zh_dict_ready():
+        st.caption("《现汉7》词典层未灌入：运行 "
+                   "`MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py`。")
+        return
+    stats = get_zh_dict_stats()
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("词典词条", f"{stats.get('entries', 0):,}")
+    c2.metric("义项", f"{stats.get('senses', 0):,}")
+    c3.metric("动词词条", f"{stats.get('verb_entries', 0):,}")
+    c4.metric("例句", f"{stats.get('examples', 0):,}")
+    st.caption(
+        "词典原始层（zh_dict_entries/senses/examples）与研究加工层（cs_senses）"
+        "通过（词目, 义项号）松关联：甄别表的《现汉7》释义/例句/语域在"
+        "「范畴总览」视图可逐义项对照原文；图式对齐只用研究层编码，词典层"
+        "提供可核查的证据源。"
+    )
+
+
+def render_schema_view(data: Dict[str, Any]) -> None:
+    """⚖️ 图式对齐视图：双层对齐机制并置 + 图式层中英对照 + 特征均值对比。
+
+    簇层对齐（视图3 的二部图）来自甄别阶段的人工判定（cs_cluster_alignment）；
+    图式层对齐由 compute_schema_alignment 程序推导，可复算。本视图把两层
+    口径并置，并回链《现汉7》词典原始层作为汉语侧证据。
+    """
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(
+            "**🔀 簇层对齐（人工判定）**\n\n"
+            "英汉两侧独立聚类后簇↔簇对照：簇心 Gower 距离 + 四类判定"
+            "（完全 / 部分 / 零 / 错位），见「跨语言对齐」视图二部图。")
+    with c2:
+        st.markdown(
+            "**⚖️ 图式层对齐（程序推导，可复算）**\n\n"
+            "每义位由 P/M/C 编码推导四类图式，图式中心 = 两侧成员 15 维"
+            "特征均值（/2 归一），距离 = Gower 式平均绝对差；"
+            "d<0.05 完全对齐、d<0.15 部分对齐、一侧为空 = 零对齐"
+            "（该图式在对方语言未词汇化）。")
+    st.caption("图式推导规则（凸显优先级）：追逐标注 → 互动位移 > P1=1 → 源点脱离 "
+               "> P2/P3=1 → 终点抵达 > 其余 → 方式伴随。")
+    st.divider()
+
+    _render_schema_alignment(data)
+    st.divider()
+
+    st.markdown(f"<h3 style='{HEADER_H3}'>双语特征均值对比"
+                f"（15 维聚类特征）</h3>", unsafe_allow_html=True)
+    _render_feature_mean_chart(data["senses"])
+    st.divider()
+
+    _render_zh_dict_chain()
+
+
+# ============================================
+# 视图5：范畴总览与甄别清单
 # ============================================
 
 def render_overview_view(data: Dict[str, Any]) -> None:
@@ -683,7 +792,7 @@ def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
 # ============================================
 
 def render_category_study_page() -> None:
-    """🏃‍♀️ 范畴深挖页面：范畴选择 + 四视图 tab。"""
+    """🏃‍♀️ 范畴深挖页面：范畴选择 + 五视图 tab。"""
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃‍♀️ 范畴深挖</h1>",
                 unsafe_allow_html=True)
     render_page_usage_guide("category")
@@ -733,5 +842,7 @@ def render_category_study_page() -> None:
         render_matrix_view(data)
     elif view == "align":
         render_alignment_view(data)
+    elif view == "schema":
+        render_schema_view(data)
     else:
         render_overview_view(data)

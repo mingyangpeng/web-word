@@ -48,7 +48,7 @@ SEEDS = [
 # 数据库验收基线（表 → 期望最小行数；0 = 只要求表存在）
 DB_BASELINE = {
     "definitions": 171, "word_clusters": 12, "word_relations": 1935,
-    "oald_senses": 992, "word_senses": 246,
+    "oald_senses": 996, "word_senses": 246,  # 996 = 992 OALD + 4 人工补充
     "corpus_word_stats": 171, "corpus_collocations": 0,
     "corpus_schema_evidence": 0, "word_schema_scores": 0,
     "domain_family_senses": 352, "domain_family_examples": 1176,
