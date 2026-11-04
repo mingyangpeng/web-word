@@ -1,6 +1,6 @@
 #!/bin/bash
 # entrypoint.sh — Docker 容器入口脚本
-# 等待 MySQL 就绪 → 幂等灌入全部数据（与 ./start 的七步一致）→ 启动 Streamlit
+# 等待 MySQL 就绪 → 幂等灌入全部数据（与 ./start 的八步一致）→ 启动 Streamlit
 #
 # 数据与 ./start 同源：词库/语料/范畴深挖/域系初判/域系增强/LLM 初筛草稿/
 # 现汉7 词典。种子文件由 Dockerfile COPY 进镜像；environment 列在
@@ -24,6 +24,11 @@ run_loader() {  # run_loader <说明> <命令...>
 
 run_loader "灌入词库 + OALD10 义项 + 词间关系" \
     python scripts/load_word_library.py
+# 人工补充义位 4 条（scutter/kayak/oar/dodder）：研究词表 996 = 992 OALD + 4 补充。
+# 脚本自身幂等（先删同源行再插），不接 --if-empty 也不受它影响；依赖
+# data/corpus/sense_sheets/ 的 4 个 xlsx（已 COPY 进镜像）。
+run_loader "灌入人工补充义位（4 条）" \
+    python scripts/load_supplemented_senses.py
 run_loader "灌入 enTenTen21 语料数据集" \
     python scripts/load_corpus_dataset.py
 run_loader "灌入跑范畴深挖数据" \
