@@ -25,6 +25,14 @@ load_env() {
     echo "[env] 已加载 .env（ZHIPUAI_API_KEY: $([ -n "${ZHIPUAI_API_KEY:-}" ] && echo 已配置 || echo 未配置)）"
   else
     echo "[env] ⚠ 未找到 .env（AI 释义降级为离线兜底）。可执行: cp .env.example .env"
+    # 无 .env 时给本地裸跑兜底：config.yaml 的 host 是 Docker 服务名 mysql，
+    # 不导出本地默认的话，"离线降级可启动"的承诺会变成连 'mysql' 失败的误导报错。
+    # AI key 仍为空 → 应用按文档降级；MySQL 用 .env.example 同款本地默认值。
+    export MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+    export MYSQL_PORT="${MYSQL_PORT:-3306}"
+    export MYSQL_DATABASE="${MYSQL_DATABASE:-web_word_db}"
+    export MYSQL_USER="${MYSQL_USER:-web_word_user}"
+    export MYSQL_PASSWORD="${MYSQL_PASSWORD:-webword123}"
   fi
 }
 
@@ -148,8 +156,22 @@ wait_db() {  # 最多等 60s
 # ---------- MySQL 启动（含空 datadir 初始化）----------
 start_mysqld() {
   if db_up; then
-    echo "[mysql] 已在运行"
-    return 0
+    # 探活通过 ≠ 实例属于本数据目录：数据目录被删/清空后（误操作或重装），
+    # 残留的 mysqld 仍握着已 unlink 的文件应答 3306 —— 在它上面灌库必然
+    # 数据丢失，InnoDB 落盘时直接断言崩溃。发现即清掉幽灵实例再正常拉起。
+    if [ -z "$(ls -A "$DATADIR" 2>/dev/null)" ]; then
+      echo "[mysql] ⚠ 有 mysqld 在应答但数据目录 $DATADIR 为空 —— 清理残留实例..."
+      pkill -f "mysqld.*--datadir=$DATADIR" 2>/dev/null || true
+      sleep 3
+      if db_up; then
+        echo "✗ 残留实例无法清理（端口仍被占）。请手动: pkill -f 'mysqld.*--datadir=$DATADIR'"
+        return 1
+      fi
+      echo "      已清理，重新初始化..."
+    else
+      echo "[mysql] 已在运行"
+      return 0
+    fi
   fi
   mkdir -p "$DATADIR"
   # mysqld 8.0 对空 datadir 不做自动初始化（直接启动会 Failed to find valid

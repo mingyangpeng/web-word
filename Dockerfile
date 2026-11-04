@@ -2,6 +2,20 @@
 # python:3.11-slim has multi-arch manifests — Docker Desktop auto-pulls arm64 variant
 FROM python:3.11-slim
 
+# ---- 词典全库组装 stage：分卷 → dictionary.db（sha256 校验）----
+# data/dictionary.db（197MB，超 GitHub 100MB 上限）以 90MB 分卷随仓库分发，
+# 本地裸跑由 ./develop.sh 重组；镜像侧在此组装，word_source 的音标（phonetic）
+# 等「只认全库」的字段才能与本地裸跑完全一致。分卷中间层不进最终镜像。
+FROM python:3.11-slim AS dict_builder
+WORKDIR /app
+COPY data/dictionary.db.part* ./data/
+COPY data/dictionary.db.sha256 ./data/
+RUN cat data/dictionary.db.part* > data/dictionary.db \
+    && sha256sum -c data/dictionary.db.sha256 \
+    && rm data/dictionary.db.part*
+
+FROM python:3.11-slim
+
 WORKDIR /app
 
 # Copy requirements first for better caching
@@ -30,9 +44,9 @@ COPY scripts/load_zh_dict.py ./scripts/load_zh_dict.py
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
 
 # 词库种子：容器首启由 entrypoint.sh 按 ./start 同款八步幂等灌入。
-# data/mysql（本机数据库目录）与 dictionary.db 本体不进镜像；
-# 容器内 word_source 走 data/dictionary_senses_subset.json 降级
-# （17 词 246 义位，已覆盖义位标注与域系中文对照所需）。
+# data/mysql（本机数据库目录）与 zh_dict_senses.json 本体不进镜像（后者首启由 mdx 生成）；
+# dictionary.db 全库由 dict_builder stage 组装后 COPY 进来（sha256 已校验），
+# dictionary_senses_subset.json 仍随镜像分发，作为全库缺失场景的降级快照。
 COPY docs/Levin移动动词候选词筛选表.xlsx ./docs/Levin移动动词候选词筛选表.xlsx
 COPY docs/output-oald10en-for-senselist-1020.xlsx ./docs/output-oald10en-for-senselist-1020.xlsx
 COPY docs/词表义项清单.xlsx ./docs/词表义项清单.xlsx
@@ -40,6 +54,7 @@ COPY docs/域系初判表v0.2.xlsx ./docs/域系初判表v0.2.xlsx
 COPY data/motion_verbs_extracted.json ./data/motion_verbs_extracted.json
 COPY data/oxford_cache.json ./data/oxford_cache.json
 COPY data/dictionary_senses_subset.json ./data/dictionary_senses_subset.json
+COPY --from=dict_builder /app/data/dictionary.db ./data/dictionary.db
 COPY data/d1/ ./data/d1/
 COPY data/corpus/ ./data/corpus/
 COPY data/ModernChineseDict/mdx/ ./data/ModernChineseDict/mdx/
