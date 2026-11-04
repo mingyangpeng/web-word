@@ -86,7 +86,7 @@ OpenAI 兼容网关）→ **OpenAI**（`OPENAI_API_KEY`）→ **DeepSeek**
 3. **MySQL 自动安装与启动**（本机无 MySQL 时经 Homebrew 装 `mysql@8.0`；数据目录 `data/mysql/`，与系统 MySQL 互不干扰）
 4. **自动探测 root 密码并建库授权**（免密 → `.env` 的 `MYSQL_ROOT_PASSWORD` → 常见密码清单；探测不到会给出明确指引）
 5. **重组 dictionary.db**（197MB 全库词典以 90MB×3 分卷随仓库分发，首启自动拼接 + sha256 校验）
-6. **灌入全部数据**（幂等 `--if-empty` 七步）：171 词词库 + OALD10 义项 → enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 域系初判（含例句全量增强与 LLM 初筛草稿）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
+6. **灌入全部数据**（幂等 `--if-empty` 七步）：171 词词库 + OALD10 义项（研究词表 996 义位 = 992 OALD + 4 人工补充）→ enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 域系初判（含例句全量增强与 LLM 初筛草稿）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
 7. **启动 Streamlit** → <http://localhost:8501>
 
 **手动分步（需要精细控制时）：**
@@ -101,6 +101,7 @@ pip install -r requirements.txt
 
 # 3. 逐项灌库（每步幂等，可加 --if-empty；顺序与 ./start 内部一致）
 MYSQL_HOST=127.0.0.1 python3 scripts/load_word_library.py      # 词库+义项+图谱
+MYSQL_HOST=127.0.0.1 python3 scripts/load_supplemented_senses.py  # 人工补充义位 4 条
 MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py    # 语料数据集
 MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py    # 跑范畴深挖
 MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py     # 域系初判
