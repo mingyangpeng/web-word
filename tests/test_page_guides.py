@@ -28,6 +28,15 @@ _ANCHORS = {
     "annotate": "五维标注",
     "category": "图式对齐",
 }
+# 详细版新增段：每页必须有原理与数据来源
+_ANCHORS_PRINCIPLE = {
+    "search": "Talmy",
+    "graph": "完全图",
+    "corpus": "logDice",
+    "domain": "R2/R3",
+    "annotate": "义位",
+    "category": "Gower",
+}
 
 
 def test_page_keys_match_app_pages():
@@ -83,6 +92,10 @@ def test_every_page_renders_its_guide(page_key):
     assert "使用说明" in texts, f"{page_key}: 说明 expander 未渲染"
     anchor = _ANCHORS[page_key]
     assert anchor in texts, f"{page_key}: 说明缺专属锚点 {anchor}"
+    assert "原理" in texts and "数据来源" in texts, \
+        f"{page_key}: 详细版说明缺原理/数据来源段"
+    assert _ANCHORS_PRINCIPLE[page_key] in texts, \
+        f"{page_key}: 原理段缺专属锚点 {_ANCHORS_PRINCIPLE[page_key]}"
 
     # 侧边栏标签与 PAGE_GUIDES 一致（radio 渲染的是 page_label）
     assert page_label(page_key) in texts, f"{page_key}: 侧边栏标签与说明不一致"

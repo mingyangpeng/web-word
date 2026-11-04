@@ -59,10 +59,20 @@ docker compose down -v         # 连数据卷一起删除（会清空数据库�
 **新机器部署（git clone 之后只需一步）：**
 
 ```bash
-./start                 # 一键完成全部工作（.env 已入库并由第 0.1 步自动加载）
+./start                 # 一键 = develop.sh（部署环境+数据）→ start.sh（启动网页）
 ./start doctor          # 部署前/后体检：七类 23 项环境检查（Python/依赖/MySQL/.env/
                         # AI 接入/种子数据/数据库基线/端口磁盘），每项带修复指引
 ```
+
+**启动体系拆为三个脚本**（`scripts/lib_deploy.sh` 是共享函数库，各入口不重复逻辑）：
+
+| 脚本 | 职责 | 何时用 |
+|------|------|--------|
+| `./develop.sh` | **部署**：依赖自检+自动安装 → MySQL 安装/启动/授权 → dictionary.db 重组 → 七步灌库 → 体检。不动网页 | 新机器首次 clone 后；数据/代码更新后重跑 |
+| `./start.sh` | **启动网页**：拉起 MySQL（已部署目录）→ 启动 Streamlit。数据目录为空会指回 develop.sh | 日常开机使用；支持 `stop` / `status` / `doctor` 子命令 |
+| `./repair.sh` | **检测修复**：全量体检报告；`--fix` 自动修复（起 MySQL/重新授权/分卷重组/重灌低于基线的表）+ 复检 | 页面数据异常、换机器后抽查 |
+
+（`./start` 保留为一键入口：等价于 `develop.sh && start.sh`。）
 
 `.env` 已随仓库分发，无需再 `cp .env.example .env`；若某台机器没有智谱 key，
 AI 释义自动走离线兜底，不影响启动。AI 接入支持三家提供商，`llm_api.py` 按
@@ -112,6 +122,7 @@ streamlit run src/app.py
 web-word/
 ├── src/                        # 应用源码
 │   ├── app.py                  # Streamlit 主应用（六页：搜索/图谱/语料/域系/标注/范畴深挖）
+│   ├── page_guides.py          # 六页使用说明（原理/数据来源/操作/注意，与页面一一对应）
 │   ├── mysql_db.py             # MySQL 8.0 数据访问层（连接、建表、迁移、CRUD、统计）
 │   ├── llm_api.py              # 智谱 AI 封装（调用、解析、MySQL 缓存、兜底释义）
 │   ├── design_system.py        # 设计系统常量与样式生成
