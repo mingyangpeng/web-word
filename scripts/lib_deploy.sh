@@ -216,63 +216,72 @@ reassemble_dictionary_db() {
   return 0
 }
 
-# ---------- 七步灌库（幂等：--if-empty，已有数据则跳过）----------
+# ---------- 八步灌库（幂等：--if-empty，已有数据则跳过）----------
 run_all_loaders() {
   local n_fail=0
   if MYSQL_HOST=127.0.0.1 python3 scripts/load_word_library.py --if-empty \
        > "$LOGDIR/load_word_library.log" 2>&1; then
-    echo "[data 1/7] 词库 + OALD10 义项 + 词间关系 ✓"
+    echo "[data 1/8] 词库 + OALD10 义项 + 词间关系 ✓"
   else
-    echo "[data 1/7] ⚠ 词库灌入失败（看 $LOGDIR/load_word_library.log）"; n_fail=$((n_fail+1))
+    echo "[data 1/8] ⚠ 词库灌入失败（看 $LOGDIR/load_word_library.log）"; n_fail=$((n_fail+1))
+  fi
+
+  # 人工补充义位 4 条（scutter/kayak/oar/dodder，OALD10 未收录）：研究词表
+  # 996 = 992 OALD + 4 补充，缺了它们标注平台会漏行。脚本自身幂等。
+  if MYSQL_HOST=127.0.0.1 python3 scripts/load_supplemented_senses.py \
+       >> "$LOGDIR/load_supplemented.log" 2>&1; then
+    echo "[data 2/8] 人工补充义位（4 条）✓"
+  else
+    echo "[data 2/8] ⚠ 人工补充义位灌入失败（看 $LOGDIR/load_supplemented.log）"; n_fail=$((n_fail+1))
   fi
 
   if MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py --if-empty \
        >> "$LOGDIR/load_corpus.log" 2>&1; then
-    echo "[data 2/7] enTenTen21 语料数据集 ✓"
+    echo "[data 3/8] enTenTen21 语料数据集 ✓"
   else
-    echo "[data 2/7] ⚠ 语料灌入失败（看 $LOGDIR/load_corpus.log）"; n_fail=$((n_fail+1))
+    echo "[data 3/8] ⚠ 语料灌入失败（看 $LOGDIR/load_corpus.log）"; n_fail=$((n_fail+1))
   fi
 
   if MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py --if-empty \
        >> "$LOGDIR/load_category_study.log" 2>&1; then
-    echo "[data 3/7] 跑范畴深挖（甄别/编码/聚类/对齐）✓"
+    echo "[data 4/8] 跑范畴深挖（甄别/编码/聚类/对齐）✓"
   else
-    echo "[data 3/7] ⚠ 范畴深挖灌入失败（看 $LOGDIR/load_category_study.log）"; n_fail=$((n_fail+1))
+    echo "[data 4/8] ⚠ 范畴深挖灌入失败（看 $LOGDIR/load_category_study.log）"; n_fail=$((n_fail+1))
   fi
 
   if MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py --if-empty \
        >> "$LOGDIR/load_domain_family.log" 2>&1; then
-    echo "[data 4/7] 域系初判（352 保留义位）✓"
+    echo "[data 5/8] 域系初判（352 保留义位）✓"
   else
-    echo "[data 4/7] ⚠ 域系初判灌入失败（看 $LOGDIR/load_domain_family.log）"; n_fail=$((n_fail+1))
+    echo "[data 5/8] ⚠ 域系初判灌入失败（看 $LOGDIR/load_domain_family.log）"; n_fail=$((n_fail+1))
   fi
 
   if MYSQL_HOST=127.0.0.1 python3 scripts/update_domain_family_data.py \
        >> "$LOGDIR/load_domain_family.log" 2>&1; then
-    echo "[data 5/7] 域系增强（例句全量 + 频次/图式得分）✓"
+    echo "[data 6/8] 域系增强（例句全量 + 频次/图式得分）✓"
   else
-    echo "[data 5/7] ⚠ 域系增强失败（看 $LOGDIR/load_domain_family.log）"; n_fail=$((n_fail+1))
+    echo "[data 6/8] ⚠ 域系增强失败（看 $LOGDIR/load_domain_family.log）"; n_fail=$((n_fail+1))
   fi
 
   if MYSQL_HOST=127.0.0.1 python3 scripts/load_llm_screening.py --if-empty \
        >> "$LOGDIR/load_llm_screening.log" 2>&1; then
-    echo "[data 6/7] LLM 初筛草稿（352 义位）✓"
+    echo "[data 7/8] LLM 初筛草稿（352 义位）✓"
   else
-    echo "[data 6/7] ⚠ LLM 初筛草稿灌入失败（看 $LOGDIR/load_llm_screening.log）"; n_fail=$((n_fail+1))
+    echo "[data 7/8] ⚠ LLM 初筛草稿灌入失败（看 $LOGDIR/load_llm_screening.log）"; n_fail=$((n_fail+1))
   fi
 
   # 《现汉7》：首次需要先解析 mdx 生成 JSON（约 2.5s）
   if [ ! -f data/zh_dict_senses.json ] && [ -d data/ModernChineseDict/mdx ]; then
-    echo "[data 7/7] 结构化《现汉7》mdx（首次运行）..."
+    echo "[data 8/8] 结构化《现汉7》mdx（首次运行）..."
     python3 scripts/parse_modern_chinese_dict.py \
         >> "$LOGDIR/parse_zh_dict.log" 2>&1 \
       || echo "      ⚠ mdx 解析失败（看 $LOGDIR/parse_zh_dict.log）"
   fi
   if MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py --if-empty \
        >> "$LOGDIR/load_zh_dict.log" 2>&1; then
-    echo "[data 7/7] 《现汉7》词典（70103 词条）✓"
+    echo "[data 8/8] 《现汉7》词典（70103 词条）✓"
   else
-    echo "[data 7/7] ⚠ 《现汉7》灌入失败（看 $LOGDIR/load_zh_dict.log）"; n_fail=$((n_fail+1))
+    echo "[data 8/8] ⚠ 《现汉7》灌入失败（看 $LOGDIR/load_zh_dict.log）"; n_fail=$((n_fail+1))
   fi
   return $n_fail  # 0=全部成功（bash 惯例）
 }
