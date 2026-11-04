@@ -2717,7 +2717,7 @@ def get_domain_family_examples(word: str, sense_num: int) -> List[Dict[str, Any]
 # ============================================
 
 def get_annotation_progress() -> List[Dict[str, Any]]:
-    """逐动词标注进度（oald_senses，132 词 665 义位 = SenseID 体系的数据基础）：
+    """逐动词标注进度（oald_senses，研究词表 996 义位 = 992 OALD + 4 人工补充）：
     义位总数 / 已标注（prototype_level 非空）/ 存疑数。"""
     try:
         with get_db_cursor() as cursor:

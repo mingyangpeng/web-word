@@ -2108,6 +2108,12 @@ def render_annotation_page() -> None:
     idiom = bool(sense.get("is_idiom"))
     if idiom:
         st.warning("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或拓展")
+    # 义项来源徽章：研究词表 996 = 992 OALD10 + 4 人工补充 —— 来源在 UI 可见，
+    # 人工撰写条（无词典原文背书）复核时应加倍留意
+    _src = str(sense.get("source") or "OALD10")
+    if _src != "OALD10":
+        st.info(f"📝 义项来源：**{_src}**（OALD10 未收录，据 Levin brief 与语料人工撰写）",
+                icon="📝")
     st.markdown(
         f"<div style='{get_card_style()}'>"
         f"<p style='{BODY_BASE}'><strong>英文释义：</strong>{_html_escape(str(sense.get('definition') or '—'))}</p>"
