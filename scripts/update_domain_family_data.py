@@ -26,8 +26,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import pymysql  # noqa: E402
-import yaml  # noqa: E402
 from openpyxl import load_workbook  # noqa: E402
+
+from src import mysql_db  # noqa: E402
 
 WL_XLSX = ROOT / "docs" / "词表义项清单.xlsx"
 
@@ -47,11 +48,15 @@ SCHEMA_EVIDENCE = _find_dir(ROOT / "output" / "06_图式提取结果" / "schema_
 
 
 def _conn():
-    cfg = yaml.safe_load((ROOT / "config" / "config.yaml").read_text())["database"]["mysql"]
-    host = cfg["host"] if cfg["host"] != "mysql" else "127.0.0.1"
-    return pymysql.connect(host=host, port=cfg["port"], user=cfg["user"],
-                           password=cfg["password"], database=cfg["database"],
-                           charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor)
+    # 连库配置走 src.mysql_db 的统一解析（环境变量 > config.yaml > 默认值）。
+    # 此前这里自读 yaml 且把 host "mysql" 反转成 127.0.0.1 —— 那是给「宿主机跑脚本、
+    # 库在容器里」的场景打的补丁；放进 Docker 后方向正好反了（容器内 127.0.0.1 是
+    # 自己），域系增强必失败。统一解析后 Docker（MYSQL_HOST=mysql）与本地裸跑通吃。
+    return pymysql.connect(
+        host=mysql_db.MYSQL_HOST, port=mysql_db.MYSQL_PORT,
+        user=mysql_db.MYSQL_USER, password=mysql_db.MYSQL_PASSWORD,
+        database=mysql_db.MYSQL_DATABASE, charset=mysql_db.MYSQL_CHARSET,
+        cursorclass=pymysql.cursors.DictCursor)
 
 
 def load_oald_examples():
