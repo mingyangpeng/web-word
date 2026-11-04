@@ -13,6 +13,7 @@
   [对齐] 完全 1 / 部分 3 / 零 1 / 方式奔跑 d=0.045 / 英方式 17 条(53%) /
          汉方式 8 条(42%) / 英逃离 6 条
   [表4-2] 期刊论文 15 维均值对比逐格复现（含差值最大三特征 P1>P2/P3）
+  [图式层] 四类图式成员数（18/10、5/8、9/0、0/1）+ 距离 d=0.018/0.066
 """
 
 import sys
@@ -23,6 +24,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.mysql_db import get_db_cursor  # noqa: E402
+from src.category_study import (  # noqa: E402
+    compute_schema_alignment, get_categories, get_senses_with_features,
+)
 
 CODES = ["P1", "P2", "P3", "P4", "P5", "M1a", "M1b", "M1c", "M1d",
          "M2", "M3a", "M3b", "M3c", "M3d", "C1"]
@@ -146,6 +150,26 @@ def main() -> int:
                      JOIN cs_cluster_runs r ON c.run_id = r.id
                      WHERE r.language='en' AND c.cluster_no=5""")
         ck("英逃离脱离类 6 条", c.fetchone()["n"], 6)
+
+        # ---------- 图式层中英对齐（compute_schema_alignment 程序推导） ----------
+        # 期刊论文摘要与表 4-3 的四类图式成员数与距离；距离 = 两侧图式中心
+        # 15 列特征均值差的平均（/2 归一），此处按论文口径四舍五入到 3 位。
+        cats = get_categories()
+        if cats:
+            senses = get_senses_with_features(cats[0]["id"])
+            for row in compute_schema_alignment(senses):
+                sch = row["schema"]
+                ck(f"图式[{sch}] 英{row['en_size']} / 汉{row['zh_size']}",
+                   (row["en_size"], row["zh_size"]),
+                   {"方式伴随": (18, 10), "源点脱离": (5, 8),
+                    "终点抵达": (9, 0), "互动位移": (0, 1)}[sch])
+                if row["distance"] is not None:
+                    ck(f"图式[{sch}] d={row['distance']:.3f}",
+                       round(row["distance"], 3),
+                       {"方式伴随": 0.018, "源点脱离": 0.066}[sch])
+                else:
+                    ck(f"图式[{sch}] 零对齐（一侧无成员）",
+                       row["verdict"], "零对齐")
 
         # ---------- 期刊论文表 4-2：15 维均值逐格 ----------
         means = {}
