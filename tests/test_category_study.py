@@ -335,9 +335,9 @@ def test_schema_alignment_run_category(loaded_runtest):
 # ============================================
 
 def test_page_data_contract(run_payload):
-    """_load_category 返回的键覆盖四个视图的全部取数点（页面冒烟在 AppTest）。"""
+    """_load_category 返回的键覆盖五个视图的全部取数点（页面冒烟在 AppTest）。"""
     from src.category_study_page import VIEWS, VIEW_LABELS
-    assert set(VIEWS) == {"cluster", "matrix", "align", "overview"}
+    assert set(VIEWS) == {"cluster", "matrix", "align", "schema", "overview"}
     assert all(v in VIEW_LABELS for v in VIEWS)
     # 视图函数依赖的数据键（与 _load_category 返回结构一一对应）
     required_keys = {"category", "senses", "en_run", "zh_run",

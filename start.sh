@@ -15,13 +15,14 @@ cd "$(dirname "$0")"
 # shellcheck disable=SC1091
 source scripts/lib_deploy.sh
 
+load_env
+
 case "${1:-start}" in
   stop)   stop_all; exit 0 ;;
   status) status_all; exit 0 ;;
   doctor) python3 scripts/env_doctor.py "${@:2}"; exit $? ;;
 esac
 
-load_env
 check_deps || true
 ensure_mysql_binary || exit 1
 
