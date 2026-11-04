@@ -17,6 +17,8 @@ htmlcov/
 *.bak
 screenshots
 data/mysql/
+# 全库词典本体不进构建上下文（206MB）—— 镜像侧由分卷在 dict_builder stage 组装
+data/dictionary.db
 
 # docs/ 里的二进制文档不必进镜像，**但灌库要用的四份种子 xlsx 必须进** ——
 # Levin 筛选表（词目与三主范畴十二次类）、OALD10 义项表（oald_senses 992 条）、
