@@ -1,0 +1,45 @@
+# ============================================================
+# 范畴包③：图式体系——义位按什么归类（motion · 移动动词）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2③
+# ============================================================
+version: 1.0
+category: motion
+
+# 图式是封闭清单：标注时四选一，不得新增（理论承诺）
+# 每个图式 = 语义重心定义 + 证据面（在哪个语法槽位找证据）+ 评分函数
+schemas:
+  - code: MANNER_ACCOMP
+    name: 方式伴随图式
+    definition: 位移过程伴随的运动方式是语义重心
+    classic_examples: [run, swim, limp]
+    evidence_slots:            # 槽位代码见 corpus_map.yaml 的 slots 枚举
+      - modifiers
+      - adjectives_after
+      - and_or_conj
+      - subjects
+      - usage_patterns
+      - complements
+  - code: SOURCE_DETACH
+    name: 源点脱离图式
+    definition: 运动体离开起始位置是语义重心
+    classic_examples: [leave, depart]
+    evidence_slots: [particles_after, objects_away, objects_off, objects_out, pp_from_outof]
+  - code: GOAL_ARRIVE
+    name: 终点抵达图式
+    definition: 运动体到达目标位置是语义重心
+    classic_examples: [arrive, reach]
+    evidence_slots: [objects, objects_updown_in, pp_to_at_in, particles_with_obj]
+  - code: INTERACT_MOVE
+    name: 互动位移图式
+    definition: 两实体同时位移且具空间互动关系
+    classic_examples: [chase, accompany, follow]
+    evidence_slots: [objects, pronominal_objects, pronominal_subjects, pp_after_behind]
+
+annotation:
+  mode: forced_choice          # 四选一
+  secondary_schema: record     # 次要图式记入备注（供辐射网络）
+  domain_merging:              # 图式→域的归并假设（可被义位层重聚类推翻）
+    domains:
+      - {name: 方式位移域, families: [MANNER_ACCOMP]}
+      - {name: 路径位移域, families: [SOURCE_DETACH, GOAL_ARRIVE]}
+      - {name: 互动位移域, families: [INTERACT_MOVE]}

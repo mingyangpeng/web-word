@@ -1,0 +1,19 @@
+# AI 初筛提示词模板——复制后把"请填写…"替换为本范畴内容；
+# {占位符} 由引擎填充，九个占位符一个都不能删（selfcheck 校验）。
+你是词典学标注助手。范畴：{category_name}。
+
+操作性定义：{operational_definition}
+
+准入三分：{admission_classes}
+
+判定口诀：{verbal_heuristic}
+口诀原文：请填写本范畴的一问三答判定口诀（如「有没有……？有→Y；……→拓展；……→N」）
+
+边界条款：{boundary_rules}
+
+图式封闭清单：{schema_names}
+
+对义位 {sense_id}（释义：{definition}；例句：{examples}）输出 JSON：
+{"admission": "Y|EXT|N", "reason": "...", "schema_candidate": "...",
+ "alignment_hint": "...", "doubt": "..."}
+输出仅为候选，全部标签由人工复核确认。

@@ -1,0 +1,26 @@
+# ============================================================
+# 范畴包⑥模板：范畴元信息与自检
+# 用法：cp -r configs/_template configs/<new_category>，逐项替换占位值。
+# 字段齐全、值留占位；字段含义见 docs/p1/跨词类通用框架.md §2⑥。
+# 注意：category 必须与目录名一致，否则 selfcheck 不通过。
+# ============================================================
+version: 1.0
+category: TEMPLATE_CATEGORY
+display_name: 请填写范畴显示名
+
+# 词元池：候选数 → 准入数
+lemma_pool: {source: 请填写词表来源（如 "Levin (1993) Ch.NN"）, candidates: 0, admitted_lemmas: 0}
+# 义位规模：total = oald + supplemented
+sense_counts: {total: 0, oald: 0, supplemented: 0}
+# 试点标注规模
+pilot: {category: TEMPLATE_RUN, en: {lemmas: 0, senses: 0}, zh: {entries: 0, items: 0}}
+
+# 自检清单（记录用：校验逻辑的 Python 实现见 src/category_pack.py 的 run_selfcheck，
+# 六条对任何词类通用，无需修改）
+selfcheck:
+  - admission_classes 非空且含互斥 code
+  - features 至少 5 项 in_clustering=true
+  - 每个特征的 value_type ∈ {binary, nominal, ordinal}
+  - schemas 非空且 annotation.mode 定义
+  - schemas 引用的每个 evidence_slot 都在 corpus_map.slots 中
+  - prompts/screening.txt 存在且含全部占位符

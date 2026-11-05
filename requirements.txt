@@ -43,3 +43,10 @@ pytest-cov>=4.1.0
 black>=23.7.0
 flake8>=6.1.0
 mypy>=1.5.0
+
+# ============================================
+# 多人标注系统 · 信度引擎（src/reliability.py）
+# ============================================
+# Krippendorff's α 计算（nominal/ordinal 分支）。库不可用时 reliability.py
+# 内置同公式的纯 Python 回退实现，应用不会因此崩溃。
+krippendorff>=0.9.0

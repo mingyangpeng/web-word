@@ -1,0 +1,38 @@
+# ============================================================
+# 范畴包④：语料证据映射——证据从哪来（motion · 移动动词）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2④
+# ============================================================
+version: 1.0
+category: motion
+
+corpus: enTenTen21
+interface: sketch_engine_wordsketch   # 通用资源：word sketch 语法槽位
+
+# 槽位枚举：本范畴用到的语法关系槽（语料接口是通用的，取用是范畴性的）
+slots:
+  - {code: subjects,            sketch_gramrel: "subjects of %w"}
+  - {code: objects,             sketch_gramrel: "objects of %w"}
+  - {code: modifiers,           sketch_gramrel: "modifiers of %w"}
+  - {code: adjectives_after,    sketch_gramrel: "adjectives after %w"}
+  - {code: and_or_conj,         sketch_gramrel: "%w and/or ..."}
+  - {code: usage_patterns,      sketch_gramrel: "usage patterns"}
+  - {code: complements,         sketch_gramrel: "complements of %w"}
+  - {code: particles_after,     sketch_gramrel: "particles after %w"}
+  - {code: objects_away,        sketch_gramrel: "objects of %w away"}
+  - {code: objects_off,         sketch_gramrel: "objects of %w off"}
+  - {code: objects_out,         sketch_gramrel: "objects of %w out"}
+  - {code: objects_updown_in,   sketch_gramrel: "objects of %w up/down/in/into"}
+  - {code: pp_to_at_in,         sketch_gramrel: "prepositional phrases (to/at/in)"}
+  - {code: pp_from_outof,       sketch_gramrel: "prepositional phrases (from/out of)"}
+  - {code: pp_after_behind,     sketch_gramrel: "prepositional phrases (after/behind)"}
+  - {code: pronominal_objects,  sketch_gramrel: "pronominal objects of %w"}
+  - {code: pronominal_subjects, sketch_gramrel: "pronominal subjects of %w"}
+  - {code: particles_with_obj,  sketch_gramrel: "particles after %w with object"}
+
+# 评分函数：图式重心指数（引擎提供两种内置函数，参数在配置里）
+scoring:
+  function: mean_logdice_log2n     # S = Mean_logDice × log2(N+1)
+  top_k: 50                        # 每槽位取前 50 搭配词
+  noise_filter:                    # 语义归类时的剔除提示（人工执行，配置仅提示）
+    remove: [抽象概念名词, 隐喻投射名词, 量化时间状态名词]
+    keep: [能指代或编码事件要素的词项]

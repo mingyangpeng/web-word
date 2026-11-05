@@ -1,0 +1,59 @@
+# ============================================================
+# 范畴包②：特征集——用什么维度刻画义位（motion · 移动动词）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2②
+# value_type 决定 Gower 距离分支：
+#   binary  → 不一致记 1；nominal → 不一致记 1；ordinal → 归一化后差值
+# ============================================================
+version: 1.0
+category: motion
+
+# 特征分组（组只用于展示着色，不参与计算）
+groups:
+  - {id: P, name: 路径, order: 1}
+  - {id: M, name: 方式, order: 2}
+  - {id: C, name: 动因, order: 3}
+  - {id: A, name: 核验, order: 4}
+
+# 特征逐条定义（P1-P5 / M1a-M1d / M2 / M3a-M3d / C1 共 15 项进聚类；A1-A3 核验区不进聚类）
+features:
+  - {code: P1, group: P, name: 源点凸显,     value_type: binary,  in_clustering: true,
+     values: {0: 不凸显, 1: 凸显}}
+  - {code: P2, group: P, name: 终点凸显,     value_type: binary,  in_clustering: true,
+     values: {0: 不凸显, 1: 凸显}}
+  - {code: P3, group: P, name: 有界达成,     value_type: binary,  in_clustering: true,
+     values: {0: 无界过程, 1: 有界达成}}
+  - {code: P4, group: P, name: 轴向垂直,     value_type: binary,  in_clustering: true,
+     values: {0: 非垂直, 1: 垂直}}
+  - {code: P5, group: P, name: 速度,         value_type: ordinal, in_clustering: true,
+     values: {0: 低, 1: 中, 2: 高}}
+  - {code: M1a, group: M, name: 主体-人,       value_type: binary, in_clustering: true,
+     values: {0: 非人主体, 1: 人主体}}
+  - {code: M1b, group: M, name: 主体-动物,     value_type: binary, in_clustering: true,
+     values: {0: 非动物主体, 1: 动物主体}}
+  - {code: M1c, group: M, name: 主体-车辆工具, value_type: binary, in_clustering: true,
+     values: {0: 非车辆工具, 1: 车辆工具}}
+  - {code: M1d, group: M, name: 主体-无生液体, value_type: binary, in_clustering: true,
+     values: {0: 非液体主体, 1: 无生液体主体}}
+  - {code: M2,  group: M, name: 情态急促度,   value_type: ordinal, in_clustering: true,
+     values: {0: 轻缓, 1: 一般, 2: 急促}}
+  - {code: M3a, group: M, name: 介质-陆地,   value_type: binary, in_clustering: true,
+     values: {0: 非陆地介质, 1: 陆地介质}}
+  - {code: M3b, group: M, name: 介质-水,     value_type: binary, in_clustering: true,
+     values: {0: 非水介质, 1: 水介质}}
+  - {code: M3c, group: M, name: 介质-空气,   value_type: binary, in_clustering: true,
+     values: {0: 非空气介质, 1: 空气介质}}
+  - {code: M3d, group: M, name: 介质-其他,   value_type: binary, in_clustering: true,
+     values: {0: 无其他介质, 1: 其他介质}}
+  - {code: C1,  group: C, name: 动因,         value_type: nominal, in_clustering: true,
+     values: {0: 跟随依附, 1: 受迫, 2: 自主}}
+  # ---- 核验区（不进聚类，聚类后核验句法行为一致性，防循环论证）----
+  - {code: A1, group: A, name: 构式论元-不及物,   value_type: binary, in_clustering: false,
+     values: {0: 无, 1: 有}}
+  - {code: A2, group: A, name: 构式论元-及物使役, value_type: binary, in_clustering: false,
+     values: {0: 无, 1: 有}}
+  - {code: A3, group: A, name: 主体受限标记,     value_type: binary, in_clustering: false,
+     values: {0: 无, 1: 有}}
+
+clustering:
+  algorithm: gower_upgma
+  feature_scope: in_clustering   # 只取 in_clustering=true 的列

@@ -204,6 +204,54 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "标注结果可整表导出 CSV（页面底部下载按钮），便于离线核对。",
         ],
     },
+    "submission": {
+        "label": "📥 标注提交",
+        "purpose": "多人标注的提交流视图：选动词 → 选义位 → 在 LLM 初筛草稿基础上"
+                   "独立提交准入/图式/对齐/汉语句法/译义策略判定，写入 "
+                   "annotation_submissions；同一义位重复提交=覆盖更新。",
+        "principle": [
+            "独立性（用户决策④）：annotator 只能经「我的提交记录」看到自己的提交，"
+            "页面不提供任何他人数据入口；他人提交与分歧清单在仲裁面板"
+            "（仅 reviewer/admin 角色可见）。",
+            "AI 草稿可见性（用户决策③ / 验收 V7）：全员看同样的 LLM 初筛草稿"
+            "（llm_tag/llm_schema/llm_align/llm_reason/llm_doubt）后独立标注，"
+            "因此下游信度口径为 AI-assisted IAA。",
+            "提交即覆盖（验收 V2）：同一 (sense_id, task_type, coder_id) 唯一，"
+            "重复提交整行覆盖且 status 重置为 submitted —— 旧仲裁结论不自动沿用，"
+            "需重新进审核/仲裁。",
+            "payload 应用层先校验再入库：admission 必须 ∈ {Y, EXT, N}、needs_review "
+            "必须为 bool，非法值不进数据库；留空的可选字段不入 payload"
+            "（缺失 ≠ 空串，避免污染分歧比对）。",
+            "表结构由 ensure_flow_tables 首次访问时幂等创建"
+            "（annotation_submissions / adjudications / assignments），无需手跑迁移。",
+        ],
+        "data_source": [
+            "义位与状态：oald_senses（get_oald_senses，联 domain_family_senses 的 "
+            "llm_* 草稿列）+ get_annotation_progress 的动词进度。",
+            "提交读写：src/annotation_flow.py 的 submit_annotation / "
+            "get_my_submissions（独立性入口，只看自己）。",
+            "判定标准：configs/motion 范畴包 admission.yaml（Y/EXT/N 三分与边界"
+            "仲裁条款，页内只读展示）；设计规范 docs/p1/多人标注系统设计规范.md §2/§5。",
+        ],
+        "steps": [
+            "选择动词 → 选择义位（SenseID，选项含当前权威层状态与 LLM 草稿摘要）；",
+            "对照「🤖 LLM 初筛草稿」、英文释义与例句（判定标准见范畴包只读面板）"
+            "填写表单：准入（Y/EXT/N）→ 意象图式四选一 → 英汉对齐三选一 → "
+            "汉语句法特征/译义策略，边界案例勾选「存疑」；",
+            "点「提交本义位标注」写入 annotation_submissions（同义位再次提交"
+            "=覆盖更新，覆盖后需重新审核）；",
+            "在「我的提交记录」核对自己历次提交（submitted/adjudicated 两态）；"
+            "分歧清单与定稿在下方仲裁面板（reviewer/admin 角色）。",
+        ],
+        "notes": [
+            "annotator 不可见他人提交（独立性，规范 §0/§1）；需要看分歧清单"
+            "请使用 reviewer/admin 账号登录。",
+            "准入三值口径与权威层对应：Y=核心、EXT=拓展、N=剔除；提交后进入"
+            "审核流，最终以仲裁 gold 为准。",
+            "数据库离线时本页不可用（表由 ensure_flow_tables 首次访问创建，"
+            "需要 MySQL 可用）。",
+        ],
+    },
     "category": {
         "label": "🏃‍♀️ 范畴深挖",
         "purpose": "「跑」范畴英汉纵向对比的工作台：义位甄别 → P/M/C+A 特征编码 → "
@@ -253,6 +301,72 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "categories/cs_* 8 表；当前为程序预编码版本，正式流程需双标注 IAA 后重跑；",
             "图式由 P/M/C 编码推导（追逐→互动位移、P1→源点脱离、P2/P3→终点抵达、"
             "其余→方式伴随），与全词库四图式体系一致。",
+        ],
+    },
+    "users_admin": {
+        "label": "👥 用户管理",
+        "purpose": "管理员专用：账号创建、角色分配（admin/reviewer/annotator/viewer）"
+                   "与停用/启用，多人标注流的权限入口。",
+        "principle": [
+            "角色语义按设计规范 §1：admin 一切、reviewer 看全部提交并仲裁、"
+            "annotator 独立提交互不可见、viewer 只读；改角色/停用的业务规则"
+            "（ROLES 枚举校验、rowcount 语义）都在数据层，页面只转译成败。",
+            "自保护：当前登录 admin 不能停用自己、不能撤销自己的 admin 角色 ——"
+            "否则最后一个管理员把自己锁在门外后，系统再无入口。",
+            "密码安全：pbkdf2_sha256 + 每用户随机盐（150000 迭代），哈希不出数据层"
+            "（列表不含 password_hash）；新建用户初始密码只在表单内存中出现，"
+            "提交后立即从会话清除。",
+        ],
+        "data_source": [
+            "src/users_db.py：create_user / list_users / set_role / set_active；"
+            "users 表由 ensure_user_tables 幂等创建（表为空时自动创建内置 admin，"
+            "首次登录后必须改密）。",
+        ],
+        "steps": [
+            "顶部指标卡看总用户/启用中/管理员数；只读表格核对账号清单；",
+            "「修改角色」选择用户与新角色保存（停用账号 verify_login 返回失败，"
+            "不能登录）；",
+            "「停用 / 启用」切换登录资格（记录保留，历史提交的外键引用不受影响）；",
+            "「新建用户」填用户名/初始密码/显示名/角色创建账号，并通知本人"
+            "首次登录后修改密码。",
+        ],
+        "notes": [
+            "仅 admin 可见可用；其他角色从侧边栏看不到本页，强行进入会提示无权限。",
+            "内置默认 admin 的初始口令是公开 bootstrap 凭据，首次登录后必须立即修改。",
+            "停用 ≠ 删除：提交记录外键引用用户 id，物理删除会断链，因此只提供停用。",
+        ],
+    },
+    "reliability": {
+        "label": "📐 信度报告",
+        "purpose": "AI-assisted IAA 信度视图：对同一 (范畴, 任务) 的全部已提交标注"
+                   "计算 Krippendorff's α（overall + 按指标/特征），高亮低信度项"
+                   "并导出分歧清单 CSV。",
+        "principle": [
+            "口径标注（用户决策③）：所有编码人看同样的 AI 草稿后独立标注，"
+            "α 命名为 AI-assisted IAA（全员可见 AI 草稿口径）。",
+            "计算双路径：krippendorff 库为主路径，纯 Python 巧合矩阵实现兜底"
+            "（库缺失或异常自动启用，RELIABILITY_FORCE_PURE 可强制）；"
+            "nominal/ordinal 按 value_type 映射，缺失值容忍（缺若干义位不报错）。",
+            "达标线 α ≥ 0.7；低于阈值的指标与分歧条目直接对接仲裁面板"
+            "（reviewer/admin 定稿 gold 后，提交置为 adjudicated 并退出信度口径）。",
+        ],
+        "data_source": [
+            "annotation_submissions（仅 status='submitted'）→ src/reliability.py 的 "
+            "run_reliability → 结果写 reliability_runs 留痕；admission 任务对 "
+            "admission/schema/alignment 各算 nominal α。",
+            "分歧条目导出 CSV（utf-8-sig）；仲裁操作在「📥 标注提交」页的仲裁面板。",
+        ],
+        "steps": [
+            "选范畴（motion）与任务类型（admission / feature_coding / alignment）；",
+            "读 overall α 大数字与达标判定；按指标/特征条形图定位低信度项；",
+            "展开分歧条目表核对编码人取值冲突；需要仲裁时到「📥 标注提交」页定稿；",
+            "点导出按钮下载含分歧清单的 CSV，离线留存。",
+        ],
+        "notes": [
+            "仅 reviewer/admin 可见；annotator/viewer 的侧边栏不出现本页入口。",
+            "α 显示为 — 表示不可计算（可用编码人/重叠单元不足），不是 0。",
+            "已仲裁（adjudicated）的提交不参与计算；覆盖提交会重置回 submitted "
+            "并重新进入口径。",
         ],
     },
 }

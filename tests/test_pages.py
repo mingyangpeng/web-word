@@ -1,6 +1,9 @@
 """页面级渲染测试（AppTest 无头执行）。
 
-覆盖应用四个页面的最小渲染契约：不抛异常、关键元素在场。
+覆盖应用页面的最小渲染契约：不抛异常、关键元素在场。
+多人标注系统（规范 §5/§7-V1）：标注页与新增三页有登录/角色门 ——
+需要授权内容的用例经 _run_page 的 user 参数注入会话用户
+（规范 §6-5 会话结构 st.session_state["user"]，页面不反查用户表）。
 DB 依赖：本测试连接真实 MySQL（与 test_schema 同口径，本地 ./start 后可跑）。
 """
 import os
@@ -21,9 +24,20 @@ os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 APP = os.path.join(PROJECT_ROOT, "src", "app.py")
 TIMEOUT = 60
 
+# 会话用户样例（规范 §1 角色语义；仅 session_state 注入，不要求库中存在）
+_ADMIN_USER = {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"}
+_CODER_USER = {"id": 2, "username": "coder_e2e", "display_name": "测试标注员",
+               "role": "annotator"}
+_REVIEWER_USER = {"id": 3, "username": "reviewer_e2e", "display_name": "测试审核员",
+                  "role": "reviewer"}
+_VIEWER_USER = {"id": 4, "username": "viewer_e2e", "display_name": "测试只读",
+                "role": "viewer"}
 
-def _run_page(page: str) -> AppTest:
+
+def _run_page(page: str, user: dict = None) -> AppTest:
     at = AppTest.from_file(APP, default_timeout=TIMEOUT)
+    if user is not None:
+        at.session_state["user"] = user
     at.session_state["page"] = page
     at.run()
     return at
@@ -56,12 +70,14 @@ def test_corpus_page_renders_with_editor():
 
 
 def test_annotate_page_renders_with_form():
-    """标注平台页：进度指标 + 五维表单。"""
-    at = _run_page("annotate")
+    """标注平台页（admin 快速通道）：进度指标 + 五维表单（直写权威层）。"""
+    at = _run_page("annotate", user=_ADMIN_USER)
     assert not at.exception
     texts = _page_text(at)
     assert "标注平台" in texts
     assert "图式五维标注" in texts
+    # admin 快速通道提示在场（规范 §5：保留原直写权威层入口）
+    assert any("快速通道" in str(i.value) for i in at.info)
     # 五维表单控件在场（form 内的控件经 at.radio/selectbox 等访问器读取）
     radio_labels = [r.label for r in at.radio]
     assert any("准入标签" in lb for lb in radio_labels), f"准入标签缺失: {radio_labels}"
@@ -77,3 +93,101 @@ def test_graph_page_renders():
     assert not at.exception
     all_md = " ".join(x.value for x in at.markdown)
     assert "词间关系知识图谱" in all_md
+
+
+# ============================================
+# 多人标注系统：登录门 / 角色门 / 新页面（规范 §5/§7-V1）
+# ============================================
+def test_annotate_page_requires_login():
+    """V1：未登录不能进标注页（渲染「请先登录」，页面内容不渲染）。"""
+    at = _run_page("annotate")
+    assert not at.exception
+    assert any("请先登录" in str(w.value) for w in at.warning)
+    assert not any("图式五维标注" in str(m.value) for m in at.markdown)
+
+
+def test_annotate_page_viewer_denied():
+    """V1：viewer 进标注页提示无权限。"""
+    at = _run_page("annotate", user=_VIEWER_USER)
+    assert not at.exception
+    assert any("无权限" in str(w.value) for w in at.warning)
+
+
+def test_annotate_page_annotator_gets_submission_flow():
+    """标注页按角色分派：annotator 看到多人提交流（含 V7 AI 草稿区与我的提交记录）。"""
+    at = _run_page("annotate", user=_CODER_USER)
+    assert not at.exception
+    texts = _page_text(at)
+    assert "标注平台" in texts
+    assert "我的提交记录" in texts
+    # annotator 不应看到 admin 直写权威层的表单
+    assert not any("图式五维标注" in str(m.value) for m in at.markdown)
+
+
+def test_annotate_page_reviewer_gets_panel():
+    """标注页按角色分派：reviewer 看到提交流 + 分歧清单与仲裁面板。"""
+    at = _run_page("annotate", user=_REVIEWER_USER)
+    assert not at.exception
+    assert "分歧清单与仲裁" in _page_text(at)
+
+
+def test_submission_page_requires_login():
+    """新增「标注提交」页：未登录渲染「请先登录」。"""
+    at = _run_page("submission")
+    assert not at.exception
+    assert any("请先登录" in str(w.value) for w in at.warning)
+
+
+def test_submission_page_renders_for_annotator():
+    """「标注提交」页（annotator）：提交流 + 我的提交记录；无他人数据入口。"""
+    at = _run_page("submission", user=_CODER_USER)
+    assert not at.exception
+    texts = _page_text(at)
+    assert "标注提交" in texts
+    assert "我的提交记录" in texts
+    # 独立性（规范 §0）：annotator 页面不渲染分歧/仲裁面板
+    assert "分歧清单与仲裁" not in texts
+
+
+def test_submission_page_reviewer_gets_panel():
+    """「标注提交」页（reviewer）：额外渲染分歧清单与仲裁面板。"""
+    at = _run_page("submission", user=_REVIEWER_USER)
+    assert not at.exception
+    assert "分歧清单与仲裁" in _page_text(at)
+
+
+def test_users_admin_page_gate():
+    """用户管理页：未登录提示登录；非 admin 角色提示无权限。"""
+    at = _run_page("users_admin")
+    assert not at.exception
+    assert any("请先登录" in str(w.value) for w in at.warning)
+
+    at2 = _run_page("users_admin", user=_CODER_USER)
+    assert not at2.exception
+    assert any("仅管理员可用" in str(e.value) for e in at2.error)
+
+
+def test_users_admin_page_renders_for_admin():
+    """用户管理页（admin）：指标卡 + 用户表 + 表单入口。"""
+    at = _run_page("users_admin", user=_ADMIN_USER)
+    assert not at.exception
+    texts = _page_text(at)
+    assert "用户管理" in texts
+    assert "修改角色" in texts
+    assert len(at.metric) >= 3
+
+
+def test_reliability_page_gate():
+    """信度报告页：annotator 提示无权限（页面入口 role gate）。"""
+    at = _run_page("reliability", user=_CODER_USER)
+    assert not at.exception
+    assert any("reviewer / admin" in str(w.value) for w in at.warning)
+
+
+def test_reliability_page_renders_for_reviewer():
+    """信度报告页（reviewer）：标题 + 口径标注 + 选择器在场。"""
+    at = _run_page("reliability", user=_REVIEWER_USER)
+    assert not at.exception
+    texts = _page_text(at)
+    assert "信度报告" in texts
+    assert "AI-assisted IAA" in texts
