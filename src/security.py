@@ -68,6 +68,31 @@ class InputValidator:
         return escape(value)
 
 
+# CSV 公式注入防护：Excel/WPS 打开 CSV 时，以这些字符开头的单元格会被
+# 当作公式执行（CSV Injection / Formula Injection）。业界通行做法是给
+# 这类文本前置一个单引号 `'`，使其被解析为普通文本。
+CSV_FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t")
+
+
+def sanitize_csv_value(value):
+    """对可能被 Excel 当作公式的 CSV 单元格文本前置单引号。
+
+    仅处理字符串；若首字符为 = + - @ \\t 之一，则在最前面加 `'`。
+    其余类型（数字、None 等）原样返回，正常文本不受影响。
+    """
+    if isinstance(value, str) and value[:1] in CSV_FORMULA_TRIGGER_CHARS:
+        return "'" + value
+    return value
+
+
+def sanitize_csv_dataframe(df):
+    """对 DataFrame 的所有字符串单元格应用 CSV 公式注入防护。
+
+    返回新的 DataFrame（不修改原对象），供 to_csv 导出前调用。
+    """
+    return df.map(sanitize_csv_value) if hasattr(df, "map") else df.applymap(sanitize_csv_value)
+
+
 class KeyManager:
     """密钥管理器"""
 
