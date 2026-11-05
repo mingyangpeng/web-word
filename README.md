@@ -19,6 +19,11 @@
 - **用户反馈**：1–5 星评分 + 文字建议，写入 `feedbacks` 表。
 - **安全校验**：`src/security.py` 对输入做 SQL 注入与 XSS 模式校验，输出做 HTML 转义。
 - **离线可用**：没有智谱 API key 也能启动并返回释义（详见下文「常见问题」）。
+- **多人协作标注系统**：GitHub 式账号与角色（管理员/审核员/标注员）、登录态与页面权限过滤、
+  盲标工作台（所有标注者看相同 AI 草稿，互不可见对方提交）、提交→审核→仲裁→定稿流程、
+  Krippendorff's α 信度报告（AI-assisted IAA 口径），支撑论文 §4 的双标注信度检验。
+
+![登录与页面导航](screenshots/登录与页面导航_未登录态.png)
 
 ## 🚀 快速开始
 
@@ -126,8 +131,13 @@ streamlit run src/app.py
 ```
 web-word/
 ├── src/                        # 应用源码
-│   ├── app.py                  # Streamlit 主应用（六页：搜索/图谱/语料/域系/标注/范畴深挖）
-│   ├── page_guides.py          # 六页使用说明（原理/数据来源/操作/注意，与页面一一对应）
+│   ├── app.py                  # Streamlit 主应用（九页：六基础页 + 标注提交/用户管理/信度报告，按角色过滤）
+│   ├── page_guides.py          # 页面使用说明（原理/数据来源/操作/注意，与页面一一对应）
+│   ├── users_db.py             # 多用户账号体系（角色权限/启停，内置 admin）
+│   ├── users_admin_page.py     # 用户管理页（管理员专用）
+│   ├── annotation_flow.py      # 标注提交流（提交/分歧检测/仲裁/任务统计）
+│   ├── reliability.py          # Krippendorff's α 信度引擎与报告页
+│   ├── category_pack.py        # 范畴包加载器（configs/motion/ 六件套 YAML）
 │   ├── mysql_db.py             # MySQL 8.0 数据访问层（连接、建表、迁移、CRUD、统计）
 │   ├── llm_api.py              # 智谱 AI 封装（调用、解析、MySQL 缓存、兜底释义）
 │   ├── design_system.py        # 设计系统常量与样式生成
@@ -503,6 +513,58 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 > 留着只会得到自相矛盾的图；跑一次 `python scripts/load_word_library.py` 即重建为
 > 1780 条正确边。
 
+## 👥 多人协作标注系统（多用户 / 盲标 / IAA 信度）
+
+> 支撑系列论文 §4「双人/多人标注信度检验」的平台底座：把隐性的第二编码人安排，
+> 落成一套可审计、可复算的线上标注流程。
+
+### 原理
+
+- **分析单元与任务**：以义位（SenseID）为单位，任务类型覆盖 `admission·准入三字段`、
+  `image_schema·意象图式`、`alignment·英汉对齐`、`syntax·句法/策略`；范畴 32 义位 × 18 特征
+  全量编码（任务 B），准入任务按 ~15% 抽样（任务 A）。
+- **盲标口径（AI-assisted IAA）**：所有编码人看到**相同的 AI 初筛草稿**（候选参考，须人工确认），
+  草稿不因人而异；标注员互不可见对方提交，审核员/管理员可见全部——保证 α 度量的是
+  「独立判断的一致性」而非「互相抄的结果」。
+- **信度指标**：Krippendorff's α（`krippendorff` 库，纯 Python 回退实现），同一
+  `(范畴, 任务类型)` 的全部 `status='submitted'` 提交参与计算，缺失值容忍；
+  **α ≥ 0.7 可接受、≥ 0.8 良好**，按特征报明细；不可算时显示 `—`，不虚构数值。
+- **仲裁闭环**：分歧检测（`detect_disagreements`）→ 审核员提交仲裁（`save_adjudication`）→
+  定稿；同一义位重复提交=覆盖更新，全程留痕于 `annotation_submissions`。
+
+### 数据来源
+
+- `users` 表：账号、角色（管理员/审核员/标注员）、启用状态；首次启动自动创建内置
+  管理员 `admin`（默认密码 `admin123`，**上线前必须改密**）。
+- `annotation_submissions` 表：逐条提交（coder_id × SenseID × 特征 × 值 + 时间戳）。
+- `src/reliability.py`：α 计算与报告页渲染；`src/annotation_flow.py`：提交/我的提交/
+  分歧检测/仲裁/任务统计；`src/users_db.py` + `src/users_admin_page.py`：账号体系与
+  管理界面；`src/category_pack.py` + `configs/motion/`：范畴包六件套（配置化前置）。
+
+### 操作
+
+1. **登录**：启动后侧边栏顶部输入用户名/密码；未登录仅见基础六页（只读）。
+2. **管理员**：`👥 用户管理` 页创建标注员/审核员账号、分配角色、启停账号。
+3. **标注员**：`📥 标注提交` 页选择动词→义位，核对英文释义、语法码与真实例句（判定证据），
+   参考 LLM 初筛草稿完成判定并提交；`🏷️ 标注平台` 页可继续既有单标注工作流。
+4. **审核员/管理员**：`📥 标注提交` 管理员视图查看全部分歧，提交仲裁意见；
+   `📐 信度报告` 页选择范畴与任务类型，实时查看 α 及逐特征明细。
+
+![用户管理页](screenshots/用户管理页_角色与账号体系.png)
+
+![标注提交页（盲标工作台）](screenshots/标注提交页_盲标工作台.png)
+
+![信度报告页](screenshots/信度报告页_α一致性分析.png)
+
+### 注意事项
+
+- 默认管理员密码 `admin123` 仅用于首次登录，**正式使用前务必在用户管理页改密**。
+- α 数值随提交量增长才稳定：提交不足时页面如实显示「暂无已提交标注」，**不得为凑数
+  手工构造提交**——论文 §4 报告的 α 必须来自真实双标注数据。
+- 仲裁只改变「定稿口径」，不覆盖标注员的原始提交；信度计算始终用提交层原始数据。
+- 术语纪律：α 报告页的口径名固定为「AI-assisted IAA（全员可见 AI 草稿）」，与论文 §4
+  表述一致，改口径需同步改论文。
+
 ## 🧪 测试
 
 ```bash
@@ -546,6 +608,10 @@ MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
 | `tests/test_schema.py` | 表结构 DDL 契约、迁移幂等性、词簇完全图查询（含按簇 id 取图与切换簇）、SVG 渲染、交互式图谱导出与指纹、GRANT 下划线转义 |
 | `tests/test_migration_integration.py` | **真实 MySQL** 上的 v1→v2 迁移：业务数据一行不丢、旧表删除、新表建立、连跑三次幂等 |
 | `tests/test_security.py` | 输入校验与密钥掩码 |
+| `tests/test_users_db.py` | 账号体系：建号/角色/启停/登录校验、内置 admin 幂等 |
+| `tests/test_annotation_flow.py` | 提交/覆盖更新/分歧检测/仲裁/任务统计 |
+| `tests/test_reliability.py` | Krippendorff's α：计算、缺失值容忍、不可算显示 |
+| `tests/test_category_pack.py` | 范畴包六件套加载与校验 |
 
 ## ❓ 常见问题
 
