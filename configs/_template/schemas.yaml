@@ -1,0 +1,31 @@
+# ============================================================
+# 范畴包③模板：图式体系——义位按什么归类
+# 用法：按本范畴理论替换图式占位值；字段含义见 docs/p1/跨词类通用框架.md §2③。
+# 约束：图式是封闭清单（不得新增）；evidence_slots 的每个槽位 code 必须在
+#       corpus_map.yaml 的 slots 里定义；annotation.mode 必须定义。
+# ============================================================
+version: 1.0
+category: TEMPLATE_CATEGORY
+
+# 图式是封闭清单：标注时 N 选一，不得新增（理论承诺）
+# 每个图式 = 语义重心定义 + 证据面（在哪个语法槽位找证据）
+schemas:
+  - code: SCHEMA_1
+    name: 请填写图式名
+    definition: 请填写语义重心定义
+    classic_examples: [example1, example2]
+    evidence_slots:            # 槽位代码见 corpus_map.yaml 的 slots 枚举
+      - SLOT_1
+      - SLOT_2
+  - code: SCHEMA_2
+    name: 请填写图式名
+    definition: 请填写语义重心定义
+    classic_examples: [example1, example2]
+    evidence_slots: [SLOT_3]
+
+annotation:
+  mode: forced_choice          # N 选一
+  secondary_schema: record     # 次要图式记入备注（供辐射网络）
+  domain_merging:              # 图式→域的归并假设（可被义位层重聚类推翻）
+    domains:
+      - {name: 请填写域名, families: [SCHEMA_1, SCHEMA_2]}

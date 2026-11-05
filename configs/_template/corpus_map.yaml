@@ -1,0 +1,24 @@
+# ============================================================
+# 范畴包④模板：语料证据映射——证据从哪来
+# 用法：替换语料库与槽位占位值；字段含义见 docs/p1/跨词类通用框架.md §2④。
+# 约束：slots 的 code 会被 schemas.yaml 的 evidence_slots 引用，必须一一落实。
+# ============================================================
+version: 1.0
+category: TEMPLATE_CATEGORY
+
+corpus: 请填写语料库名（如 enTenTen21）
+interface: sketch_engine_wordsketch   # 通用资源：word sketch 语法槽位
+
+# 槽位枚举：本范畴用到的语法关系槽（语料接口是通用的，取用是范畴性的）
+slots:
+  - {code: SLOT_1, sketch_gramrel: "请填写 sketch 语法关系（如 subjects of %w）"}
+  - {code: SLOT_2, sketch_gramrel: "请填写 sketch 语法关系"}
+  - {code: SLOT_3, sketch_gramrel: "请填写 sketch 语法关系"}
+
+# 评分函数：图式重心指数（引擎提供两种内置函数，参数在配置里）
+scoring:
+  function: mean_logdice_log2n     # S = Mean_logDice × log2(N+1)
+  top_k: 50                        # 每槽位取前 50 搭配词
+  noise_filter:                    # 语义归类时的剔除提示（人工执行，配置仅提示）
+    remove: [请填写剔除提示（如抽象概念名词）]
+    keep: [请填写保留提示（如能指代或编码事件要素的词项）]

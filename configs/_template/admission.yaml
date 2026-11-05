@@ -1,0 +1,34 @@
+# ============================================================
+# 范畴包①模板：准入标准——什么算一个义位
+# 用法：替换全部"请填写…"占位值；字段含义见 docs/p1/跨词类通用框架.md §2①。
+# ============================================================
+version: 1.0
+category: TEMPLATE_CATEGORY
+
+# 操作性定义：判定一个义项是否属于本范畴的总标准（一句话）
+operational_definition: >
+  请填写：本范畴的一句话操作性定义（哪些义项描写的是本范畴的核心事件）。
+
+# 准入三分：每个候选义位必须被判为三类之一（引擎不解释语义，只存储标签）
+admission_classes:
+  - code: Y
+    name: 请填写核心类名
+    rule: 请填写核心类判定规则（存在什么实体 + 发生什么事件 + 可构建什么关系）
+  - code: EXT
+    name: 请填写拓展类名
+    rule: 请填写拓展类判定规则（核心图式投射到哪个抽象域，保留为边缘成员）
+  - code: N
+    name: 剔除义
+    rule: 请填写剔除类判定规则（静态义/纯状态变化义/与核心框架无关的抽象义）
+
+# 边界仲裁条款：两类交界处的裁决规则（引擎只要求"边界争议必须走这里"）
+boundary_rules:
+  - id: BR1
+    between: [Y, N]
+    rule: 请填写 Y/N 交界处的裁决规则（可按需增删条款，id 依次 BR2/BR3…）
+
+# 候选池的来源与筛选链（记录用，引擎不执行；数值填已验证真值）
+candidate_pipeline:
+  source: 请填写候选池来源
+  mechanical_screening: {positive_signals: 0, negative_signals: 0, kept: 0, of: 0}
+  explicit_rules: {R0: 0, R1_removed: 0, R2_kept: 0, R3_review: 0, net: 0}

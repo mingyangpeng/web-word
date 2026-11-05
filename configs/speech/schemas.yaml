@@ -1,0 +1,38 @@
+# ============================================================
+# 范畴包③：图式体系——义位按什么归类（speech · 言说动词 · 验证帧）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2③（结构）/ §3（三图式）
+# 四图式换三图式、六槽位换八槽位，引擎读到的都是同一套键名（框架文档 §3 对照结论）。
+# ============================================================
+version: 1.0
+category: speech
+
+# 图式是封闭清单：标注时三选一，不得新增（理论承诺）
+schemas:
+  - code: ASSERT
+    name: 断言图式
+    definition: 传递命题信息为重心
+    classic_examples: [say, state, claim]
+    evidence_slots:            # 槽位代码见 corpus_map.yaml 的 slots 枚举
+      - subjects
+      - objects
+      - complements
+      - usage_patterns
+  - code: DIRECTIVE
+    name: 指令图式
+    definition: 促使受话行动为重心
+    classic_examples: [order, request, urge]
+    evidence_slots: [objects, pronominal_objects, modifiers, usage_patterns]
+  - code: EXPRESSIVE
+    name: 表达图式
+    definition: 情感态度外化为重心
+    classic_examples: [complain, praise]
+    evidence_slots: [subjects, pp_about_of, complements, and_or_conj]
+
+annotation:
+  mode: forced_choice          # 三选一
+  secondary_schema: record     # 次要图式记入备注（供辐射网络）
+  domain_merging:              # 图式→域的归并假设（可被义位层重聚类推翻）
+    domains:
+      - {name: 命题传信域, families: [ASSERT]}
+      - {name: 指令调节域, families: [DIRECTIVE]}
+      - {name: 情感表达域, families: [EXPRESSIVE]}

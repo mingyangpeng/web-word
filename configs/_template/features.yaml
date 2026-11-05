@@ -1,0 +1,37 @@
+# ============================================================
+# 范畴包②模板：特征集——用什么维度刻画义位
+# 用法：替换组与特征占位值；字段含义见 docs/p1/跨词类通用框架.md §2②。
+# 约束：in_clustering=true 的特征 ≥5 项；至少含一项 ordinal 与一项 nominal 更佳；
+#       每个特征的 value_type ∈ {binary, nominal, ordinal}；group 必须在 groups 里。
+# ============================================================
+version: 1.0
+category: TEMPLATE_CATEGORY
+
+# 特征分组（组只用于展示着色，不参与计算）
+groups:
+  - {id: G1, name: 请填写组名, order: 1}
+  - {id: G2, name: 请填写组名, order: 2}
+  - {id: A, name: 核验, order: 9}
+
+# 特征逐条定义。value_type 决定 Gower 距离分支：
+#   binary  → 不一致记 1；nominal → 不一致记 1；ordinal → 归一化后差值
+features:
+  - {code: F1, group: G1, name: 请填写特征名, value_type: binary,  in_clustering: true,
+     values: {0: 无, 1: 有}}
+  - {code: F2, group: G1, name: 请填写特征名, value_type: binary,  in_clustering: true,
+     values: {0: 无, 1: 有}}
+  - {code: F3, group: G1, name: 请填写特征名, value_type: binary,  in_clustering: true,
+     values: {0: 无, 1: 有}}
+  - {code: F4, group: G2, name: 请填写特征名, value_type: binary,  in_clustering: true,
+     values: {0: 无, 1: 有}}
+  - {code: F5, group: G2, name: 请填写特征名, value_type: ordinal, in_clustering: true,
+     values: {0: 低, 1: 中, 2: 高}}
+  - {code: F6, group: G2, name: 请填写特征名, value_type: nominal, in_clustering: true,
+     values: {v1: 请填写含义, v2: 请填写含义, v3: 请填写含义}}
+  # ---- 核验区（不进聚类，聚类后核验句法行为一致性，防循环论证）----
+  - {code: A1, group: A, name: 构式论元-请填写, value_type: binary, in_clustering: false,
+     values: {0: 无, 1: 有}}
+
+clustering:
+  algorithm: gower_upgma
+  feature_scope: in_clustering   # 只取 in_clustering=true 的列

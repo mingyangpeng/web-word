@@ -1,0 +1,25 @@
+# ============================================================
+# 范畴包⑥：范畴元信息与自检（speech · 言说动词 · 验证帧）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2⑥ + §3
+# 注意：speech 是**虚构验证帧**（框架文档 §3），用于证明同一结构装得下不同词类；
+# 数值为演示占位，非已验证真值（与 motion 不同）。
+# ============================================================
+version: 1.0
+category: speech
+display_name: 英语言说动词（验证帧）
+
+# 词元池：Levin (1993) Ch.38 Verbs of Communication（演示值）
+lemma_pool: {source: "Levin (1993) Ch.38 Verbs of Communication（验证帧演示值）", candidates: 60, admitted_lemmas: 48}
+# 义位规模（演示值）
+sense_counts: {total: 120, oald: 118, supplemented: 2}
+# 试点（演示值）
+pilot: {category: ASSERT, en: {lemmas: 10, senses: 12}, zh: {entries: 10, items: 12}}
+
+# 自检清单（与 motion 同一套六条；Python 实现见 src/category_pack.py 的 run_selfcheck）
+selfcheck:
+  - admission_classes 非空且含互斥 code
+  - features 至少 5 项 in_clustering=true
+  - 每个特征的 value_type ∈ {binary, nominal, ordinal}
+  - schemas 非空且 annotation.mode 定义
+  - schemas 引用的每个 evidence_slot 都在 corpus_map.slots 中
+  - prompts/screening.txt 存在且含全部占位符

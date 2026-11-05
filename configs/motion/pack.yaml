@@ -1,0 +1,25 @@
+# ============================================================
+# 范畴包⑥：范畴元信息与自检（motion · 移动动词）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2⑥ + docs/p1/多人标注系统设计规范.md §4
+# 本文件数值均为已验证真值（216/171/996=992+4/试点英32义位汉25条目）。
+# ============================================================
+version: 1.0
+category: motion
+display_name: 英语移动动词
+
+# 词元池：Levin (1993) Ch.51 候选 216 词元 → 准入 171 词元
+lemma_pool: {source: "Levin (1993) Ch.51", candidates: 216, admitted_lemmas: 171}
+# 义位规模：996 = 992（OALD 提取）+ 4（补充）
+sense_counts: {total: 996, oald: 992, supplemented: 4}
+# 试点：英 23 词元 32 义位；汉 24 条目 25 标注项
+pilot: {category: RUN, en: {lemmas: 23, senses: 32}, zh: {entries: 24, items: 25}}
+
+# 自检清单（记录用：引擎加载范畴包时逐项校验，任一失败即拒绝启动该范畴；
+# 校验逻辑的 Python 实现见 src/category_pack.py 的 run_selfcheck，不引 jsonschema）
+selfcheck:
+  - admission_classes 非空且含互斥 code
+  - features 至少 5 项 in_clustering=true
+  - 每个特征的 value_type ∈ {binary, nominal, ordinal}
+  - schemas 非空且 annotation.mode 定义
+  - schemas 引用的每个 evidence_slot 都在 corpus_map.slots 中
+  - prompts/screening.txt 存在且含全部占位符

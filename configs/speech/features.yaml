@@ -1,0 +1,38 @@
+# ============================================================
+# 范畴包②：特征集——用什么维度刻画义位（speech · 言说动词 · 验证帧）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2②（结构）/ §3（特征节选）
+# 对照结论（§3）：移动动词的「速度（ordinal）/主体四分（nominal）/介质（binary）」
+# 与言说动词的「正式度（ordinal）/声道（nominal）/引语论元（binary）」
+# 落在完全相同的字段结构里。
+# ============================================================
+version: 1.0
+category: speech
+
+# 特征分组（组只用于展示着色，不参与计算）
+groups:
+  - {id: I, name: 互动结构, order: 1}
+  - {id: S, name: 符号行为, order: 2}
+  - {id: R, name: 传信方式, order: 3}
+  - {id: A, name: 核验, order: 4}
+
+# 特征逐条定义（I1-I3 / S1 / R1 / R2 共 6 项进聚类；A1 核验区不进聚类）
+features:
+  - {code: I1, group: I, name: 是否带受话论元, value_type: binary, in_clustering: true,
+     values: {0: 无受话, 1: 有受话}}
+  - {code: I2, group: I, name: 是否带引语论元, value_type: binary, in_clustering: true,
+     values: {0: 无引语, 1: 有引语}}
+  - {code: I3, group: I, name: 是否带话题论元, value_type: binary, in_clustering: true,
+     values: {0: 不凸显, 1: 凸显}}
+  - {code: S1, group: S, name: 声道使用,       value_type: nominal, in_clustering: true,
+     values: {oral: 口头, written: 书面, sign: 手势}}
+  - {code: R1, group: S, name: 信息取向,       value_type: ordinal, in_clustering: true,
+     values: {0: 描述, 1: 指令, 2: 表情}}          # ← 序数与移动动词的 P5 同机制
+  - {code: R2, group: S, name: 正式度,         value_type: ordinal, in_clustering: true,
+     values: {0: 随意, 1: 中性, 2: 正式}}
+  # ---- 核验区（不进聚类，聚类后核验句法行为一致性，防循环论证）----
+  - {code: A1, group: A, name: 构式论元-直接引语, value_type: binary, in_clustering: false,
+     values: {0: 无, 1: 有}}
+
+clustering:
+  algorithm: gower_upgma
+  feature_scope: in_clustering   # 只取 in_clustering=true 的列

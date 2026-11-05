@@ -1,0 +1,35 @@
+# ============================================================
+# 范畴包①：准入标准——什么算一个义位（speech · 言说动词 · 验证帧简版三分）
+# 唯一事实源：docs/p1/跨词类通用框架.md §2①（结构）/ §3（言说动词验证帧）
+# ============================================================
+version: 1.0
+category: speech
+
+# 操作性定义（简版）
+operational_definition: >
+  义项描写言说主体通过符号行为（口头/书面/手势）向受话传递命题、指令或情感态度，
+  动词形式承载 [+言说] 语义。
+
+# 准入三分（简版：Y/EXT/N 与 motion 同构）
+admission_classes:
+  - code: Y
+    name: 核心言说义
+    rule: 存在言说主体与可识别的符号传递行为（可带受话/引语/话题论元）
+  - code: EXT
+    name: 隐喻拓展义
+    rule: 无真实符号行为，言说框架投射至非语言对象（如"风在诉说"），保留为边缘成员
+  - code: N
+    name: 剔除义
+    rule: 非言说义（仅发声/仅感知/纯心理活动），与言说框架无关
+
+# 边界仲裁条款（简版：一条）
+boundary_rules:
+  - id: BR1
+    between: [Y, N]
+    rule: 纯发声类（无可识别信息传递，如 cough）判 N；带命题内容或情感取向的发声判 Y
+
+# 候选池的来源与筛选链（记录用，引擎不执行；验证帧演示值）
+candidate_pipeline:
+  source: "Levin (1993) Ch.38 Verbs of Communication（验证帧演示值）"
+  mechanical_screening: {positive_signals: 6, negative_signals: 9, kept: 52, of: 120}
+  explicit_rules: {R0: 50, R1_removed: 1, R2_kept: 2, R3_review: 1, net: 52}

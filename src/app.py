@@ -33,6 +33,19 @@ from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator
 
 # ============================================
+# 多人标注系统集成导入（设计规范 §3 模块契约 / §5 UI 集成契约）
+# ============================================
+from src.users_db import ensure_user_tables, verify_login, list_users
+from src.annotation_flow import (
+    ensure_flow_tables, submit_annotation, get_my_submissions,
+    get_submissions_for_sense, detect_disagreements, save_adjudication,
+    get_assignment_stats, STATUS_ADJUDICATED,
+)
+from src.reliability import render_reliability_page
+from src.users_admin_page import render_users_admin_page, ROLE_LABELS, ROLE_BADGE_COLORS
+from src.category_pack import load_pack
+
+# ============================================
 # 设计系统导入
 # ============================================
 from src.design_system import (
@@ -84,6 +97,81 @@ try:
         st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
 except Exception as e:
     st.warning(f"⚠️ 数据库初始化失败，使用离线模式：{e}")
+
+# 多人标注系统：登录数据层（users 表 + 内置 admin，幂等建表，规范 §5/§6-5）。
+# 每会话只跑一次（session_state 旗标）；失败只记日志不崩，登录框照常渲染。
+if DB_AVAILABLE and not st.session_state.get("_user_tables_ready"):
+    try:
+        ensure_user_tables()
+        st.session_state["_user_tables_ready"] = True
+    except Exception as e:
+        logger.error(f"ensure_user_tables 失败（登录功能可能不可用）: {e}")
+
+
+# ============================================
+# 登录态与页面权限（多人标注系统集成；规范 §1 角色语义 / §6-4 入口判定）
+# ============================================
+def _current_user() -> Optional[Dict[str, Any]]:
+    """当前会话用户（规范 §6-5：会话只存 st.session_state["user"]）。"""
+    user = st.session_state.get("user")
+    return user if isinstance(user, dict) else None
+
+
+def require_login() -> Optional[Dict[str, Any]]:
+    """登录门（main() 分派处调用，规范 §6-4）。
+
+    Returns:
+        dict | None: 已登录返回用户 dict；未登录渲染 st.warning「请先登录」
+        并返回 None —— 调用方据此 return，页面内容不渲染。
+    """
+    user = _current_user()
+    if user is None:
+        st.warning("请先登录")
+    return user
+
+
+def _logout() -> None:
+    """退出登录：清除会话用户（规范 §6-5，不做 cookie 持久化）。"""
+    st.session_state.pop("user", None)
+
+
+# 新增三页的角色可见性（规范 §5：用户管理=admin、信度报告=reviewer/admin、
+# 标注提交=annotator+）。不在表中的键为基础页，所有角色（含未登录）可见，
+# 未授权访问由各页渲染入口的 role gate 拦下。
+_PAGE_ACCESS: Dict[str, tuple] = {
+    "submission": ("admin", "reviewer", "annotator"),
+    "users_admin": ("admin",),
+    "reliability": ("admin", "reviewer"),
+}
+
+
+def _visible_page_keys(role: Optional[str]) -> List[str]:
+    """PAGE_KEYS 的角色可见性过滤（选项仍以 PAGE_KEYS 为单一事实来源）。
+
+    基础六页对所有人可见；submission/users_admin/reliability 按 _PAGE_ACCESS
+    过滤 —— 未登录或角色不符的键不出现在侧边栏 radio 里（渲染入口另有 role gate）。
+    """
+    keys: List[str] = []
+    for key in PAGE_KEYS:
+        allowed = _PAGE_ACCESS.get(key)
+        if allowed is None or (role is not None and role in allowed):
+            keys.append(key)
+    return keys
+
+
+def _ensure_flow_tables_once() -> None:
+    """首次进入提交流/仲裁面板时幂等创建 flow 三表（规范：无需手跑迁移）。
+
+    annotation_submissions 等表带 users/oald_senses 外键，因此必须在
+    ensure_user_tables（启动时已调）与 init_database（oald_senses）之后执行。
+    """
+    if not DB_AVAILABLE or st.session_state.get("_flow_tables_ready"):
+        return
+    try:
+        ensure_flow_tables()
+        st.session_state["_flow_tables_ready"] = True
+    except Exception as e:
+        logger.error(f"ensure_flow_tables 失败（提交流可能不可用）: {e}")
 
 # ============================================
 # Sticky 搜索栏：Google 风格样式
@@ -1175,6 +1263,45 @@ def _empty_stats() -> Dict[str, Any]:
     }
 
 
+def _render_login_section() -> None:
+    """侧边栏登录区（规范 §5）：未登录显示登录表单，已登录显示用户名+角色徽章+退出。
+
+    数据库离线时显示「登录不可用（数据库离线）」info，不崩溃；登录失败
+    st.error 提示（verify_login 对无此用户/密码错/已停用统一返回 None，防枚举）。
+    表单 clear_on_submit=True：密码不常驻会话（规范 §6-2）。
+    """
+    if not DB_AVAILABLE:
+        st.sidebar.info("登录不可用（数据库离线）")
+        return
+    user = _current_user()
+    if user:
+        role = str(user.get("role") or "")
+        name = _html_escape(str(user.get("display_name") or user.get("username") or ""))
+        st.sidebar.markdown(
+            f"<p style='margin:0 0 6px 0;font-weight:600;'>👤 {name} "
+            f"<span style='background:{ROLE_BADGE_COLORS.get(role, '#718096')};"
+            f"color:#fff;padding:1px 10px;border-radius:10px;font-size:0.78em;'>"
+            f"{_html_escape(ROLE_LABELS.get(role, role))}</span></p>",
+            unsafe_allow_html=True,
+        )
+        st.sidebar.button("🚪 退出登录", key="logout_button",
+                          use_container_width=True, on_click=_logout)
+        return
+
+    with st.sidebar.form("login_form", clear_on_submit=True):
+        st.markdown("**🔐 登录**")
+        username = st.text_input("用户名", key="login_username", max_chars=50)
+        password = st.text_input("密码", type="password", key="login_password", max_chars=128)
+        submitted = st.form_submit_button("登录", use_container_width=True)
+    if submitted:
+        info = verify_login(username or "", password or "")
+        if info:
+            st.session_state["user"] = info
+            st.rerun()
+        else:
+            st.sidebar.error("用户名或密码错误，或账号已停用。")
+
+
 def render_sidebar():
     """渲染侧边栏组件（折叠/展开双分支，D-01）"""
     collapsed = st.session_state.get("sidebar_collapsed", False)
@@ -1195,15 +1322,22 @@ def render_sidebar():
     st.sidebar.button("◀", key="collapse_sidebar", help="折叠侧边栏",
                       on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", True))
 
-    # 页面切换：搜索页 ↔ 交互式知识图谱页等六页。
+    # ---- 登录区（侧边栏顶部、页面切换之前；规范 §5 UI 集成契约）----
+    _render_login_section()
+
+    # 页面切换：基础六页 + 提交/用户管理/信度三页（按角色可见性过滤）。
+    # 选项仍来自 page_guides.PAGE_KEYS（页面 ↔ 使用说明一一对应的单一事实来源），
+    # 只是按 _PAGE_ACCESS 过滤子集 —— 不硬编码页面清单。
+    # 残留页（登出/换角色后当前页不在可见集合）回搜索页，避免 radio 的
+    # session_state 值不在 options 里抛 StreamlitAPIException。
     # 不要再传 index=：key="page" 一旦存在于 session_state，再传 index 会在
     # 旧版 Streamlit 上抛 StreamlitAPIException、新版上打重复赋值警告。
-    # 选项与标签来自 page_guides.PAGE_GUIDES —— 页面 ↔ 使用说明一一对应的
-    # 单一事实来源（新增页面只在 PAGE_GUIDES 加一项）。
-    st.session_state.setdefault("page", "search")
+    visible_keys = _visible_page_keys((_current_user() or {}).get("role"))
+    if st.session_state.get("page") not in visible_keys:
+        st.session_state["page"] = "search"
     st.sidebar.radio(
         "页面",
-        options=PAGE_KEYS,
+        options=visible_keys,
         format_func=page_label,
         key="page",
         horizontal=True,
@@ -1993,10 +2127,50 @@ LEVEL_LABELS = {"": "（未标注）", "Y": "Y · 原型物理位移义",
 SCHEMA_OPTIONS = ["", "源点脱离图式", "终点抵达图式", "方式伴随图式", "互动位移图式"]
 ALIGNMENT_OPTIONS = ["", "完全对齐", "部分对齐", "零对齐"]
 
+# ---- 多人提交流常量（规范 §2 注释：payload["admission"] ∈ "Y|EXT|N"）----
+SUBMIT_ADMIT_OPTIONS = ["", "Y", "EXT", "N"]
+SUBMIT_ADMIT_LABELS = {"": "（未选择）", "Y": "Y · 核心物理位移义",
+                       "EXT": "EXT · 隐喻拓展义", "N": "N · 非位移剔除"}
+# LLM 草稿列（llm_tag 用权威层口径 Y/拓展/N）→ 提交口径（Y/EXT/N）
+_LLM_TAG_TO_ADMIT = {"Y": "Y", "拓展": "EXT", "N": "N"}
+
 
 def render_annotation_page() -> None:
+    """🏷️ 标注平台（按角色分派；规范 §5，权限判定在渲染入口 §6-4）。
+
+    * admin    → 既有单人流全部保留（原表单直写权威层的快速通道），
+                 页面顶部加快速通道提示；
+    * reviewer → 多人提交流 + 分歧清单与仲裁面板；
+    * annotator→ 多人提交流（annotator 互不可见，规范 §0 独立性）；
+    * viewer   → 无权限提示。
     """
-    🏷️ 标注平台（MOVECAT 原型核心模块）。
+    user = _current_user()
+    role = (user or {}).get("role")
+
+    if role == "viewer":
+        st.warning("⛔ 无权限：标注平台需要 annotator / reviewer / admin 角色（viewer 只读）。")
+        return
+
+    if role == "admin":
+        st.info(
+            "🛠️ 管理员快速通道：本页表单**直写权威层**（word_senses / oald_senses）；"
+            "多人提交流见「📥 标注提交」页。",
+            icon="🛠️",
+        )
+        _render_annotation_admin_view()
+        return
+
+    # annotator / reviewer：多人提交流（AI 草稿可见，验收 V7）
+    st.markdown(f"<h1 style='{HEADER_H1}'>🏷️ 标注平台</h1>", unsafe_allow_html=True)
+    render_page_usage_guide("submission")
+    render_submission_flow()
+    if role == "reviewer":
+        render_reviewer_panel()
+
+
+def _render_annotation_admin_view() -> None:
+    """
+    🏷️ 标注平台 · 管理员快速通道视图（原单人流，逻辑不变）。
 
     对应标注手册（docs/义项判定标准修改稿.docx）的义位级操作：
       标准1 准入标签（Y/拓展/N）→ 标准2 意象图式（四选一）→
@@ -2204,12 +2378,364 @@ def render_annotation_page() -> None:
 
 
 # ============================================
+# 多人标注提交流（规范 §5 用户决策③④；验收 V2/V7）—— app.py 新增视图
+# ============================================
+def _submission_sense_status(s: dict) -> str:
+    """义位当前状态徽标文字（与标注平台状态口径一致的简化版）。"""
+    if s.get("needs_review"):
+        return "❓存疑"
+    return {"Y": "✅Y", "拓展": "✅拓展", "N": "✅N"}.get(
+        (s.get("prototype_level") or "").strip(), "⬜未标")
+
+
+def render_submission_page() -> None:
+    """📥 标注提交页：多人提交流的独立入口（annotator/reviewer/admin）。
+
+    权限判定在渲染入口（规范 §6-4）：viewer 无权限；reviewer/admin 额外
+    渲染分歧清单与仲裁面板。admin 的单人流快速通道在「🏷️ 标注平台」页。
+    """
+    st.markdown(f"<h1 style='{HEADER_H1}'>📥 标注提交</h1>", unsafe_allow_html=True)
+    render_page_usage_guide("submission")
+
+    role = (_current_user() or {}).get("role")
+    if role == "viewer":
+        st.warning("⛔ 无权限：标注提交需要 annotator / reviewer / admin 角色（viewer 只读）。")
+        return
+
+    render_submission_flow()
+    if role in ("admin", "reviewer"):
+        render_reviewer_panel()
+
+
+def render_submission_flow() -> None:
+    """多人提交流视图：选动词 → 选义位 → LLM 初筛草稿 → 表单 → submit_annotation。
+
+    独立性（规范 §0 / 用户决策④）：本视图只经 get_my_submissions 展示
+    **本人**提交 —— annotator 角色下页面不存在任何他人数据入口；
+    全部提交/分歧清单只在 render_reviewer_panel（reviewer/admin 门）。
+    """
+    user = _current_user()
+    if user is None:
+        st.warning("请先登录")
+        return
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，提交流不可用（离线模式）。")
+        return
+    _ensure_flow_tables_once()
+
+    coder_id = int(user.get("id") or 0)
+    st.caption("提交流：准入（Y/EXT/N）→ 意象图式 → 英汉对齐 → 句法/策略；"
+               "写入 annotation_submissions（同一义位重复提交=覆盖更新）。")
+
+    progress = get_annotation_progress()
+    if not progress:
+        st.info("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。")
+        return
+    verbs = [r["verb"] for r in progress]
+    picked_verb = st.selectbox(
+        "选择动词", options=verbs,
+        index=verbs.index("walk") if "walk" in verbs else 0,
+        key="submission_verb",
+    )
+
+    senses = get_oald_senses(picked_verb)
+    if not senses:
+        st.warning(f"「{picked_verb}」无 OALD 义位数据。")
+        return
+
+    sense_opts = [
+        f"{picked_verb}-S{s['sense_index']} · {_submission_sense_status(s)} · "
+        f"{(s.get('en_ndef') or '')[:40]}"
+        for s in senses
+    ]
+    chosen = st.selectbox("选择义位（SenseID）", options=sense_opts, key="submission_sense")
+    sense = dict(senses[sense_opts.index(chosen)])
+    sid = sense["id"]
+    sense_id_label = f"{picked_verb}-S{sense['sense_index']}"
+
+    idiom = bool(sense.get("is_idiom"))
+    if idiom:
+        st.warning("习语义项（IDIOMS 组）—— 按范畴包准入标准一般归入 N 或 EXT")
+    st.markdown(
+        f"<div style='{get_card_style()}'>"
+        f"<p style='{BODY_BASE}'><strong>英文释义：</strong>"
+        f"{_html_escape(str(sense.get('definition') or '—'))}</p>"
+        f"<p style='{BODY_BASE}'><strong>语法码：</strong>"
+        f"{_html_escape(str(sense.get('grammar') or '—'))}</p>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    exs = sense.get("examples") or []
+    if exs:
+        with st.expander(f"真实例句（{len(exs)} 条）——判定证据"):
+            for e in exs:
+                st.markdown(f"- {_html_escape(str(e))}")
+
+    # ---- LLM 初筛草稿（验收 V7：全员看同样草稿，必须可见）----
+    if sense.get("llm_tag"):
+        st.info(
+            f"🤖 **LLM 初筛草稿（候选参考，须人工确认）**：准入 **{sense['llm_tag']}**"
+            f" · 图式 **{sense.get('llm_schema') or '—'}**"
+            f" · 对齐 **{sense.get('llm_align') or '—'}**",
+            icon="🤖",
+        )
+        if sense.get("llm_reason"):
+            st.markdown(
+                f"<div style='{get_card_style()}'>"
+                f"<p style='{BODY_BASE}'><strong>初筛理由：</strong>"
+                f"{_html_escape(str(sense['llm_reason']))}</p>"
+                + (f"<p style='{BODY_BASE}'><strong>存疑点：</strong>"
+                   f"{_html_escape(str(sense['llm_doubt']))}</p>"
+                   if sense.get("llm_doubt") else "")
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.caption("该义位暂无 LLM 初筛草稿（可直接人工判定）。")
+
+    # ---- 范畴包判定标准（configs/motion 六件套，只读展示）----
+    with st.expander("📋 准入判定标准（configs/motion 范畴包，只读）", expanded=False):
+        try:
+            _adm = load_pack("motion").get("admission") or {}
+            _od = str(_adm.get("operational_definition") or "").strip()
+            if _od:
+                st.markdown(f"**操作性定义**：{_html_escape(_od)}")
+            for _cls in (_adm.get("admission_classes") or []):
+                st.markdown(
+                    f"- **{_html_escape(str(_cls.get('code') or ''))}** "
+                    f"{_html_escape(str(_cls.get('name') or ''))}："
+                    f"{_html_escape(str(_cls.get('rule') or ''))}"
+                )
+            for _br in (_adm.get("boundary_rules") or []):
+                _between = "/".join(str(x) for x in (_br.get("between") or []))
+                st.markdown(
+                    f"- 边界条款 {_html_escape(str(_br.get('id') or ''))}"
+                    f"（{_html_escape(_between)}）："
+                    f"{_html_escape(str(_br.get('rule') or ''))}"
+                )
+        except Exception as e:
+            st.caption(f"范畴包不可用：{_html_escape(str(e))}")
+
+    # ---- 标注表单（预填优先级：本人上次提交 > LLM 初筛草稿 > 空）----
+    st.markdown(f"<h3 style='{HEADER_H3}'>标注表单（motion · admission 任务）</h3>",
+                unsafe_allow_html=True)
+    my_prev = {
+        s["sense_id"]: (s.get("payload") or {})
+        for s in get_my_submissions(coder_id, "motion", "admission")
+    }
+    prev = my_prev.get(sid) or {}
+
+    _adm_prev = str(prev.get("admission") or "").strip()
+    _adm_draft = _LLM_TAG_TO_ADMIT.get(str(sense.get("llm_tag") or "").strip(), "")
+    _init_adm = _adm_prev if _adm_prev in SUBMIT_ADMIT_OPTIONS else (
+        _adm_draft if _adm_draft in SUBMIT_ADMIT_OPTIONS else "")
+    _schema_prev = str(prev.get("schema") or "").strip()
+    _schema_draft = str(sense.get("llm_schema") or "").strip()
+    _init_schema = _schema_prev if _schema_prev in SCHEMA_OPTIONS else (
+        _schema_draft if _schema_draft in SCHEMA_OPTIONS else "")
+    _align_prev = str(prev.get("alignment") or "").strip()
+    _align_draft = str(sense.get("llm_align") or "").strip()
+    _init_align = _align_prev if _align_prev in ALIGNMENT_OPTIONS else (
+        _align_draft if _align_draft in ALIGNMENT_OPTIONS else "")
+
+    with st.form(f"submission_form_{sid}"):
+        f1, f2 = st.columns(2)
+        admission = f1.radio(
+            "准入标签（标准1：Y/EXT/N）", options=SUBMIT_ADMIT_OPTIONS,
+            index=SUBMIT_ADMIT_OPTIONS.index(_init_adm),
+            format_func=lambda v: SUBMIT_ADMIT_LABELS.get(v, v), horizontal=True,
+        )
+        schema = f2.selectbox("意象图式（标准2，四选一）", options=SCHEMA_OPTIONS,
+                              index=SCHEMA_OPTIONS.index(_init_schema))
+        align = st.selectbox("英汉对齐等级（标准4）", options=ALIGNMENT_OPTIONS,
+                             index=ALIGNMENT_OPTIONS.index(_init_align))
+        cn_syn = st.text_input(
+            "汉语句法特征", value=str(prev.get("cn_syntax") or sense.get("cn_syntax") or ""),
+            placeholder="如：强制趋向补语 / 需“把”字句 / 动词可独立作谓语")
+        strategy = st.text_input(
+            "译义转化策略", value=str(prev.get("strategy") or sense.get("translation_strategy") or ""),
+            placeholder="如：保留原图式 / 增补方式要素 / 舍弃方式语义")
+        review = st.checkbox(
+            "❓ 存疑（边界案例，建议进仲裁清单）",
+            value=bool(prev.get("needs_review", sense.get("needs_review"))))
+        saved = st.form_submit_button("📤 提交本义位标注", type="primary")
+        if saved:
+            if not admission:
+                st.error("请先选择准入标签（Y / EXT / N）。")
+            else:
+                # 留空的可选字段不入 payload（缺失 ≠ 空串，避免污染分歧比对）
+                payload: Dict[str, Any] = {"admission": admission, "needs_review": bool(review)}
+                if schema:
+                    payload["schema"] = schema
+                if align:
+                    payload["alignment"] = align
+                if cn_syn.strip():
+                    payload["cn_syntax"] = cn_syn.strip()
+                if strategy.strip():
+                    payload["strategy"] = strategy.strip()
+                if submit_annotation("motion", sid, "admission", coder_id, payload):
+                    st.success(f"✅ {sense_id_label} 提交成功"
+                               f"（同一义位重复提交=覆盖更新，覆盖后需重新审核）")
+                else:
+                    st.error("提交失败（数据库写入未成功或校验未通过），请重试")
+
+    # ---- 我的提交记录（独立性：仅本人；form 处理后查询，本轮提交已入库）----
+    st.markdown(f"<h3 style='{HEADER_H3}'>📄 我的提交记录</h3>", unsafe_allow_html=True)
+    my_subs = get_my_submissions(coder_id, "motion", "admission")
+    if my_subs:
+        rows = []
+        for s in my_subs:
+            p = s.get("payload") or {}
+            rows.append({
+                "sense_id": s.get("sense_id"),
+                "准入": str(p.get("admission") or "—"),
+                "图式": str(p.get("schema") or "—"),
+                "对齐": str(p.get("alignment") or "—"),
+                "汉语句法": str(p.get("cn_syntax") or "—"),
+                "译义策略": str(p.get("strategy") or "—"),
+                "存疑": "是" if p.get("needs_review") else "否",
+                "状态": "已定稿" if s.get("status") == STATUS_ADJUDICATED else "已提交",
+                "提交时间": str(s.get("submitted_at") or "—"),
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.caption(f"共 {len(my_subs)} 条 · 独立性：仅本人提交可见"
+                   f"（annotator 之间互相不可见，规范 §0）。")
+    else:
+        st.info("暂无提交记录。")
+
+
+def render_reviewer_panel() -> None:
+    """⚖️ 仲裁面板（reviewer/admin）：分歧清单（各编码人取值对照）→ gold 定稿。
+
+    权限判定在函数入口（规范 §6-4）：annotator/viewer 一律拦截 ——
+    detect_disagreements / get_submissions_for_sense 属「看全部」入口，
+    不得暴露给 annotator（用户决策④）。
+    """
+    user = _current_user()
+    if user is None:
+        st.warning("请先登录")
+        return
+    if user.get("role") not in ("admin", "reviewer"):
+        st.error("⛔ 仲裁面板仅 reviewer / admin 可用（annotator 之间互相不可见，规范 §0）。")
+        return
+    if not DB_AVAILABLE:
+        st.info("数据库不可用，仲裁面板不可用（离线模式）。")
+        return
+    _ensure_flow_tables_once()
+
+    adjudicator_id = int(user.get("id") or 0)
+    st.markdown(f"<h2 style='{HEADER_H2}'>⚖️ 分歧清单与仲裁</h2>", unsafe_allow_html=True)
+    st.caption("同一义位被多人提交且取值不一的字段在此对照；定稿 gold 后"
+               "参与的提交置为 adjudicated 并退出信度/分歧口径。")
+
+    # 定稿成功提示跨 rerun 展示（定稿后该义位退出分歧清单，列表会整体刷新）
+    _done = st.session_state.pop("_adjudication_done", None)
+    if _done:
+        st.success(str(_done))
+
+    disagreements = detect_disagreements("motion", "admission")
+    if not disagreements:
+        st.success("当前没有分歧条目（各编码人取值一致、不足两人，或已全部定稿）。")
+    else:
+        # coder_id → 展示名（reviewer/admin 可见全部用户，规范 §1）
+        id2name: Dict[str, str] = {}
+        try:
+            for u in list_users():
+                id2name[str(int(u.get("id") or 0))] = str(
+                    u.get("display_name") or u.get("username") or f"#{u.get('id')}")
+        except Exception as e:
+            logger.error(f"仲裁面板读取用户映射失败: {e}")
+
+        for d in disagreements:
+            verb = str(d.get("verb") or f"sense {d.get('sense_id')}")
+            sidx = d.get("sense_index")
+            label = f"{verb}-S{sidx}" if sidx is not None else f"sense {d.get('sense_id')}"
+            n_fields = len(d.get("fields") or [])
+            with st.expander(
+                f"⚠️ {label}（{d.get('n_submissions', 0)} 人提交 · {n_fields} 项分歧）"
+            ):
+                for fitem in (d.get("fields") or []):
+                    field = str(fitem.get("field") or "")
+                    values = fitem.get("values") or {}
+                    pairs = "；".join(
+                        f"{_html_escape(id2name.get(str(k), f'编码人{k}'))}："
+                        f"{_html_escape(str(v))}"
+                        for k, v in values.items()
+                    )
+                    st.markdown(
+                        f"<p style='{BODY_BASE}'>• <strong>"
+                        f"{_html_escape(field)}</strong>：{pairs}</p>",
+                        unsafe_allow_html=True,
+                    )
+
+                submissions = get_submissions_for_sense(d["sense_id"], "admission")
+                sub_ids = [int(s["id"]) for s in submissions]
+                with st.form(f"adjudicate_form_{d['sense_id']}"):
+                    g1, g2 = st.columns(2)
+                    g_adm = g1.radio(
+                        "gold 准入", options=SUBMIT_ADMIT_OPTIONS,
+                        index=0,
+                        format_func=lambda v: SUBMIT_ADMIT_LABELS.get(v, v),
+                        horizontal=True,
+                    )
+                    g_schema = g2.selectbox("gold 意象图式", options=SCHEMA_OPTIONS, index=0)
+                    g_align = st.selectbox("gold 英汉对齐", options=ALIGNMENT_OPTIONS, index=0)
+                    g_doubt = st.checkbox("定稿后仍存疑（保留在复核清单）", value=False)
+                    g_note = st.text_input("仲裁说明（note）", placeholder="定稿理由 / 依据条款")
+                    ok_btn = st.form_submit_button("💾 保存仲裁定稿（gold）", type="primary")
+                if ok_btn:
+                    if not g_adm:
+                        st.error("请先选择 gold 准入标签（Y / EXT / N）。")
+                    else:
+                        gold: Dict[str, Any] = {"admission": g_adm, "needs_review": bool(g_doubt)}
+                        if g_schema:
+                            gold["schema"] = g_schema
+                        if g_align:
+                            gold["alignment"] = g_align
+                        if save_adjudication(d["sense_id"], "admission", adjudicator_id,
+                                             gold, sub_ids, (g_note.strip() or None)):
+                            # 提示写入会话旗标再 rerun：直接 st.success 会被
+                            # st.rerun() 丢弃（本 run 输出整体作废）
+                            st.session_state["_adjudication_done"] = (
+                                f"✅ {label} 仲裁定稿已保存"
+                                f"（{len(sub_ids)} 条参与提交置为 adjudicated）。")
+                            st.rerun()
+                        else:
+                            st.error("仲裁保存失败（数据库写入未成功），请重试。")
+
+    # ---- 任务分配进度概览（reviewer/admin 概览用）----
+    with st.expander("📊 任务分配进度（get_assignment_stats）", expanded=False):
+        stats = get_assignment_stats()
+        if stats:
+            st.dataframe(
+                pd.DataFrame([{
+                    "标注员": str(r.get("display_name") or r.get("username") or f"#{r.get('assignee_id')}"),
+                    "范畴": r.get("category"),
+                    "任务": r.get("task_type"),
+                    "分配状态": r.get("assignment_status") or "（自发）",
+                    "已提交": r.get("n_submitted"),
+                    "已定稿": r.get("n_adjudicated"),
+                } for r in stats]),
+                use_container_width=True, hide_index=True,
+            )
+        else:
+            st.info("暂无任务分配/提交数据。")
+
+
+# ============================================
 # 主函数
 # ============================================
 def main():
-    """主函数：按 session_state["page"] 分派到搜索页或图谱页。"""
-    render_sidebar()
+    """主函数：按 session_state["page"] 分派到各页（九页；规范 §5 UI 集成契约）。
+
+    登录门在分派处判定（require_login，规范 §6-4）：标注页与新增三页
+    （submission / users_admin / reliability）未登录渲染「请先登录」并 return；
+    角色门在各页渲染入口再判一次（纵深防御）。
+    _page 在 render_sidebar 之前取值：侧边栏可能因角色可见性把残留页重置回
+    search（只影响下一次运行），本次运行仍按用户请求的页分派并给出权限提示。
+    """
     _page = st.session_state.get("page")
+    render_sidebar()
     if _page == "graph":
         render_interactive_graph_page()
     elif _page == "corpus":
@@ -2217,11 +2743,33 @@ def main():
     elif _page == "domain":
         render_domain_family_page()
     elif _page == "annotate":
-        render_annotation_page()
+        if require_login() is not None:
+            render_annotation_page()
     elif _page == "category":
         render_category_study_page()
+    elif _page == "submission":
+        if require_login() is not None:
+            render_submission_page()
+    elif _page == "users_admin":
+        if require_login() is not None:
+            render_users_admin_entry()
+    elif _page == "reliability":
+        if require_login() is not None:
+            render_reliability_entry()
     else:
         render_main_area()
+
+
+def render_users_admin_entry() -> None:
+    """👥 用户管理入口：使用说明 + Agent A 页面（函数内部另有 admin role gate）。"""
+    render_page_usage_guide("users_admin")
+    render_users_admin_page()
+
+
+def render_reliability_entry() -> None:
+    """📐 信度报告入口：使用说明 + Agent C 页面（函数内部另有 reviewer/admin 门）。"""
+    render_page_usage_guide("reliability")
+    render_reliability_page()
 
 # ============================================
 # 启动应用
