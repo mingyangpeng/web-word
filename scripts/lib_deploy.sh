@@ -162,7 +162,12 @@ start_mysqld() {
     if [ -z "$(ls -A "$DATADIR" 2>/dev/null)" ]; then
       echo "[mysql] ⚠ 有 mysqld 在应答但数据目录 $DATADIR 为空 —— 清理残留实例..."
       pkill -f "mysqld.*--datadir=$DATADIR" 2>/dev/null || true
-      sleep 3
+      # mysqld 收到 TERM 后还要做 redo/缓冲池清理，大库可能要几秒 ——
+      # 单次 sleep 会漏判慢关闭；有界轮询，端口一释放立刻往下走。
+      for _ in $(seq 1 10); do
+        db_up || break
+        sleep 1
+      done
       if db_up; then
         echo "✗ 残留实例无法清理（端口仍被占）。请手动: pkill -f 'mysqld.*--datadir=$DATADIR'"
         return 1
