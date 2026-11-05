@@ -152,6 +152,7 @@ web-word/
 │   ├── config.yaml             # 应用实际读取的数据库配置（已提交）
 │   ├── config.example.yaml     # 同结构模板（含注释，推荐复制后修改）
 │   └── README.md               # 配置优先级与环境变量说明
+├── configs/                    # 范畴包（多人标注，category_pack 加载与自检）：motion / speech 六件套 + _template 新词类模板
 ├── scripts/                    # 运行时脚本（./start 全部调用，幂等）
 │   ├── load_word_library.py    # 灌词库 + OALD 义项 + 词间关系（零网络依赖）
 │   ├── load_corpus_dataset.py  # 灌 enTenTen21 语料（词频/搭配/图式得分）
@@ -564,6 +565,29 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 - 仲裁只改变「定稿口径」，不覆盖标注员的原始提交；信度计算始终用提交层原始数据。
 - 术语纪律：α 报告页的口径名固定为「AI-assisted IAA（全员可见 AI 草稿）」，与论文 §4
   表述一致，改口径需同步改论文。
+
+## 👥 多人标注（MOVECAT Collab）
+
+> 设计规范：`docs/p1/多人标注系统设计规范.md`（唯一事实源）。端到端验收脚本：
+> `tests/test_e2e_workflow.py`（真实 MySQL 七步协作工作流，无库自动跳过，可重复执行）。
+
+- **四角色**：`admin` 一切权限（用户管理 / 任务分配 / 仲裁 / 直写权威层快速通道）；
+  `reviewer` 看全部提交与分歧清单、执行仲裁定稿；`annotator` 只看分配给自己的任务与
+  AI 草稿、提交/修改**自己的**标注（标注员互相不可见，保证独立性）；`viewer` 只读统计与导出。
+- **GitHub 式流程**：管理员 `assign_task` 分配 → 标注员 `submit_annotation` 提交
+  （同一 `(sense, task, coder)` 重复提交 = 覆盖更新）→ `detect_disagreements` 出分歧清单 →
+  reviewer `save_adjudication` 仲裁定稿（参与提交转 `adjudicated`，自然退出信度口径）→
+  `run_reliability` 计算 Krippendorff's α 并落库 `reliability_runs`。
+- **AI 草稿可见口径**：所有编码人看**同样的** LLM 初筛草稿后独立标注（用户决策③），
+  α 的口径名固定为 **AI-assisted IAA（全员可见 AI 草稿口径）**——度量的是独立判断的
+  一致性，不是互相抄写的一致性。
+- **新词类（范畴包）五步接入判据**：① 复制 `configs/_template/` 为 `configs/<词类>/`；
+  ② 填六件套（pack / admission / features / schemas / corpus_map / prompts/screening.txt）；
+  ③ `run_selfcheck` 全绿（六文件齐、admission code 互斥、≥5 项 in_clustering 特征、
+  evidence_slot ⊆ corpus_map.slots、screening 9 占位符齐、group 已定义）；④ `load_pack`
+  直接可用，引擎代码零修改；⑤ 信度页与范畴下拉自动出现新词类。
+- **首次启动**：`users` 表为空时自动创建内置管理员 `admin`（默认口令 `admin123`），
+  **首次登录后必须立即改密**（用户管理页）；密码为 pbkdf2_sha256 加盐哈希，不可逆。
 
 ## 🧪 测试
 

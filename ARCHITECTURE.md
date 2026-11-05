@@ -24,6 +24,9 @@ Streamlit 界面       src/app.py
     ├──────────────► 数据访问层   src/mysql_db.py     MySQL 8.0
     │                连接池、建表、CRUD、统计、查询日志
     │
+    ├──────────────► 协作层   src/users_db.py · src/annotation_flow.py · src/reliability.py
+    │                多人标注：账号角色 / 任务分配 / 提交·分歧·仲裁 / Krippendorff's α 信度
+    │
     └──────────────► 大模型封装   src/llm_api.py      智谱 AI (GLM)
                      提示词、调用、JSON 解析、MySQL 缓存、兜底释义
 
