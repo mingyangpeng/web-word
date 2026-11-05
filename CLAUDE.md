@@ -69,6 +69,10 @@ scripts/archive/build_knowledge_graphs.sh
     ├── src/mysql_db.py   MySQL 8.0 数据访问（连接池、建表、结构迁移、CRUD、统计、词簇图谱）
     └── src/llm_api.py    智谱 AI 封装（提示词、调用、JSON 解析、MySQL 缓存、兜底）
     ↓
+协作层（多人标注）：src/users_db.py（账号/角色/登录）、src/users_admin_page.py（用户管理页）、
+      src/annotation_flow.py（任务分配/提交/分歧/仲裁）、src/reliability.py（Krippendorff's α）、
+      src/category_pack.py（范畴包六件套加载与自检）
+    ↓
 横切：src/security.py（输入校验 / HTML 转义）、src/design_system.py（视觉常量与样式）、
       src/word_source.py（词表数据源解析：Levin xlsx / dictionary.db / Oxford / 旧词库）、
       src/graph_export.py（交互式图谱 HTML 导出，供 iframe 引用）
