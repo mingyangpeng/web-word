@@ -30,7 +30,7 @@ from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usag
 from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
-from src.security import InputValidator
+from src.security import InputValidator, sanitize_csv_dataframe
 
 # ============================================
 # 多人标注系统集成导入（设计规范 §3 模块契约 / §5 UI 集成契约）
@@ -1404,7 +1404,8 @@ def render_sidebar():
     else:
         feedback_df = pd.DataFrame(columns=["verb", "rating", "feedback_text", "created_at"])
 
-    csv = feedback_df.to_csv(index=False).encode('utf-8-sig')
+    # CSV 公式注入防护（R1-P2）：文本以 = + - @ \t 开头时前置单引号
+    csv = sanitize_csv_dataframe(feedback_df).to_csv(index=False).encode('utf-8-sig')
 
     st.sidebar.download_button(
         label="导出反馈数据 (CSV)",
@@ -2368,7 +2369,8 @@ def _render_annotation_admin_view() -> None:
     if rows:
         export_df = pd.DataFrame(rows)
         export_df.insert(2, "SenseID", export_df["verb"] + "-S" + export_df["sense_index"].astype(str))
-        csv = export_df.to_csv(index=False).encode("utf-8-sig")
+        # CSV 公式注入防护（R1-P2）：文本以 = + - @ \t 开头时前置单引号
+        csv = sanitize_csv_dataframe(export_df).to_csv(index=False).encode("utf-8-sig")
         st.download_button(
             "导出全部义位标注 (CSV)", data=csv,
             file_name=f"movecat_annotations_{datetime.datetime.now().strftime('%Y%m%d')}.csv",
