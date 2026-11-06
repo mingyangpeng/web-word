@@ -88,3 +88,4 @@ screenshots_final/
 # 但 src/static/vis-network.min.js 是**源码依赖**，必须提交 ——
 # 它让图谱在断网/内网环境下也能渲染，这是刻意 vendored 的）
 src/static/word_graph_*.html
+docs/~$*.docx
