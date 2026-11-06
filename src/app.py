@@ -35,13 +35,23 @@ from src.security import InputValidator, sanitize_csv_dataframe
 # ============================================
 # 多人标注系统集成导入（设计规范 §3 模块契约 / §5 UI 集成契约）
 # ============================================
-from src.users_db import ensure_user_tables, verify_login, list_users
+from src.users_db import (
+    change_password,
+    ensure_user_tables,
+    get_user_role,
+    is_using_default_password,
+    list_users,
+    verify_login,
+)
 from src.annotation_flow import (
     ensure_flow_tables, submit_annotation, get_my_submissions,
     get_submissions_for_sense, detect_disagreements, save_adjudication,
     get_assignment_stats, STATUS_ADJUDICATED,
 )
 from src.reliability import render_reliability_page
+from src.cluster_analysis import render_cluster_analysis_page
+from src.template_engine import render_template_page
+from src.semantic_search import render_semantic_search_page
 from src.users_admin_page import render_users_admin_page, ROLE_LABELS, ROLE_BADGE_COLORS
 from src.category_pack import load_pack
 
@@ -130,9 +140,55 @@ def require_login() -> Optional[Dict[str, Any]]:
     return user
 
 
+# 会话键：标记「该会话经登录表单真实鉴权建立」。只有带标记的会话才做
+# 每次操作的角色/停用实时回查（R1-P2b）与默认口令横幅（R1-P2c）——
+# 测试或工具直接注入 session_state["user"] 的会话无标记，行为与旧版一致。
+_USER_DB_BACKED_KEY = "_user_db_backed"
+
+
 def _logout() -> None:
     """退出登录：清除会话用户（规范 §6-5，不做 cookie 持久化）。"""
     st.session_state.pop("user", None)
+    st.session_state.pop(_USER_DB_BACKED_KEY, None)
+
+
+def _refresh_session_user() -> Optional[Dict[str, Any]]:
+    """会话角色防陈旧（R1-P2b）：每次 rerun 对真实登录会话回查 users 表。
+
+    登录快照（st.session_state["user"]）只用于侧边栏显示；权限判定以本函数
+    刷新后的角色为准。在 render_sidebar 顶部调用 —— 它先于 main() 的页面
+    分派执行，因此三个受保护页（标注/用户管理/信度）入口拿到的都是当次
+    实时角色；任意页面（含基础页）的下次操作都会触发本检查，停用用户即被
+    登出并提示。
+
+    规则：
+      * 用户已被停用 / 删除（get_user_role 返回 None）→ 清会话 + st.warning
+        提示（fail-closed：数据库暂时读不出来时同样登出，不留旧权限会话）；
+      * 角色已变更 → 就地更新快照，管理员改角色立即生效；
+      * 数据库离线（DB_AVAILABLE=False）→ 跳过回查保留旧快照（此时全部
+        写路径不可用，页面各自降级，见各页 DB_AVAILABLE 分支）。
+
+    Returns:
+        dict | None: 刷新后的会话用户；未登录或会话已被登出返回 None。
+    """
+    user = _current_user()
+    if user is None or not st.session_state.get(_USER_DB_BACKED_KEY):
+        return user
+    if not DB_AVAILABLE:
+        return user
+    fresh_role = get_user_role(int(user.get("id") or 0))
+    if fresh_role is None:
+        # 停用 / 删除（含库暂时不可读）：登出并提示，下次操作即生效
+        _logout()
+        st.warning("⛔ 账号已被停用或删除，会话已失效，请重新登录。")
+        return None
+    if fresh_role != user.get("role"):
+        # 角色变更：快照仅用于显示，权限判定随本次入口检查即用新值
+        refreshed = dict(user)
+        refreshed["role"] = fresh_role
+        st.session_state["user"] = refreshed
+        return refreshed
+    return user
 
 
 # 新增三页的角色可见性（规范 §5：用户管理=admin、信度报告=reviewer/admin、
@@ -142,6 +198,9 @@ _PAGE_ACCESS: Dict[str, tuple] = {
     "submission": ("admin", "reviewer", "annotator"),
     "users_admin": ("admin",),
     "reliability": ("admin", "reviewer"),
+    "cluster": ("admin", "reviewer", "annotator", "viewer"),
+    "template": ("admin", "reviewer", "annotator", "viewer"),
+    "semantic": ("admin", "reviewer", "annotator", "viewer"),
 }
 
 
@@ -1263,12 +1322,49 @@ def _empty_stats() -> Dict[str, Any]:
     }
 
 
+def _render_default_password_guard(user: Dict[str, Any]) -> None:
+    """内置默认口令强制改密横幅（R1-P2c）：侧边栏常驻直到口令已改。
+
+    判据实时取库（users_db.is_using_default_password：当前哈希仍匹配内置
+    默认口令）——每次 rerun 都判，改密成功后横幅立即消失。仅在数据库
+    可用且会话经登录表单建立（_user_db_backed 标记）时调用。
+    """
+    try:
+        uid = int(user.get("id"))
+    except (TypeError, ValueError):
+        return
+    if not is_using_default_password(uid):
+        return
+    st.sidebar.warning(
+        "⚠️ **内置默认口令，请立即修改**：当前口令是公开的 bootstrap 凭据，"
+        "改密前本提示持续显示。"
+    )
+    with st.sidebar.form("force_change_password_form"):
+        st.markdown("**🔑 设置新口令（≥8 位）**")
+        new1 = st.text_input("新口令", type="password", key="force_new_password",
+                             max_chars=128)
+        new2 = st.text_input("确认新口令", type="password",
+                             key="force_new_password_again", max_chars=128)
+        submitted = st.form_submit_button("修改口令", use_container_width=True)
+    if submitted:
+        if not new1 or new1 != new2:
+            st.sidebar.error("两次输入的新口令为空或不一致。")
+        elif len(new1) < 8:
+            st.sidebar.error("新口令长度至少 8 位。")
+        elif change_password(uid, new1):
+            st.sidebar.success("✅ 口令已修改，本提示不再出现。")
+        else:
+            st.sidebar.error("修改失败（数据库未写入），请重试。")
+
+
 def _render_login_section() -> None:
     """侧边栏登录区（规范 §5）：未登录显示登录表单，已登录显示用户名+角色徽章+退出。
 
     数据库离线时显示「登录不可用（数据库离线）」info，不崩溃；登录失败
     st.error 提示（verify_login 对无此用户/密码错/已停用统一返回 None，防枚举）。
     表单 clear_on_submit=True：密码不常驻会话（规范 §6-2）。
+    登录成功后（R1-P2c）：若该用户当前哈希仍匹配内置默认口令，侧边栏顶部
+    常驻强制改密横幅（_render_default_password_guard），直到口令已改。
     """
     if not DB_AVAILABLE:
         st.sidebar.info("登录不可用（数据库离线）")
@@ -1286,6 +1382,9 @@ def _render_login_section() -> None:
         )
         st.sidebar.button("🚪 退出登录", key="logout_button",
                           use_container_width=True, on_click=_logout)
+        # 默认口令强制改密（R1-P2c）：仅对真实登录会话（_user_db_backed）回查
+        if st.session_state.get(_USER_DB_BACKED_KEY):
+            _render_default_password_guard(user)
         return
 
     with st.sidebar.form("login_form", clear_on_submit=True):
@@ -1297,6 +1396,7 @@ def _render_login_section() -> None:
         info = verify_login(username or "", password or "")
         if info:
             st.session_state["user"] = info
+            st.session_state[_USER_DB_BACKED_KEY] = True
             st.rerun()
         else:
             st.sidebar.error("用户名或密码错误，或账号已停用。")
@@ -1304,6 +1404,10 @@ def _render_login_section() -> None:
 
 def render_sidebar():
     """渲染侧边栏组件（折叠/展开双分支，D-01）"""
+    # 会话角色防陈旧（R1-P2b）：每次 rerun、先于 main() 页面分派实时回查
+    # users 表 —— 停用/删除用户被登出并提示；管理员改角色立即生效。
+    # 登录快照自此仅用于显示；三个受保护页入口的权限判定读到的是当次实时角色。
+    _refresh_session_user()
     collapsed = st.session_state.get("sidebar_collapsed", False)
 
     if collapsed:
@@ -2758,6 +2862,15 @@ def main():
     elif _page == "reliability":
         if require_login() is not None:
             render_reliability_entry()
+    elif _page == "cluster":
+        if require_login() is not None:
+            render_cluster_entry()
+    elif _page == "template":
+        if require_login() is not None:
+            render_template_entry()
+    elif _page == "semantic":
+        if require_login() is not None:
+            render_semantic_entry()
     else:
         render_main_area()
 
@@ -2772,6 +2885,24 @@ def render_reliability_entry() -> None:
     """📐 信度报告入口：使用说明 + Agent C 页面（函数内部另有 reviewer/admin 门）。"""
     render_page_usage_guide("reliability")
     render_reliability_page()
+
+
+def render_cluster_entry() -> None:
+    """📈 谱系与典型性入口：使用说明 + 聚类可视化页（需登录，全角色可看）。"""
+    render_page_usage_guide("cluster")
+    render_cluster_analysis_page()
+
+
+def render_template_entry() -> None:
+    """🧩 释义模板入口：使用说明 + 模板引擎页（需登录，全角色可看）。"""
+    render_page_usage_guide("template")
+    render_template_page()
+
+
+def render_semantic_entry() -> None:
+    """🧠 以句搜义入口：使用说明 + 以句搜义页（需登录，全角色可看）。"""
+    render_page_usage_guide("semantic")
+    render_semantic_search_page()
 
 # ============================================
 # 启动应用

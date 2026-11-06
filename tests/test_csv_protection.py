@@ -39,8 +39,8 @@ class TestSanitizeCsvValue:
         assert sanitize_csv_value("\tpayload") == "'\tpayload"
 
     def test_trigger_chars_complete(self):
-        """触发字符集合覆盖 = + - @ \\t"""
-        assert set(CSV_FORMULA_TRIGGER_CHARS) == {"=", "+", "-", "@", "\t"}
+        """触发字符集合覆盖 = + - @ \\t \\r（OWASP 同批危险前缀）"""
+        assert set(CSV_FORMULA_TRIGGER_CHARS) == {"=", "+", "-", "@", "\t", "\r"}
 
     def test_normal_text_untouched(self):
         """正常文本不受影响（中文反馈、普通句子、空串）"""
@@ -72,7 +72,7 @@ class TestSanitizeCsvDataFrame:
         assert out.loc[0, "verb"] == "run"
         assert out.loc[0, "feedback_text"] == "很好"
         assert out.loc[1, "verb"].startswith("'=")
-        assert out.loc[1, "feedback_text"].startswith("'+" )
+        assert out.loc[1, "feedback_text"].startswith("'+")
         # 数字列不受影响
         assert out.loc[1, "rating"] == 1
 

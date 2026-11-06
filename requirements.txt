@@ -4,6 +4,8 @@
 # src/app.py 直接导入：streamlit, pandas, plotly（范畴深挖热图/雷达/二部图）；
 # 经 src/mysql_db.py 使用 pymysql, pyyaml；
 # 经 src/llm_api.py 使用 zhipuai；
+# src/cluster_analysis.py 使用 scipy（谱系树 squareform+average 联接；
+# Gower 相异度为本模块自实现）—— 缺它谱系树 tab 降级告警，medoid 排序不受影响；
 # 全部灌库脚本（load_word_library / load_corpus_dataset / load_domain_family /
 # load_category_study / parse_modern_chinese_dict / load_zh_dict）使用 openpyxl
 # 读 xlsx 种子数据 —— 缺它 ./start 的灌库步骤全部失败。
@@ -13,6 +15,7 @@ pyyaml>=6.0
 pandas>=2.0.0
 plotly>=5.18.0
 openpyxl>=3.1.0
+scipy>=1.10.0
 
 # ============================================
 # LLM 客户端 —— 多提供商（三家都是 OpenAI 兼容接口，llm_api 按优先级自动选）

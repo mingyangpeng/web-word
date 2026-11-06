@@ -15,37 +15,82 @@ groups:
   - {id: A, name: 核验, order: 4}
 
 # 特征逐条定义（P1-P5 / M1a-M1d / M2 / M3a-M3d / C1 共 15 项进聚类；A1-A3 核验区不进聚类）
+# keywords（可选字段，只增补不改既有字段）：以句搜义页（src/semantic_search.py）
+# 规则层的关键词表 —— 条目为 {kw: 关键词, value: 编码值}；关键词在查询句中
+# 出现（子串匹配）即把该特征赋为 value，未命中的特征不进查询向量。
+# binary 特征可用裸字符串条目省略 value（默认按「取 1」处理）。
 features:
   - {code: P1, group: P, name: 源点凸显,     value_type: binary,  in_clustering: true,
-     values: {0: 不凸显, 1: 凸显}}
+     values: {0: 不凸显, 1: 凸显},
+     keywords: [{kw: 逃离, value: 1}, {kw: 离开, value: 1}, {kw: 出发, value: 1},
+                {kw: 脱离, value: 1}, {kw: 撤离, value: 1}]}
   - {code: P2, group: P, name: 终点凸显,     value_type: binary,  in_clustering: true,
-     values: {0: 不凸显, 1: 凸显}}
+     values: {0: 不凸显, 1: 凸显},
+     keywords: [{kw: 抵达, value: 1}, {kw: 到达, value: 1}, {kw: 赶到, value: 1},
+                {kw: 冲向, value: 1}, {kw: 终点, value: 1}]}
   - {code: P3, group: P, name: 有界达成,     value_type: binary,  in_clustering: true,
-     values: {0: 无界过程, 1: 有界达成}}
+     values: {0: 无界过程, 1: 有界达成},
+     keywords: [{kw: 跑完, value: 1}, {kw: 走完, value: 1}, {kw: 穿过, value: 1},
+                {kw: 跨过, value: 1}, {kw: 渡过, value: 1}]}
   - {code: P4, group: P, name: 轴向垂直,     value_type: binary,  in_clustering: true,
-     values: {0: 非垂直, 1: 垂直}}
+     values: {0: 非垂直, 1: 垂直},
+     keywords: [{kw: 爬上, value: 1}, {kw: 爬下, value: 1}, {kw: 上升, value: 1},
+                {kw: 下降, value: 1}, {kw: 降落, value: 1}, {kw: 升起, value: 1}]}
   - {code: P5, group: P, name: 速度,         value_type: ordinal, in_clustering: true,
-     values: {0: 低, 1: 中, 2: 高}}
+     values: {0: 低, 1: 中, 2: 高},
+     keywords: [{kw: 快, value: 2}, {kw: 急速, value: 2}, {kw: 飞速, value: 2},
+                {kw: 迅速, value: 2}, {kw: 疾, value: 2}, {kw: 狂, value: 2},
+                {kw: 中速, value: 1}, {kw: 慢, value: 0}, {kw: 缓, value: 0},
+                {kw: 徐, value: 0}, {kw: 散步, value: 0}, {kw: 慢走, value: 0},
+                {kw: 缓步, value: 0}]}
   - {code: M1a, group: M, name: 主体-人,       value_type: binary, in_clustering: true,
-     values: {0: 非人主体, 1: 人主体}}
+     values: {0: 非人主体, 1: 人主体},
+     keywords: [{kw: 士兵, value: 1}, {kw: 队伍, value: 1}, {kw: 人, value: 1},
+                {kw: 人群, value: 1}, {kw: 孩子, value: 1}, {kw: 男人, value: 1},
+                {kw: 女人, value: 1}, {kw: 运动员, value: 1}, {kw: 犯人, value: 1}]}
   - {code: M1b, group: M, name: 主体-动物,     value_type: binary, in_clustering: true,
-     values: {0: 非动物主体, 1: 动物主体}}
+     values: {0: 非动物主体, 1: 动物主体},
+     keywords: [{kw: 马, value: 1}, {kw: 动物, value: 1}, {kw: 狗, value: 1},
+                {kw: 猫, value: 1}, {kw: 狼, value: 1}, {kw: 鹿, value: 1},
+                {kw: 牛, value: 1}, {kw: 羊, value: 1}, {kw: 狮, value: 1},
+                {kw: 虎, value: 1}, {kw: 鸟, value: 1}]}
   - {code: M1c, group: M, name: 主体-车辆工具, value_type: binary, in_clustering: true,
-     values: {0: 非车辆工具, 1: 车辆工具}}
+     values: {0: 非车辆工具, 1: 车辆工具},
+     keywords: [{kw: 车, value: 1}, {kw: 船, value: 1}, {kw: 飞机, value: 1},
+                {kw: 火箭, value: 1}, {kw: 列车, value: 1}]}
   - {code: M1d, group: M, name: 主体-无生液体, value_type: binary, in_clustering: true,
-     values: {0: 非液体主体, 1: 无生液体主体}}
+     values: {0: 非液体主体, 1: 无生液体主体},
+     keywords: [{kw: 水, value: 1}, {kw: 液体, value: 1}, {kw: 岩浆, value: 1},
+                {kw: 熔岩, value: 1}, {kw: 洪水, value: 1}, {kw: 血, value: 1}]}
   - {code: M2,  group: M, name: 情态急促度,   value_type: ordinal, in_clustering: true,
-     values: {0: 轻缓, 1: 一般, 2: 急促}}
+     values: {0: 轻缓, 1: 一般, 2: 急促},
+     keywords: [{kw: 急促, value: 2}, {kw: 匆忙, value: 2}, {kw: 慌忙, value: 2},
+                {kw: 仓促, value: 2}, {kw: 慌张, value: 2}, {kw: 猛冲, value: 2},
+                {kw: 整齐, value: 0}, {kw: 从容, value: 0}, {kw: 悠闲, value: 0},
+                {kw: 平稳, value: 0}, {kw: 轻缓, value: 0}, {kw: 稳步, value: 0}]}
   - {code: M3a, group: M, name: 介质-陆地,   value_type: binary, in_clustering: true,
-     values: {0: 非陆地介质, 1: 陆地介质}}
+     values: {0: 非陆地介质, 1: 陆地介质},
+     keywords: [{kw: 陆地, value: 1}, {kw: 地面, value: 1}, {kw: 地上, value: 1},
+                {kw: 路上, value: 1}, {kw: 跑道, value: 1}, {kw: 街上, value: 1},
+                {kw: 草地, value: 1}, {kw: 山路, value: 1}, {kw: 地板, value: 1}]}
   - {code: M3b, group: M, name: 介质-水,     value_type: binary, in_clustering: true,
-     values: {0: 非水介质, 1: 水介质}}
+     values: {0: 非水介质, 1: 水介质},
+     keywords: [{kw: 水中, value: 1}, {kw: 水里, value: 1}, {kw: 水面, value: 1},
+                {kw: 游泳, value: 1}, {kw: 涉水, value: 1}, {kw: 渡河, value: 1},
+                {kw: 潜水, value: 1}]}
   - {code: M3c, group: M, name: 介质-空气,   value_type: binary, in_clustering: true,
-     values: {0: 非空气介质, 1: 空气介质}}
+     values: {0: 非空气介质, 1: 空气介质},
+     keywords: [{kw: 空中, value: 1}, {kw: 天上, value: 1}, {kw: 天空, value: 1},
+                {kw: 飞翔, value: 1}, {kw: 翱翔, value: 1}, {kw: 滑翔, value: 1}]}
   - {code: M3d, group: M, name: 介质-其他,   value_type: binary, in_clustering: true,
      values: {0: 无其他介质, 1: 其他介质}}
   - {code: C1,  group: C, name: 动因,         value_type: nominal, in_clustering: true,
-     values: {0: 跟随依附, 1: 受迫, 2: 自主}}
+     values: {0: 跟随依附, 1: 受迫, 2: 自主},
+     keywords: [{kw: 自主, value: 2}, {kw: 自愿, value: 2}, {kw: 主动, value: 2},
+                {kw: 自发, value: 2}, {kw: 被迫, value: 1}, {kw: 逃, value: 1},
+                {kw: 驱赶, value: 1}, {kw: 强制, value: 1}, {kw: 不得不, value: 1},
+                {kw: 跟随, value: 0}, {kw: 跟着, value: 0}, {kw: 追随, value: 0},
+                {kw: 押送, value: 0}]}
   # ---- 核验区（不进聚类，聚类后核验句法行为一致性，防循环论证）----
   - {code: A1, group: A, name: 构式论元-不及物,   value_type: binary, in_clustering: false,
      values: {0: 无, 1: 有}}

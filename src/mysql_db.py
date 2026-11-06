@@ -891,6 +891,18 @@ def _pool_key():
     return (MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER)
 
 
+def cache_scope_key() -> str:
+    """当前库连接目标的缓存作用域键：host:port/db。
+
+    st.cache_data 的缓存键默认只含函数入参 —— 测试切换 MYSQL_DATABASE 指向
+    测试库时，键不变，会把业务库灌库用例（CLUSRUN 种子/RUN 真数据）缓存的
+    检索索引/聚类矩阵串进「空测试库」用例（S1 review：全量跑 4 个
+    TestS3NewPagesMatrix 用例因此必挂，单跑必过）。页面级缓存装载函数把它
+    并进首参后，换库即换缓存槽位，业务库与测试库互不污染。
+    """
+    return f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+
+
 def get_connection_pool():
     """获取（或惰性创建）当前配置对应的连接池。返回 None 表示 PyMySQL 不可用。"""
     key = _pool_key()

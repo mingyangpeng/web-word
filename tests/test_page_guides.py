@@ -22,7 +22,8 @@ from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usag
 
 # app.py 的九页分派（与 main() 的 elif 链一致；含多人标注系统新增三页）
 APP_PAGES = {"search", "graph", "corpus", "domain", "annotate", "category",
-             "submission", "users_admin", "reliability"}
+             "submission", "users_admin", "reliability",
+             "cluster", "template", "semantic"}
 
 # 每页说明的专属内容锚点（从 PAGE_GUIDES 内容派生，防止说明被清空成模板）
 _ANCHORS = {
@@ -35,6 +36,9 @@ _ANCHORS = {
     "submission": "覆盖更新",
     "users_admin": "角色",
     "reliability": "Krippendorff",
+    "cluster": "medoid",
+    "template": "母图式",
+    "semantic": "Gower",
 }
 # 详细版新增段：每页必须有原理与数据来源
 _ANCHORS_PRINCIPLE = {
@@ -47,6 +51,9 @@ _ANCHORS_PRINCIPLE = {
     "submission": "独立性",
     "users_admin": "自保护",
     "reliability": "AI-assisted",
+    "cluster": "medoid",
+    "template": "确定性槽位拼装",
+    "semantic": "最近邻",
 }
 
 # 有角色门的页面：AppTest 渲染锁注入的会话用户（规范 §6-5 会话结构；
@@ -58,6 +65,9 @@ _SESSION_USERS = {
                     "role": "reviewer"},
     "submission": {"id": 2, "username": "coder_e2e", "display_name": "测试标注员",
                    "role": "annotator"},
+    "cluster": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
+    "template": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
+    "semantic": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
 }
 
 
@@ -65,14 +75,15 @@ def test_page_keys_match_app_pages():
     """结构锁：PAGE_GUIDES 键 == app.py 的页面集合。"""
     assert set(PAGE_KEYS) == APP_PAGES
     assert list(PAGE_KEYS) == ["search", "graph", "corpus", "domain", "annotate",
-                               "submission", "category", "users_admin", "reliability"]
+                               "submission", "category", "users_admin", "reliability",
+                               "cluster", "template", "semantic"]
 
 
 def test_every_guide_has_required_fields():
     for key, guide in PAGE_GUIDES.items():
         assert set(guide) >= {"label", "purpose", "steps", "notes"}, key
         assert guide["label"].startswith(("🔍", "🕸️", "📊", "🧭", "🏷️", "🏃‍♀️",
-                                          "📥", "👥", "📐")), key
+                                          "📥", "👥", "📐", "📈", "🧩", "🧠")), key
         assert len(guide["steps"]) >= 3, f"{key} 步骤过少"
         assert any(kw in guide["purpose"] or kw in " ".join(guide["steps"])
                    for kw in (_ANCHORS[key],)), f"{key} 缺专属锚点 {_ANCHORS[key]}"
