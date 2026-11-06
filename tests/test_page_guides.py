@@ -165,3 +165,24 @@ def test_sidebar_radio_uses_page_guides():
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "src", "category_study_page.py"), encoding="utf-8").read()
     assert 'render_page_usage_guide("category")' in cat_src
+
+
+def test_page_access_table_consistent_with_registration():
+    """S3 清单 2：_PAGE_ACCESS 与页面注册一致（键恰为六个非基础页，角色合法）。
+
+    防两类静默回归：
+      * 页面改名/下线后 _PAGE_ACCESS 留下陈旧键 —— 过滤对该键永远不生效，
+        行为测试（角色矩阵）钉不住多出来的键；
+      * 角色元组出现规范 §1 四角色之外的值（拼写漂移）—— 该角色将永远
+        看不到该页，而矩阵用例只断言在场角色可见，断不出拼错的键。
+    导入 src.app 执行模块级代码（main() 有 __main__ 守卫，test_phase4/5 同款）。
+    """
+    from src.app import _PAGE_ACCESS  # noqa: E402
+
+    assert set(_PAGE_ACCESS) == {"submission", "users_admin", "reliability",
+                                 "cluster", "template", "semantic"}, \
+        "_PAGE_ACCESS 键应恰为六个非基础页（基础六页对所有人可见，不进表）"
+    canonical = {"admin", "reviewer", "annotator", "viewer"}
+    for key, roles in _PAGE_ACCESS.items():
+        assert roles, f"{key}: 角色元组为空（该页将对全员隐藏）"
+        assert set(roles) <= canonical, f"{key}: 角色越出规范 §1 四角色: {roles}"
