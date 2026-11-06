@@ -481,6 +481,35 @@ class TestS3NewPagesMatrix:
         assert not at.error
 
 
+class TestS3EmptyDbExistingPages:
+    """S3 清单 4（既有页侧）：业务表为空时既有页优雅降级，不抛异常。
+
+    TestS3NewPagesMatrix 已钉三新页在空测试库的降级；这里补三个读业务表
+    的既有基础页 —— category 读 categories/cs_*（测试库无该表，查无范畴
+    数据走同一 info 分支）、graph 读 word_relations、domain 读
+    domain_family_senses（表在但空）。search/corpus/annotate 的空库渲染
+    已由 TestCrossPageState / TestRoleMatrix 覆盖，不重复。
+    """
+
+    _EMPTY_DB_SENTINEL = {
+        "category": "范畴深挖数据尚未灌入",
+        "graph": "暂无词间关系数据",
+        "domain": "域系初判数据尚未灌入",
+    }
+
+    def test_existing_pages_empty_db_graceful(self, r3_env):
+        """空测试库直入三页：info 引导而非异常，无 error 通道。"""
+        for page, sentinel in self._EMPTY_DB_SENTINEL.items():
+            at = _new_at()
+            at.session_state["page"] = page
+            at.run()
+            assert not at.exception, page
+            texts = _page_text_with_expanders(at)
+            assert sentinel in texts, \
+                f"{page} 空库未给优雅降级提示（预期 info: {sentinel}）"
+            assert not at.error, f"{page} 出现 error 通道（应 info/warning 降级）"
+
+
 # ============================================
 # 清单 6：跨页状态与登出失效
 # ============================================
