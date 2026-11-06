@@ -45,6 +45,7 @@ except ImportError:  # pragma: no cover - 环境差异分支
 
 from src.annotation_flow import parse_payload  # payload JSON 列解析的唯一实现（R4 消重）
 from src.mysql_db import get_db_cursor
+from src.security import sanitize_csv_cell  # CSV 公式注入防护（R1-P2a）的唯一实现
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,10 @@ LOW_ALPHA_THRESHOLD = 0.7
 # 页面口径标注（用户决策③，规范 §1/§7-V7 同源）
 IAA_CAPTION = "AI-assisted IAA（全员可见 AI 草稿口径）"
 
-# 规范 §2 DDL 原样（幂等建表；reliability_runs 无外键，可独立创建）
+# 规范 §2 DDL 原样 + created_by 归属列（R5 遗留 2：reliability_runs 无归属列，
+# 无法按用户定位是谁跑的信度；e2e/清理脚本只能按 id 水位线）。NULL 允许
+# 数据层调用（脚本/测试）不带归属。已有旧表由 _ensure_reliability_table 的
+# 幂等迁移补列。
 RELIABILITY_RUNS_DDL = """CREATE TABLE IF NOT EXISTS reliability_runs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   category VARCHAR(40) NOT NULL DEFAULT 'motion',
@@ -77,6 +81,7 @@ RELIABILITY_RUNS_DDL = """CREATE TABLE IF NOT EXISTS reliability_runs (
   per_feature JSON NULL,                        -- {"P1":0.82,...}
                                                 --  （admission 任务为 {"admission":x,"schema":y,...}）
   disagreements JSON NULL,                      -- 分歧条目摘要
+  created_by INT NULL,                          -- 触发本次计算的 users.id（归属列）
   computed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
@@ -385,23 +390,61 @@ def _fetch_submissions(category: str, task_type: str) -> Optional[list[dict]]:
 
 
 def _ensure_reliability_table() -> bool:
-    """幂等建 reliability_runs（规范 §2 DDL 原样）。失败返回 False（只算不写）。"""
+    """幂等建 reliability_runs（规范 §2 DDL 原样）+ 旧表补 created_by 列。
+
+    迁移幂等（R5 遗留 2）：CREATE TABLE IF NOT EXISTS 对已存在的旧表是空操作，
+    故再用 INFORMATION_SCHEMA 查列，缺 created_by 则 ALTER TABLE ADD COLUMN ——
+    重复调用不炸、不重复加列。失败返回 False（只算不写）。
+    """
     try:
         with get_db_cursor() as cursor:
             cursor.execute(RELIABILITY_RUNS_DDL)
+            _migrate_created_by_column(cursor)
         return True
     except Exception as exc:
         logger.error("建 reliability_runs 表失败: %s", exc)
         return False
 
 
-def _persist_run(result: dict) -> None:
-    """把一次计算写入 reliability_runs（overall DECIMAL(5,3)，JSON 列 dumps）。"""
+def _migrate_created_by_column(cursor) -> None:
+    """旧 reliability_runs 表补 created_by 归属列（幂等，R5 遗留 2）。
+
+    INFORMATION_SCHEMA 查列不存在才 ALTER；库/表/列名不拼接用户输入，
+    一律字面量（规范 §6-1 参数化口径：无值可参数化的标识符用常量）。
+    """
+    cursor.execute(
+        "SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS "
+        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reliability_runs' "
+        "AND COLUMN_NAME = 'created_by'"
+    )
+    row = cursor.fetchone()
+    if row is None:
+        return  # 假游标/异常通道拿不到结果：按无需迁移处理，不让建表流程炸掉
+    if int(row.get("n") or 0) == 0:
+        cursor.execute(
+            "ALTER TABLE reliability_runs ADD COLUMN created_by INT NULL"
+        )
+        logger.info("reliability_runs 已补 created_by 归属列（幂等迁移）")
+
+
+def _persist_run(result: dict, created_by: Optional[int] = None) -> None:
+    """把一次计算写入 reliability_runs（overall DECIMAL(5,3)，JSON 列 dumps）。
+
+    created_by：触发本次计算的 users.id（R5 遗留 2 归属列）；None 表示
+    数据层直调（脚本/测试）不带归属。
+    """
     overall = result.get("overall_alpha")
+    # 脏值防御：会话里的 id 理论上恒为 int，转不动时按无归属处理而非炸页面
+    try:
+        created_by_value = None if created_by is None else int(created_by)
+    except (TypeError, ValueError):
+        created_by_value = None
+        logger.warning("created_by 不是可整型化的值，按 NULL 落库: %r", created_by)
     sql = (
         "INSERT INTO reliability_runs "
-        "(category, task_type, n_coders, n_units, overall_alpha, per_feature, disagreements) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        "(category, task_type, n_coders, n_units, overall_alpha, per_feature, "
+        "disagreements, created_by) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     params = (
         result["category"],
@@ -411,6 +454,7 @@ def _persist_run(result: dict) -> None:
         None if overall is None else round(float(overall), 3),
         json.dumps(result.get("per_feature") or {}, ensure_ascii=False),
         json.dumps(result.get("disagreements") or [], ensure_ascii=False),
+        created_by_value,
     )
     try:
         with get_db_cursor() as cursor:
@@ -464,7 +508,10 @@ def _resolve_value_type(features_meta: list[dict], feature_name: str) -> str:
 # 对外主函数 2：run_reliability
 # ============================================
 def run_reliability(
-    category: str, task_type: str, features_meta: list[dict] | None = None
+    category: str,
+    task_type: str,
+    features_meta: list[dict] | None = None,
+    created_by: int | None = None,
 ) -> dict:
     """对某个 (category, task_type) 的全部 submitted 提交算信度并落库。
 
@@ -474,6 +521,8 @@ def run_reliability(
         features_meta: 特征元数据列表（configs/motion/features.yaml 的 features 节，
             每项含 code/value_type）；None 时自动读 configs/{category}/features.yaml，
             文件不存在则全部特征按 nominal（规范 §3）。
+        created_by: 触发本次计算的 users.id（落 reliability_runs.created_by 归属列，
+            R5 遗留 2）；None 表示数据层直调不带归属。
 
     Returns:
         ``{category, task_type, overall_alpha, per_feature, n_coders, n_units,
@@ -591,7 +640,7 @@ def run_reliability(
 
     # 落库（有提交才写；空跑不留垃圾行）
     if rows and _ensure_reliability_table():
-        _persist_run(result)
+        _persist_run(result, created_by=created_by)
     return result
 
 
@@ -654,29 +703,37 @@ def _build_disagreement_rows(disagreements: list[dict]) -> list[dict]:
 
 
 def _export_csv(result: dict) -> bytes:
-    """导出 CSV（utf-8-sig，Excel 打开中文不乱码）：信度汇总 + 逐特征 + 分歧长表。"""
+    """导出 CSV（utf-8-sig，Excel 打开中文不乱码）：信度汇总 + 逐特征 + 分歧长表。
+
+    每个单元格过 security.sanitize_csv_cell（R1-P2a）：分歧条目的 value /
+    feature 名等可能带用户标注的自由文本，以 = + - @ \\t \\r 开头时前置单引号，
+    防 Excel 公式注入（与 app.py 标注导出、template_engine 模板导出同一实现）。
+    """
     buf = io.StringIO()
     writer = csv.writer(buf)
 
-    writer.writerow(["# 信度报告（AI-assisted IAA：全员可见 AI 草稿口径）"])
-    writer.writerow(["category", result.get("category")])
-    writer.writerow(["task_type", result.get("task_type")])
-    writer.writerow(["n_coders", result.get("n_coders")])
-    writer.writerow(["n_units", result.get("n_units")])
+    def _write_row(cells) -> None:
+        writer.writerow([sanitize_csv_cell(c) for c in cells])
+
+    _write_row(["# 信度报告（AI-assisted IAA：全员可见 AI 草稿口径）"])
+    _write_row(["category", result.get("category")])
+    _write_row(["task_type", result.get("task_type")])
+    _write_row(["n_coders", result.get("n_coders")])
+    _write_row(["n_units", result.get("n_units")])
     overall = result.get("overall_alpha")
-    writer.writerow(["overall_alpha", "" if overall is None else f"{overall:.3f}"])
-    writer.writerow([])
-    writer.writerow(["feature/field", "alpha", "达标(>=0.7)"])
+    _write_row(["overall_alpha", "" if overall is None else f"{overall:.3f}"])
+    _write_row([])
+    _write_row(["feature/field", "alpha", "达标(>=0.7)"])
     for name, alpha in (result.get("per_feature") or {}).items():
         if alpha is None:
-            writer.writerow([name, "", "不可算"])
+            _write_row([name, "", "不可算"])
         else:
-            writer.writerow([name, f"{alpha:.3f}", "是" if alpha >= LOW_ALPHA_THRESHOLD else "否"])
-    writer.writerow([])
-    writer.writerow(["sense_id", "field", "coder_id", "value"])
+            _write_row([name, f"{alpha:.3f}", "是" if alpha >= LOW_ALPHA_THRESHOLD else "否"])
+    _write_row([])
+    _write_row(["sense_id", "field", "coder_id", "value"])
     for item in result.get("disagreements") or []:
         for coder_id, value in item.get("values", {}).items():
-            writer.writerow([item.get("sense_id"), item.get("field"), coder_id, value])
+            _write_row([item.get("sense_id"), item.get("field"), coder_id, value])
     return buf.getvalue().encode("utf-8-sig")
 
 
@@ -768,7 +825,9 @@ def render_reliability_page() -> None:
             }.get,
         )
 
-    result = run_reliability(category, task_type)
+    # R5 遗留 2：归属列 —— 记录本次计算由哪个会话用户触发（reliability_runs.created_by）。
+    # role gate 已保证 user 是登录会话；id 脏值由 _persist_run 兜底转 None。
+    result = run_reliability(category, task_type, created_by=user.get("id"))
 
     if result.get("db_error"):
         st.error(f"数据库不可用：{result['db_error']}")

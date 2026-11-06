@@ -28,6 +28,7 @@ from src.category_study import (
     get_cluster_runs, get_clusters_with_members, get_alignments,
     get_cluster_profiles, get_screening_stats,
 )
+from src.mysql_db import cache_scope_key
 from src.design_system import HEADER_H1, HEADER_H3
 
 logger = logging.getLogger(__name__)
@@ -54,8 +55,13 @@ STATUS_COLORS = {
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def _load_category(code: str) -> Optional[Dict[str, Any]]:
+def _load_category(cache_scope: str, code: str) -> Optional[Dict[str, Any]]:
     """加载一个范畴的全部展示数据（页面级缓存，10 分钟）。
+
+    首参 cache_scope（**不得**加下划线前缀）由调用方传
+    mysql_db.cache_scope_key()：st.cache_data 的键只含入参，且**下划线开头的
+    参数不参与哈希**（Streamlit 明确行为）—— 作用域必须进键，测试切换
+    MYSQL_DATABASE 指向测试库时才能换缓存槽位，业务库数据不串进空测试库。
 
     返回 {category, senses, en_run, zh_run, en_clusters, zh_clusters,
     alignments, profiles_en, profiles_zh, stats}；数据未灌入返回 None。
@@ -887,7 +893,7 @@ def render_category_study_page() -> None:
             f"（{c}）", key="cs_category")
         cat = next(c for c in categories if c["code"] == code)
 
-    data = _load_category(code)
+    data = _load_category(cache_scope_key(), code)
     if data is None:
         st.warning(f"范畴 {code} 数据加载失败。")
         return

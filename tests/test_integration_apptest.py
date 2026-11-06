@@ -365,6 +365,123 @@ class TestRoleMatrix:
 
 
 # ============================================
+# S3 清单 1/2/4：三新页（cluster/template/semantic）× 五会话矩阵
+# ============================================
+
+_S3_NEW_PAGES = ("cluster", "template", "semantic")
+
+
+def _page_text_with_expanders(at) -> str:
+    """_page_text + 使用说明 expander 的标签（expander 折叠时标签不在 _page_text 里）。"""
+    parts = [_page_text(at)]
+    parts.extend(str(e.label) for e in at.expander)
+    return "\n".join(parts)
+
+# 空库（cs_* 范畴数据未灌）下三新页的预期降级哨兵（S3 清单 4：
+# info/warning 优雅降级而非异常；模板页 categories 为空走 info，
+# categories 有行但无运行走 warning，两者都含「范畴深挖数据尚未灌入」分支外的
+# 独立哨兵 —— 这里断言 categories 为空分支的 info）。
+_S3_EMPTY_DB_SENTINEL = {
+    "cluster": "暂无聚类运行数据",
+    "template": "范畴深挖数据尚未灌入",
+    "semantic": "输入一句话",
+}
+# 三新页页面正文的特征标题（证明页面本体渲染，而非仅入口/使用说明）
+_S3_PAGE_TITLE = {
+    "cluster": "聚类可视化与典型性排序",
+    "template": "释义模板引擎",
+    "semantic": "以句搜义",
+}
+
+
+class TestS3NewPagesMatrix:
+    """三新页 × 五会话矩阵（S3 清单 1/2）+ 空库降级（清单 4）。
+
+    与 TestRoleMatrix 的分工：那里固化 submission/users_admin/reliability 的
+    角色门；这里固化三新页的「require_login 门 + _PAGE_ACCESS 全角色可见」。
+    测试库只有 users 数据，cs_* 表为空 —— 登录后逐页渲染的断言同时固化
+    空库降级契约（info 引导，不抛异常、不出 error 通道）。
+    """
+
+    def test_unlogged_new_pages_blocked_and_hidden(self, r3_env):
+        """未登录：三新页「请先登录」拦截、内容与使用说明不渲染、侧边栏无入口。"""
+        for page in _S3_NEW_PAGES:
+            at = _new_at()
+            at.session_state["page"] = page
+            at.run()
+            assert not at.exception, page
+            assert any("请先登录" in str(w.value) for w in at.warning), \
+                f"未登录进 {page} 未被拦截"
+            texts = _page_text_with_expanders(at)
+            assert _S3_PAGE_TITLE[page] not in texts, f"{page} 未登录泄漏页面本体"
+            assert "使用说明" not in texts, f"{page} 未登录渲染了使用说明"
+        # 侧边栏：三新页对未登录隐藏（_PAGE_ACCESS 非 None 的键不出现在 radio）
+        at = _new_at()
+        at.run()
+        keys = _radio_keys(at)
+        assert not set(_S3_NEW_PAGES) & set(keys), "未登录侧边栏不应出现三新页"
+        assert keys == ["search", "graph", "corpus", "domain",
+                        "annotate", "category"]
+
+    def _login_and_assert_new_pages(self, username: str, password: str):
+        """真实登录 → 三新页 radio 可见 → 逐页渲染：guide + 页面标题 + 空库降级。"""
+        at = _new_at()
+        at.run()
+        at = _form_login(at, username, password)
+        assert not at.exception
+        keys = _radio_keys(at)
+        assert set(_S3_NEW_PAGES) <= set(keys), f"侧边栏缺新页入口: {keys}"
+        for page in _S3_NEW_PAGES:
+            at.session_state["page"] = page
+            at.run()
+            assert not at.exception, page
+            texts = _page_text_with_expanders(at)
+            assert "使用说明" in texts, f"{page} 缺使用说明 expander"
+            assert _S3_PAGE_TITLE[page] in texts, f"{page} 页面本体未渲染"
+            assert _S3_EMPTY_DB_SENTINEL[page] in texts, \
+                f"{page} 空库降级提示缺失（cs_* 表为空）"
+            assert not at.error, f"{page} 出现 error 通道（应 info/warning 降级）"
+        return at
+
+    def test_annotator_new_pages_visible_and_render(self, r3_env):
+        """annotator：三新页可见可渲染（_PAGE_ACCESS 含 annotator）。"""
+        self._login_and_assert_new_pages("r3_ann", "r3-ann-pw")
+
+    def test_reviewer_new_pages_visible_and_render(self, r3_env):
+        """reviewer：三新页可见可渲染。"""
+        self._login_and_assert_new_pages("r3_rev", "r3-rev-pw")
+
+    def test_admin_new_pages_and_full_radio_order(self, r3_env):
+        """admin：三新页可见可渲染；radio 为全部 12 键且保持 PAGE_KEYS 顺序。"""
+        at = self._login_and_assert_new_pages("r3_admin", "r3-admin-pw")
+        assert _radio_keys(at) == list(PAGE_KEYS), "admin 侧边栏应为全部页面键（原序）"
+
+    def test_viewer_new_pages_visible_and_render(self, r3_env):
+        """viewer：三新页可见可渲染（_PAGE_ACCESS 显式含 viewer；区别于受保护三页）。"""
+        at = self._login_and_assert_new_pages("r3_view", "r3-view-pw")
+        # 对照：viewer 仍不可见受保护三页（回归锚点，防新页改表时误放开旧页）
+        keys = _radio_keys(at)
+        assert not {"submission", "users_admin", "reliability"} & set(keys)
+
+    def test_semantic_page_query_flow_empty_db(self, r3_env):
+        """semantic 带查询：规则层解析出特征 chips（离线、不依赖库）+ 最近邻降级 info。"""
+        at = _new_at()
+        at.run()
+        at = _form_login(at, "r3_admin", "r3-admin-pw")
+        at.session_state["page"] = "semantic"
+        at.run()
+        query_box = [t for t in at.text_input if t.key == "ss_query"]
+        assert query_box, "semantic 查询输入框未渲染"
+        query_box[0].set_value("一个士兵整齐地走")
+        at.run()
+        assert not at.exception
+        texts = _page_text(at)
+        assert "解析出的特征向量" in texts, "规则层解析未渲染特征 chips 区"
+        assert "暂无义位数据" in texts, "空库最近邻应降级 info"
+        assert not at.error
+
+
+# ============================================
 # 清单 6：跨页状态与登出失效
 # ============================================
 
@@ -470,3 +587,55 @@ class TestDbUnavailableDegrade:
         at.run()
         assert not at.exception
         assert any("数据库不可用" in str(e.value) for e in at.error)
+
+    # ---- S3 清单 3：三新页断库降级（require_login 依赖数据库，登录本身不可用，
+    #      注入会话用户模拟「断库前已登录」的残留会话）----
+
+    def test_cluster_page_offline_graceful(self, db_down):
+        """断库：cluster 页 get_categories 降级为空 → info 引导灌库，不抛异常。"""
+        import src.cluster_analysis as ca
+
+        ca._load_page_data.clear()  # 清掉 DB-up 用例的页面缓存，真跑断库路径
+        at = _new_at()
+        at.session_state["user"] = {"id": 1, "username": "r3_admin",
+                                    "display_name": "管理员", "role": "admin"}
+        at.session_state["page"] = "cluster"
+        at.run()
+        assert not at.exception
+        assert any("暂无聚类运行数据" in str(i.value) for i in at.info)
+        assert not at.error
+
+    def test_template_page_offline_graceful(self, db_down):
+        """断库：template 页 category_study_ready 降级 False → info 引导灌库，不抛异常。"""
+        at = _new_at()
+        at.session_state["user"] = {"id": 1, "username": "r3_admin",
+                                    "display_name": "管理员", "role": "admin"}
+        at.session_state["page"] = "template"
+        at.run()
+        assert not at.exception
+        assert any("范畴深挖数据尚未灌入" in str(i.value) for i in at.info)
+        assert not at.error
+
+    def test_semantic_page_offline_graceful(self, db_down):
+        """断库：semantic 页空查询走引导 info；带查询规则层解析（离线可用）+
+        最近邻装载降级 info，不抛异常。"""
+        import src.semantic_search as ss
+
+        ss._load_page_index.clear()
+        at = _new_at()
+        at.session_state["user"] = {"id": 1, "username": "r3_admin",
+                                    "display_name": "管理员", "role": "admin"}
+        at.session_state["page"] = "semantic"
+        at.run()
+        assert not at.exception
+        assert any("输入一句话" in str(i.value) for i in at.info)
+
+        query_box = [t for t in at.text_input if t.key == "ss_query"]
+        assert query_box, "断库下 semantic 查询输入框应照常渲染"
+        query_box[0].set_value("一个士兵整齐地走")
+        at.run()
+        assert not at.exception
+        texts = _page_text(at)
+        assert "解析出的特征向量" in texts, "断库下规则层解析应照常工作"
+        assert any("暂无义位数据" in str(i.value) for i in at.info)
+        assert not at.error

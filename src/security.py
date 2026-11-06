@@ -71,13 +71,15 @@ class InputValidator:
 # CSV 公式注入防护：Excel/WPS 打开 CSV 时，以这些字符开头的单元格会被
 # 当作公式执行（CSV Injection / Formula Injection）。业界通行做法是给
 # 这类文本前置一个单引号 `'`，使其被解析为普通文本。
-CSV_FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t")
+# = 公式；+/- 数值强制正负；@ 宏调用；\t 回车（\r）为 OWASP 建议的同批
+# 危险前缀（制表符/回车开头的单元格会被部分表格软件解析为公式或被利用）。
+CSV_FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t", "\r")
 
 
-def sanitize_csv_value(value):
-    """对可能被 Excel 当作公式的 CSV 单元格文本前置单引号。
+def sanitize_csv_cell(value):
+    """对可能被 Excel 当作公式的 CSV 单元格文本前置单引号（唯一实现）。
 
-    仅处理字符串；若首字符为 = + - @ \\t 之一，则在最前面加 `'`。
+    仅处理字符串；若首字符为 = + - @ \\t \\r 之一，则在最前面加 `'`。
     其余类型（数字、None 等）原样返回，正常文本不受影响。
     """
     if isinstance(value, str) and value[:1] in CSV_FORMULA_TRIGGER_CHARS:
@@ -85,12 +87,17 @@ def sanitize_csv_value(value):
     return value
 
 
+# 历史别名：早期实现名，app.py / template_engine 等既有调用点沿用。
+# 与 sanitize_csv_cell 指向同一实现，杜绝两份逻辑漂移。
+sanitize_csv_value = sanitize_csv_cell
+
+
 def sanitize_csv_dataframe(df):
     """对 DataFrame 的所有字符串单元格应用 CSV 公式注入防护。
 
     返回新的 DataFrame（不修改原对象），供 to_csv 导出前调用。
     """
-    return df.map(sanitize_csv_value) if hasattr(df, "map") else df.applymap(sanitize_csv_value)
+    return df.map(sanitize_csv_cell) if hasattr(df, "map") else df.applymap(sanitize_csv_cell)
 
 
 class KeyManager:

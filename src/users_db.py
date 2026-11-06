@@ -337,3 +337,118 @@ def set_active(user_id: int, active: bool) -> bool:
     except Exception as e:
         logger.error(f"修改用户 {user_id} 状态意外错误: {e}")
         return False
+
+
+def get_user_role(user_id: int) -> Optional[str]:
+    """
+    实时读取用户当前角色（会话角色防陈旧，R1-P2b）。
+
+    与登录时的角色快照相对：权限判定应以本函数的**当次**返回值为准，
+    快照只用于侧边栏显示。管理员 set_role / set_active 后本函数立即
+    反映新值 —— 已建立的会话无需等重新登录。
+
+    Args:
+        user_id: 用户 id
+
+    Returns:
+        str | None: 角色（'admin'/'reviewer'/'annotator'/'viewer'）；
+        用户不存在、**已停用（active=0）** 或数据库不可用返回 None ——
+        调用方（app 会话刷新）把 None 统一按「会话失效，登出」处理：
+        停用/删除用户的旧会话在下次任意操作时即被登出（fail-closed）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT role FROM users WHERE id = %s AND active = 1",
+                (user_id,),
+            )
+            row = cursor.fetchone()
+    except pymysql.Error as e:
+        logger.error(f"读取用户 {user_id} 角色失败（MySQL）: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"读取用户 {user_id} 角色意外错误: {e}")
+        return None
+    if row is None:
+        return None
+    role = row.get("role")
+    return str(role) if role else None
+
+
+def is_using_default_password(user_id: int) -> bool:
+    """
+    该用户当前口令是否仍是内置默认口令（R1-P2c 弱口令判据）。
+
+    判据：取库中 password_hash，``verify_password(_DEFAULT_ADMIN_PASSWORD,
+    stored)``。哈希不出数据层 —— 明文/哈希比较都在本模块内完成，
+    调用方（app 登录横幅）只拿 bool。
+
+    Args:
+        user_id: 用户 id
+
+    Returns:
+        bool: 当前哈希仍匹配默认口令为 True（登录页须常驻强制改密横幅）；
+        已改密 / 用户不存在 / 数据库不可用为 False（不误报横幅）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT password_hash FROM users WHERE id = %s",
+                (user_id,),
+            )
+            row = cursor.fetchone()
+    except pymysql.Error as e:
+        logger.error(f"读取用户 {user_id} 口令判据失败（MySQL）: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"读取用户 {user_id} 口令判据意外错误: {e}")
+        return False
+    if row is None:
+        return False
+    return verify_password(_DEFAULT_ADMIN_PASSWORD, row.get("password_hash") or "")
+
+
+# 新口令最小长度（R1-P2c：内置 admin123 恰 8 位，新口令不得更弱）。
+# 规范 §6 未给下限，此处按任务要求取 ≥8。
+MIN_PASSWORD_LENGTH = 8
+
+
+def change_password(user_id: int, new_plain: str) -> bool:
+    """
+    修改用户口令：长度 ≥ 8 校验 + pbkdf2 重哈希（新随机盐）后写库。
+
+    供登录页「默认口令强制改密」横幅与后续个人设置使用。哈希规则与
+    create_user 相同（hash_password 每次生成新盐），旧口令立即失效。
+
+    Args:
+        user_id: 用户 id
+        new_plain: 新明文口令（只在内存中出现，不落库、不落日志）
+
+    Returns:
+        bool: 修改成功为 True；新口令长度不足 8 / 非字符串 /
+        用户不存在 / 数据库错误为 False。
+    """
+    if not isinstance(new_plain, str) or len(new_plain) < MIN_PASSWORD_LENGTH:
+        logger.error(
+            f"change_password 拒绝弱口令（用户 {user_id}，长度 "
+            f"{len(new_plain) if isinstance(new_plain, str) else '非字符串'} "
+            f"< {MIN_PASSWORD_LENGTH}）"
+        )
+        return False
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET password_hash = %s WHERE id = %s",
+                (hash_password(new_plain), user_id),
+            )
+            if cursor.rowcount <= 0:
+                logger.error(f"change_password 用户不存在: {user_id}")
+                return False
+            return True
+    except pymysql.Error as e:
+        # e 里只有 SQL 错误信息，不含口令
+        logger.error(f"修改用户 {user_id} 口令失败: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"修改用户 {user_id} 口令意外错误: {e}")
+        return False

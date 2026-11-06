@@ -38,7 +38,8 @@ compute_medoid_ranking(category="motion", language="en", run_id=None,
 ```
 
 - **medoid** = 簇内到其他成员平均 Gower 距离最小的成员（平均分母 n-1；
-  平局取 sense_id 最小者，确定可复现）。
+  平局取成员装载序（cs_cluster_members 按 lemma/sense_no 排序）最前者，
+  确定可复现 —— S1 review 更正：非「sense_id 最小者」）。
 - **tier 三分位**：成员按到 medoid 距离升序排名，最近 ceil(n/3) = prototype、
   最远 ceil(n/3) = periphery、中间 = typical；份额可配置
   （`prototype_share`/`periphery_share`，typical 自动取中间余量）。
@@ -139,7 +140,7 @@ render_cluster_analysis_page()   # 集成步骤在 app.py 页面分派中挂载�
 
 1. **k=5 是探索性切分**：谱系树支持任意高度切割，参考线仅标注 d1 试点的
    k=5（来自 cs_cluster_runs.params.k，非硬编码）；页面文案已注明。
-2. **平局语义**：medoid 平局取 sense_id 最小者；tier 平局按距离排名的稳定序
+2. **平局语义**：medoid 平局取成员装载序（lemma/sense_no）最前者；tier 平局按距离排名的稳定序
    ——与「人看特征画像判读」相比是可复现的程序化判定，论文 §5.2 可直接引用。
 3. **无特征编码的成员**：Gower 距离对无共同特征的向量对记 0（实际编码矩阵
    51 义位 15 列齐全，不会触发；CSL 剔除义位本来就不在簇成员里）。

@@ -588,6 +588,10 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
   直接可用，引擎代码零修改；⑤ 信度页与范畴下拉自动出现新词类。
 - **首次启动**：`users` 表为空时自动创建内置管理员 `admin`（默认口令 `admin123`），
   **首次登录后必须立即改密**（用户管理页）；密码为 pbkdf2_sha256 加盐哈希，不可逆。
+- **测试残留清理**：e2e/验收产生的测试账号及其协作数据可用
+  `python3 scripts/cleanup_test_users.py` 预览（默认 dry-run，按用户名前缀
+  `e2e_r5_` / `agentE_e2e_` 定位并打印清单），确认后加 `--apply` 真删
+  （assignments / submissions / adjudications 关联行随用户一并按外键依赖序删除）。
 
 ## 🧪 测试
 
