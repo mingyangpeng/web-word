@@ -75,6 +75,7 @@ import logging
 import statistics
 from typing import Any, Dict, List, Optional, Sequence
 
+from src import guards
 from src.category_pack import CategoryPackError, load_pack
 from src.category_study import get_cluster_runs, get_clusters_with_members
 from src.mysql_db import get_db_cursor
@@ -1014,6 +1015,11 @@ def render_template_page() -> None:
     # ---- 批量导出（当前簇全部义位）----
     st.markdown("##### 批量导出（当前簇全部义位）")
     if st.button("生成当前簇全部模板", key="template_collect"):
+        try:
+            guards.require_dict_admin()  # §15：内容性导出仅词典管理员
+        except PermissionError as e:
+            st.error(f"⛔ {e}")
+            st.stop()
         st.session_state["template_export"] = collect_cluster_templates(
             cat_code, language, cl.get("cluster_no"))
     payload = st.session_state.get("template_export")

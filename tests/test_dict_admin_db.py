@@ -961,20 +961,34 @@ class TestRevertLogPersistence:
         assert rollback_batch(bid) is False
         assert self._fetch("import_batches", bid)["status"] == "finished"
 
-    def test_explicit_log_still_works_with_persistence_present(self, dict_admin):
-        """向后兼容：已有持久化记录的批次，显式传参路径原样可用（覆盖伴生表读取）。"""
+    def test_explicit_log_arbitration_with_persistence_present(self, dict_admin):
+        """混用仲裁（R3-1）：伴生表已有持久化事件时，显式传参不再原样放行 ——
+        ① 显式空清单拒（与持久化日志矛盾）；② 显式非空但与持久化集不同拒
+        （防架空）；仅逐事件一致的显式传参放行。"""
         fid = define_field(1, "register", "语域", "word", "text", created_by=1)
         fid2 = define_field(1, "grade", "分级", "word", "text", created_by=1)
         bid = self._finished_batch()
-        assert persist_revert_log(bid, [
-            {"action": "insert", "table": "custom_fields", "row_id": fid},
-        ]) is True
-        # 显式传另一组事件：按显式清单执行（不读伴生表）
+        persisted = [{"action": "insert", "table": "custom_fields", "row_id": fid}]
+        assert persist_revert_log(bid, persisted) is True
+
+        # ① 显式空清单：与持久化日志矛盾 → 拒，状态不动、事件未执行
+        assert rollback_batch(bid, []) is False
+        assert self._fetch("import_batches", bid)["status"] == "finished"
+
+        # ② 显式非空但与持久化集不同（防架空：换一套事件绕开台账）→ 拒
         assert rollback_batch(bid, [
             {"action": "insert", "table": "custom_fields", "row_id": fid2},
-        ]) is True
+        ]) is False
+        assert self._fetch("import_batches", bid)["status"] == "finished"
         assert self._fetch("custom_fields", fid)["status"] == "active"
-        assert self._fetch("custom_fields", fid2)["status"] == "deprecated"
+        assert self._fetch("custom_fields", fid2)["status"] == "active"
+
+        # ③ 显式传参与持久化事件逐事件一致 → 放行（幂等重放同一份清单）
+        assert rollback_batch(bid, [
+            {"action": "insert", "table": "custom_fields", "row_id": fid},
+        ]) is True
+        assert self._fetch("custom_fields", fid)["status"] == "deprecated"
+        assert self._fetch("custom_fields", fid2)["status"] == "active"
         assert self._fetch("import_batches", bid)["status"] == "rolled_back"
 
     def test_batch_cascade_deletes_persisted_log(self, dict_admin):
@@ -1000,7 +1014,9 @@ _DEFINITIONS_DDL = """CREATE TABLE IF NOT EXISTS definitions (
     chinese_ndef TEXT NOT NULL,
     semantic_table JSON NOT NULL,
     phonetic VARCHAR(64) DEFAULT NULL,
-    cluster_id INT DEFAULT NULL
+    cluster_id INT DEFAULT NULL,
+    import_voided TINYINT(1) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
 
@@ -1095,12 +1111,16 @@ class TestCrossSessionRollback:
 
         # --- B 会话（新 run）：除 batch_id 外零内存态（无 session、无 revert_log）---
         assert rollback_batch(batch_id) is True
-        # 更新行恢复旧值；新增行按既有口径仅留痕（definitions 无 status 列）
+        # 更新行恢复旧值；新增行置 import_voided=1 作废（R3-9c；行仍留库不物理删）
         restored = self._row_of("run")
         assert restored["chinese_ndef"] == "旧释义"
         assert restored["phonetic"] == "/old/"
         assert restored["id"] == run_row_id
         assert self._row_of("dash") is not None
+        with db.get_db_cursor() as cursor:
+            cursor.execute("SELECT import_voided FROM definitions WHERE verb = %s",
+                           ("dash",))
+            assert int(cursor.fetchone()["import_voided"]) == 1
         with db.get_db_cursor() as cursor:
             cursor.execute("SELECT status FROM import_batches WHERE id = %s", (batch_id,))
             assert cursor.fetchone()["status"] == "rolled_back"

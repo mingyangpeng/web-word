@@ -568,3 +568,141 @@ class TestMultiRoles:
                 "SELECT COUNT(*) AS n FROM user_roles WHERE user_id = %s", (uid,)
             )
             assert int(cursor.fetchone()["n"] or 0) == 0
+
+
+class TestR1ActorGate:
+    """R1-1 直调面（批次 12）：六敏感写函数 actor=None 缺省不变；低权 actor
+    dict 抛 PermissionError（足色 = dict_admin/sys_admin；change_password
+    本人放行）；非 dict 垃圾 fail-closed 同抛。
+
+    权限异常发生在函数入口（try 之前），不落入既有 False/None 业务口径 ——
+    页面层据 PermissionError 与 False 区分「越权」与「业务失败」。actor dict
+    的足色判定是纯会话计算（effective_six_roles，不查库），故低权 actor 无需
+    真实账号；created_by 例外 —— 它走 user_roles FK，须指向真实用户。
+    """
+
+    _LOW_ACTOR = {"id": 900, "username": "r1_annotator", "role": "viewer",
+                  "roles": ["annotator", "viewer"]}
+    _JUNK_ACTORS = ("admin", 42, ["dict_admin"], True)
+
+    def _make_admin_actor(self):
+        """造真实管理员账号并返回其会话形态 actor dict（created_by FK 需要）。"""
+        uid = create_user("r1_chief", "pw123456", "词典管理员", "viewer")
+        assert grant_role(uid, "dict_admin") is True
+        return {"id": uid, "username": "r1_chief", "role": "viewer",
+                "roles": ["dict_admin", "sys_admin"]}
+
+    def test_grant_revoke_actor_gate(self, users_db):
+        """R1 复现①：低权 grant_role/revoke_role 授/撤 dict_admin 直接拒绝。"""
+        ensure_user_tables()
+        victim = create_user("r1_victim", "pw123456", "受害者", "viewer")
+        with pytest.raises(PermissionError, match="授予"):
+            grant_role(victim, "dict_admin", granted_by=900, actor=self._LOW_ACTOR)
+        with pytest.raises(PermissionError, match="撤销"):
+            revoke_role(victim, "viewer", actor=self._LOW_ACTOR)
+        # 未生效：库内无新增/删除痕迹
+        assert list_roles(victim) == ["viewer"]
+        # 管理面 actor 与系统作业（None）照常
+        admin = self._make_admin_actor()
+        assert grant_role(victim, "editor", actor=admin) is True
+        assert revoke_role(victim, "editor", actor=admin) is True
+        assert grant_role(victim, "reviewer") is True  # actor=None 系统作业
+        # 垃圾 actor fail-closed
+        for junk in self._JUNK_ACTORS:
+            with pytest.raises(PermissionError):
+                grant_role(victim, "editor", actor=junk)
+
+    def test_set_role_actor_gate(self, users_db):
+        """低权改基线角色拒绝；管理面/系统作业照常。"""
+        ensure_user_tables()
+        uid = create_user("r1_setrole", "pw123456", "改基线", "viewer")
+        with pytest.raises(PermissionError, match="基线角色"):
+            set_role(uid, "annotator", actor=self._LOW_ACTOR)
+        assert list_roles(uid) == ["viewer"]
+        admin = self._make_admin_actor()
+        assert set_role(uid, "annotator", actor=admin) is True
+        assert set_role(uid, "viewer") is True  # actor=None
+        for junk in self._JUNK_ACTORS:
+            with pytest.raises(PermissionError):
+                set_role(uid, "viewer", actor=junk)
+
+    def test_change_password_actor_gate(self, users_db):
+        """R1 复现②：低权改他人口令＝账号接管 → 拒绝；本人自助/管理员重置放行。"""
+        ensure_user_tables()
+        uid = create_user("r1_pwuser", "pw123456", "改密目标", "viewer")
+        attacker = create_user("r1_attacker", "pw123456", "低权人", "viewer")
+        with pytest.raises(PermissionError, match="口令"):
+            change_password(uid, "hijacked-pw-1", actor=self._LOW_ACTOR)
+        with pytest.raises(PermissionError, match="口令"):
+            change_password(uid, "hijacked-pw-1",
+                            actor={"id": attacker, "username": "r1_attacker",
+                                   "role": "viewer"})
+        # 本人自助改密放行（旧口令立即失效）
+        assert change_password(uid, "self-new-pw-1", actor={
+            "id": uid, "username": "r1_pwuser", "role": "viewer",
+        }) is True
+        assert verify_login("r1_pwuser", "self-new-pw-1") is not None
+        # 管理员重置放行（重置后原口令失效）
+        admin = self._make_admin_actor()
+        assert change_password(uid, "admin-reset-pw-1", actor=admin) is True
+        assert verify_login("r1_pwuser", "self-new-pw-1") is None
+        assert verify_login("r1_pwuser", "admin-reset-pw-1") is not None
+        # 系统作业（None）照常；垃圾 actor 拒绝
+        assert change_password(uid, "system-pw-123") is True
+        for junk in self._JUNK_ACTORS:
+            with pytest.raises(PermissionError):
+                change_password(uid, "junk-pw-1234", actor=junk)
+
+    def test_create_user_actor_gate(self, users_db):
+        """低权建号拒绝；管理面/系统作业照常（created_by 与 actor 协同）。"""
+        ensure_user_tables()
+        with pytest.raises(PermissionError, match="创建用户"):
+            create_user("r1_by_low", "pw123456", "低权建号", "viewer",
+                        created_by=900, actor=self._LOW_ACTOR)
+        admin = self._make_admin_actor()
+        ok = create_user("r1_by_admin", "pw123456", "管理建号", "viewer",
+                         created_by=admin["id"], actor=admin)
+        assert isinstance(ok, int) and ok > 0
+        # R3-5 留痕与 R1-1 闸门协同：granted_by/created_by 同取建号人
+        from src.mysql_db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT created_by FROM users WHERE id = %s", (ok,))
+            assert int(cursor.fetchone()["created_by"]) == admin["id"]
+        ok2 = create_user("r1_by_system", "pw123456", "系统建号", "viewer")
+        assert isinstance(ok2, int) and ok2 > 0
+        for junk in self._JUNK_ACTORS:
+            with pytest.raises(PermissionError):
+                create_user("r1_by_junk", "pw123456", "垃圾", "viewer",
+                            actor=junk)
+
+    def test_set_active_actor_gate(self, users_db):
+        """低权停用/启用拒绝；管理面/系统作业照常（R1-7 页面调用点配套）。"""
+        ensure_user_tables()
+        uid = create_user("r1_toggle", "pw123456", "启停目标", "viewer")
+        with pytest.raises(PermissionError, match="停用/启用"):
+            set_active(uid, False, actor=self._LOW_ACTOR)
+        # 未触库：目标账号仍启用（verify_login 仍可登录）
+        assert verify_login("r1_toggle", "pw123456") is not None
+        admin = self._make_admin_actor()
+        assert set_active(uid, False, actor=admin) is True
+        assert verify_login("r1_toggle", "pw123456") is None
+        assert set_active(uid, True) is True  # actor=None 系统作业
+        for junk in self._JUNK_ACTORS:
+            with pytest.raises(PermissionError):
+                set_active(uid, False, actor=junk)
+
+    def test_actor_gate_fires_before_validation(self, users_db):
+        """权限闸门先于业务校验：低权 actor 传非法入参也抛 PermissionError
+        （不落入 False 口径，越权与业务失败可区分）。"""
+        ensure_user_tables()
+        victim = create_user("r1_order", "pw123456", "顺序", "viewer")
+        with pytest.raises(PermissionError):
+            grant_role(victim, "not-a-role", actor=self._LOW_ACTOR)
+        with pytest.raises(PermissionError):
+            set_role(victim, "not-a-role", actor=self._LOW_ACTOR)
+        with pytest.raises(PermissionError):
+            change_password(victim, "short", actor=self._LOW_ACTOR)
+        with pytest.raises(PermissionError):
+            create_user("x", "pw123456", "x", "superadmin",
+                        actor=self._LOW_ACTOR)

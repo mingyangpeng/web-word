@@ -40,19 +40,25 @@ insert_definition 的 ``cluster_id = COALESCE(VALUES(cluster_id), cluster_id)``�
 revert_log 事件格式（**逐字对齐** dict_admin_db.REVERT_ACTIONS / rollback_batch
 的预校验，勿改字段名）：
   * 覆盖既有行：{"action": "update", "table": "definitions", "row_id": <id>,
-    "old_values": {仅被本次导入改写的列: 覆盖前旧值, ...}} —— 回滚按 old_values
-    恢复旧值；行内容与现值完全相同时**不发事件**（无变更无可回滚，且
-    rollback_batch 拒绝 old_values 为空的 update 事件）；
+    "old_values": {仅被本次导入改写的列: 覆盖前旧值, ..., "updated_at": 导入前
+    旧时间戳('YYYY-MM-DD HH:MM:SS' 串)}} —— 回滚按 old_values 恢复旧值；行内容
+    与现值完全相同时**不发事件**（无变更无可回滚，且 rollback_batch 拒绝
+    old_values 为空的 update 事件）。**updated_at 旧值随事件一并收录（R3-9a）**：
+    definitions.updated_at 带 ON UPDATE CURRENT_TIMESTAMP，导入覆盖会自动顶掉
+    旧时间戳 —— 不收录则回滚后行的时间戳停在回滚那一刻（审计断链）；旧值以
+    MySQL 可直接消化的 'YYYY-MM-DD HH:MM:SS' 串落事件（JSON 可序列化，伴生表
+    persist_revert_log 才收得住；rollback_batch 显式 SET 该键时优先于自动更新）。
+    updated_at 旧值为 None 的行（异常存量）不收该键，回滚如实退化为仅恢复内容列。
   * 新增词目行：{"action": "insert", "table": "definitions", "row_id": <新id>}。
 
-insert 回滚的**如实限制**（先读 dict_admin_db.rollback_batch 实现后定的口径）：
-  definitions 表**没有 status 列**（实测 SHOW COLUMNS），rollback_batch 的
-  软作废（UPDATE ... SET status='deprecated'）对它不生效 —— 该实现遇到无
-  status 列的表**只留痕不动行、绝不物理 DELETE**。因此新词目行回滚后的状态是
-  「批次标记 rolled_back、行仍在库中可审计追溯」，而非行消失；物理清理留给
-  后续版本的专门运维流程。本模块因此**沿用标准 action='insert' 事件**（不发明
-  'insert_hard' 之类私有动作 —— REVERT_ACTIONS 白名单外的 action 会被
-  rollback_batch 整体拒绝，破坏整套回滚）。
+insert 回滚口径（R3-9c 修订）：definitions 补 **import_voided TINYINT(1) NOT NULL
+DEFAULT 0** 作废标记列（ensure_import_voided_column 幂等迁移，run_import 实写前
+先调），INSERT 落行显式 import_voided=0；回滚 insert 事件时 rollback_batch 把
+该行置 import_voided=1（行仍留库可审计追溯，不物理 DELETE）—— 词条装配头块
+（entry_assembly._fetch_definition_row）与出版快照（export_center 的 definitions
+导出）读侧按 import_voided=0 过滤，作废行就此退出展示与交付。本模块仍沿用标准
+action='insert' 事件（不发明 'insert_hard' 之类私有动作 —— REVERT_ACTIONS 白名单
+外的 action 会被 rollback_batch 整体拒绝，破坏整套回滚）。
 
 打标不删行纪律（§6 D 域「版本化、不删行」）：
   * 本引擎**不物理 DELETE 任何行**（只有 update/insert 两种写、零删）；
@@ -82,6 +88,10 @@ revert_log)」须在同一会话内完成；会话丢失则 revert_log 不可恢
   plan_import(rows, mapping) -> dict
   run_import(rows, mapping, operator, dry_run=True) -> dict
   TARGET_FIELDS（目标字段白名单，页面映射下拉据此渲染）
+  批次 R3 修复追加（非契约辅助，仿 persist_revert_log 先例）：
+  ensure_import_voided_column()（definitions.import_voided 幂等补列，
+  run_import 实写前自调）；has_import_voided_column()（读侧探测，供
+  export_center / entry_assembly 决定是否按 import_voided=0 过滤）。
 
 降级：数据库不可用时 run_import 返回 ok=False 的结果 dict（连接错误在
 get_db_cursor 记日志后重抛，本引擎兜住转结果，不让异常穿透到页面）；干跑与
@@ -102,6 +112,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pymysql
 
+from src import mysql_db
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -135,6 +146,102 @@ INSERT_SEMANTIC_PLACEHOLDER = "{}"
 
 # 行内规整后实际参与读写的数据字段（排除键；由映射决定，顺序随白名单）。
 _DATA_FIELDS = tuple(f for f in TARGET_FIELDS if f != KEY_FIELD)
+
+# definitions.import_voided（R3-9c）：导入回滚的作废标记。DDL 风格仿
+# users_db.MUST_CHANGE_PASSWORD_COLUMN_SQL 的「存量库 ALTER 幂等迁移」口径 ——
+# information_schema 探测在位才跳过，不在位才 ALTER（可重复调用零副作用）。
+IMPORT_VOIDED_COLUMN_SQL = (
+    "ALTER TABLE definitions ADD COLUMN import_voided TINYINT(1) NOT NULL DEFAULT 0"
+)
+
+# 读侧探测结果的进程内缓存：{库标识: 是否在位}。**按键 = host:port:db:user**
+# —— 测试套件会按库切换连接（monkeypatch MYSQL_DATABASE），按库隔离避免
+# A 库的探测结果污染 B 库（一次探测全进程复用，避免装配页/导出中心每次
+# 渲染都打一发 information_schema）。
+_voided_column_cache: Dict[Tuple[str, str, str, str], bool] = {}
+
+
+def _voided_cache_key() -> Tuple[str, str, str, str]:
+    """当前连接目标的缓存键（读 mysql_db 模块全局 —— 与 get_db_cursor 同源）。"""
+    return (str(mysql_db.MYSQL_HOST), str(mysql_db.MYSQL_PORT),
+            str(mysql_db.MYSQL_DATABASE), str(mysql_db.MYSQL_USER))
+
+
+def _column_exists(cursor, table: str, column: str) -> bool:
+    """表上是否已有该列（information_schema 探测，仿 users_db._column_exists）。"""
+    cursor.execute(
+        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
+             AND COLUMN_NAME = %s""",
+        (table, column),
+    )
+    return int(cursor.fetchone()["n"] or 0) > 0
+
+
+def ensure_import_voided_column() -> bool:
+    """幂等补 definitions.import_voided 列（R3-9c；可重复调用，零副作用）。
+
+    run_import 实写（dry_run=False）前自调：存量库无此列则 ALTER 补齐，
+    新列带 DEFAULT 0 —— 既有行一律视作「未被导入作废」。被数据库拒绝
+    （权限不足等）只记 error 日志并返回 False，不抛异常（后续 INSERT 带
+    import_voided=0 会按行报写入失败，属 fail-closed 降级）。
+
+    Returns:
+        bool: 列在位（含本次补齐）True；数据库不可用/无权限 False。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            if _column_exists(cursor, TARGET_TABLE, "import_voided"):
+                _voided_column_cache[_voided_cache_key()] = True
+                return True
+            cursor.execute(IMPORT_VOIDED_COLUMN_SQL)
+            logger.info("definitions.import_voided 列已补齐（R3-9c 存量表迁移）")
+            _voided_column_cache[_voided_cache_key()] = True
+            return True
+    except pymysql.Error as e:
+        logger.error(f"definitions.import_voided 列迁移失败（MySQL）: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"definitions.import_voided 列迁移意外错误: {e}")
+        return False
+
+
+def has_import_voided_column() -> bool:
+    """definitions.import_voided 列是否在位（读侧探测，按库缓存）。
+
+    供 export_center 的 definitions 导出与 entry_assembly 的头块查询决定
+    是否按 ``import_voided = 0`` 过滤 —— 列缺失（存量库未跑过导入迁移）时
+    如实不过滤，读路径对老库零破坏。缓存按连接目标（host:port:db:user）
+    隔离，测试/多库部署下互不串扰。探测失败按缺失处理（False）。
+    """
+    key = _voided_cache_key()
+    if key not in _voided_column_cache:
+        try:
+            with get_db_cursor() as cursor:
+                _voided_column_cache[key] = _column_exists(
+                    cursor, TARGET_TABLE, "import_voided")
+        except Exception as e:  # noqa: BLE001 —— 读路径降级不崩
+            logger.warning(f"探测 definitions.import_voided 失败（按缺失处理）: {e}")
+            _voided_column_cache[key] = False
+    return _voided_column_cache[key]
+
+
+def _ts_text(raw: Any) -> Optional[str]:
+    """TIMESTAMP 列读回值 → MySQL 可直接消化的 'YYYY-MM-DD HH:MM:SS' 串。
+
+    PyMySQL 对 TIMESTAMP 给 datetime（str() 即此形态）；已是串则原样返回；
+    None/其余类型返回 None（调用方不收该键）。落 revert_log 的值必须 JSON
+    可序列化（persist_revert_log 伴生表用 JSON 列存事件），故不落 datetime
+    原对象。
+    """
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    if hasattr(raw, "strftime"):
+        try:
+            return raw.strftime("%Y-%m-%d %H:%M:%S")
+        except (ValueError, AttributeError):
+            return None
+    return None
 
 
 # ============================================
@@ -346,14 +453,19 @@ def _mapped_data_fields(plan: Dict[str, Any]) -> List[str]:
 
 
 def _fetch_existing(cursor, verb: str, fields: List[str]) -> Optional[Dict[str, Any]]:
-    """按 verb 精确读既有行（id + 指定字段现值；**只读**，update 前必读旧值）。
+    """按 verb 精确读既有行（id + 指定字段现值 + updated_at；**只读**，update 前必读旧值）。
+
+    updated_at 一并读出（R3-9a）：它不参与 diff，是 update 型 revert_log
+    old_values 的收录源 —— 导入覆盖自动顶掉行时间戳，回滚要能还原导入前
+    时点（口径见模块 docstring「revert_log 事件格式」）。
 
     Returns:
-        dict | None：{"id": int, <字段>: 现值, ...}；不存在返回 None。
-        列名出自 TARGET_FIELDS 白名单成员（常量拼接，非用户输入），值走占位符。
+        dict | None：{"id": int, "updated_at": 现值, <字段>: 现值, ...}；
+        不存在返回 None。列名出自 TARGET_FIELDS 白名单成员 + updated_at
+        （常量拼接，非用户输入），值走占位符。
     """
     cols = ", ".join(fields)  # fields ⊆ _DATA_FIELDS ⊆ TARGET_FIELDS 白名单
-    cursor.execute(f"SELECT id, {cols} FROM definitions WHERE verb = %s", (verb,))
+    cursor.execute(f"SELECT id, updated_at, {cols} FROM definitions WHERE verb = %s", (verb,))
     row = cursor.fetchone()
     return dict(row) if row else None
 
@@ -387,11 +499,13 @@ def _insert_row(cursor, values: Dict[str, str]) -> int:
 
     列与值口径：verb/chinese_ndef 必写；phonetic 仅非空时写（否则走列默认
     NULL）；semantic_table 写空对象占位（NOT NULL 结构占位，见模块 docstring）；
-    cluster_id 显式 NULL（新词目尚无簇归属）。全部值走占位符，列名为常量。
+    cluster_id 显式 NULL（新词目尚无簇归属）；**import_voided 显式 0**
+    （R3-9c：新行未被作废 —— 与 DDL DEFAULT 0 同值，显式写是对「本引擎所插
+    行的可回滚身份」的自述，不依赖调用方先跑迁移）。全部值走占位符，列名为常量。
     """
-    cols = ["verb", PAYLOAD_FIELD, "semantic_table", "cluster_id"]
+    cols = ["verb", PAYLOAD_FIELD, "semantic_table", "cluster_id", "import_voided"]
     params: List[Any] = [values[KEY_FIELD], values[PAYLOAD_FIELD],
-                         INSERT_SEMANTIC_PLACEHOLDER, None]
+                         INSERT_SEMANTIC_PLACEHOLDER, None, 0]
     if values.get("phonetic"):
         cols.append("phonetic")
         params.append(values["phonetic"])
@@ -421,18 +535,26 @@ def _apply_update(cursor, existing: Dict[str, Any], values: Dict[str, str],
                   fields: List[str], revert_log: List[Dict[str, Any]]) -> None:
     """既有行的更新路径：diff → UPDATE 仅变更字段 → 收 update 型 revert_log。
 
-    无变更时不写库、不发事件（幂等重放口径，回滚无可恢复之物）。
+    old_values 收录被改写字段的旧值，并附 **updated_at 导入前旧值**（R3-9a；
+    'YYYY-MM-DD HH:MM:SS' 串，rollback_batch 显式 SET 时优先于
+    ON UPDATE CURRENT_TIMESTAMP —— 回滚后行时间戳回到导入前时点）。旧值为
+    None 的异常存量行不收该键（回滚如实退化为仅恢复内容列）。无变更时不写库、
+    不发事件（幂等重放口径，回滚无可恢复之物）。
     """
     changes = _diff_changes(existing, values, fields)
     if not changes:
         return
     row_id = int(existing["id"])
     _update_row(cursor, row_id, changes)
+    old_values: Dict[str, Any] = {f: changes[f]["old"] for f in changes}
+    updated_at = _ts_text(existing.get("updated_at"))
+    if updated_at is not None:
+        old_values["updated_at"] = updated_at
     revert_log.append({
         "action": "update",
         "table": TARGET_TABLE,
         "row_id": row_id,
-        "old_values": {f: changes[f]["old"] for f in changes},
+        "old_values": old_values,
     })
 
 
@@ -443,11 +565,14 @@ def run_import(rows: Any, mapping: Any, operator: Any, dry_run: bool = True) -> 
     operator 必填（操作人 users.id，审计留痕，非法整批拒绝）。
 
     执行流程（dry_run=False）：
+      0. ensure_import_voided_column() 幂等补 definitions.import_voided 列
+         （R3-9c：回滚作废标记的落地前提；失败只记日志，后续 INSERT 按
+         行报错降级）；
       1. plan_import 产计划（映射非法 → 整批拒绝；行级口径见 plan_import）；
-      2. 逐合法行：SELECT 既有行（**update 前必读旧值**）→ 存在则 UPDATE 仅
-         变更的映射字段（cluster_id 等白名单外字段永不触碰）；不存在则 INSERT
-         新词目行；
-      3. 逐行收集 revert_log（update→old_values；insert→新 id）；
+      2. 逐合法行：SELECT 既有行（**update 前必读旧值**，含 updated_at）→
+         存在则 UPDATE 仅变更的映射字段（cluster_id 等白名单外字段永不触碰）；
+         不存在则 INSERT 新词目行（import_voided=0）；
+      3. 逐行收集 revert_log（update→old_values 含 updated_at 旧值；insert→新 id）；
       4. 行级写失败记 rejected 继续、不中断整批；数据库级异常转 ok=False 结果
          （已收集的 revert_log 原样返回 —— 部分写入也必须可回滚）。
 
@@ -541,6 +666,8 @@ def run_import(rows: Any, mapping: Any, operator: Any, dry_run: bool = True) -> 
             return result
 
         # --- 实写路径（dry_run=False）---
+        # 先补 R3-9c 作废标记列（幂等；失败只记日志，行级写入按 fail-closed 降级）
+        ensure_import_voided_column()
         written = 0
         with get_db_cursor() as cursor:
             for item in plan["valid_rows"]:

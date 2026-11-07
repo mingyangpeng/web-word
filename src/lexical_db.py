@@ -43,6 +43,9 @@
   不是词典正文：义项权威数据（cs_senses / definition_versions 等）遵循
   D 域「版本化、不删行」纪律，例证是可反复增删的配置项，删错重录即可，
   留僵尸行反而污染装配取数（docstring 明示，页面按钮文案同步注明）。
+  删除前自动摘除该例证锚上的全部媒体绑定（R3-3，media_db
+  .unbind_for_anchor('example', ...) —— media_bindings 无外键指向本表，
+  孤儿绑定由此清理，不再依赖页面手工摘除）。
   sense_translations 无删除接口：三态定稿一义位一行，改口径即重新
   set_translation 覆盖定稿（定稿人/时间刷新），历史留痕走批次 8 审校
   台账（不在本表）。
@@ -403,9 +406,15 @@ def remove_example(example_id: int) -> bool:
 
     软删口径：例证可重建、不是词典正文（模块 docstring「软删口径」）——
     D 域不删行纪律管的是义项权威数据与版本脊柱，例证是可反复增删的
-    配置项；物理删除避免僵尸行污染装配取数。关联的媒体绑定不在此级联
-    （media_bindings 无外键指向本表）：删除例证前先由页面层提示用媒体库
-    摘除绑定，本函数仅删例证行。
+    配置项；物理删除避免僵尸行污染装配取数。
+
+    媒体绑定自动摘除（R3-3）：media_bindings 无外键指向本表（多态引用），
+    删除例证前先调 ``media_db.unbind_for_anchor('example', example_id)``
+    摘除该例证锚上的**全部**绑定（顺序执行，与删除同一请求链完成）——
+    孤儿绑定不再依赖页面手工摘除（页面此前并没有这个按钮，旧文案指向
+    一个不存在的能力）。摘除数只记日志：绑定摘除失败（库不可用等）返回
+    0 且**不阻断例证删除**（锚行即将消失，摘不掉的绑定已无装配入口可达，
+    仅留审计日志）。
 
     Args:
         example_id: 例证 id（>0）。
@@ -418,6 +427,9 @@ def remove_example(example_id: int) -> bool:
     if eid is None or eid <= 0:
         logger.error(f"remove_example 拒绝非法 example_id: {example_id!r}")
         return False
+    # R3-3：先摘例证锚上的全部媒体绑定（防孤儿绑定；顺序执行，unbind 自带
+    # 容错返回 0 不阻断删除），再删例证行
+    media_db.unbind_for_anchor(media_db.ANCHOR_EXAMPLE, eid)
     try:
         with get_db_cursor() as cursor:
             cursor.execute("DELETE FROM sense_examples WHERE id = %s", (eid,))

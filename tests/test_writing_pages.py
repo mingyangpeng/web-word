@@ -35,8 +35,10 @@ from src.writing_pages import (  # noqa: E402
     _can_write,
     _esc,
     _format_dt,
+    _history_realname,
     _list_candidate_senses,
     _parse_sense_ref,
+    _pseudonym_factory,
     _resolve_edit_target,
     _resolve_oald_sense_id,
     _reviewer_options,
@@ -154,6 +156,61 @@ def test_can_review_roles():
 def test_editor_alone_cannot_review():
     """editor 单角色不可自审（撰写/审校分权，回避制同源口径）。"""
     assert _can_review({"id": 6, "role": "viewer", "roles": ["editor"]}) is False
+
+
+# ============================================
+# R1-10 版本历史脱敏：_history_realname / _pseudonym_factory
+# ============================================
+
+def test_history_realname_roles():
+    """editor/reviewer/dict_admin（含 legacy admin 映射）实名；R1-10 口径。"""
+    assert _history_realname({"id": 1, "role": "admin"}) is True
+    assert _history_realname({"id": 2, "role": "reviewer"}) is True
+    assert _history_realname({"id": 3, "role": "viewer",
+                              "roles": ["editor", "viewer"]}) is True
+    assert _history_realname({"id": 4, "role": "viewer",
+                              "roles": ["reviewer"]}) is True
+    assert _history_realname({"id": 5, "role": "annotator",
+                              "roles": ["dict_admin"]}) is True
+
+
+def test_history_pseudonym_roles():
+    """viewer/annotator 视角（编纂圈外）折算；sys_admin 单角色同折算（取窄）。"""
+    assert _history_realname({"id": 6, "role": "viewer"}) is False
+    assert _history_realname({"id": 7, "role": "viewer",
+                              "roles": ["annotator", "viewer"]}) is False
+    assert _history_realname({"id": 8, "role": "viewer",
+                              "roles": ["viewer"]}) is False
+    assert _history_realname({"id": 9, "roles": ["sys_admin"]}) is False
+
+
+def test_history_realname_fail_closed():
+    """未登录/非 dict → 折算（fail-closed）。"""
+    for bad in (None, {}, "reviewer", 42):
+        assert _history_realname(bad) is False, repr(bad)
+
+
+def test_pseudonym_factory_stable_by_appearance_order():
+    """「编纂员 A/B」按首次出现序稳定编号：同 id 恒同代号，跨调用可复现。"""
+    who, aliases = _pseudonym_factory()
+    assert who(11) == "编纂员 A"
+    assert who(22) == "编纂员 B"
+    assert who(11) == "编纂员 A"          # 同 id 稳定
+    assert who(None) == "（系统登记）"
+    assert who(None) == "（系统登记）"    # NULL 不占编号
+    assert aliases == {11: "编纂员 A", 22: "编纂员 B"}
+    who2, _ = _pseudonym_factory()        # 新调用从 A 重新起编（按出现序）
+    assert who2(33) == "编纂员 A"
+
+
+def test_pseudonym_factory_beyond_z():
+    """超过 26 人不炸不重号：第 27 人起 A2/B2/… 续编。"""
+    who, _ = _pseudonym_factory()
+    letters = [who(i + 1) for i in range(27)]
+    assert letters[0] == "编纂员 A"
+    assert letters[25] == "编纂员 Z"
+    assert letters[26] == "编纂员 A2"
+    assert len(set(letters)) == 27
 
 
 # ============================================

@@ -46,6 +46,7 @@ except ImportError:  # pragma: no cover - 环境差异分支
 from src.annotation_flow import parse_payload  # payload JSON 列解析的唯一实现（R4 消重）
 from src.mysql_db import get_db_cursor
 from src.security import sanitize_csv_cell  # CSV 公式注入防护（R1-P2a）的唯一实现
+from src.users_db import effective_six_roles  # R1-2：信度页角色门六角色口径
 
 logger = logging.getLogger(__name__)
 
@@ -784,6 +785,11 @@ def render_reliability_page() -> None:
     """📐 信度报告页（reviewer/admin）：overall 大数字 + 每特征条形 + 低信度高亮 + 分歧表 + CSV 导出。
 
     权限在函数入口判定（规范 §6-4）；未登录/无角色一律拒绝。
+    R1-2 收口（施工规范 §14 批次 12）：判定从 legacy role 列改为**有效六角色集**
+    （users_db.effective_six_roles，允许集与 app._PAGE_ACCESS_SIX["reliability"]
+    同口径：dict_admin / sys_admin / reviewer）—— 授予式 reviewer（legacy 列
+    viewer 但 user_roles 已授予）不再被拦在页外；legacy admin 经映射两位一体
+    自然通过；viewer/annotator/editor 单角色照旧拒绝。
     """
     import streamlit as st
 
@@ -792,7 +798,7 @@ def render_reliability_page() -> None:
     # 只认 dict（规范 §6-5），脏值（如误写入的非 dict）按未登录拦截，不抛异常。
     user = st.session_state.get("user")
     user = user if isinstance(user, dict) else {}
-    if user.get("role") not in ("admin", "reviewer"):
+    if not (effective_six_roles(user or None) & {"dict_admin", "sys_admin", "reviewer"}):
         st.warning("信度报告仅对 reviewer / admin 开放。")
         return
 

@@ -37,6 +37,13 @@
     一人一项目一职（UNIQUE），add_member 重入= 改授职能（upsert）；
   * SQL 一律参数化；FK 对 users ON DELETE CASCADE / SET NULL，账号物理删除
     （测试清理）不残留悬挂行、不阻断删除路径。
+
+已知口径（R3-7 · P3 · 批次 12 复审，本轮不修码）：remove_member 后 assignments
+残留＋在途检查全局口径 —— closed 任务成员可移除成功但 assignments 行残留（无
+归档标记；表本身无 project_id，任务与项目关系不可考，成员再入册后旧任务跨任期
+累积）；在途检查按 assignee_id 全局 COUNT，open 任务连带挡住该用户在另一个项目
+的移除（over-block）。占位实现已声明（MVP）故降 P3；assignments 无 project_id
+是结构根因（批次 12：加 project_id 列或归档标记）。
 """
 
 import json

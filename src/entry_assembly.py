@@ -84,7 +84,7 @@ from html import escape as _html_escape
 
 import streamlit as st
 
-from src import lexical_db, media_db, mysql_db
+from src import import_engine, lexical_db, media_db, mysql_db
 from src.dict_admin_db import get_values_for_anchor
 from src.design_system import HEADER_H4
 from src.mysql_db import get_db_cursor
@@ -296,16 +296,20 @@ def _fetch_definition_row(verb: str) -> Optional[Dict[str, Any]]:
     """① 头块词目行（**只读**私有查询）：definitions 主字段（含 phonetic——
     mysql_db.get_definition_by_verb 的出参不含音标，装配需要，故自查）。
 
+    排除 import_voided=1（R3-9c）：导入回滚已作废的词目行不进装配（行仍
+    留库审计）；列缺失（存量库未跑过导入迁移）时如实不过滤（探测见
+    import_engine.has_import_voided_column）。
+
     无该词目 / 数据库不可用返回 None。"""
     try:
+        sql = ("""SELECT id, verb, phonetic, chinese_ndef, en_ndef,
+                         definition_source, source_rank, cluster_id
+                  FROM definitions WHERE verb = %s""")
+        if import_engine.has_import_voided_column():
+            sql += " AND import_voided = 0"
+        sql += " ORDER BY created_at DESC LIMIT 1"
         with get_db_cursor() as cursor:
-            cursor.execute(
-                """SELECT id, verb, phonetic, chinese_ndef, en_ndef,
-                          definition_source, source_rank, cluster_id
-                   FROM definitions WHERE verb = %s
-                   ORDER BY created_at DESC LIMIT 1""",
-                (str(verb),),
-            )
+            cursor.execute(sql, (str(verb),))
             row = cursor.fetchone()
             return dict(row) if row else None
     except Exception as e:  # noqa: BLE001 — 降级不崩（头块给缺数灰段）

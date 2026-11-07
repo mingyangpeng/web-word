@@ -16,13 +16,13 @@ verb UNIQUE / chinese_ndef TEXT NOT NULL / semantic_table JSON NOT NULL /
 phonetic / cluster_id / example_sentence），真实库的 word_clusters 外键等
 结构差异不影响被测行为 —— 引擎对 definitions 的写域仅限白名单字段。
 
-覆盖面（阶段1施工规范 §8 对 Agent Q 的要求）：
+覆盖面（阶段1施工规范 §8 对 Agent Q 的要求 + 批次 R3 修复回归）：
   映射白名单拒绝（oald_senses 等）/ 缺键列/主载荷列 / 一字段多列歧义 /
   非法行原因（空键/超长/重复 verb）/ 干跑零写库 / UPSERT 更新 → revert_log
-  含 old_values → rollback_batch 恢复 → 行值还原（cluster_id 保留）/
-  insert → revert_log → 回滚的**如实限制**（definitions 无 status 列，
-  软作废跳过仅留痕，行不消失 —— rollback_batch 既有口径）/ 无变更不发事件 /
-  空音标跳过写入。
+  含 old_values（**附 updated_at 导入前旧值，R3-9a**）→ rollback_batch 恢复
+  → 行值还原（cluster_id 保留 + updated_at 回导入前时点）/
+  insert → revert_log → 回滚置 **import_voided=1**（R3-9c 作废标记；行仍留库
+  可审计，不物理 DELETE）/ 无变更不发事件 / 空音标跳过写入。
 """
 
 import os
@@ -368,7 +368,8 @@ class TestImportEngineIntegration:
     def _row_of(self, verb):
         with db.get_db_cursor() as cursor:
             cursor.execute(
-                "SELECT id, verb, chinese_ndef, phonetic, cluster_id, example_sentence "
+                "SELECT id, verb, chinese_ndef, phonetic, cluster_id, "
+                "example_sentence, updated_at "
                 "FROM definitions WHERE verb = %s",
                 (verb,),
             )
@@ -427,9 +428,18 @@ class TestImportEngineIntegration:
     # --- 实写：update → revert_log → rollback 恢复 ---
 
     def test_update_revert_log_and_rollback_restores_values(self, engine_db):
-        """UPSERT 更新：revert_log 含 old_values → rollback_batch 恢复 → 行值还原。"""
+        """UPSERT 更新：revert_log 含 old_values（含 updated_at 旧值，R3-9a）→
+        rollback_batch 恢复 → 行值与时间戳还原到导入前。"""
         row_id = self._seed("run", "旧释义", phonetic="/old/", cluster_id=7,
                             example="an old example")
+        # 固定导入前时间戳（秒级分辨率的 CURRENT_TIMESTAMP 不足以证明还原）：
+        # 显式把 updated_at 拨回过去，导入覆盖必然顶掉它，回滚应还原此值
+        OLD_TS = "2020-01-02 03:04:05"
+        with db.get_db_cursor() as cursor:
+            cursor.execute(
+                "UPDATE definitions SET updated_at = %s WHERE id = %s",
+                (OLD_TS, row_id),
+            )
         rows = [{"词目": "run", "中文释义": "新释义", "音标": "/rʌn/"}]
 
         batch_id = start_batch(1, "verbs.xlsx", "a" * 64, "definitions",
@@ -446,7 +456,10 @@ class TestImportEngineIntegration:
         assert event["action"] == "update"
         assert event["table"] == "definitions"
         assert event["row_id"] == row_id
-        assert event["old_values"] == {"chinese_ndef": "旧释义", "phonetic": "/old/"}
+        assert event["old_values"]["chinese_ndef"] == "旧释义"
+        assert event["old_values"]["phonetic"] == "/old/"
+        # R3-9a：updated_at 导入前旧值随事件收录（MySQL 可消化的串，JSON 可序列化）
+        assert event["old_values"]["updated_at"] == OLD_TS
 
         # 写入生效且 cluster_id / 白名单外列保留（COALESCE 保留语义）
         row = self._row_of("run")
@@ -454,8 +467,9 @@ class TestImportEngineIntegration:
         assert row["phonetic"] == "/rʌn/"
         assert row["cluster_id"] == 7
         assert row["example_sentence"] == "an old example"
+        assert row["updated_at"].strftime("%Y-%m-%d %H:%M:%S") != OLD_TS  # 导入顶掉了旧时点
 
-        # 记账 → 回滚 → 行值还原（含 phonetic 的 None 旧值写回）
+        # 记账 → 回滚 → 行值还原（含 phonetic 的 None 旧值写回 + updated_at 还原）
         assert finish_batch(batch_id, result["rows_total"], result["rows_ok"],
                             result["rows_rejected"]) is True
         assert rollback_batch(batch_id, result["revert_log"]) is True
@@ -463,15 +477,17 @@ class TestImportEngineIntegration:
         assert restored["chinese_ndef"] == "旧释义"
         assert restored["phonetic"] == "/old/"
         assert restored["cluster_id"] == 7
+        # R3-9a：回滚后时间戳回到导入前时点（不被回滚动作本身顶掉）
+        assert restored["updated_at"].strftime("%Y-%m-%d %H:%M:%S") == OLD_TS
         with db.get_db_cursor() as cursor:
             cursor.execute("SELECT status FROM import_batches WHERE id = %s", (batch_id,))
             assert cursor.fetchone()["status"] == "rolled_back"
 
     # --- 实写：insert → revert_log → 回滚的如实限制 ---
 
-    def test_insert_revert_log_and_rollback_limitation(self, engine_db):
-        """insert 事件回滚：definitions 无 status 列 → 软作废跳过仅留痕，
-        行不消失（rollback_batch 既有口径，docstring 如实声明）。"""
+    def test_insert_revert_log_and_rollback_voided(self, engine_db):
+        """insert 事件回滚（R3-9c）：definitions 补 import_voided 列 → 回滚置
+        import_voided=1 作废；行仍留库可审计（不物理 DELETE）。"""
         rows = [{"词目": "dash", "中文释义": "猛冲", "音标": "/dæʃ/"}]
         result = run_import(rows, MAPPING, 1, dry_run=False)
         assert result["ok"] is True
@@ -484,6 +500,14 @@ class TestImportEngineIntegration:
         assert isinstance(event["row_id"], int) and event["row_id"] > 0
         assert "old_values" not in event  # insert 事件无 old_values（口径逐字对齐）
 
+        # R3-9c：引擎落的新行显式 import_voided=0（未被作废）
+        with db.get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT import_voided FROM definitions WHERE id = %s",
+                (event["row_id"],),
+            )
+            assert int(cursor.fetchone()["import_voided"]) == 0
+
         row = self._row_of("dash")
         assert row["id"] == event["row_id"]
         assert row["chinese_ndef"] == "猛冲"
@@ -494,9 +518,15 @@ class TestImportEngineIntegration:
         assert finish_batch(batch_id, result["rows_total"], result["rows_ok"],
                             result["rows_rejected"]) is True
         assert rollback_batch(batch_id, result["revert_log"]) is True
-        # 如实限制：软作废对无 status 列的 definitions 不生效 → 行仍在库中
+        # 行仍留库可审计（不物理 DELETE），但 import_voided 置 1 作废（R3-9c）
         assert self._count() == 1
         assert self._row_of("dash") is not None
+        with db.get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT import_voided FROM definitions WHERE id = %s",
+                (event["row_id"],),
+            )
+            assert int(cursor.fetchone()["import_voided"]) == 1
 
     # --- 实写：混合批次 / 无变更 / 空音标 ---
 
@@ -513,7 +543,8 @@ class TestImportEngineIntegration:
         actions = sorted(e["action"] for e in result["revert_log"])
         assert actions == ["insert", "update"]
         update_event = next(e for e in result["revert_log"] if e["action"] == "update")
-        assert update_event["old_values"] == {"chinese_ndef": "旧释义"}
+        assert update_event["old_values"]["chinese_ndef"] == "旧释义"
+        assert "updated_at" in update_event["old_values"]  # R3-9a：旧时间戳随事件收录
 
     def test_no_change_no_revert_event(self, engine_db):
         """值完全相同的行：不写库、不发 revert 事件；空 revert_log 可回滚。"""
@@ -534,7 +565,8 @@ class TestImportEngineIntegration:
         result = run_import(rows, MAPPING, 1, dry_run=False)
         assert result["rows_ok"] == 1
         assert len(result["revert_log"]) == 1
-        assert result["revert_log"][0]["old_values"] == {"chinese_ndef": "旧释义"}
+        assert result["revert_log"][0]["old_values"]["chinese_ndef"] == "旧释义"
+        assert "updated_at" in result["revert_log"][0]["old_values"]  # R3-9a
         row = self._row_of("run")
         assert row["phonetic"] == "/old/"       # 空单元格不清现值
         assert row["chinese_ndef"] == "新释义"

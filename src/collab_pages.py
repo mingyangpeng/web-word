@@ -28,11 +28,12 @@ docs/help/平台功能使用说明.md §5（AI 协作区）与 §6.6（任务分
 
 角色门（纵深防御，施工规范 §5 通用约定）：
   * 页面入口未登录拦截（st.warning + return）；任务分配 tab 内再做
-    _is_admin_like 门 —— 过渡期判定 role == "admin" 视为兼有
-    dict_admin + sys_admin（六角色会话待 app.py 接线 verify_login_full）；
-  * 收件箱裁决按钮按帮助文档「AI 协作区（全角色）」口径对所有登录用户开放，
-    留痕由 ai_ledger 不可变记录兜底（重复裁决被数据层拒绝）；集成侧若需收紧到
-    reviewer+，在 _render_inbox_tab 加门即可（见下方「留给批次 3」）。
+    _is_admin_like 门 —— 六角色口径（批次 12 R1-2/R1-5 收口：判定走
+    users_db.effective_six_roles 单一实现，legacy admin 经映射兼判，
+    授予式管理角色放行）；
+  * 收件箱裁决按钮区按 _can_adjudicate 收口（R1-5：有效六角色含
+    dict_admin/reviewer 才渲染按钮，其余角色只读灰注「裁决权归词典管理员/
+    审校」）；侧边栏待办徽章保留全角色（提示性质）。
 
 留给批次 3 / 集成的事项（docstring 占位，代码内同注）：
   * 任务分配的回避制 / 负荷上限（默认 10，运行层配置可调）/ 角色匹配 require
@@ -78,7 +79,7 @@ from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
 from src.mysql_db import get_db_cursor
 from src.org_db import get_projects_for_user
 from src import guards
-from src.users_db import list_roles, list_users
+from src.users_db import effective_six_roles, list_roles, list_users
 
 logger = logging.getLogger(__name__)
 
@@ -239,20 +240,38 @@ def _current_user() -> Optional[Dict[str, Any]]:
 
 
 def _is_admin_like(user: Optional[Dict[str, Any]]) -> bool:
-    """过渡期词典管理员判定（纯函数，tests/test_collab_pages.py 三态覆盖）。
+    """管理面判定（纯函数，tests/test_collab_pages.py 覆盖）。
 
-    六角色会话尚未接线（app.py 登录仍存四键 {id, username, display_name, role}），
-    过渡判定 role == "admin" 视为兼有 dict_admin + sys_admin（施工规范 §5 通用
-    约定「兼容过渡期判定」）。集成接线 verify_login_full 后改为 roles 列表判定
-    （dict_admin 或 sys_admin），本函数是唯一改动点。
+    六角色接线后的升级实现（原过渡判定 role == "admin" 的唯一改动点，见
+    旧 docstring 占位）：有效六角色集（users_db.effective_six_roles 单一
+    实现，R1-2 同源口径）含 dict_admin 或 sys_admin 即 True —— legacy
+    admin 经映射两位一体自然通过（升级前后对存量账号逐字节一致）；
+    授予式 dict_admin（legacy 列 viewer/annotator 但 user_roles 已授予）
+    自此放行（R1-2 家族：授予式用户不再被 legacy 判定拦在门外）。
+    reviewer/editor/annotator/viewer 单角色一律 False（fail-closed）。
 
     Returns:
-        bool: user 为 dict 且 role == "admin" 才 True；未登录/非 dict/其他角色
-        一律 False（fail-closed）。
+        bool: user 为 dict 且有效六角色集含管理角色才 True；未登录/非 dict/
+        其余角色一律 False（fail-closed）。
     """
     if not isinstance(user, dict):
         return False
-    return user.get("role") == "admin"
+    return bool(effective_six_roles(user) & {"dict_admin", "sys_admin"})
+
+
+def _can_adjudicate(user: Optional[Dict[str, Any]]) -> bool:
+    """收件箱裁决权（R1-5，施工规范 §14 批次 12；纯函数 fail-closed）。
+
+    有效六角色集（users_db.effective_six_roles 单一实现）含 dict_admin 或
+    reviewer 才可裁决 AI 建议 —— 收件箱裁决按钮区按本函数收口，其余角色
+    （editor/annotator/viewer/sys_admin）只读展示（按钮替换为灰注
+    「裁决权归词典管理员/审校」）；legacy admin 经映射两位一体自然命中。
+    侧边栏待办徽章（pending_inbox_count）不受本判定影响 —— 徽章是全角色
+    提示性质（R1-5 口径：提示保留）。
+    """
+    if not isinstance(user, dict):
+        return False
+    return bool(effective_six_roles(user) & {"dict_admin", "reviewer"})
 
 
 def _validate_decision(decision: str, reason: Optional[str]) -> Optional[str]:
@@ -770,12 +789,17 @@ def _decide_buttons(p: Dict[str, Any]) -> None:
     )
 
 
-def _render_pending_inbox() -> List[Dict[str, Any]]:
+def _render_pending_inbox(me: Dict[str, Any]) -> List[Dict[str, Any]]:
     """待裁决 AI 建议（draft/audit 两通道；probe 排除 —— 数据层取数约定）。
 
     两通道各取一次后合并，用 _sort_pending 恢复 ai_ledger 的全局排序口径
     （uncertainty DESC、缺失最后、id ASC）。返回草稿/质检条目清单
     （供管理员「全部 pending」视图做计数对照）。
+
+    **裁决按钮区角色收口（R1-5，施工规范 §14 批次 12）**：按钮区过
+    _can_adjudicate(me)（有效六角色含 dict_admin/reviewer）—— 其余角色
+    只读展示，按钮替换为灰注「裁决权归词典管理员/审校」（提议内容与证据
+    链照常可见：知情不等于裁决权）；legacy admin 经映射自然命中。
     """
     pending: List[Dict[str, Any]] = []
     for kind in INBOX_KINDS:
@@ -791,10 +815,17 @@ def _render_pending_inbox() -> List[Dict[str, Any]]:
     st.caption(
         f"共 {len(pending)} 条待裁决（按不确定度降序）；探针（probe）通道不入收件箱。"
     )
+    can_adjudicate = _can_adjudicate(me)
     for p in pending:
         with st.expander(_proposal_summary(p)):
             _proposal_detail(p)
-            _decide_buttons(p)
+            if can_adjudicate:
+                _decide_buttons(p)
+            else:
+                st.caption(
+                    "🔒 裁决权归词典管理员/审校：本条为只读展示"
+                    "（如需权限请联系管理员授予）。"
+                )
     return pending
 
 
@@ -918,9 +949,14 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
 
 
 def _render_inbox_tab(me: Dict[str, Any]) -> None:
-    """📥 协作收件箱：待裁决 AI 建议 ＋ 我的任务（＋管理员全部 pending 视图）。"""
+    """📥 协作收件箱：待裁决 AI 建议 ＋ 我的任务（＋管理员全部 pending 视图）。
+
+    「全部 pending / 待我裁决」视图随 _is_admin_like 的六角色升级（R1-2
+    同源口径）对授予式管理角色开放；裁决按钮区由 _render_pending_inbox
+    按 _can_adjudicate 收口（R1-5）。
+    """
     _pop_flash()
-    pending = _render_pending_inbox()
+    pending = _render_pending_inbox(me)
     if _is_admin_like(me):
         _render_admin_all_pending(len(pending))
         _render_adjudication_section(me)
@@ -1049,10 +1085,10 @@ def _render_assign_tab(me: Dict[str, Any]) -> None:
     默认 10）；③ 回避制（_check_recusal，审校类任务批次 4 接入，本期占位放行）
     —— 拒绝原因一律 st.warning 展示，不静默、不落库。
     """
-    if not _is_admin_like(me) and "dict_admin" not in _session_roles(me):
+    if not _is_admin_like(me):
         st.warning(
-            "⛔ 任务分配仅词典管理员可用（legacy role=='admin' 兼判；六角色会话"
-            "读 roles 快照中的 dict_admin）。"
+            "⛔ 任务分配仅词典管理员可用（有效六角色集含 dict_admin / sys_admin；"
+            "legacy role=='admin' 经映射兼判）。"
         )
         return
     st.markdown(f"<h3 style='{HEADER_H3}'>📤 创建任务分派</h3>", unsafe_allow_html=True)

@@ -73,6 +73,13 @@ CRUD 契约（施工规范 §10）：
      (sense_ref, version) 只作并发建版的最后防线）；
   3. 多语句流转（提交审校 / 打回 / 通过）走 autocommit=False 事务 +
      SELECT ... FOR UPDATE 行锁 —— 状态判定与写入原子，不留半流转行。
+
+已知口径（R3-8 · P3 · 批次 12 复审，本轮不修码）：版本脊柱跨作者续基无守卫无
+标记 —— create_draft/_validate_refs 的断链四路（不存在版本/跨 sense_ref/0/
+非整数）实测全拒，但同 sense_ref 下 based_on 指向他人版本被接受（仅查存在性，
+无作者连续性校验）。架构规范 §8 未要求拒绝，不算违约；但换手续基在审计线上
+只有逐行 author_id 可对比，无「重提换手」显式留痕 —— A→B(author1)→C(author2)
+与正常链在库内不可区分（批次 12：续基换手时可加 remark 或审计标记）。
 """
 
 import json
@@ -349,26 +356,40 @@ def create_draft(
     based_on_version: Optional[int] = None,
     style_version: Optional[str] = None,
     ai_draft: Any = None,
+    *,
+    allow_system: bool = False,
 ) -> int:
     """新建释义草稿（status='draft'，version 在 sense_ref 内自动递增）。
 
     版本号 = 同 sense_ref 下 MAX(version)+1（UNIQUE(sense_ref, version)
     兜底并发建版：撞 UNIQUE 即建版失败返回 0，调用方重试即可）。
 
+    **author_id=None 收紧（R1-4，施工规范 §14 批次 12）**：无主（系统登记）
+    行不允许默认创建 —— keyword ``allow_system=False`` 缺省拒绝并返回 0；
+    仅内部系统作业（历史数据补登记/灌库脚本）显式传 ``allow_system=True``
+    豁免（调用点须 docstring 注明理由）。理由：author_id 为 NULL 的行在
+    R1-4 后不可进入人工审校链（submit_for_review / approve / adjudicate_final
+    一律拒绝「系统登记行不可人工审校，先补登记作者」），默认放行建无主行
+    只会生产永远无法定稿的死行，且给「匿名写入权威域」留了旁路 —— 页面与
+    测试调用一律传撰写人 users.id。
+
     Args:
         sense_ref: 三段式锚 ``范畴包名:cs_senses.id:oald_senses.id``
             （如 ``motion:12:345``；未落位槽位 0 占位，见模块 docstring）。
-        author_id: 撰写人 users.id（软引用；None 允许 —— 系统登记口径，
-            此时回避制无可比对对象）。
+        author_id: 撰写人 users.id（软引用）。None 须同时传
+            ``allow_system=True``（系统登记口径，见上），否则拒绝。
         content: 释义成文（非空，≤ MAX_CONTENT_LEN）。
         based_on_version: 所基版本号（同 sense_ref 的既有 version 号，非行
             id；打回重提时传被拒版的 version 号）。给定时校验存在性，
             不存在拒绝建版（版本链完整性）。
         style_version: 体例版本占位（如 ``style.yaml@v1``；≤ 40 字符）。
         ai_draft: AI/模板草稿快照（dict/list；JSON 落库，审校对照用）。
+        allow_system: 系统作业显式越过（author_id=None 时必须 True；
+            调用点 docstring 注明理由）。
 
     Returns:
-        int: 新行 id（>0）；参数非法 / based_on 不存在 / 数据库错误返回 0。
+        int: 新行 id（>0）；参数非法 / based_on 不存在 /
+        author_id=None 且未显式 allow_system / 数据库错误返回 0。
     """
     ref = sense_ref.strip() if isinstance(sense_ref, str) else ""
     if not valid_sense_ref(ref):
@@ -377,6 +398,13 @@ def create_draft(
     author = _as_positive_int(author_id) if author_id is not None else None
     if author_id is not None and author is None:
         logger.error(f"create_draft 拒绝非法 author_id: {author_id!r}")
+        return 0
+    if author is None and not allow_system:
+        logger.error(
+            "create_draft 拒绝 author_id=None（R1-4 收紧：无主行不可默认创建"
+            "——系统登记行不可人工审校；内部系统作业须显式传 allow_system=True，"
+            "页面/测试调用一律传撰写人 users.id）"
+        )
         return 0
     clean_content = _clean_content(content)
     if clean_content is _INVALID:
@@ -429,8 +457,10 @@ def update_draft(
     content: str,
     style_version: Optional[str] = None,
     ai_draft: Any = None,
+    *,
+    author_id: Optional[int] = None,
 ) -> bool:
-    """改写草稿（仅 draft 态；乐观锁 expect_version）。
+    """改写草稿（仅 draft 态；乐观锁 expect_version + 作者守卫）。
 
     乐观锁口径：expect_version 是编辑表单装载时看到的版本号 —— WHERE
     id + version + status='draft' 三重守卫，装载后该行状态已流转（或目标
@@ -439,21 +469,35 @@ def update_draft(
     行存在性先查后写（MySQL 对「值无变化」的 UPDATE 计 0 受影响行，
     不能拿 rowcount 当失败 —— 以前置 SELECT 为准）。
 
+    **作者守卫（R1-3，施工规范 §14 批次 12）**：UPDATE WHERE 追加
+    ``AND author_id <=> %s``（NULL 安全相等），入口前置 SELECT 同步校验 ——
+    ``author_id`` 须与目标行 author_id 一致才可改写：author_id=None 只匹配
+    author_id 为 NULL 的系统登记行；传他人 id（含不传而目标是他人草稿）
+    一律拒绝并记日志「作者不符」。R1 报告复现③（update_draft 直接改写
+    他人草稿＝内容劫持）的数据层收口；页面撰写台传当前会话用户 id
+    （mode='update' 已保证目标是本人草稿）。
+
     Args:
         version_id: 目标行 id（definition_versions.id）。
         expect_version: 期望版本号（须与该行 version 一致）。
         content: 新成文（非空，≤ MAX_CONTENT_LEN）。
         style_version: 体例版本（None = 置空；全量覆盖口径）。
         ai_draft: 快照（None = 置空；全量覆盖口径）。
+        author_id: 撰写人 users.id（须与目标行 author_id 一致；None 仅匹配
+            系统登记行 —— fail-closed，不给「不校验作者」留旁路）。
 
     Returns:
         bool: 更新成功为 True；行不存在 / expect_version 不符 / 已非 draft /
-        参数非法 / 数据库错误为 False。
+        作者不符（R1-3）/ 参数非法 / 数据库错误为 False。
     """
     vid = _as_positive_int(version_id)
     ev = _as_positive_int(expect_version)
     if vid is None or ev is None:
         logger.error(f"update_draft 拒绝非法 id/expect_version: {version_id!r}/{expect_version!r}")
+        return False
+    author = _as_positive_int(author_id) if author_id is not None else None
+    if author_id is not None and author is None:
+        logger.error(f"update_draft 拒绝非法 author_id: {author_id!r}")
         return False
     clean_content = _clean_content(content)
     if clean_content is _INVALID:
@@ -470,7 +514,7 @@ def update_draft(
     try:
         with get_db_cursor(autocommit=False) as cursor:
             cursor.execute(
-                "SELECT status FROM definition_versions "
+                "SELECT status, author_id FROM definition_versions "
                 "WHERE id = %s AND version = %s FOR UPDATE",
                 (vid, ev),
             )
@@ -485,10 +529,23 @@ def update_draft(
                     f"update_draft 拒绝非 draft 态行（id={vid}, status={row.get('status')}）"
                 )
                 return False
+            row_author = (
+                _as_positive_int(row.get("author_id"))
+                if row.get("author_id") is not None
+                else None
+            )
+            if row_author != author:
+                logger.error(
+                    f"update_draft 作者不符拒绝（R1-3 内容劫持防护）：id={vid} "
+                    f"行 author_id={row.get('author_id')}，调用方声称 "
+                    f"author_id={author_id!r} —— 只能改写本人草稿"
+                )
+                return False
             cursor.execute(
                 "UPDATE definition_versions SET content = %s, style_version = %s, "
-                "ai_draft = %s WHERE id = %s AND version = %s AND status = %s",
-                (clean_content, style, ai_json, vid, ev, STATUS_DRAFT),
+                "ai_draft = %s WHERE id = %s AND version = %s AND status = %s "
+                "AND author_id <=> %s",
+                (clean_content, style, ai_json, vid, ev, STATUS_DRAFT, author),
             )
         return True
     except pymysql.Error as e:
@@ -525,6 +582,10 @@ def _recusal_violated(author_id: Any, reviewer_id: int, action: str,
     """回避制判定（§8 无豁免）：审校动作的 reviewer 不得是版本作者。
 
     author_id 为 NULL（系统登记行）无可比对对象 —— 如实放行并记日志。
+    注意 R1-4 收口后本函数的 NULL 放行分支只服务 add_comment /
+    request_revision；审校链三入口（submit_for_review / approve /
+    adjudicate_final）在回避制判定**之前**先过 _system_row_blocked
+    （NULL 行直接拒绝），不再到达此处。
     """
     if author_id is None:
         logger.warning(
@@ -541,13 +602,36 @@ def _recusal_violated(author_id: Any, reviewer_id: int, action: str,
     return False
 
 
+def _system_row_blocked(author_id: Any, action: str,
+                        sense_ref: Any, version: Any) -> bool:
+    """系统登记行守卫（R1-4，施工规范 §14 批次 12）：author_id 为 NULL 的
+    版本行不可进入人工审校链。
+
+    submit_for_review / approve / adjudicate_final 三处审校链入口在回避制
+    判定之前调用：命中 NULL 行返回 True（调用方拒绝）并记日志「系统登记行
+    不可人工审校，先补登记作者」。理由：NULL 行无回避制比对对象、无作者
+    可追责（R1 报告复现⑤全链放行），且 create_draft 的 author_id=None 已
+    收紧为 allow_system 显式豁免 —— 存量无主行须先补登记作者再入审校链。
+    add_comment / request_revision 不在本守卫范围（意见线与受派裁决维持
+    旧口径，见 _recusal_violated）。
+    """
+    if author_id is None:
+        logger.error(
+            f"{action} 拒绝：{sense_ref} v{version} author_id 为 NULL —— "
+            "系统登记行不可人工审校，先补登记作者（R1-4）"
+        )
+        return True
+    return False
+
+
 def submit_for_review(version_id: int, reviewer_id: int,
                       note: Optional[str] = None) -> bool:
     """提交初审：draft → in_review，并创建待审任务（verdict='pending'）。
 
     G4 闸门（撰写→审校）的人工侧落点；AI 体例质检挂钩批次 8 接入。
     回避制硬校验：reviewer_id 不得等于版本 author_id（无豁免，含词典
-    管理员 —— 自写词条自审在此直接拒绝）。轮次自动递增：同 version_id
+    管理员 —— 自写词条自审在此直接拒绝）。author_id 为 NULL 的系统登记行
+    不可提交审校（R1-4：先补登记作者）。轮次自动递增：同 version_id
     若存在历史任务（理论流程不会发生，防御性支持），round = MAX+1。
 
     Args:
@@ -577,6 +661,9 @@ def submit_for_review(version_id: int, reviewer_id: int,
                 logger.error(
                     f"submit_for_review 拒绝：id={vid} 不存在或非 draft 态"
                 )
+                return False
+            if _system_row_blocked(row.get("author_id"), "submit_for_review",
+                                   row.get("sense_ref"), row.get("version")):
                 return False
             if _recusal_violated(row.get("author_id"), rid, "submit_for_review",
                                  row.get("sense_ref"), row.get("version")):
@@ -744,7 +831,8 @@ def approve(version_id: int, reviewer_id: int,
     →final 链展开＋升级/改派动作＋终裁留痕）留给批次 8 集成在此补齐
     （契约 DDL 的 reviewed/revised/approved 枚举占位即为此预留），本版不实现。
     仅受派审校人可执行；回避制硬校验（无豁免，含词典管理员 —— 自写词条
-    由其他 reviewer 终审）。
+    由其他 reviewer 终审）；author_id 为 NULL 的系统登记行不可审校通过
+    （R1-4：先补登记作者）。
 
     Args:
         version_id: in_review 态版本行 id。
@@ -771,6 +859,9 @@ def approve(version_id: int, reviewer_id: int,
             row = _load_version_for_guard(cursor, vid, STATUS_IN_REVIEW)
             if row is None:
                 logger.error(f"approve 拒绝：id={vid} 不存在或非 in_review 态")
+                return False
+            if _system_row_blocked(row.get("author_id"), "approve",
+                                   row.get("sense_ref"), row.get("version")):
                 return False
             if _recusal_violated(row.get("author_id"), rid, "approve",
                                  row.get("sense_ref"), row.get("version")):
@@ -813,7 +904,9 @@ def adjudicate_final(
     legacy role=='admin' 经映射兼判）。actor 须显式传入（本层不 import
     streamlit、不读 users 表，测试可注入）；actor 缺失/非 dict/无 dict_admin
     一律拒绝（fail-closed）。adjudicator_id 是终裁人 users.id（留痕用，页面层
-    传会话用户 id；本层不强制与 actor['id'] 相等，诚实留痕由调用方保证）。
+    传会话用户 id）；**R1-4 冒名收口：本层强制 adjudicator_id == actor["id"]**
+    —— 不一致即返回 False 并记日志「终裁冒名拒绝」（R1 报告复现④：以 A 会话
+    冒 B 之名留痕终裁，伪造审校记录）。
 
     **状态机（终态图）**::
 
@@ -837,7 +930,8 @@ def adjudicate_final(
 
     **回避制无豁免（§8，含词典管理员）**：adjudicator_id 不得等于版本
     author_id —— 自写词条由其他词典管理员终裁；author_id 为 NULL（系统登记）
-    无可比对对象，如实放行并记日志（与 approve 同口径）。
+    的行直接拒绝（R1-4：系统登记行不可人工审校，先补登记作者 —— 不再
+    「无可比对对象即放行」）。
 
     Args:
         version_id: 版本行 id（须处于 in_review / approved 态，见状态机）。
@@ -881,6 +975,15 @@ def adjudicate_final(
             "有效角色集不含 dict_admin —— 终裁仅词典管理员（架构规范 §8）"
         )
         return False
+    actor_id = _as_positive_int(actor.get("id"))
+    if actor_id is None or actor_id != aid:
+        logger.error(
+            f"adjudicate_final 终裁冒名拒绝（R1-4）：adjudicator_id="
+            f"{adjudicator_id!r} ≠ actor['id']={actor.get('id')!r} "
+            f"（actor={actor.get('username', '?')}）—— 留痕人必须等于操作人，"
+            "伪造他人终裁记录一律拒绝"
+        )
+        return False
     if decision == VERDICT_APPROVED:
         allowed_from = (STATUS_IN_REVIEW, STATUS_APPROVED)
         target_status = STATUS_FINAL
@@ -903,6 +1006,9 @@ def adjudicate_final(
                     f"adjudicate_final 拒绝：id={vid} 状态 "
                     f"{row.get('status')} 不在可终裁态 {allowed_from}"
                 )
+                return False
+            if _system_row_blocked(row.get("author_id"), "adjudicate_final",
+                                   row.get("sense_ref"), row.get("version")):
                 return False
             if _recusal_violated(row.get("author_id"), aid, "adjudicate_final",
                                  row.get("sense_ref"), row.get("version")):
@@ -1129,10 +1235,30 @@ def get_version(version_id: int) -> Optional[Dict[str, Any]]:
         return None
 
 
-def get_latest_version(sense_ref: str) -> Optional[Dict[str, Any]]:
+def get_latest_version(
+    sense_ref: str,
+    *,
+    viewer_id: Optional[int] = None,
+    allow_reviewer: bool = False,
+) -> Optional[Dict[str, Any]]:
     """sense_ref 的最新版本行（version 最大者）；无任何版本返回 None。
 
     撰写台续写/打回重提的底稿定位入口；锚格式非法返回 None。
+
+    **draft 态脱敏（R1-3，施工规范 §14 批次 12）**：最新行为 draft 态且查看者
+    不是其作者（也未声明审校侧 ``allow_reviewer=True``）时，content 返回
+    脱敏标记 ``{"content": None, "draft_hidden": True}``（其余字段照常）——
+    他人在途草稿内容对非作者/非审校侧不可读；作者本人（viewer_id 与行
+    author_id 一致）与审校侧不受限。viewer_id=None（未声明身份的直调）按
+    「非作者」fail-closed 脱敏；非 draft 态行不受影响（rejected 版重提
+    预填、定稿/发布版回看照常）。
+
+    Args:
+        sense_ref: 三段式锚。
+        viewer_id: 查看者 users.id（撰写台传当前会话用户；None = 未声明身份，
+            draft 内容一律脱敏）。
+        allow_reviewer: 审校侧声明（审校台/总览读底稿时 True；调用点须已做
+            reviewer/dict_admin 角色门 —— 本层不查角色，只承接声明）。
     """
     if not valid_sense_ref(sense_ref):
         return None
@@ -1145,7 +1271,18 @@ def get_latest_version(sense_ref: str) -> Optional[Dict[str, Any]]:
                 (ref,),
             )
             row = cursor.fetchone()
-            return _row_to_version(row) if row else None
+            out = _row_to_version(row) if row else None
+            if out is not None and out.get("status") == STATUS_DRAFT:
+                author = out.get("author_id")
+                is_author = (
+                    viewer_id is not None
+                    and author is not None
+                    and _as_positive_int(viewer_id) == _as_positive_int(author)
+                )
+                if not is_author and not allow_reviewer:
+                    out["content"] = None
+                    out["draft_hidden"] = True
+            return out
     except pymysql.Error as e:
         logger.error(f"get_latest_version 查询失败（{ref}）: {e}")
         return None
