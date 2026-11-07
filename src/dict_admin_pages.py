@@ -22,6 +22,14 @@
     去重「已存在复用」）· 资产列表（按状态筛选）· 绑定资产（四锚 × 用途）·
     绑定列表与审定流转（候选→审定→发布，逐级单步）——**数据资产归词典管理员**
     口径（帮助文档 §4.5/§六：媒体是展示层资产，许可纪律是无许可不入库）。
+  * 📤 出版导出（批次 8 Agent G6；工序 15，G6 闸门执行页）：G6 检查清单三卡
+    （许可终检=resource_registry 逐行 license 审计，表未建灰注占位／体例终检=
+    style.yaml 在场检查，体例工单未建灰注占位／备份新鲜=data/exports 最近快照
+    时间＋mysqldump 最近文件，缺则灰注）＋内容域快照（guards 闸门→
+    export_center.build_content_snapshot 只读调用）＋快照清单与状态流转
+    （ready→published 需三项全过；ready→revoked 撤销单向不可逆）——**占位项
+    不拦内部快照（MANIFEST 如实标注），拦 published**（§15 内容性导出唯一
+    权利人=词典管理员）。
 
 页面行为依据 docs/help/平台功能使用说明.md §六（词典管理区）；风格对齐
 src/users_admin_page.py（role gate 入口判定 + HTML 转义 + 卡片表格）。
@@ -49,6 +57,12 @@ PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
   纯函数 _validate_upload（扩展名/MIME 白名单 + ≤50MB）与
   _upload_target_path（内容寻址落盘路径，tests 直接测）；
   页面 _render_media_upload_form（不抛异常，失败一律 st.error）。
+批次 8 出版导出（G6）：纯函数 _g6_license_summary / _g6_style_summary /
+  _g6_backup_summary（三卡摘要，DB/文件系统探测以可注入函数为默认实现，
+  tests 直接测）＋ _g6_gate_blockers / _g6_gate_open / _g6_license_passed
+  （闸门判定）＋ _advance_export_status（快照状态单步流转，export_center
+  契约未含的私有辅助，乐观并发守卫）；页面 _render_publication_tab；
+  widget key 前缀 'pub_'（本 tab 内）。
 """
 
 import hashlib
@@ -58,11 +72,12 @@ import os
 import re
 from datetime import datetime
 from html import escape as _html_escape
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import streamlit as st
 
-from src import ai_ledger, dict_admin_db, media_db, org_db, pipeline_status, users_db
+from src import ai_ledger, dict_admin_db, export_center, media_db, org_db
+from src import pipeline_status, users_db
 from src.mysql_db import get_db_cursor
 from src import guards
 from src.design_system import (
@@ -83,10 +98,11 @@ logger = logging.getLogger(__name__)
 GUIDE: Dict[str, Any] = {
     "label": "📖 词典管理",
     "purpose": (
-        "词典管理员的工作台（阶段 1 MVP 四分区）：主编驾驶舱一页看清项目自检与 AI 台账"
+        "词典管理员的工作台（阶段 1 MVP）：主编驾驶舱一页看清项目自检与 AI 台账"
         "指标，项目成员维护三级权限链的第二级（入册/改授/移出），定制属性定义 EAV "
         "字段并为锚写值，媒体库登记/绑定/审定多模态资产（数据资产归词典管理员；"
-        "批次 8 开通上传落盘通道，与服务器路径登记双轨并行）。"
+        "批次 8 开通上传落盘通道，与服务器路径登记双轨并行），出版导出执行 G6 "
+        "出版闸门（许可/体例/备份三检＋内容域快照，批次 8 开通）。"
     ),
     "principle": [
         "三级最小权限链（平台架构设计规范 §8）：平台管理员建号（默认 viewer）→ "
@@ -109,6 +125,17 @@ GUIDE: Dict[str, Any] = {
         "进度漏斗如实缺位：十五道工序的进度数据源（get_cluster_pipeline_status）"
         "批次 3 才建，本版驾驶舱不画假漏斗，只给自检清单 + 台账指标 + 成员规模三类"
         "真数据。",
+        "G6 出版闸门（架构规范 §3 闸门表 / §15，批次 8 开通）：许可检查＋体例终检"
+        "＋备份新鲜三项全过才允许把 ready 快照标记为 published —— 占位/未过项不拦"
+        "「生成内容域快照」（内部快照，MANIFEST 如实标注、不得对外交付），但拦 "
+        "published 流转；许可终检探 resource_registry 逐行 license（表未建灰注占位"
+        "「资源登记未启用」）、体例终检探 style.yaml 在场（体例工单未建灰注占位）、"
+        "备份新鲜探 data/exports 最近快照与 mysqldump 最近文件（缺则卡内灰注）——"
+        "占位如实展示，绝不画假绿灯。",
+        "快照状态单向流转：ready→published（G6 全过才可用，published 终态）／"
+        "ready→revoked（撤销=作废退出出版通道，单向不可逆，如需再出版须重新生成"
+        "快照，防「撤销又复活」的审计断链）；流转带乐观并发守卫（两人同转只有一人"
+        "生效），快照生成与流转都在 guards 中央闸门之后（纵深防御第二层）。",
     ],
     "data_source": [
         "src/org_db.py：dictionary_projects / project_members（list_projects / "
@@ -123,6 +150,10 @@ GUIDE: Dict[str, Any] = {
         "st.error 展示。",
         "src/users_db.py：users / user_roles（list_users 供添加成员选人；"
         "has_role(id, 'dict_admin') 作角色门实时兜底）。",
+        "src/export_center.py（批次 8，只读调用）：build_content_snapshot 内容域"
+        "快照机械（逐表 CSV→zip→export_batches 登记线，角色闸在调用点再校验一次）"
+        "＋ list_exports 最近快照清单——本页负责其前置的 G6 三检与 ready 状态后的 "
+        "published/revoked 流转（私有单步辅助 _advance_export_status）。",
     ],
     "steps": [
         "进入「📖 词典管理」先看主编驾驶舱：顶部指标卡给项目数/成员人次/AI 提案总数/"
@@ -147,6 +178,11 @@ GUIDE: Dict[str, Any] = {
         "命中已有资产即提示「已存在，复用」（上传命中可直接转入绑定）；再「绑定资产」"
         "到四锚（词目/义位/例证/图式）并给用途与图注；绑定以「候选」态起步，在绑定"
         "列表逐级单步流转（候选→审定→发布），词条装配只取发布态。",
+        "「📤 出版导出」先读 G6 三卡：许可终检（资源登记未启用时灰注占位）、体例终检"
+        "（style.yaml 不在场时灰注占位）、备份新鲜（无任何备份证据时灰注占位）——"
+        "占位/未过仍可「生成内容域快照」（内部快照，zip 路径/行数/包含表/跳过表如实"
+        "展示），但「标记 published」按钮禁用并注明原因；三项全过后选 ready 快照"
+        "「标记 published」出版交付，或「撤销快照」（ready→revoked，单向不可逆）。",
     ],
     "notes": [
         "权限口径：本区仅词典管理员（dict_admin）可用；过渡期内置 admin 账号视为兼有 "
@@ -174,6 +210,12 @@ GUIDE: Dict[str, Any] = {
         "形态用规范后缀兜底；扩展名与 MIME 双白名单且须对应，防改名伪装。落盘成功但"
         "登记失败时文件保留在落盘路径，可改走服务器路径登记补登；任何上传失败只 "
         "st.error 提示不抛异常。",
+        "出版导出（批次 8 G6）的如实口径：许可终检在 resource_registry 表未建时是"
+        "**灰注占位**而非硬检（表接入后升级为逐行 license 审计硬检）；体例终检在"
+        "体例工单未建时只验 style.yaml 文件在场（版本对比/工单线升级项）；备份新鲜"
+        "只报 data/exports 最近快照与 mysqldump 最近文件时间（新鲜度阈值未设，运维"
+        "工单接入后再升级）——占位项不拦内部快照（license_checked=0 如实登记），"
+        "拦 published；mysqldump 备份归平台管理员，本页只探测不执行。",
     ],
 }
 
@@ -268,6 +310,42 @@ MEDIA_STATUS_NEXT = {
     media_db.STATUS_CANDIDATE: media_db.STATUS_REVIEWED,
     media_db.STATUS_REVIEWED: media_db.STATUS_PUBLISHED,
 }
+
+# ============================================
+# 出版导出（批次 8 G6 闸门执行页）：快照状态展示映射与 G6 检查口径
+# ============================================
+
+# export_batches.status 三态（export_center.DDL 枚举）的中文展示映射
+EXPORT_STATUS_LABELS = {"ready": "就绪", "published": "已出版", "revoked": "已撤销"}
+EXPORT_STATUS_COLORS = {
+    "ready": "#2b6cb0", "published": "#22543d", "revoked": "#718096",
+}
+
+# G6 检查项三态徽章：passed=已过 / placeholder=占位 / failed=未过。
+# 口径（施工规范 §12 G6 行）：占位项**不阻止生成内部快照**，但与未过项一样
+# **阻止 status ready→published** —— 三项全过（全部 passed）才放行出版流转。
+G6_PASSED = "passed"
+G6_PLACEHOLDER = "placeholder"
+G6_FAILED = "failed"
+G6_STATUS_LABELS = {"passed": "已过", "placeholder": "占位", "failed": "未过"}
+G6_STATUS_COLORS = {
+    "passed": _ACTIVE_GREEN, "placeholder": _INACTIVE_GRAY, "failed": "#e53e3e",
+}
+
+# G6 检查项 key（三卡固定顺序：许可 → 体例 → 备份）
+G6_KEY_LICENSE = "license"
+G6_KEY_STYLE = "style"
+G6_KEY_BACKUP = "backup"
+
+# 体例终检的 style.yaml 候选路径（相对仓库根；体例配置页 6.7 的工单线批次 8
+# 未建，先验「体例文件在场」这一硬前提，在场路径如实展示）
+_G6_STYLE_CANDIDATE_RELS = (
+    "configs/style.yaml", "config/style.yaml", "data/style.yaml", "style.yaml",
+)
+
+# 许可终检探测的表名（D⑥ 资源发布域 resource_registry：许可必填、双人双签；
+# 批次 8 表未建 → 灰注「资源登记未启用」占位）
+_G6_LICENSE_TABLE = "resource_registry"
 
 
 # ============================================
@@ -1552,11 +1630,494 @@ def _render_media_tab(me: Dict[str, Any]) -> None:
 
 
 # ============================================
+# Tab 8：出版导出（批次 8 G6 闸门执行页）
+# 纯函数（G6 三卡摘要 / 闸门判定）无 st. 依赖，tests 直接测；
+# DB/文件系统探测以可注入函数为默认实现（测试 monkeypatch/显式入参驱动）。
+# ============================================
+
+def _g6_check(key: str, status: str, title: str, detail: str) -> Dict[str, str]:
+    """G6 检查项卡片数据（纯结构）：key/status/title/detail 四键。"""
+    return {"key": key, "status": status, "title": title, "detail": detail}
+
+
+def _g6_license_table_exists() -> Optional[bool]:
+    """resource_registry 表在场探测（默认实现；None=库不可用探测失败）。"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM information_schema.TABLES "
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s",
+                (_G6_LICENSE_TABLE,),
+            )
+            row = cursor.fetchone()
+            return bool(row) and int(row["n"] or 0) > 0
+    except Exception as e:  # noqa: BLE001 —— 库不可用折叠为探测失败（占位）
+        logger.warning(f"G6 许可终检：{_G6_LICENSE_TABLE} 在场探测失败: {e}")
+        return None
+
+
+def _g6_license_stats() -> Tuple[int, int]:
+    """resource_registry 逐行许可审计（默认实现）→ (总行数, license 空值行数)。"""
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            f"SELECT COUNT(*) AS total, "
+            f"SUM(CASE WHEN license IS NULL OR license = '' THEN 1 ELSE 0 END) "
+            f"AS missing FROM {_G6_LICENSE_TABLE}"  # 表名来自模块常量白名单
+        )
+        row = cursor.fetchone()
+        return int(row.get("total") or 0), int(row.get("missing") or 0)
+
+
+def _g6_license_summary(
+    exists_fn: Optional[Callable[[], Optional[bool]]] = None,
+    stats_fn: Optional[Callable[[], Tuple[int, int]]] = None,
+) -> Dict[str, str]:
+    """G6 ① 许可终检（施工规范 §12）：resource_registry 逐行 license 审计。
+
+    口径（架构规范 §3 G6「许可检查」/ D⑥ 许可纪律）：
+      * resource_registry 表未建（资源发布域批次 8 未接入）或库不可用 →
+        灰注占位「资源登记未启用」；
+      * 表在场 → 逐行审计：license 空值行 >0 → 未过（无许可资源不得出版）；
+        全部非空（含 0 行审计空过）→ 已过，行数如实展示。
+
+    Args:
+        exists_fn: 表在场探测（True/False，None=探测失败）；缺省查库。
+        stats_fn: → (总行数, license 为空行数)；缺省查库。
+
+    Returns:
+        dict: {key, status, title, detail}（status ∈ passed/placeholder/failed）。
+    """
+    exists = _g6_license_table_exists if exists_fn is None else exists_fn
+    stats = _g6_license_stats if stats_fn is None else stats_fn
+    try:
+        present = exists()
+    except Exception as e:  # noqa: BLE001 —— 注入函数异常同折叠为占位
+        logger.warning(f"G6 许可终检探测异常: {e}")
+        present = None
+    if present is None:
+        return _g6_check(
+            G6_KEY_LICENSE, G6_PLACEHOLDER, "许可终检",
+            "数据库不可用：resource_registry 在场与许可审计无法执行"
+            "（占位不拦内部快照、拦 published）。",
+        )
+    if not present:
+        return _g6_check(
+            G6_KEY_LICENSE, G6_PLACEHOLDER, "许可终检",
+            "资源登记未启用（resource_registry 表未建，D⑥ 资源发布域未接入）："
+            "许可终检占位 —— 表接入后逐行 license 审计；"
+            "占位不拦内部快照、拦 published。",
+        )
+    try:
+        total, missing = stats()
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"G6 许可终检审计异常: {e}")
+        return _g6_check(
+            G6_KEY_LICENSE, G6_PLACEHOLDER, "许可终检",
+            "resource_registry 在场但许可审计失败（详见服务端日志）：按占位处理"
+            "（占位不拦内部快照、拦 published）。",
+        )
+    if missing > 0:
+        return _g6_check(
+            G6_KEY_LICENSE, G6_FAILED, "许可终检",
+            f"resource_registry {missing}/{total} 行许可（license）为空：无许可"
+            "资源不得出版（D⑥ 许可纪律）—— 先补录许可再出版。",
+        )
+    if total == 0:
+        return _g6_check(
+            G6_KEY_LICENSE, G6_PASSED, "许可终检",
+            "resource_registry 已建、暂无登记资源（0 行审计空过）。",
+        )
+    return _g6_check(
+        G6_KEY_LICENSE, G6_PASSED, "许可终检",
+        f"resource_registry 共 {total} 行，license 逐行非空（审计通过）。",
+    )
+
+
+def _g6_style_summary(candidates: Optional[List[str]] = None) -> Dict[str, str]:
+    """G6 ② 体例终检：style.yaml 版本在场检查（在场→已过；全缺→灰注占位）。
+
+    体例工单（style.yaml 查看＋版本对比＋变更工单，帮助文档 6.7）批次 8 未建，
+    本版只验「体例文件在场」这一硬前提：候选路径（configs/、config/、data/、
+    仓库根）任一存在 style.yaml → 已过（在场路径如实展示，版本解析归体例
+    工单）；全部缺位 → 灰注「体例工单未建」占位 —— 占位不拦内部快照、
+    拦 published。
+
+    Args:
+        candidates: 候选绝对路径清单（测试可注入 tmp_path）；缺省取模块常量
+            候选相对路径拼仓库根。
+    """
+    paths = list(candidates) if candidates else [
+        os.path.join(_MEDIA_UPLOAD_BASE, rel) for rel in _G6_STYLE_CANDIDATE_RELS
+    ]
+    found: List[str] = []
+    for path in paths:
+        try:
+            if os.path.isfile(path):
+                found.append(path)
+        except OSError:  # 防御：异常路径按缺位处理，不让单路径拖垮检查
+            continue
+    if found:
+        shown: List[str] = []
+        for path in found[:2]:
+            try:
+                shown.append(os.path.relpath(path, _MEDIA_UPLOAD_BASE))
+            except ValueError:  # 跨盘等 relpath 失败 → 原样展示
+                shown.append(path)
+        return _g6_check(
+            G6_KEY_STYLE, G6_PASSED, "体例终检",
+            f"style.yaml 在场：{'、'.join(shown)}（版本对比与变更工单归体例配置页 "
+            "6.7，工单线接入后升级为版本在场检查）。",
+        )
+    return _g6_check(
+        G6_KEY_STYLE, G6_PLACEHOLDER, "体例终检",
+        "style.yaml 不在场（体例工单未建）：体例终检占位 —— 工单线接入后按 "
+        "style.yaml 版本在场检查；占位不拦内部快照、拦 published。",
+    )
+
+
+def _g6_backup_summary(
+    export_root: Any = None, data_root: Any = None
+) -> Dict[str, str]:
+    """G6 ③ 备份新鲜：data/exports 最近快照时间 ＋ mysqldump 最近文件时间。
+
+    口径（施工规范 §12「备份新鲜=data/exports 与 mysqldump 最近时间」）：
+      * 扫 exports 根的 snapshot-* 目录与 data 根的 *.sql 文件，各取最近
+        mtime 如实展示；**mysqldump 未探测到 → 卡内灰注**（运维备份三件套归
+        平台管理员，词典管理区只探测不执行）；
+      * 两类备份证据全缺 → 占位「尚无备份证据」；
+      * 新鲜度阈值未设（运维工单未建）—— MVP 口径＝备份证据在场＋最近时间
+        如实展示，docstring/GUIDE 留痕，不编「X 天内」假阈值。
+
+    Args:
+        export_root: exports 根（缺省 export_center.EXPORT_ROOT；测试注入 tmp_path）。
+        data_root: data 根（缺省仓库 data/；测试注入 tmp_path）。
+    """
+    root = str(export_root) if export_root is not None else str(
+        export_center.EXPORT_ROOT)
+    droot = str(data_root) if data_root is not None else os.path.join(
+        _MEDIA_UPLOAD_BASE, "data")
+
+    snap_ts: Optional[float] = None
+    try:
+        with os.scandir(root) as it:
+            for entry in it:
+                if not entry.name.startswith("snapshot-"):
+                    continue
+                try:
+                    ts = entry.stat().st_mtime
+                except OSError:
+                    continue
+                if snap_ts is None or ts > snap_ts:
+                    snap_ts = ts
+    except OSError as e:
+        logger.warning(f"G6 备份新鲜：exports 目录扫描失败（{root}）: {e}")
+    dump_ts: Optional[float] = None
+    try:
+        with os.scandir(droot) as it:
+            for entry in it:
+                if not entry.is_file() or not entry.name.lower().endswith(".sql"):
+                    continue
+                try:
+                    ts = entry.stat().st_mtime
+                except OSError:
+                    continue
+                if dump_ts is None or ts > dump_ts:
+                    dump_ts = ts
+    except OSError as e:
+        logger.warning(f"G6 备份新鲜：data 目录扫描失败（{droot}）: {e}")
+
+    def _fmt(ts: Optional[float]) -> str:
+        return "—" if ts is None else datetime.fromtimestamp(ts).strftime(
+            "%Y-%m-%d %H:%M")
+
+    if snap_ts is None and dump_ts is None:
+        return _g6_check(
+            G6_KEY_BACKUP, G6_PLACEHOLDER, "备份新鲜",
+            "尚无备份证据（data/exports 无内容域快照、data/ 未探测到 mysqldump "
+            "*.sql 文件）：先「生成内容域快照」，或由平台管理员执行灾备备份；"
+            "占位不拦内部快照、拦 published。",
+        )
+    parts = [f"最近内容域快照：{_fmt(snap_ts)}"]
+    if dump_ts is not None:
+        parts.append(f"最近 mysqldump：{_fmt(dump_ts)}")
+    else:
+        parts.append("mysqldump 备份未探测到（灰注：运维备份线未接入，灾备三件套"
+                     "归平台管理员，详见架构规范 §10）")
+    return _g6_check(
+        G6_KEY_BACKUP, G6_PASSED, "备份新鲜", "；".join(parts) + "。",
+    )
+
+
+def _g6_checklist(
+    exists_fn: Optional[Callable[[], Optional[bool]]] = None,
+    stats_fn: Optional[Callable[[], Tuple[int, int]]] = None,
+    style_candidates: Optional[List[str]] = None,
+    export_root: Any = None,
+    data_root: Any = None,
+) -> List[Dict[str, str]]:
+    """G6 三卡组装（顺序固定：许可 → 体例 → 备份；各卡独立降级不互相拖垮）。"""
+    return [
+        _g6_license_summary(exists_fn, stats_fn),
+        _g6_style_summary(style_candidates),
+        _g6_backup_summary(export_root, data_root),
+    ]
+
+
+def _g6_gate_blockers(checks: List[Dict[str, str]]) -> List[str]:
+    """G6 未全过项清单（纯函数）：「标题：徽章名」——占位与未过同拦 published。"""
+    return [
+        f"{c['title']}：{G6_STATUS_LABELS.get(c['status'], c['status'])}"
+        for c in checks if c.get("status") != G6_PASSED
+    ]
+
+
+def _g6_gate_open(checks: List[Dict[str, str]]) -> bool:
+    """G6 闸门是否放行（纯函数）：三项全过（无占位/未过）才 True。"""
+    return not _g6_gate_blockers(checks)
+
+
+def _g6_license_passed(checks: List[Dict[str, str]]) -> bool:
+    """许可终检单项是否已过（快照 license_checked 旗标口径，非全闸门）。"""
+    for check in checks:
+        if check.get("key") == G6_KEY_LICENSE:
+            return check.get("status") == G6_PASSED
+    return False
+
+
+def _advance_export_status(batch_id: int, from_status: str, to_status: str) -> bool:
+    """快照状态单步流转（export_center 契约未含的页面私有辅助，docstring 留痕）。
+
+    流转表（单向，无回退）：ready→published（G6 三项全过才放行 —— 闸门在
+    页面层，本函数只做乐观并发单步）；ready→revoked（撤销，**单向不可逆**：
+    撤销表示该快照作废、退出出版通道，如需再出版须重新生成快照 —— 不做
+    revoked→ready 回退，防「撤销又复活」造成审计断链；published 亦为终态）。
+    乐观并发守卫：UPDATE ... WHERE id=%s AND status=当前态 —— 两人同时流转
+    只有一人生效（与 _advance_binding_status 同款）。
+
+    Returns:
+        bool: 流转生效 True；id 非法 / 流转表外 / 状态已变 / 库不可用 False。
+    """
+    try:
+        bid = int(batch_id)
+    except (TypeError, ValueError):
+        return False
+    if bid <= 0:
+        return False
+    allowed = {("ready", "published"), ("ready", "revoked")}
+    if (str(from_status), str(to_status)) not in allowed:
+        logger.error(
+            f"非法快照流转被拒：{from_status!r} → {to_status!r}（单向流转表外）"
+        )
+        return False
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "UPDATE export_batches SET status = %s "
+                "WHERE id = %s AND status = %s",
+                (str(to_status), bid, str(from_status)),
+            )
+            return cursor.rowcount > 0
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"快照状态流转失败（id={bid}）: {e}")
+        return False
+
+
+def _render_g6_checklist(checks: List[Dict[str, str]]) -> bool:
+    """G6 检查清单三卡（许可/体例/备份），返回闸门是否放行（三项全过）。"""
+    cols = st.columns(3)
+    for col, check in zip(cols, checks):
+        status = str(check.get("status") or "")
+        badge = _badge(
+            _esc(G6_STATUS_LABELS.get(status, status)),
+            G6_STATUS_COLORS.get(status, _INACTIVE_GRAY),
+        )
+        with col:
+            st.markdown(
+                f"<div style='{get_card_style()}'>"
+                f"<b>{_esc(check.get('title') or '')}</b> {badge}"
+                f"<div style='color:#4a5568;font-size:0.85em;margin-top:6px;"
+                f"line-height:1.5;'>{_esc(check.get('detail') or '')}</div></div>",
+                unsafe_allow_html=True,
+            )
+    if _g6_gate_open(checks):
+        st.success("✅ G6 三项全过：闸门放行，可将 ready 快照标记为 published"
+                   "（装配→出版）。")
+        return True
+    st.warning(
+        "🚧 G6 未全过（" + "、".join(_g6_gate_blockers(checks)) + "）："
+        "占位项不拦「生成内容域快照」（内部快照，MANIFEST 如实标注、不得对外"
+        "交付），但拦 status ready→published 流转。"
+    )
+    return False
+
+
+def _render_snapshot_builder(
+    license_passed: bool, me: Dict[str, Any]
+) -> None:
+    """「生成内容域快照」按钮：guards 闸门 → export_center.build_content_snapshot。
+
+    license_checked 旗标＝许可终检单项结论（非全闸门）：未过/占位时生成的
+    快照按内部快照登记（MANIFEST 如实标注「未过（仅内部使用）」）。
+    """
+    st.markdown(
+        f"<h4 style='{HEADER_H3}'>📦 内容域快照（§15 内容性导出唯一正式出口）</h4>",
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "内容域逐表 CSV 打包（词条资源/定制属性/例证/对译/媒体元数据；账号安全"
+        "数据显式排除，缺表如实跳过并记录）。许可终检未过/占位时生成的快照按"
+        "**内部快照**登记（license_checked=0），不得对外交付 —— 对外交付须 G6 "
+        "三项全过后流转 published。"
+    )
+    if st.button("📦 生成内容域快照", key="pub_build_snapshot", type="primary"):
+        try:
+            actor = guards.require_dict_admin()
+        except PermissionError as e:
+            st.error(f"⛔ {e}")
+            return
+        result = export_center.build_content_snapshot(
+            actor, license_checked=license_passed)
+        if result.get("ok"):
+            st.success(
+                f"快照已生成：批次 #{result.get('batch_id')}，"
+                f"共 {result.get('rows_total')} 行。"
+            )
+            st.caption(f"zip 路径：{result.get('zip_path')}")
+            included = "、".join(result.get("tables_included") or []) or "（空）"
+            skipped = "、".join(result.get("tables_skipped") or []) or "无"
+            st.markdown(f"- 包含表：{included}\n- 跳过（表未建）：{skipped}")
+            logger.info(
+                f"dict_admin {me.get('username')} 生成内容域快照批次 "
+                f"#{result.get('batch_id')}（license_checked={license_passed}，"
+                f"{result.get('rows_total')} 行）"
+            )
+        else:
+            st.error(str(result.get("error") or "快照构建失败（详见服务端日志）。"))
+
+
+def _render_exports_table(exports: List[Dict[str, Any]]) -> None:
+    """快照清单只读表（批次/文件/行数/许可终检/状态/时间）。"""
+    if not exports:
+        st.info("暂无快照记录：点上方「生成内容域快照」建立第一份"
+                "（export_batches 为空或数据库不可用）。")
+        return
+    rows: List[List[str]] = []
+    for e in exports:
+        status = str(e.get("status") or "")
+        lic = "已过" if e.get("license_checked") else "未过（内部快照）"
+        rows.append([
+            str(int(e.get("id") or 0)),
+            _esc(str(e.get("file_path") or "")),
+            str(int(e.get("rows_total") or 0)),
+            lic,
+            _badge(
+                _esc(EXPORT_STATUS_LABELS.get(status, status)),
+                EXPORT_STATUS_COLORS.get(status, _INACTIVE_GRAY),
+            ),
+            _esc(str(e.get("created_at") or "—")),
+        ])
+    _render_table(["批次", "快照文件", "行数", "许可终检", "状态", "生成时间"], rows)
+
+
+def _render_exports_flow(
+    exports: List[Dict[str, Any]], gate_open: bool, blockers: List[str]
+) -> None:
+    """快照状态流转区：ready→published（G6 全过才可用）／ready→revoked（单向撤销）。"""
+    ready = [e for e in exports if str(e.get("status") or "") == "ready"]
+    if not ready:
+        st.caption("无 ready 态快照可流转（published/revoked 为终态，清单见上）。")
+        return
+    options: Dict[str, Dict[str, Any]] = {}
+    for e in ready:
+        label = (f"#{e.get('id')} · {e.get('file_path')} · "
+                 f"{e.get('rows_total')} 行 · {e.get('created_at')}")
+        options[label] = e
+    label = st.selectbox(
+        "选择 ready 态快照（逐条单步流转，乐观并发守卫）",
+        list(options.keys()), key="pub_flow_select",
+    )
+    row = options[label]
+    if not gate_open:
+        st.warning(
+            "G6 未全过（" + "、".join(blockers) + "）：published 流转禁用 —— "
+            "占位项不拦内部快照，但须三项全过才能出版交付。"
+        )
+    col_pub, col_rev = st.columns(2)
+    with col_pub:
+        if st.button(
+            "📤 标记 published（出版交付）", key="pub_publish_btn",
+            type="primary", disabled=not gate_open,
+            help="G6 三项全过才可出版；published 为终态。",
+        ):
+            try:
+                guards.require_dict_admin()
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
+            if _advance_export_status(int(row.get("id") or 0), "ready", "published"):
+                st.success(
+                    f"快照 #{row.get('id')} 已标记 published（出版交付，G6 已放行）。"
+                )
+                st.rerun()
+            else:
+                st.warning("流转未生效：快照状态已被他人变更（乐观并发守卫）"
+                           "或数据库不可用。")
+    with col_rev:
+        if st.button(
+            "🚫 撤销快照（ready→revoked，单向不可逆）", key="pub_revoke_btn",
+            help="撤销表示该快照作废、退出出版通道；不可逆 —— 如需再出版须"
+                 "重新生成快照（口径见 _advance_export_status docstring）。",
+        ):
+            try:
+                guards.require_dict_admin()
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
+            if _advance_export_status(int(row.get("id") or 0), "ready", "revoked"):
+                st.success(
+                    f"快照 #{row.get('id')} 已撤销（ready→revoked，单向；"
+                    "如需再出版请重新生成快照）。"
+                )
+                st.rerun()
+            else:
+                st.warning("撤销未生效：快照状态已被他人变更（乐观并发守卫）"
+                           "或数据库不可用。")
+
+
+def _render_publication_tab(me: Dict[str, Any]) -> None:
+    """📤 出版导出：G6 闸门执行页（工序 15；§15 内容性导出唯一权利人=词典管理员）。
+
+    三卡检查清单（许可终检/体例终检/备份新鲜）＋内容域快照（生成＋清单＋
+    ready→published / ready→revoked 单步流转）：占位项不拦内部快照、拦
+    published；快照生成与状态流转都在 guards.require_dict_admin 闸门之后
+    （纵深防御：tab 入口已过角色门，写路径调用点再过中央闸门）。
+    """
+    st.markdown(f"<h3 style='{HEADER_H3}'>🚧 G6 出版闸门检查清单（装配→出版）</h3>",
+                unsafe_allow_html=True)
+    st.caption(
+        "G6 放行条件（架构规范 §3 闸门表）：许可检查＋体例终检＋备份新鲜三项全过，"
+        "才允许把 ready 快照标记为 published —— 侵权/脏快照拦在出版之前。"
+    )
+    checks = _g6_checklist()
+    gate_open = _render_g6_checklist(checks)
+    blockers = _g6_gate_blockers(checks)
+    _render_snapshot_builder(_g6_license_passed(checks), me)
+    st.markdown("")
+    st.markdown(f"<h4 style='{HEADER_H3}'>🗂️ 快照清单与状态流转</h4>",
+                unsafe_allow_html=True)
+    exports = export_center.list_exports(limit=20)
+    _render_exports_table(exports)
+    st.markdown("")
+    _render_exports_flow(exports, gate_open, blockers)
+
+
+# ============================================
 # 页面入口
 # ============================================
 
 def render_dict_admin_page() -> None:
-    """📖 词典管理区入口（区级页面；页内三 tab，集成步骤挂进 app.py）。
+    """📖 词典管理区入口（区级页面；页内八 tab，集成步骤挂进 app.py；
+    批次 8 G6 末位增「📤 出版导出」tab —— G6 三卡检查清单＋内容域快照）。
 
     role gate 在函数入口（纵深防御 §6-4）：未登录提示登录；会话判定不过时
     再实时查库兜底；两层都不过渲染 st.warning「仅词典管理员」并 return ——
@@ -1588,20 +2149,23 @@ def render_dict_admin_page() -> None:
         "主编驾驶舱（自检 + AI 台账指标）· 项目成员（三级权限链第二级）· "
         "定制属性（EAV 字段与锚值）· 数据导入（批次台账，业务写入批次 3）· "
         "词条浏览器 · 任务分配（回避制/负荷上限校验批次 3）· "
-        "媒体库（上传/登记/绑定/审定，双轨登记）。"
+        "媒体库（上传/登记/绑定/审定，双轨登记）· 出版导出（G6 闸门执行页）。"
     )
 
     # 批次 2 集成：数据工具页（G）与任务分配 tab（H）并入本区——
     # 延迟导入避免模块加载顺序耦合；三个模块互不引用、无环。
     # 批次 4：义项脊柱随词条浏览器义项 expander 懒加载（data_pages 内接线），
     # 本区新增 🖼️ 媒体库 tab（媒体登记/绑定/审定，media_db 常量做下拉）；
-    # 批次 8：媒体库开通上传落盘通道（登记双轨，见 _render_media_upload_form）。
+    # 批次 8：媒体库开通上传落盘通道（登记双轨，见 _render_media_upload_form）；
+    # 批次 8 G6：末位增 📤 出版导出 tab（G6 三卡检查清单＋内容域快照，
+    # export_center 只读调用，状态流转为本模块私有单步辅助）。
     import src.data_pages as data_pages
     import src.collab_pages as collab_pages
 
-    tab_cockpit, tab_members, tab_fields, tab_import, tab_browser, tab_assign, tab_media = st.tabs(
+    (tab_cockpit, tab_members, tab_fields, tab_import,
+     tab_browser, tab_assign, tab_media, tab_publish) = st.tabs(
         ["🧭 主编驾驶舱", "👥 项目成员", "🏷️ 定制属性", "📥 数据导入", "📖 词条浏览器",
-         "📋 任务分配", "🖼️ 媒体库"],
+         "📋 任务分配", "🖼️ 媒体库", "📤 出版导出"],
     )
     with tab_cockpit:
         _render_cockpit_tab()
@@ -1617,3 +2181,5 @@ def render_dict_admin_page() -> None:
         collab_pages._render_assign_tab(me)
     with tab_media:
         _render_media_tab(me)
+    with tab_publish:
+        _render_publication_tab(me)

@@ -32,8 +32,10 @@ sense_translations 两表归批次 7 Agent V 的 lexical_db.py，本文件只管
 
   reviewed / revised / approved 三个枚举值是**两级终审扩展占位**（§8：普通词条
   reviewer 终审即 final；争议词条升级词典管理员终裁——例外通道而非必经站）：
-  MVP 单级审校不经过它们，其链路（reviewed→approved→final 展开＋升级/改派动作）
-  留给批次 8 集成，落点注明在 approve() docstring，契约 DDL 不动。
+  MVP 单级审校不经由 reviewed / revised；批次 8（G6 批）落终裁接口
+  adjudicate_final：in_review --approved--> final 直达收口（两级终审的例外通道，
+  跳过 reviewed/approved 中段枚举），并支持 approved --approved--> final（补终裁，
+  供未来两级链中段行收口）——reviewed / revised 仍为占位不经由，契约 DDL 不动。
 
 CRUD 契约（施工规范 §10）：
   create_draft / update_draft（乐观锁 expect_version）/ submit_for_review
@@ -45,11 +47,14 @@ CRUD 契约（施工规范 §10）：
 
 角色与回避制口径（§8「回避制无豁免，含词典管理员」）：
   * 数据层硬校验：审校动作（submit_for_review 指派、add_comment、
-    request_revision、approve）的 reviewer_id 一律不得等于该版本 author_id
-    （author_id 为 NULL 的系统登记行无可比对对象，如实放行并记日志）；
+    request_revision、approve、adjudicate_final 终裁）的 reviewer_id /
+    adjudicator_id 一律不得等于该版本 author_id（author_id 为 NULL 的系统
+    登记行无可比对对象，如实放行并记日志）；
   * 裁决动作（request_revision / approve）须由**受派审校人**执行（与
-    review_tasks.reviewer_id 一致）；意见线（add_comment）任何非作者登录者
-    可挂 —— 裁决与意见分权；
+    review_tasks.reviewer_id 一致）；终裁（adjudicate_final）走词典管理员
+    口径（actor 有效六角色含 dict_admin，同 publish 的判定源）而非受派
+    审校人口径 —— 例外通道收口，见函数 docstring；意见线（add_comment）
+    任何非作者登录者可挂 —— 裁决与意见分权；
   * publish 的 actor 角色判定（任务契约明确要求）：actor 会话 dict 的有效
     六角色须含 dict_admin —— 判定复用 users_db.effective_six_roles（与
     guards.require_dict_admin 同一实现；legacy role=='admin' 经映射兼判），
@@ -111,6 +116,10 @@ VERDICTS = (
     VERDICT_PENDING, VERDICT_APPROVED, VERDICT_REJECTED,
     VERDICT_REVISION_REQUESTED,
 )
+
+# 终裁决策集（adjudicate_final 的 decision 入参全集）：终裁只有通过/否决两向，
+# 「要求修订」是受派审校人的打回动作（request_revision），不进终裁口径。
+ADJUDICATE_DECISIONS = (VERDICT_APPROVED, VERDICT_REJECTED)
 
 # list 类接口单次返回上限（仿 ai_ledger.MAX_LIST_LIMIT；防一次性拖全表）
 MAX_LIST_LIMIT = 500
@@ -789,6 +798,140 @@ def approve(version_id: int, reviewer_id: int,
         return False
 
 
+def adjudicate_final(
+    version_id: int,
+    adjudicator_id: int,
+    decision: str,
+    note: str = "",
+    *,
+    actor: Any = None,
+) -> bool:
+    """词典管理员终裁（批次 8 G6 契约；两级终审的例外通道收口，架构规范 §8）。
+
+    **角色口径**：actor（会话用户 dict）的有效六角色须含 dict_admin —— 判定
+    复用 users_db.effective_six_roles（与 guards.require_dict_admin 同一实现；
+    legacy role=='admin' 经映射兼判）。actor 须显式传入（本层不 import
+    streamlit、不读 users 表，测试可注入）；actor 缺失/非 dict/无 dict_admin
+    一律拒绝（fail-closed）。adjudicator_id 是终裁人 users.id（留痕用，页面层
+    传会话用户 id；本层不强制与 actor['id'] 相等，诚实留痕由调用方保证）。
+
+    **状态机（终态图）**::
+
+        in_review ──decision=approved──▶ final     （终裁通过 = final 直达：
+                                                    两级终审收口，跳过
+                                                    reviewed/approved 中段占位）
+        approved  ──decision=approved──▶ final     （补终裁：两级链中段的
+                                                    approved 行收口到 final）
+        in_review ──decision=rejected──▶ rejected  （终裁否决，直接打回侧支；
+                                                    作者重提走 create_draft
+                                                    version+1 + based_on_version）
+        其余状态（draft / reviewed / revised / final / published / rejected）
+        与非法 decision 一律拒绝（不进数据库）。
+
+    **留痕**：每次终裁向 review_tasks 插入**新任务行**（不覆盖受派审校人的
+    既有任务行 —— 伪造 verdict 即篡改审校记录，纪律禁止）：round =
+    MAX(round)+1（round+1 标记终裁轮），verdict = decision，reviewer_id =
+    adjudicator_id，note = 终裁意见。受派审校人未决的 pending 任务保持原样
+    （终裁已收口后其裁决动作会被 approve/request_revision 的状态守卫拒绝，
+    页面层如实转述）；list_pending_reviews 的联结读侧可见版本状态。
+
+    **回避制无豁免（§8，含词典管理员）**：adjudicator_id 不得等于版本
+    author_id —— 自写词条由其他词典管理员终裁；author_id 为 NULL（系统登记）
+    无可比对对象，如实放行并记日志（与 approve 同口径）。
+
+    Args:
+        version_id: 版本行 id（须处于 in_review / approved 态，见状态机）。
+        adjudicator_id: 终裁人 users.id（正整数；≠ author_id，回避制）。
+        decision: 终裁决策，须 ∈ ADJUDICATE_DECISIONS（approved / rejected）。
+        note: 终裁意见（可选；否决理由由页面层强制必填，数据层不重复强制）。
+        actor: 会话用户 dict（显式传入；有效六角色须含 dict_admin）。
+
+    Returns:
+        bool: 终裁成功为 True；行不存在 / 状态不符 / decision 非法 / actor
+        无 dict_admin / 回避制冲突 / 参数非法 / 数据库错误为 False（状态
+        保持原态、不留半流转）。
+    """
+    vid = _as_positive_int(version_id)
+    aid = _as_positive_int(adjudicator_id)
+    if vid is None or aid is None:
+        logger.error(
+            f"adjudicate_final 拒绝非法 version_id/adjudicator_id: "
+            f"{version_id!r}/{adjudicator_id!r}"
+        )
+        return False
+    if decision not in ADJUDICATE_DECISIONS:
+        logger.error(
+            f"adjudicate_final 拒绝非法 decision: {decision!r}"
+            f"（须 ∈ {ADJUDICATE_DECISIONS}）"
+        )
+        return False
+    clean_note = _clean_optional_str(note, MAX_TEXT_LEN)
+    if clean_note is _INVALID:
+        logger.error(f"adjudicate_final 拒绝非法 note: {note!r}")
+        return False
+    if not isinstance(actor, dict):
+        logger.error(
+            "adjudicate_final 拒绝：actor 须显式传入会话用户 dict（未登录"
+            "写路径 fail-closed）"
+        )
+        return False
+    if "dict_admin" not in effective_six_roles(actor):
+        logger.error(
+            f"adjudicate_final 回绝：actor（{actor.get('username', '?')}）"
+            "有效角色集不含 dict_admin —— 终裁仅词典管理员（架构规范 §8）"
+        )
+        return False
+    if decision == VERDICT_APPROVED:
+        allowed_from = (STATUS_IN_REVIEW, STATUS_APPROVED)
+        target_status = STATUS_FINAL
+    else:
+        allowed_from = (STATUS_IN_REVIEW,)
+        target_status = STATUS_REJECTED
+    try:
+        with get_db_cursor(autocommit=False) as cursor:
+            cursor.execute(
+                "SELECT id, sense_ref, version, author_id, status "
+                "FROM definition_versions WHERE id = %s FOR UPDATE",
+                (vid,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                logger.error(f"adjudicate_final 拒绝：id={vid} 不存在")
+                return False
+            if row.get("status") not in allowed_from:
+                logger.error(
+                    f"adjudicate_final 拒绝：id={vid} 状态 "
+                    f"{row.get('status')} 不在可终裁态 {allowed_from}"
+                )
+                return False
+            if _recusal_violated(row.get("author_id"), aid, "adjudicate_final",
+                                 row.get("sense_ref"), row.get("version")):
+                return False
+            cursor.execute(
+                "SELECT COALESCE(MAX(round), 0) AS r FROM review_tasks "
+                "WHERE version_id = %s",
+                (vid,),
+            )
+            round_no = int(cursor.fetchone()["r"] or 0) + 1
+            cursor.execute(
+                "INSERT INTO review_tasks (version_id, reviewer_id, round, "
+                "verdict, note) VALUES (%s, %s, %s, %s, %s)",
+                (vid, aid, round_no, decision, clean_note),
+            )
+            cursor.execute(
+                "UPDATE definition_versions SET status = %s "
+                "WHERE id = %s AND status = %s",
+                (target_status, vid, row.get("status")),
+            )
+        return True
+    except pymysql.Error as e:
+        logger.error(f"adjudicate_final 失败（id={vid}）: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"adjudicate_final 意外错误（id={vid}）: {e}")
+        return False
+
+
 def publish(version_id: int, actor: Any) -> bool:
     """定稿发布：final → published（G6 闸门位，仅 dict_admin 口径）。
 
@@ -1071,6 +1214,7 @@ def resolve_comment(comment_id: int, resolved: bool = True) -> bool:
 __all__ = [
     "VERSION_STATUSES",
     "VERDICTS",
+    "ADJUDICATE_DECISIONS",
     "STATUS_DRAFT",
     "STATUS_IN_REVIEW",
     "STATUS_REVIEWED",
@@ -1099,6 +1243,7 @@ __all__ = [
     "add_comment",
     "request_revision",
     "approve",
+    "adjudicate_final",
     "publish",
     "list_versions",
     "list_pending_reviews",
