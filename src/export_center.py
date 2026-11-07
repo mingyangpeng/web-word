@@ -1,0 +1,166 @@
+"""出版导出中心 —— 内容域快照的唯一正式出口（架构规范 §15 / 工序 15）。
+
+定位：**内容性导出的唯一正式通道**。把词典内容域（词条资源/定制属性/例证/对译/
+媒体元数据——表存在才导，缺表如实跳过并记录）打包为 CSV 快照 + zip，登记
+`export_batches`（审计线）；G6 出版闸门（许可终检/体例终检）由词典管理区
+「出版导出」页接线后在此前置，本版先落数据面与快照机械。
+
+纪律（§15）：
+- 内容性导出仅词典管理员——调用方传 actor（页面层 `guards.require_dict_admin()`
+  通过后的用户 dict），本模块校验 effective 角色集含 dict_admin，否则拒绝；
+- 运维性备份（平台管理员）不是交付通道，与本中心分离；
+- 不含 users/密码等账号安全数据（内容域快照显式排除）。
+
+降级：某内容表不存在→该表跳过并记入 `skipped`（如实，不编空文件）；
+库不可用→整单失败返回 error。
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import logging
+import zipfile
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from src.mysql_db import get_db_cursor
+from src.users_db import effective_six_roles
+
+logger = logging.getLogger(__name__)
+
+EXPORT_BATCHES_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS export_batches (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  operator_id INT NULL,
+  scope VARCHAR(40) NOT NULL DEFAULT 'content_snapshot',
+  file_path VARCHAR(255) NOT NULL,
+  rows_total INT NOT NULL DEFAULT 0,
+  tables_included JSON NULL,
+  tables_skipped JSON NULL,
+  license_checked TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('ready','published','revoked') NOT NULL DEFAULT 'ready',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+# 内容域快照范围（§15：排除账号安全数据；表不存在则跳过）
+CONTENT_TABLES: List[str] = [
+    "definitions", "oald_senses", "wordforms",
+    "custom_fields", "custom_values", "sense_examples", "sense_translations",
+    "media_assets", "media_bindings", "export_batches",
+]
+
+EXPORT_ROOT = Path(__file__).resolve().parent.parent / "data" / "exports"
+
+
+def ensure_export_tables() -> None:
+    """幂等建 export_batches（快照审计线）。"""
+    with get_db_cursor() as cursor:
+        cursor.execute(EXPORT_BATCHES_TABLE_SQL)
+
+
+def _table_exists(table: str) -> bool:
+    sql = ("SELECT COUNT(*) AS n FROM information_schema.TABLES "
+           "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s")
+    with get_db_cursor() as cursor:
+        cursor.execute(sql, (table,))
+        row = cursor.fetchone()
+        return bool(row) and int(row["n"] or 0) > 0
+
+
+def _dump_table_csv(table: str) -> tuple[str, int]:
+    """导出单表全行为 CSV 文本（表头+行）；返回 (csv 文本, 行数)。"""
+    with get_db_cursor() as cursor:
+        cursor.execute(f"SELECT * FROM {table}")  # 表名来自模块常量白名单
+        rows = cursor.fetchall() or []
+    if not rows:
+        return "", 0
+    headers = list(rows[0].keys())
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow([row.get(h) for h in headers])
+    return buffer.getvalue(), len(rows)
+
+
+def build_content_snapshot(actor: Optional[Dict[str, Any]] = None,
+                           license_checked: bool = False) -> Dict[str, Any]:
+    """构建内容域快照：逐表 CSV → zip → 登记 export_batches。
+
+    Args:
+        actor: 调用方用户 dict（页面层经 guards.require_dict_admin 传入；
+               此处再校验一次——单一事实源 effective_six_roles）。
+        license_checked: 许可终检是否已过（G6 接线前置；False=内部快照，
+                         不得对外交付——页面据此渲染提示）。
+
+    Returns:
+        {ok, batch_id?, zip_path?, rows_total, tables_included, tables_skipped,
+         license_checked, error?}
+    """
+    roles = effective_six_roles(actor)
+    if "dict_admin" not in roles:
+        return {"ok": False,
+                "error": "仅词典管理员可执行内容域快照导出（架构规范 §15）。"}
+    try:
+        ensure_export_tables()
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        out_dir = EXPORT_ROOT / f"snapshot-{stamp}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        included: List[str] = []
+        skipped: List[str] = []
+        rows_total = 0
+        zip_path = out_dir / f"content-snapshot-{stamp}.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for table in CONTENT_TABLES:
+                if not _table_exists(table):
+                    skipped.append(table)
+                    continue
+                text, n = _dump_table_csv(table)
+                rows_total += n
+                if n:
+                    zf.writestr(f"{table}.csv", text)
+                    included.append(table)
+                else:
+                    included.append(table)  # 空表也入清单（0 行如实）
+            zf.writestr("MANIFEST.txt",
+                        "LexiSchema 内容域快照（内部快照，未经 G6 许可终检不得对外交付）\n"
+                        f"生成时间: {stamp}\n包含表: {', '.join(included)}\n"
+                        f"跳过(表未建): {', '.join(skipped) or '无'}\n"
+                        f"总行数: {rows_total}\n"
+                        f"许可终检: {'已过' if license_checked else '未过（仅内部使用）'}\n")
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO export_batches (operator_id, scope, file_path, "
+                "rows_total, tables_included, tables_skipped, license_checked, status) "
+                "VALUES (%s, 'content_snapshot', %s, %s, %s, %s, %s, 'ready')",
+                (int(actor.get("id") or 0), str(zip_path.relative_to(
+                    Path(__file__).resolve().parent.parent)), rows_total,
+                 json.dumps(included), json.dumps(skipped),
+                 1 if license_checked else 0),
+            )
+            batch_id = cursor.lastrowid
+        return {"ok": True, "batch_id": batch_id, "zip_path": str(zip_path),
+                "rows_total": rows_total, "tables_included": included,
+                "tables_skipped": skipped, "license_checked": license_checked}
+    except Exception as e:  # noqa: BLE001 —— 快照失败整单返回，不半途抛
+        logger.warning(f"内容域快照构建失败: {e}")
+        return {"ok": False, "error": f"快照构建失败：{e}"}
+
+
+def list_exports(limit: int = 20) -> List[Dict[str, Any]]:
+    """最近快照清单（出版导出页列表用；库不可用返回空）。"""
+    try:
+        ensure_export_tables()
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, operator_id, scope, file_path, rows_total, "
+                "license_checked, status, created_at FROM export_batches "
+                "ORDER BY id DESC LIMIT %s", (int(limit),))
+            return list(cursor.fetchall() or [])
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"快照清单读取失败: {e}")
+        return []

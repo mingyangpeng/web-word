@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """导出论文公开版数据包 —— 与投稿声明口径一致（SenseID + 标签 + 统计层）。
 
-投稿声明（papers/投稿包/通用声明块.md）承诺：公开版本只含 SenseID、标签与
+投稿声明（docs/research/papers/series/投稿包/通用声明块.md）承诺：公开版本只含 SenseID、标签与
 统计层，不含 OALD10 与《现汉7》词典原文（版权限制）。本脚本从数据库导出
-恰好这一范围的数据，写入 papers/投稿包/数据包/：
+恰好这一范围的数据，写入 docs/research/papers/series/投稿包/数据包/：
 
   01_义位清单_英.xlsx   SenseID / 词目 / 义项号 / 标签 / 主体 / 语体 / 判定（不含释义例句）
   02_义位清单_汉.xlsx   同上（汉语侧，含三态判定）
@@ -32,7 +32,7 @@ from openpyxl import Workbook  # noqa: E402
 
 from src.mysql_db import get_db_cursor  # noqa: E402
 
-OUT_DIR = ROOT / "papers" / "投稿包" / "数据包"
+OUT_DIR = ROOT / "docs" / "research" / "papers" / "series" / "投稿包" / "数据包"
 
 
 def _fetch(cursor, sql, params=()):

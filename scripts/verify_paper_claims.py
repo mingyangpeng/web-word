@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""论文声明 ↔ 数据库核对 —— papers/P3 与 docs/paper/期刊论文的定量声明复现。
+"""论文声明 ↔ 数据库核对 —— papers/P3 与 docs/research/papers/journal/期刊论文的定量声明复现。
 
 把两篇论文的全部定量声明固化为断言，投稿前/数据变更后随时重跑：
     MYSQL_HOST=127.0.0.1 python3 scripts/verify_paper_claims.py

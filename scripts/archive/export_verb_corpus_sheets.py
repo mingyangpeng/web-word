@@ -17,8 +17,8 @@ data/corpus/wsketch_full/<verb>.json。
                    （PS = Mean_logDice × log2(N+1)），N 与 Mean_logDice
                    由「语义类别=保留」的行自动汇总
 
-参照：docs/开题报告.docx「原型性量化分析——以到达类·终点抵达为例」
-      docs/义项判定标准修改稿.docx（四类意象图式）
+参照：docs/research/protocols/开题报告.docx「原型性量化分析——以到达类·终点抵达为例」
+      docs/research/protocols/义项判定标准修改稿.docx（四类意象图式）
 """
 import json
 import math

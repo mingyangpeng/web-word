@@ -31,10 +31,10 @@ REQUIRED_MODULES = ["streamlit", "pandas", "plotly", "pymysql", "yaml",
 
 # 种子数据：知识图谱/语料/范畴/现汉7/实验词表/dictionary 全库（或分卷）
 SEEDS = [
-    ("词表·Levin 筛选表", "docs/Levin移动动词候选词筛选表.xlsx"),
-    ("词表·OALD10 义项表", "docs/output-oald10en-for-senselist-1020.xlsx"),
-    ("词表·义项清单（中英对照）", "docs/词表义项清单.xlsx"),
-    ("词表·域系初判表", "docs/域系初判表v0.2.xlsx"),
+    ("词表·Levin 筛选表", "docs/research/tables/Levin移动动词候选词筛选表.xlsx"),
+    ("词表·OALD10 义项表", "docs/research/tables/output-oald10en-for-senselist-1020.xlsx"),
+    ("词表·义项清单（中英对照）", "docs/research/tables/词表义项清单.xlsx"),
+    ("词表·域系初判表", "docs/research/tables/域系初判表v0.2.xlsx"),
     ("词库·旧词库 JSON", "data/motion_verbs_extracted.json"),
     ("词库·英文释义缓存", "data/oxford_cache.json"),
     ("词库·词间关系图谱", "data/word_graph.json"),

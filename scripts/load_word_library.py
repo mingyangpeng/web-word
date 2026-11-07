@@ -7,7 +7,7 @@
 
 | 来源 | 提供什么 | 地位 |
 |------|----------|------|
-| `docs/Levin移动动词候选词筛选表.xlsx` | 171 个通过筛选的自移移动动词、三主范畴 / 十二次类、判断理由 | **词目分类权威** |
+| `docs/research/tables/Levin移动动词候选词筛选表.xlsx` | 171 个通过筛选的自移移动动词、三主范畴 / 十二次类、判断理由 | **词目分类权威** |
 | `data/dictionary.db` | 逐义位的 Ch-Def / En-Def / 例句 / 近义反义词 | **释义正确性首选** |
 | `data/motion_verbs_extracted.json` | 旧词库的中文释义与五元语义分解 | 释义兜底 |
 | `data/oxford_cache.json` | 英文释义 | 末级兜底 |
@@ -82,7 +82,7 @@ def annotate_senses(senses, levin_row):
     """
     给每个义位打上标注标签。
 
-    **这里只产出候选标签，不是最终结论。** `docs/义项判定标准.docx` 第 45 段明确：
+    **这里只产出候选标签，不是最终结论。** `docs/research/protocols/义项判定标准.docx` 第 45 段明确：
     「程序 / 大模型仅输出候选标签作为参考，最终全部标签由研究者人工复核确认」。
     所以每个义位都置 `needs_review=1`，页面上也会显示「待复核」。
 
@@ -218,8 +218,8 @@ def build_word_graph(entries, clusters, pairs):
         "directed": False,
         "multigraph": False,
         "description": "英语自移移动动词词间关系图：节点=动词，边=同一次类近义关系（簇内完全图）",
-        "source": ("docs/Levin移动动词候选词筛选表.xlsx（词目与分类）+ "
-               "docs/output-oald10en-for-senselist-1020.xlsx（OALD10 义项）+ "
+        "source": ("docs/research/tables/Levin移动动词候选词筛选表.xlsx（词目与分类）+ "
+               "docs/research/tables/output-oald10en-for-senselist-1020.xlsx（OALD10 义项）+ "
                "data/dictionary.db（中英对照义位）"),
         "nodes": nodes,
         "links": links,

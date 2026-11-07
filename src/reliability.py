@@ -1,6 +1,6 @@
 """Krippendorff's α 信度引擎（多人标注系统 · Agent C）。
 
-职责（唯一事实源 docs/p1/多人标注系统设计规范.md §3 / §7-V4）：
+职责（唯一事实源 docs/spec/多人标注系统设计规范.md §3 / §7-V4）：
 
   * ``compute_alpha(units, value_type)``      对 {unit: {coder: value}} 算 α
   * ``run_reliability(category, task_type, features_meta)``  从 annotation_submissions

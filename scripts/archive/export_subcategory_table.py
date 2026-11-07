@@ -2,11 +2,11 @@
 """导出「词表 12 次类构成表」——三主范畴 × 十二次类的词池构成总表。
 
 数据来源：
-  - docs/Levin移动动词候选词筛选表.xlsx「去除不符合的」页（主范畴/次类/词目，权威源）
+  - docs/research/tables/Levin移动动词候选词筛选表.xlsx「去除不符合的」页（主范畴/次类/词目，权威源）
   - output/02_义位标注/*_义项.xlsx（每词义位数，合计 996）
   - src/word_source.py SCHEMA_BY_SUB_CAT（词目层意象图式初判映射）
 
-产出：docs/词表12次类构成表.xlsx，供论文 4.1.1（词池构成）直接引用。
+产出：docs/research/tables/词表12次类构成表.xlsx，供论文 4.1.1（词池构成）直接引用。
 """
 
 import glob

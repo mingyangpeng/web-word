@@ -11,7 +11,7 @@
 
 ## 文档的诚实性要求
 
-`docs/义项判定标准.docx` 要求「所有判定结果必须可回溯到 OALD 释义、例句原文，
+`docs/research/protocols/义项判定标准.docx` 要求「所有判定结果必须可回溯到 OALD 释义、例句原文，
 备注栏留存依据」。但 dictionary.db 只覆盖 136 词里的 9 个，所以文档里**必须写明**
 每个词的释义来自哪一级来源，以及全部标注都是待复核的候选值。
 不写清楚的话，读者会误以为每条释义都是词典原文。
@@ -370,7 +370,7 @@ def build_document(entries, rejects, audit, cluster_meta=None):
         "· data/dictionary.db（OALD 结构化数据）—— 义位、中英文释义、例句、近义反义词",
         "· data/motion_verbs_extracted.json —— 早期词库的中文释义（二手来源）",
         "· data/oxford_cache.json —— 英文释义缓存",
-        "· docs/义项判定标准.docx —— 标注字段的定义与值域",
+        "· docs/research/protocols/义项判定标准.docx —— 标注字段的定义与值域",
         "",
         "重新生成：python scripts/generate_word_doc.py",
         "同步数据库：python scripts/load_word_library.py",

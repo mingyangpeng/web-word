@@ -2,9 +2,9 @@
 """为 136 个英语自移移动动词生成逐词「义位标注表」xlsx。
 
 数据来源：
-  - docs/词表义项清单.xlsx「义项明细」：OALD10 逐义项数据（132 词，665 义位）
+  - docs/research/tables/词表义项清单.xlsx「义项明细」：OALD10 逐义项数据（132 词，665 义位）
   - data/oxford_cache.json：Oxford 释义缓存（dodder）
-  - docs/词表义项清单.xlsx「词表概览」：主范畴/次类/原型主导义简述（4 个缺义词的补充来源）
+  - docs/research/tables/词表义项清单.xlsx「词表概览」：主范畴/次类/原型主导义简述（4 个缺义词的补充来源）
 
 每词一个 xlsx（data/corpus/sense_sheets/<verb>_义项.xlsx），两个工作表：
   1. 义位标注 —— 14 字段（见 FIELD_NOTES），义项以 S1,S2,S3... 编号（SenseID），
