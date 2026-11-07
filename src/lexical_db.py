@@ -53,7 +53,8 @@
 安全规则：
   1. SQL 一律参数化，本文件无一处把值拼进 SQL 文本；
   2. 入参在应用层先校验再入库：非法 source/state/状态、空 sense_ref、
-     空 content、超长 equivalent/caption/note 根本不进数据库
+     空 content、超长 content（MAX_CONTENT_LEN=20000，R2-6 显式设防）/
+     超长 equivalent/caption/note 根本不进数据库
      （不依赖 ENUM/长度报错）；
   3. 单步流转（候选→审定→发布）带乐观并发守卫 WHERE status=当前态，
      两人同时流转同一条只有一人生效，任何人不跳级、不回退。
@@ -96,6 +97,10 @@ MAX_SENSE_REF_LEN = 60     # sense_ref VARCHAR(60)
 MAX_CAPTION_LEN = 255      # caption VARCHAR(255)
 MAX_EQUIVALENT_LEN = 255   # equivalent VARCHAR(255)
 MAX_NOTE_LEN = 500         # note VARCHAR(500)
+# content TEXT 本无列宽上限，但「无上限」不等于不设防（R2-6）：应用层显式
+# 给 20000 字符保守上限（utf8mb4 TEXT 65535 字节内的安全值，远超正常例证
+# 句长），防误贴整段语料/整篇文档把例证表撑成垃圾场；页面 help 同口径注明。
+MAX_CONTENT_LEN = 20000    # content TEXT（应用层显式上限，超长拒收）
 
 # 建表 DDL（契约 §10-V 表设计原样；幂等，CREATE TABLE IF NOT EXISTS）。
 SENSE_EXAMPLES_TABLE_SQL = """CREATE TABLE IF NOT EXISTS sense_examples (
@@ -213,7 +218,8 @@ def add_example(
             cs_senses.status='merged' 的义位由页面层禁选（分立复核已并入
             他义位，不再配置例证）；本数据层不做跨域存在性校验（软引用，
             与 media_db 锚口径一致）。
-        content: 例证文本（非空；TEXT 无上限）。
+        content: 例证文本（非空；R2-6 起 ≤MAX_CONTENT_LEN=20000 字符 —— TEXT
+            本无列宽上限，应用层显式设防，页面 help 同口径注明）。
         source: 来源 ∈ EXAMPLE_SOURCES（'corpus'/'adapted'/'composed'，
             默认语料例）。
         caption: 例证说明/出处（≤255 字符，默认 ''）。
@@ -229,6 +235,11 @@ def add_example(
         return 0
     if not isinstance(content, str) or not content.strip():
         logger.error("add_example 拒绝空 content（例证文本必填）")
+        return 0
+    if len(content.strip()) > MAX_CONTENT_LEN:
+        logger.error(
+            f"add_example 拒绝超长 content（>{MAX_CONTENT_LEN} 字符）"
+        )
         return 0
     if source not in EXAMPLE_SOURCES:
         logger.error(
@@ -337,7 +348,8 @@ def update_example(
 
     Args:
         example_id: 例证 id（>0，行须存在）。
-        content: 新例证文本（None=不改；给出须非空）。
+        content: 新例证文本（None=不改；给出须非空，R2-6 起 ≤MAX_CONTENT_LEN
+            字符，与 add_example 同上限）。
         source: 新来源 ∈ EXAMPLE_SOURCES（None=不改）。
         caption: 新说明/出处（None=不改；'' 允许=清空）。
         sort_order: 新顺序（None=不改）。
@@ -355,6 +367,11 @@ def update_example(
     if content is not None:
         if not isinstance(content, str) or not content.strip():
             logger.error("update_example 拒绝空 content")
+            return False
+        if len(content.strip()) > MAX_CONTENT_LEN:
+            logger.error(
+                f"update_example 拒绝超长 content（>{MAX_CONTENT_LEN} 字符）"
+            )
             return False
         sets.append("content = %s")
         params.append(content.strip())

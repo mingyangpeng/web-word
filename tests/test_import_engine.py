@@ -224,6 +224,27 @@ class TestPlanImport:
         assert plan["rows_rejected"] == 1
         assert "重复" in plan["rejected"][0]["reason"]
 
+    def test_rejected_row_verb_does_not_block_later_valid_row(self):
+        """R2-4（docstring 对齐实测行为）：被拒行的 verb 不占去重坑 ——
+        去重坑只在**通过全部校验的合法行**上登记，同名后续合法行可被接受
+        （最终以 DB UNIQUE(verb) 兜底，run_import 执行期命中既有行走 UPDATE）。"""
+        rows = [
+            {"词目": "run", "中文释义": ""},      # 拒：释义为空（不占坑）
+            {"词目": "run", "中文释义": "奔跑"},  # 同名合法行：接受
+        ]
+        plan = plan_import(rows, MAPPING)
+        assert plan["rows_ok"] == 1
+        assert plan["rows_rejected"] == 1
+        assert plan["rejected"][0]["row_index"] == 0
+        assert plan["valid_rows"][0]["row_index"] == 1
+        assert plan["valid_rows"][0]["verb"] == "run"
+
+    def test_duplicate_verb_docstring_aligned(self):
+        """R2-4：plan_import docstring 明示去重口径（锁定，防回漂）。"""
+        doc = plan_import.__doc__ or ""
+        assert "不占去重坑" in doc
+        assert "UNIQUE(verb)" in doc
+
     def test_non_dict_row_rejected(self):
         plan = plan_import(["not-a-dict"], MAPPING)
         assert plan["rows_rejected"] == 1

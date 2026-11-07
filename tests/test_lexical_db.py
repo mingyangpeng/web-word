@@ -31,6 +31,7 @@ import src.mysql_db as db  # noqa: E402
 from src.lexical_db import (  # noqa: E402
     EXAMPLE_SOURCES,
     EXAMPLE_STATUSES,
+    MAX_CONTENT_LEN,
     TRANSLATION_STATES,
     add_example,
     advance_example_status,
@@ -84,6 +85,24 @@ class TestGuards:
         assert add_example("s1", "例句", created_by=-3) == 0
         assert add_example("s1", "例句", created_by="x") == 0
         assert add_example("s1", "例句", created_by=True) == 0
+
+    def test_add_content_over_limit_rejected(self):
+        """R2-6：content 超过 MAX_CONTENT_LEN=20000 字符 → 0（应用层显式设防，
+        TEXT 无列宽上限不等于不设防；守卫先拒，不碰数据库）。"""
+        assert add_example("s1", "字" * (MAX_CONTENT_LEN + 1)) == 0
+        # 首尾空白规整后超长同样拒（写入的是 strip 后的文本，按 strip 后计长）
+        assert add_example("s1", " " + "字" * (MAX_CONTENT_LEN + 1) + " ") == 0
+        # 非法形态与超长并存时仍返回 0（专用日志，不抛异常）
+        assert add_example("s1", "字" * (MAX_CONTENT_LEN * 3)) == 0
+
+    def test_update_content_over_limit_rejected(self):
+        """R2-6：update_example 的 content 与 add_example 同上限，超长 → False。"""
+        assert update_example(1, content="字" * (MAX_CONTENT_LEN + 1)) is False
+        assert update_example(1, content=" " + "字" * (MAX_CONTENT_LEN + 1)) is False
+
+    def test_content_limit_constant(self):
+        """上限常量口径：20000（页面 help 与本常量同源引用）。"""
+        assert MAX_CONTENT_LEN == 20000
 
     def test_update_invalid_args_rejected(self):
         """update_example：非法 id / 无字段 / 空 content / 非法 source / 超长。"""
@@ -276,6 +295,19 @@ class TestLexicalIntegration:
         assert add_example("s", "  例句  ") > 0
         rows = list_examples("s")
         assert rows[0]["content"] == "例句"
+
+    def test_add_content_at_limit_accepted_over_rejected(self, lexical_env):
+        """R2-6 边界：恰 20000 字符（utf8mb4 60000 字节 < TEXT 65535）可入库；
+        超长被拒且不落行。"""
+        ensure_lexical_tables()
+        eid = add_example("s", "字" * MAX_CONTENT_LEN)
+        assert eid > 0
+        rows = list_examples("s")
+        assert len(rows) == 1
+        assert len(rows[0]["content"]) == MAX_CONTENT_LEN
+        # 超长拒收：库里仍只有上面一条
+        assert add_example("s", "字" * (MAX_CONTENT_LEN + 1)) == 0
+        assert len(list_examples("s")) == 1
 
     def test_list_order_by_sort_order_then_id(self, lexical_env):
         """多例证按 sort_order, id 稳定排序（装配确定性）。"""

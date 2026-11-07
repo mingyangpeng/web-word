@@ -75,6 +75,7 @@ from src.ai_ledger import (
     list_pending,
 )
 from src.annotation_flow import TASK_TYPES as ASSIGNMENT_TASK_TYPES
+from src.data_pages import _escape_like  # R2-5：LIKE 转义与 data_pages 同源
 from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
 from src.mysql_db import get_db_cursor
 from src.org_db import get_projects_for_user
@@ -642,11 +643,14 @@ def _search_verbs(keyword: str, limit: int = 20) -> List[Dict[str, Any]]:
     """动词/义位搜索（definitions × oald_senses 参数化只读查询，本模块辅助）。
 
     词目（definitions.verb）或 OALD 义项词头（oald_senses.headword）LIKE 匹配：
-    通配符由本函数拼在**值**里（``%kw%``），关键词本身走占位符 —— 用户输入
-    中的 ``%``/``_`` 会被当成 LIKE 通配符而不是注入面（无 SQL 文本拼接）。
+    关键词走占位符，包裹用的 ``%`` 由本函数拼在**值**里（``%kw%``）；R2-5 起
+    关键词先经 data_pages._escape_like 转义（``!``/``%``/``_``，SQL 侧
+    ``ESCAPE '!'`` 与 data_pages.LIKE_ESCAPE 同源同口径）—— 通配符按字面
+    处理：搜 ``100%`` 匹配字面「100%」而不是「100」开头的任意串（与
+    data_pages 词条搜索口径一致，无 SQL 文本拼接）。
 
     Args:
-        keyword: 搜索关键词（去空白后为空返回 []）
+        keyword: 搜索关键词（去空白后为空返回 []；通配符按字面处理）
         limit: 返回条数上限（去重到动词，按词目排序）
 
     Returns:
@@ -660,13 +664,13 @@ def _search_verbs(keyword: str, limit: int = 20) -> List[Dict[str, Any]]:
         lim = max(1, int(limit))
     except (TypeError, ValueError):
         return []
-    like = f"%{kw}%"  # 值，不进 SQL 文本
+    like = f"%{_escape_like(kw)}%"  # 值，不进 SQL 文本；通配符按字面处理
     sql = (
         "SELECT d.verb AS verb, d.sense_count AS sense_count, "
         "d.cluster_id AS cluster_id, COUNT(os.id) AS oald_senses "
         "FROM definitions d "
         "JOIN oald_senses os ON os.definition_id = d.id "
-        "WHERE d.verb LIKE %s OR os.headword LIKE %s "
+        "WHERE d.verb LIKE %s ESCAPE '!' OR os.headword LIKE %s ESCAPE '!' "
         "GROUP BY d.id, d.verb, d.sense_count, d.cluster_id "
         "ORDER BY d.verb LIMIT %s"
     )

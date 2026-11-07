@@ -34,6 +34,11 @@
     _render_registry_form / _render_resource_registry_section 渲染
     （_StubSt 扩展 text_input；guards 拒绝 → register_resource 不触达）。
 
+FX4（R2 批次）增补：上传魔数一致性（_validate_upload 增 data= 形参，复用
+_sniff_upload_ext 魔数逻辑）/ _coerce_value 日期真实日历校验与 text 长度上限
+＋写值表单专用报错 / 建壳 chief 下拉去双重转义（R2-1）/ 驾驶舱取数失败内联
+降级披露（_safe_cockpit_* ＋ _cockpit_db_ready 连通探测试题，R4-3）。
+
 不要求 AppTest（未接线）；本文件不连数据库（import 各数据层模块不触发连接，
 G6 摘要与渲染层用例以注入函数 / monkeypatch 假对象驱动）。
 """
@@ -58,6 +63,7 @@ from src.dict_admin_pages import (  # noqa: E402
     PROJECT_ROLE_LABELS,
     VALUE_TYPE_LABELS,
     _advance_export_status,
+    _coerce_value,
     _esc,
     _format_rate,
     _format_uncertainty,
@@ -995,3 +1001,270 @@ def test_registry_table_renders_rows(monkeypatch):
     html = [text for kind, text in stub.messages if kind == "markdown"]
     assert any("&lt;OALD&gt;" in t for t in html)
     assert any("996 全义项" in t for t in html)
+
+
+# ============================================
+# R2 批次（FX4）：上传魔数一致性 / 写值专用报错 / 驾驶舱降级披露
+# ============================================
+
+class _FormSt(_StubSt):
+    """_StubSt 扩展：form/expander 上下文、number_input、metric 与 selectbox
+    录制（写值表单与驾驶舱渲染用例）。"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metrics = []
+        self.selectboxes = []
+        self.number_values = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def form(self, *args, **kwargs):
+        self.messages.append(("form", args[0] if args else ""))
+        return self
+
+    def expander(self, *args, **kwargs):
+        self.messages.append(("expander", args[0] if args else ""))
+        return self
+
+    def form_submit_button(self, *args, **kwargs):
+        return self.clicked
+
+    def number_input(self, *args, **kwargs):
+        key = kwargs.get("key") or ""
+        return self.number_values.get(key, kwargs.get("value", 0))
+
+    def metric(self, label, value=None, **kwargs):
+        self.metrics.append((label, value))
+        return value
+
+    def selectbox(self, *args, **kwargs):
+        opts = kwargs.get("options") or (args[1] if len(args) > 1 else [])
+        self.selectboxes.append((args[0] if args else "", list(opts)))
+        return opts[0] if opts else None
+
+
+def test_validate_upload_magic_number_consistency():
+    """R2-2：内容魔数与扩展名一致性 —— image 声明须 PNG/JPEG 魔数（svg/
+    script 伪装 png 落盘前被拦）；跨形态改名（PNG 数据顶 .mp3）同拦；
+    audio/video 嗅探不出按资产形态兜底放行（不误伤合法文件）。"""
+    assert _validate_upload("a.png", 100, "image/png", data=_PNG_BYTES) is None
+    assert _validate_upload("a.jpeg", 100, "image/jpeg", data=_JPG_BYTES) is None
+    # JPEG 数据顶 .png 名：同属 image 且魔数真实 → 放行（落盘后缀按嗅探 .jpg）
+    assert _validate_upload("a.png", 100, "image/png", data=_JPG_BYTES) is None
+    svg = b"<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg'/>"
+    assert "文件内容与扩展名不符" in _validate_upload(
+        "a.png", 100, "image/png", data=svg)
+    assert "文件内容与扩展名不符" in _validate_upload(
+        "a.jpg", 100, "image/jpeg", data=b"<script>alert(1)</script>")
+    assert "文件内容与扩展名不符" in _validate_upload(
+        "a.png", 100, "image/png", data=b"not-a-known-magic")
+    # 跨形态改名：图像数据顶音/视频后缀 → 内容明确嗅探为其他形态 → 拒
+    assert "文件内容与扩展名不符" in _validate_upload(
+        "a.mp3", 100, "audio/mpeg", data=_PNG_BYTES)
+    assert "文件内容与扩展名不符" in _validate_upload(
+        "a.mp4", 100, "video/mp4", data=_MP3_BYTES)
+    # audio/video 嗅探不出 → 放行（_upload_target_path 按形态兜底后缀）
+    assert _validate_upload(
+        "a.mp3", 100, "audio/mpeg", data=b"not-a-known-magic") is None
+    assert _validate_upload(
+        "a.mp4", 100, "video/mp4", data=b"\x00\x00\x00" + b"x" * 20) is None
+    # data=None（既有调用方旧形态）跳过内容校验；非 bytes 内容拒
+    assert _validate_upload("a.png", 100, "image/png") is None
+    assert "内容不可读" in _validate_upload(
+        "a.png", 100, "image/png", data="text-not-bytes")
+
+
+def test_coerce_value_date_real_calendar():
+    """R2-3：date 分支正则后再验真实日历日期 —— 2024-02-30 这类「格式对但
+    日期不存在」返回 None；闰年 02-29 过；旧格式口径不变。"""
+    assert _coerce_value("date", "2024-02-30") is None
+    assert _coerce_value("date", "2023-02-29") is None   # 非闰年
+    assert _coerce_value("date", "2024-13-01") is None
+    assert _coerce_value("date", "2024-04-31") is None
+    assert _coerce_value("date", "2024-02-29") == "2024-02-29"  # 闰年真实
+    assert _coerce_value("date", "2024-12-31") == "2024-12-31"
+    assert _coerce_value("date", "2024-2-3") is None     # 严格补零口径不变
+    assert _coerce_value("date", "abc") is None
+    assert _coerce_value("date", "") is None
+
+
+def test_coerce_value_text_length_cap():
+    """R2-3：text 分支对照 dict_admin_db.MAX_VALUE_TEXT_LEN 上限，超长返回
+    None（数据层 set_value 同款上限的表单侧前移）；enum/bool 行为不变。"""
+    cap = dict_admin_db.MAX_VALUE_TEXT_LEN
+    assert cap == 10000
+    assert _coerce_value("text", "x" * cap) == "x" * cap       # 边界 ≤ 放行
+    assert _coerce_value("text", "x" * (cap + 1)) is None      # 超长拒
+    assert _coerce_value("enum", "x" * (cap + 1)) == "x" * (cap + 1)
+    assert _coerce_value("bool", "True") is True
+
+
+def test_write_value_form_dedicated_date_errors(monkeypatch):
+    """R2-3 专用报错二分：格式对但日期不存在 → 「日期不存在」；格式错 →
+    「日期格式须为 YYYY-MM-DD」；文本超长 → 「文本超长」。"""
+    field_date = {"id": 5, "code": "field_date", "name": "首发日期",
+                  "applies_to": "word", "value_type": "date",
+                  "required": False, "status": "active", "enum_values": []}
+
+    def _render_date(monkeypatch, raw):
+        stub = _FormSt(text_values={"dict_admin_val_date": raw})
+        monkeypatch.setattr(dp, "st", stub)
+        dp._render_write_value_form([field_date], _ME)
+        return [text for kind, text in stub.messages if kind == "error"]
+
+    errs = _render_date(monkeypatch, "2024-02-30")
+    assert any("日期不存在" in t for t in errs)
+    assert not any("日期格式须为" in t for t in errs)
+    errs = _render_date(monkeypatch, "2024/02/30")
+    assert any("日期格式须为 YYYY-MM-DD" in t for t in errs)
+    assert not any("日期不存在" in t for t in errs)
+
+    field_text = {"id": 6, "code": "field_text", "name": "备注",
+                  "applies_to": "word", "value_type": "text",
+                  "required": False, "status": "active", "enum_values": []}
+    stub = _FormSt(text_values={
+        "dict_admin_val_text": "x" * (dict_admin_db.MAX_VALUE_TEXT_LEN + 1)})
+    monkeypatch.setattr(dp, "st", stub)
+    dp._render_write_value_form([field_text], _ME)
+    errs = [text for kind, text in stub.messages if kind == "error"]
+    assert any("文本超长" in t and "10000" in t for t in errs)
+
+
+def test_safe_cockpit_projects_degrades_on_exception_and_bad_shape(monkeypatch):
+    """R4-3：list_projects 抛异常 / 返回 None / 非 list 形态 → 取数失败
+    （degraded=True，projects=[]），且异常路径不触发连通探测。"""
+    probe_calls = []
+
+    def _boom():
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(dp.org_db, "list_projects", _boom)
+    monkeypatch.setattr(
+        dp, "_cockpit_db_ready",
+        lambda table: probe_calls.append(table) or True)
+    assert dp._safe_cockpit_projects() == ([], True)
+    assert probe_calls == []  # 异常路径无需探测
+    monkeypatch.setattr(dp.org_db, "list_projects", lambda: None)
+    assert dp._safe_cockpit_projects() == ([], True)
+    monkeypatch.setattr(dp.org_db, "list_projects", lambda: {"id": 1})
+    assert dp._safe_cockpit_projects() == ([], True)
+
+
+def test_safe_cockpit_projects_distinguishes_real_zero_from_failure(monkeypatch):
+    """R4-3：空结果 × 连通探测二分 —— 探测过 = 真 0（不降级）；探测不过 =
+    取数失败（降级）；非空结果不探测（有数据即库连通）。"""
+    monkeypatch.setattr(dp.org_db, "list_projects", lambda: [])
+    monkeypatch.setattr(dp, "_cockpit_db_ready", lambda table: True)
+    assert dp._safe_cockpit_projects() == ([], False)   # 真 0
+    monkeypatch.setattr(dp, "_cockpit_db_ready", lambda table: False)
+    assert dp._safe_cockpit_projects() == ([], True)    # 取数失败
+    rows = [{"id": 1, "name": "P", "member_count": 2}]
+    probe_calls = []
+    monkeypatch.setattr(dp.org_db, "list_projects", lambda: rows)
+    monkeypatch.setattr(
+        dp, "_cockpit_db_ready",
+        lambda table: probe_calls.append(table) or False)
+    assert dp._safe_cockpit_projects() == (rows, False)
+    assert probe_calls == []
+
+
+def test_safe_cockpit_stats_degrades_and_distinguishes(monkeypatch):
+    """R4-3：get_stats 抛异常/None/非 dict → 取数失败；total=0 × 探测二分
+    真 0 与取数失败；有计数不探测。"""
+    probe_calls = []
+
+    def _boom():
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(dp.ai_ledger, "get_stats", _boom)
+    monkeypatch.setattr(
+        dp, "_cockpit_db_ready",
+        lambda table: probe_calls.append(table) or True)
+    assert dp._safe_cockpit_stats() == ({}, True)
+    assert probe_calls == []
+    monkeypatch.setattr(dp.ai_ledger, "get_stats", lambda: None)
+    assert dp._safe_cockpit_stats() == ({}, True)
+    monkeypatch.setattr(dp.ai_ledger, "get_stats", lambda: [1, 2])
+    assert dp._safe_cockpit_stats() == ({}, True)
+    empty = {"total": 0, "pending": 0, "adoption_rate": None,
+             "avg_uncertainty": None}
+    monkeypatch.setattr(dp.ai_ledger, "get_stats", lambda: dict(empty))
+    monkeypatch.setattr(dp, "_cockpit_db_ready", lambda table: True)
+    stats, degraded = dp._safe_cockpit_stats()
+    assert stats.get("total") == 0 and degraded is False   # 真 0
+    monkeypatch.setattr(dp, "_cockpit_db_ready", lambda table: False)
+    assert dp._safe_cockpit_stats() == ({}, True)          # 取数失败
+    counted = dict(empty, total=7)
+    monkeypatch.setattr(dp.ai_ledger, "get_stats", lambda: counted)
+    assert dp._safe_cockpit_stats() == (counted, False)
+
+
+def test_cockpit_metrics_disclose_degradation(monkeypatch):
+    """R4-3：取数失败组画「—」并给内联提示「数据库暂不可用，指标为降级
+    渲染」（与 ai_hub 降级口径一致）；探测通过的真 0 画 0，两组独立判定。"""
+    stub = _FormSt()
+    monkeypatch.setattr(dp, "st", stub)
+    dp._render_cockpit_metrics([], {"total": 0}, True, False)
+    assert any(kind == "warning" and "数据库暂不可用，指标为降级渲染" in text
+               for kind, text in stub.messages)
+    metrics = dict(stub.metrics)
+    assert metrics["词典项目"] == "—"
+    assert metrics["成员人次（合计）"] == "—"
+    assert metrics["AI 提案总数"] == 0  # 统计组未降级 → 真 0
+    assert metrics["待裁决"] == 0
+
+    stub = _FormSt()
+    monkeypatch.setattr(dp, "st", stub)
+    dp._render_cockpit_metrics(
+        [{"member_count": 2}],
+        {"total": 7, "pending": 2, "adoption_rate": None, "avg_uncertainty": None},
+        False, True)
+    assert any(kind == "warning" and "降级渲染" in text
+               for kind, text in stub.messages)
+    metrics = dict(stub.metrics)
+    assert metrics["AI 提案总数"] == "—"
+    assert metrics["待裁决"] == "—"
+    assert metrics["词典项目"] == 1      # 项目组未降级 → 真值
+
+    stub = _FormSt()
+    monkeypatch.setattr(dp, "st", stub)
+    dp._render_cockpit_metrics(
+        [{"member_count": 3}], {"total": 5}, False, False)
+    assert not any(kind == "warning" for kind, _ in stub.messages)
+    metrics = dict(stub.metrics)
+    assert metrics["词典项目"] == 1
+    assert metrics["成员人次（合计）"] == 3
+    assert metrics["AI 提案总数"] == 5
+
+
+def test_cockpit_chief_options_not_double_escaped(monkeypatch):
+    """R2-1：建壳 chief 下拉不再预转义 —— display_name 含 HTML 字符时选项为
+    原文（selectbox 由 Streamlit 自带转义；预转义会双重转义成字面实体）。"""
+    stub = _FormSt()
+    monkeypatch.setattr(dp, "st", stub)
+    monkeypatch.setattr(
+        dp, "_safe_cockpit_projects",
+        lambda: ([{"id": 1, "name": "P1", "member_count": 1}], False))
+    monkeypatch.setattr(dp, "_safe_cockpit_stats", lambda: ({"total": 0}, False))
+    monkeypatch.setattr(dp.users_db, "list_users", lambda: [
+        {"id": 7, "username": "chief_b", "display_name": "主编<b>甲</b>",
+         "active": True},
+    ])
+    monkeypatch.setattr(dp.users_db, "effective_six_roles",
+                        lambda user: {"dict_admin"})
+    monkeypatch.setattr(dp.org_db, "project_selfcheck", lambda pid: (True, []))
+    monkeypatch.setattr(dp.pipeline_status, "get_cluster_pipeline_status",
+                        lambda cat: {})
+    monkeypatch.setattr(dp.pipeline_status, "format_funnel_segments",
+                        lambda status: [])
+    dp._render_cockpit_tab()
+    chief_calls = [opts for _label, opts in stub.selectboxes
+                   if any("chief_b" in str(o) for o in opts)]
+    assert chief_calls, "chief 下拉未渲染（建壳候选为空？）"
+    assert any("主编<b>甲</b>（chief_b）" in str(o) for o in chief_calls[0])
+    assert all("&lt;" not in str(o) for o in chief_calls[0])

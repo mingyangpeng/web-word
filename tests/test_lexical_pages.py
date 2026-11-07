@@ -267,6 +267,22 @@ def test_widget_keys_use_lex_prefix():
     assert offenders == [], f"widget key 未带 lex_ 前缀: {offenders}"
 
 
+def test_example_content_limit_disclosed_in_page():
+    """R2-6：例证正文上限在页面披露 —— MAX_CONTENT_LEN 从 lexical_db 同源
+    导入，新增/编辑两处表单文案与失败转述都引用该常量（不写死第二份数字）。"""
+    import src.lexical_db as lexical_db_mod
+
+    src = inspect.getsource(sys.modules["src.lexical_pages"])
+    assert "MAX_CONTENT_LEN" in src, "页面未引用例证正文上限常量"
+    assert "from src.lexical_db import" in src
+    # 页面引用的常量与数据层同一对象（单一事实源，不复制数字）
+    assert lexical_db_mod.MAX_CONTENT_LEN == 20000
+    # 新增与编辑两处表单标签/help、失败文案都带上限口径
+    assert src.count("MAX_CONTENT_LEN") >= 4, (
+        "新增/编辑表单与失败转述应引用 MAX_CONTENT_LEN 注明上限"
+    )
+
+
 def test_render_entry_is_callable():
     """渲染入口签名稳定（集成按 render_lexical_page() 接线）。"""
     assert callable(render_lexical_page)

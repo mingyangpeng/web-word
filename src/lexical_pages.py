@@ -53,6 +53,7 @@ from src.design_system import (
 )
 from src.lexical_db import (
     EXAMPLE_SOURCES,
+    MAX_CONTENT_LEN,
     SOURCE_ADAPTED,
     SOURCE_COMPOSED,
     SOURCE_CORPUS,
@@ -507,9 +508,11 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
     with st.expander("➕ 新增例证", expanded=False):
         with st.form("lex_ex_add_form", clear_on_submit=True):
             content = st.text_area(
-                "例证文本（必填）", key="lex_ex_add_content", height=100,
+                f"例证文本（必填，≤{MAX_CONTENT_LEN} 字符）", key="lex_ex_add_content",
+                height=100,
                 help="语料草选/人工改写/自拟均可；来源即改写标记，出版侧按来源"
-                     "区分「自产/改写」与版权原文（G6 许可检查口径）。",
+                     "区分「自产/改写」与版权原文（G6 许可检查口径）。正文上限 "
+                     f"{MAX_CONTENT_LEN} 字符（应用层显式设防，超长拒收不落库）。",
             )
             source = st.selectbox(
                 "来源 source", list(EXAMPLE_SOURCES),
@@ -534,8 +537,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 st.success(f"已新增例证 #{eid}（状态=候选）。")
                 st.rerun()
             else:
-                st.error("新增失败：例证文本为空/参数非法/数据库不可用"
-                         "（lexical_db 已记日志）。")
+                st.error(f"新增失败：例证文本为空/超长（≤{MAX_CONTENT_LEN} 字符）/"
+                         "参数非法/数据库不可用（lexical_db 已记日志）。")
 
     with st.expander("✏️ 编辑 / 审定流转 / 删除", expanded=False):
         ex_options = _example_options(examples)
@@ -554,7 +557,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
             else:
                 with st.form("lex_ex_edit_form", clear_on_submit=False):
                     new_content = st.text_area(
-                        "例证文本", value=str(row.get("content") or ""),
+                        f"例证文本（≤{MAX_CONTENT_LEN} 字符）",
+                        value=str(row.get("content") or ""),
                         key="lex_ex_edit_content", height=100,
                     )
                     cur_source = str(row.get("source") or SOURCE_CORPUS)
@@ -582,7 +586,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                             st.success(f"例证 #{eid} 已更新。")
                             st.rerun()
                         else:
-                            st.error("更新失败：文本为空/参数非法/数据库不可用。")
+                            st.error(f"更新失败：文本为空/超长（≤{MAX_CONTENT_LEN} "
+                                     "字符）/参数非法/数据库不可用。")
                 cur_status = str(row.get("status") or "")
                 nxt_status = NEXT_EXAMPLE_STATUS.get(cur_status)
                 if nxt_status:

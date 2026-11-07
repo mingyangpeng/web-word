@@ -60,7 +60,8 @@ PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
   _find_asset_by_sha256 / _list_media_assets / _list_media_bindings /
   _advance_binding_status（R3-4a：流转时写入审定留痕 reviewed_by/reviewed_at）
 批次 8 上传通道（落盘后复用 register_asset 登记链，license/sha256 口径不变）：
-  纯函数 _validate_upload（扩展名/MIME 白名单 + ≤50MB）与
+  纯函数 _validate_upload（扩展名/MIME 白名单 + ≤50MB + R2-2 内容魔数一致性：
+  声明 image 须 PNG/JPEG 魔数，svg/script 伪装 png 落盘前被拦）与
   _upload_target_path（内容寻址落盘路径，tests 直接测）；
   页面 _render_media_upload_form（不抛异常，失败一律 st.error）。
 批次 8 出版导出（G6）：纯函数 _g6_license_summary / _g6_style_summary /
@@ -87,7 +88,7 @@ import logging
 import math
 import os
 import re
-from datetime import datetime
+from datetime import date, datetime
 from html import escape as _html_escape
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -237,9 +238,10 @@ GUIDE: Dict[str, Any] = {
         "媒体库上传通道（批次 8 开通）：白名单 png/jpeg/jpg/mp3/mp4、单文件 ≤50MB；"
         "落盘 data/media/{kind}/YYYYMM/{sha256 前 16 位}{后缀}（内容寻址，同内容同"
         "路径，目录自动建）；后缀按内容魔数嗅探（png/jpg/mp3/mp4），嗅探不出按资产"
-        "形态用规范后缀兜底；扩展名与 MIME 双白名单且须对应，防改名伪装。落盘成功但"
-        "登记失败时文件保留在落盘路径，可改走服务器路径登记补登；任何上传失败只 "
-        "st.error 提示不抛异常。",
+        "形态用规范后缀兜底；扩展名与 MIME 双白名单且须对应，另做内容魔数一致性"
+        "校验（声明 image 须 PNG/JPEG 魔数，svg/script 伪装 png 被拒），防改名伪装。"
+        "落盘成功但登记失败时文件保留在落盘路径，可改走服务器路径登记补登；任何"
+        "上传失败只 st.error 提示不抛异常。",
         "出版导出（批次 11 灰注转硬检后）的口径：许可终检数据面已接通——"
         "resource_registry 随页面自举建表，逐行 license 审计出硬结论（0 行=空过"
         "注明，不画假绿灯）；体例终检验 configs/style.yaml 在场＋含 style_version "
@@ -535,12 +537,24 @@ def _sniff_upload_ext(data: bytes) -> str:
     return ""
 
 
-def _validate_upload(name: Any, size: Any, mime: Any) -> Optional[str]:
-    """上传准入校验（纯函数）：扩展名/MIME 白名单与大小，合法返回 None。
+def _validate_upload(name: Any, size: Any, mime: Any,
+                     data: Any = None) -> Optional[str]:
+    """上传准入校验（纯函数）：扩展名/MIME 白名单、大小与内容魔数一致性。
 
-    口径（批次 8 契约）：白名单 png/jpeg/jpg/mp3/mp4，单文件 ≤ 50MB；扩展名
-    与 MIME 必须各自在白名单内且相互对应（浏览器报告的 MIME 与扩展名不符即
-    拒绝，防改名伪装）；size 须为正数。任何脏输入返回可读错误文案，不抛异常。
+    口径（批次 8 契约；R2-2 增魔数一致性）：白名单 png/jpeg/jpg/mp3/mp4，
+    单文件 ≤ 50MB；扩展名与 MIME 必须各自在白名单内且相互对应（浏览器报告
+    的 MIME 与扩展名不符即拒绝，防改名伪装）；size 须为正数。任何脏输入返回
+    可读错误文案，不抛异常。
+
+    内容魔数一致性（R2-2，data 非 None 时启用；复用 _sniff_upload_ext 的
+    魔数逻辑，与扩展名/MIME 白名单互为印证）：
+      * 声明 image（.png/.jpg/.jpeg）但内容不是 PNG/JPEG 魔数 → 拒
+        「文件内容与扩展名不符」—— svg/script 等文本伪装 png 在此拦截
+        （这类文件落盘后可被浏览器当 HTML 渲染，是 XSS 面）；
+      * 声明 audio/video 而内容被明确嗅探为其他形态（如 PNG 数据顶着
+        .mp3）→ 同款拒绝；嗅探不出（''）不放行也不拒绝 —— 落盘后缀由
+        _upload_target_path 按资产形态兜底，不因魔数库覆盖不全误伤合法文件。
+    data=None（既有调用方/旧测试缺省）跳过内容校验，维持旧形态。
     """
     raw_name = str(name or "").strip()
     if not raw_name:
@@ -564,6 +578,21 @@ def _validate_upload(name: Any, size: Any, mime: Any) -> Optional[str]:
     if size_bytes > MEDIA_UPLOAD_MAX_BYTES:
         return (f"文件超过单文件上限 50MB（实际 {_format_bytes(size_bytes)}）；"
                 "请压缩后重试，超大资产改走「服务器路径登记」。")
+    if data is None:
+        return None
+    if not isinstance(data, (bytes, bytearray, memoryview)):
+        return "文件内容不可读，已拒绝上传。"
+    payload = bytes(data)
+    sniffed = _sniff_upload_ext(payload)
+    kind = MEDIA_UPLOAD_EXT_KINDS.get(ext)
+    if kind == media_db.KIND_IMAGE:
+        if sniffed not in (".png", ".jpg"):
+            return ("文件内容与扩展名不符：.png/.jpeg 须为 PNG/JPEG 魔数，"
+                    f"内容嗅探结果为 {sniffed or '（未知魔数）'} —— 拒绝疑似"
+                    "伪装成图片的文件（svg/script 等文本不入媒体库）。")
+    elif sniffed and sniffed != MEDIA_UPLOAD_KIND_EXT.get(kind):
+        return ("文件内容与扩展名不符：内容嗅探为 " + sniffed + "，与 ."
+                + ext + " 声明的资产形态不符 —— 拒绝疑似改名伪装的文件。")
     return None
 
 
@@ -699,32 +728,126 @@ def _funnel_category_options() -> List[str]:
     return options
 
 
+# R4-3：驾驶舱连通探测的表名（模块常量白名单 —— SQL 文本只拼常量，不收
+# 调用方原文；同 _g6_license_stats 的常量表名先例）
+_COCKPIT_PROBE_TABLES = {
+    "projects": "dictionary_projects",
+    "ai_proposals": "ai_proposals",
+}
+
+
+def _cockpit_db_ready(table: str) -> bool:
+    """驾驶舱数据表连通探测（**只读**，R4-3：真 0 与取数失败的区分信号）。
+
+    数据层（org_db.list_projects / ai_ledger.get_stats）把库不可用自折叠成
+    []/全 0 口径 —— 页面单凭返回值分不清「真 0」与「取数失败」。本探测对
+    相应表跑一发 ``SELECT 1 ... LIMIT 1``：能查 = 表在场＋库连通，空结果即
+    真 0；查不动 = 数据库暂不可用，空结果按取数失败渲染（降级披露）。
+    table 只接受 _COCKPIT_PROBE_TABLES 的常量值，其余一律拒绝（不拼 SQL）。
+    """
+    if table not in _COCKPIT_PROBE_TABLES.values():
+        logger.error(f"驾驶舱连通探测拒绝非法表名: {table!r}")
+        return False
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
+            cursor.fetchall()
+            return True
+    except Exception as e:  # noqa: BLE001 —— 库不可用/表缺失折叠为探测失败
+        logger.warning(f"驾驶舱连通探测失败（{table}）: {e}")
+        return False
+
+
+def _safe_cockpit_projects() -> Tuple[List[Dict[str, Any]], bool]:
+    """驾驶舱项目取数兜底（R4-3）：返回 (projects, degraded)。
+
+    异常 / None / 非 list（list_projects 契约返回 list[dict]）一律按取数
+    失败（degraded=True，projects=[]）；空列表再过一发连通探测，区分
+    「真 0」与「库不可用被数据层折叠成空」。
+    """
+    try:
+        projects = org_db.list_projects()
+    except Exception as e:  # noqa: BLE001 —— 数据层理论不抛，防御性兜一层
+        logger.warning(f"驾驶舱项目列表取数异常: {e}")
+        return [], True
+    if not isinstance(projects, list):
+        logger.warning(f"驾驶舱项目列表返回异常形态: {type(projects).__name__}")
+        return [], True
+    if not projects and not _cockpit_db_ready("dictionary_projects"):
+        return [], True
+    return projects, False
+
+
+def _safe_cockpit_stats() -> Tuple[Dict[str, Any], bool]:
+    """驾驶舱 AI 台账取数兜底（R4-3）：返回 (stats, degraded)。
+
+    异常 / None / 非 dict（get_stats 契约返回 dict）按取数失败；全 0 口径
+    （total=0）再过一发 ai_proposals 连通探测，区分真 0 与取数失败。
+    """
+    try:
+        stats = ai_ledger.get_stats()
+    except Exception as e:  # noqa: BLE001 —— 数据层理论不抛，防御性兜一层
+        logger.warning(f"驾驶舱 AI 台账取数异常: {e}")
+        return {}, True
+    if not isinstance(stats, dict):
+        logger.warning(f"驾驶舱 AI 台账返回异常形态: {type(stats).__name__}")
+        return {}, True
+    if not int(stats.get("total") or 0) and not _cockpit_db_ready("ai_proposals"):
+        return {}, True
+    return stats, False
+
+
+def _render_cockpit_metrics(projects: List[Dict[str, Any]],
+                            stats: Dict[str, Any],
+                            projects_degraded: bool,
+                            stats_degraded: bool) -> None:
+    """规模与 AI 台账指标卡（R4-3：取数失败内联降级披露）。
+
+    与 AI 协作区（ai_hub）口径一致：数据库不可用时指标为降级渲染，不代表
+    没有数据 —— 取数失败的组画「—」并给内联提示；探测通过的空结果画 0
+    （真 0）。两组（项目规模 / AI 台账）独立判定，一组失败不拖垮另一组。
+    """
+    if projects_degraded or stats_degraded:
+        st.warning(
+            "数据库暂不可用，指标为降级渲染 ——「—」为取数失败（不代表没有"
+            "数据），0 为真实计数；库恢复后刷新即回真值。"
+        )
+    n_members = sum(int(p.get("member_count") or 0) for p in projects)
+    st.markdown(f"<h3 style='{HEADER_H3}'>📊 规模与 AI 台账</h3>", unsafe_allow_html=True)
+    org_cols = st.columns(2)
+    with org_cols[0]:
+        st.metric("词典项目", "—" if projects_degraded else len(projects))
+    with org_cols[1]:
+        st.metric("成员人次（合计）", "—" if projects_degraded else n_members)
+    ai_cols = st.columns(4)
+    with ai_cols[0]:
+        st.metric("AI 提案总数",
+                  "—" if stats_degraded else int(stats.get("total") or 0))
+    with ai_cols[1]:
+        st.metric("待裁决",
+                  "—" if stats_degraded else int(stats.get("pending") or 0))
+    with ai_cols[2]:
+        st.metric("采纳率",
+                  "—" if stats_degraded else _format_rate(stats.get("adoption_rate")))
+    with ai_cols[3]:
+        st.metric("平均不确定度",
+                  "—" if stats_degraded else _format_uncertainty(stats.get("avg_uncertainty")))
+
+
 def _render_cockpit_tab() -> None:
     """驾驶舱：规模与台账指标卡（st.metric）+ 十五工序漏斗 + 逐项目自检清单。
 
     进度漏斗（批次 3 Agent I）：src/pipeline_status.get_cluster_pipeline_status
     聚合语义分析段（工序 4–8）＋编纂成文占位段，format_funnel_segments 出渲染行；
     缺数段（表未建/无数据/库不可用）以灰色「未建/无数据：原因」如实展示，不编数。
+    R4-3：规模/台账两组取数走 _safe_cockpit_* 兜底 —— 异常/异常形态/空结果
+    且探测不过时内联降级提示「数据库暂不可用，指标为降级渲染」，指标画「—」，
+    区分「真 0」与「取数失败」。
     """
-    projects = org_db.list_projects()
-    stats = ai_ledger.get_stats()
-    n_members = sum(int(p.get("member_count") or 0) for p in projects)
+    projects, projects_degraded = _safe_cockpit_projects()
+    stats, stats_degraded = _safe_cockpit_stats()
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>📊 规模与 AI 台账</h3>", unsafe_allow_html=True)
-    org_cols = st.columns(2)
-    with org_cols[0]:
-        st.metric("词典项目", len(projects))
-    with org_cols[1]:
-        st.metric("成员人次（合计）", n_members)
-    ai_cols = st.columns(4)
-    with ai_cols[0]:
-        st.metric("AI 提案总数", int(stats.get("total") or 0))
-    with ai_cols[1]:
-        st.metric("待裁决", int(stats.get("pending") or 0))
-    with ai_cols[2]:
-        st.metric("采纳率", _format_rate(stats.get("adoption_rate")))
-    with ai_cols[3]:
-        st.metric("平均不确定度", _format_uncertainty(stats.get("avg_uncertainty")))
+    _render_cockpit_metrics(projects, stats, projects_degraded, stats_degraded)
 
     st.markdown(
         f"<h3 style='{HEADER_H3}'>⛓️ 进度漏斗（语义分析段 工序4–8 ＋ 编纂成文占位）</h3>",
@@ -767,7 +890,7 @@ def _render_cockpit_tab() -> None:
 
     st.markdown(f"<h3 style='{HEADER_H3}'>🩺 项目自检（≥1 名在用 chief 等约束）</h3>",
                 unsafe_allow_html=True)
-    if not projects:
+    if not projects and not projects_degraded:
         st.info("尚无词典项目：在下方「🏗️ 创建项目（建壳）」建壳并指定首位词典管理员。")
 
     # —— 建壳表单（批次 12 修复：创建项目此前无 UI 入口，词典管理链整体空转）——
@@ -781,7 +904,10 @@ def _render_cockpit_tab() -> None:
         eff = users_db.effective_six_roles(u)
         if "dict_admin" in eff:
             candidates.append(u)
-    chief_opts = {f"{_esc(u['display_name'])}（{u['username']}）": int(u["id"])
+    # R2-1：selectbox 选项文本由 Streamlit 自带转义（模块头部自订规则），
+    # display_name 含 HTML 字符时预过 _esc 会双重转义（显示成 &lt;b&gt; 字面），
+    # 这里直接用原文 —— 展示转义是控件职责，不是调用方职责。
+    chief_opts = {f"{u['display_name']}（{u['username']}）": int(u["id"])
                   for u in candidates}
     with st.expander("🏗️ 创建项目（建壳并指定首位词典管理员）"):
         if not chief_opts:
@@ -1114,9 +1240,13 @@ def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
 def _coerce_value(value_type: str, raw: Any) -> Optional[Any]:
     """表单原始输入 → 数据层 value（类型不符返回 None，由调用方转 st.error）。
 
-    number → float（须有限）；date → YYYY-MM-DD 字符串；bool → True/False；
-    text/enum → 原字符串。最终口径（enum 白名单等）仍由 dict_admin_db.set_value
-    把关 —— 本函数只做表单侧的格式转换。
+    number → float（须有限）；date → YYYY-MM-DD 字符串（R2-3：过正则后再用
+    date.fromisoformat 验真实日历日期，2024-02-30 这类「格式对但日期不存在」
+    一并拒绝）；bool → True/False；text/enum → 原字符串（R2-3：text 超过
+    dict_admin_db.MAX_VALUE_TEXT_LEN 上限拒 —— 数据层 set_value 同款上限的
+    表单侧前移，避免 1 万字符长文走到库门口才被拒）。调用方据 value_type 给
+    专用报错（日期不存在/文本超长/非有限数字）。最终口径（enum 白名单等）
+    仍由 dict_admin_db.set_value 把关 —— 本函数只做表单侧的格式转换。
     """
     text = "" if raw is None else str(raw).strip()
     if value_type == "number":
@@ -1128,9 +1258,17 @@ def _coerce_value(value_type: str, raw: Any) -> Optional[Any]:
             return None
         return number
     if value_type == "date":
-        return text if _DATE_RE.match(text) else None
+        if not _DATE_RE.match(text):
+            return None
+        try:
+            date.fromisoformat(text)
+        except ValueError:
+            return None
+        return text
     if value_type == "bool":
         return text in ("是", "是（True）", "True", "true", "1", "是（1）")
+    if value_type == "text" and len(text) > dict_admin_db.MAX_VALUE_TEXT_LEN:
+        return None
     return text
 
 
@@ -1211,9 +1349,19 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
     value = _coerce_value(value_type, raw_value)
     if value is None or (isinstance(value, str) and value == ""):
         if value_type == "date":
-            st.error("日期格式须为 YYYY-MM-DD。")
+            # R2-3 专用报错二分：正则过但 fromisoformat 拒 = 格式对但日期不存在
+            if _DATE_RE.match(str(raw_value).strip()):
+                st.error("日期不存在：年月日组合不是真实日历日期"
+                         "（如 2024-02-30），请核对后重填。")
+            else:
+                st.error("日期格式须为 YYYY-MM-DD。")
         elif value_type == "number":
             st.error("数值字段的值必须是有限数字。")
+        elif value_type == "text":
+            # R2-3 专用报错：text 在空值拦截之后只可能因超长失败
+            # （上限与 dict_admin_db.MAX_VALUE_TEXT_LEN 同源，数据层再兜一道）
+            st.error(f"文本超长（≤{dict_admin_db.MAX_VALUE_TEXT_LEN} 字符），"
+                     "请精简后重试。")
         else:
             st.error("值不能为空。")
         return
@@ -1511,16 +1659,20 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
     name = str(getattr(upload, "name", "") or "")
     size = getattr(upload, "size", 0) or 0
     mime = str(getattr(upload, "type", "") or "")
-    error = _validate_upload(name, size, mime)
+    # R2-2：准入校验带内容嗅探（魔数一致性）—— 未选文件（upload=None）不读
+    # 字节，交由 _validate_upload 的「未选择文件」文案；校验通过后 payload
+    # 必为 bytes，后续落盘/算 sha256 直接复用，不再二次 getvalue。
+    payload = upload.getvalue() if upload is not None else None
+    error = _validate_upload(name, size, mime, data=payload)
     if error:
-        st.error(error)  # 白名单/大小拦截：表单侧给出可读拒绝，不落盘
+        st.error(error)  # 白名单/大小/魔数拦截：表单侧给出可读拒绝，不落盘
         return
     ext = name.strip().lower().rsplit(".", 1)[-1]
     kind = MEDIA_UPLOAD_EXT_KINDS.get(ext)
     if kind is None:  # 理论不可达（_validate_upload 已挡白名单），防御一层
         st.error("文件类型不在上传白名单内（png/jpeg/jpg/mp3/mp4）。")
         return
-    data = upload.getvalue()
+    data = bytes(payload or b"")
     sha = hashlib.sha256(data).hexdigest()
     existing = _find_asset_by_sha256(sha)
     if existing:
