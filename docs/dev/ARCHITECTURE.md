@@ -162,7 +162,7 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 | 词间关系图谱 | `data/word_graph.json` | 节点=动词，边=近义关系；来源是词库的次语义范畴 `sub_cat` |
 
 两者由 `scripts/build_knowledge_graphs.sh` 统一重建；索引范围由 `.graphifyignore`
-控制（排除数据目录与历史归档文档）。词间关系同时灌入 MySQL `synonyms` 表，
+控制（排除数据目录与历史归档文档）。词间关系同时灌入 MySQL `word_relations` 表，
 供应用「图式示例」卡片展示近义词。
 
 > 历史包袱已清理（2026-09）：`src/database.py`（旧 SQLite 模块）、`src/api.py`
