@@ -1,10 +1,29 @@
-"""用户管理页面 —— 多人标注系统的账号管理视图（Streamlit，仅 admin 可用）。
+"""用户管理页面 —— 多人标注系统的账号管理视图（Streamlit，六角色口径）。
 
 数据层在 src/users_db.py；本文件只做展示与表单，业务规则（角色枚举校验、
 重复用户名、停用即禁登）都落在数据层，页面只转译成功/失败。
 
+v5.1 批次 3-K 新增「角色授予」面板（平台架构设计规范 §8）：六角色
+（dict_admin/sys_admin/reviewer/editor/annotator/viewer）的授予与撤销
+（grant_role/revoke_role，granted_by=当前操作人）。批次 4-N 升级为
+**提权硬闸门**（施工规范 §7-N）：授予/撤销动作在调用数据层**之前**判定
+——管理角色（dict_admin/sys_admin）仅词典管理员可授予/撤销，平台管理员
+不提权口径下只可授/撤 viewer；本页所有能产生管理角色的写路径（角色授予
+面板、legacy 修改角色表单、新建用户表单）同闸覆盖，不留面板外的提权旁路。
+批次 6-T 收口：页面不再自带 effective 判定实现，四写路径（授予/撤销/
+改基线/建号）统一经 _gate_error 调中央闸门 guards.require_role（判定
+单一事实源在 guards，本模块只保留「目标角色 → 允许角色集」口径映射）。
+
+页面体角色门（批次 4-N 收口，六角色口径）：effective_six_roles（与 app.py
+同源的单一实现，users_db.effective_six_roles）含 sys_admin **或** dict_admin
+即可进入 —— 账号生命周期是平台管理员（sys_admin）职能；词典管理员
+（dict_admin）作为管理侧过渡期兼判同样放行（legacy role=='admin' 账号经
+LEGACY_ROLE_TO_NEW_ROLES 映射必然两位一体，升级前后行为逐字节一致）。
+侧边栏入口可见性仍由 app._PAGE_ACCESS_SIX（users_admin → sys_admin）控制，
+此处是纵深防御第二层。
+
 安全规则（设计规范 §6）：
-  * 权限检查在**函数入口**判定（role gate，§6-4）：非登录或非 admin
+  * 权限检查在**函数入口**判定（role gate，§6-4）：非登录或角色不符
     直接拦截，不信任前端隐藏；
   * 所有用户输入/库内文本进 unsafe_allow_html 前一律过 _html_escape（§6-3）；
   * 表单密码框不回显；提交读取后立即从 st.session_state 删除，
@@ -12,7 +31,7 @@
   * 自保护：admin 不能停用自己、不能撤销自己的 admin 角色 —— 否则最后一个
     管理员把自己锁在门外后，系统再无入口。
 
-由 app.py 集成步骤挂载（规范 §5：侧边栏「👥 用户管理」，仅 admin 可见）。
+由 app.py 集成步骤挂载（规范 §5：侧边栏「👥 用户管理」，六角色口径见上）。
 """
 
 import logging
@@ -25,16 +44,33 @@ from src.design_system import (
     HEADER_H1, HEADER_H2, HEADER_H3,
     get_card_style, get_table_header_style, get_table_row_style,
 )
-from src.users_db import ROLES, create_user, list_users, set_active, set_role
+from src import guards
+from src.users_db import (
+    NEW_ROLES,
+    ROLES,
+    create_user,
+    effective_six_roles,
+    grant_role,
+    list_roles,
+    list_users,
+    revoke_role,
+    set_active,
+    set_role,
+)
 
 logger = logging.getLogger(__name__)
 
-# 角色中文名（展示用；存库一律用英文枚举值）
+# 角色中文名（展示用；存库一律用英文枚举值）。
+# 前 4 个是 legacy users.role 列枚举（旧改角色表单/会话徽章继续用）；
+# 后 3 个是 v5.1 六角色新增（平台架构设计规范 §8，user_roles 多角色表）。
 ROLE_LABELS = {
     "admin": "管理员",
     "reviewer": "审核员",
     "annotator": "标注员",
     "viewer": "只读",
+    "dict_admin": "词典管理员",
+    "sys_admin": "平台管理员",
+    "editor": "撰写员",
 }
 
 # 角色徽章配色（与 category_study_page._badge 的圆角徽章同一视觉语言）
@@ -43,16 +79,102 @@ ROLE_BADGE_COLORS = {
     "reviewer": "#2f855a",
     "annotator": "#4299e1",
     "viewer": "#718096",
+    "dict_admin": "#553c9a",
+    "sys_admin": "#2c5282",
+    "editor": "#dd6b20",
 }
 
 _ACTIVE_GREEN = "#2f855a"
 _INACTIVE_RED = "#e53e3e"
+
+# ============================================
+# 提权硬闸门（批次 4-N 立，批次 6-T 收口到中央闸门 guards.require_role）
+# ============================================
+# 本页不再自带 effective 判定实现（批次 6-T 前 _grant_gate_error/
+# _escalation_gate_error 各自折算 effective_six_roles，属页面级重复）——
+# 「操作人是否具备某角色」的判定单一事实源是 src/guards.require_role
+# （内部复用 users_db.effective_six_roles 同一实现）；本模块只保留
+# 「动作/目标角色 → 允许角色集」的口径映射（这是本页的策略，不是判定）。
+#
+# 管理角色：授予/撤销即「提权到管理侧」，仅词典管理员（effective 集含
+# dict_admin）可执行 —— 平台管理员不得自行提权（含不得互相授予）；
+# legacy admin 经映射两位一体（dict_admin+sys_admin）自然通过。
+
+# 拒绝文案里的动作名（与集成测试断言的硬闸门口径文案逐字对齐）。
+_ACTION_ADMIN_ROLES = "授予/撤销管理角色"
+_ACTION_VIEWER_ROLE = "viewer 角色的授予/撤销"
+_ACTION_FUNCTIONAL_ROLE = "职能角色的授予/撤销"
+
+# 批次 5 决策开关：职能角色（reviewer/editor/annotator）的授予/撤销是否放宽给
+# 纯平台管理员（sys_admin，effective 不含 dict_admin）过渡期兼判。当前 False ——
+# 施工规范 §7-N「sys_admin 只可授 viewer」＋ 平台架构设计规范 §8「平台管理员
+# 不得自行提权」（职能角色入册属三级链第二级，归词典管理员）。收口后开关的
+# 唯一作用是选择传给 guards.require_role 的 allowed 集合（翻转即放宽，判定
+# 实现不变）。
+_SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT = False
 
 
 def _current_user() -> Optional[Dict[str, Any]]:
     """当前会话用户（规范 §6-5：会话只存 st.session_state["user"]）。"""
     user = st.session_state.get("user")
     return user if isinstance(user, dict) else None
+
+
+def _gate_error(me: Dict[str, Any], target_role: str,
+                target_uid: Optional[int] = None) -> Optional[str]:
+    """提权硬闸门（授予/撤销/改基线/建号四写路径共用；批次 6-T 收口）。
+
+    写动作提交后、调用数据层**之前**判定：把目标角色映射为「允许角色集 +
+    动作名」后调用中央闸门 ``guards.require_role(me, allowed, action)`` ——
+    判定（操作人有效角色集是否满足）单一实现复用
+    users_db.effective_six_roles；不满足时 PermissionError 文案（含动作名）
+    经 ``⛔`` 前缀返回给调用方 st.error 直出并跳过数据层调用，None 表示放行。
+
+    口径（施工规范 §7-N「授予/撤销 dict_admin/sys_admin 仅词典管理员（effective
+    判定），sys_admin 只可授 viewer」/ 平台架构设计规范 §8 三级最小权限链，
+    N 的开关语义原样保留）：
+      * 目标 ∈ {dict_admin, sys_admin}（管理角色；legacy 基线 'admin' 等价于
+        dict_admin+sys_admin 双授予，同闸）：allowed={dict_admin} —— 平台
+        管理员不得自行提权；
+      * 目标 = viewer：词典管理员或平台管理员皆可（三级链第一级建号基线，
+        平台管理员主管辖）；
+      * 目标 ∈ {reviewer, editor, annotator}（职能角色）：仅词典管理员 ——
+        sys_admin 不提权口径只可授/撤 viewer；决策开关
+        _SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT=True 时放宽为两类管理员皆可；
+      * 其余/未知角色名：allowed 为空，guards fail-closed 一律拒绝。
+
+    撤方向旁路封堵（原 _escalation_gate_error 语义，target_uid 传入时生效）：
+    「修改角色」写的是 users.role 基线列，数据层会把映射集重置进 user_roles
+    —— 对**当前兼有管理角色**的用户改基线（rowcount>0 时 DELETE 全部
+    user_roles 行再按新基线重建）等价于一次撤销管理角色，故先实时读库
+    （list_roles，含旧列兜底）探测目标是否兼有管理角色，是则无论新基线是
+    什么都按管理角色闸门判定。
+
+    Args:
+        me: 当前操作人会话用户 dict（显式传给 guards，测试可注入）。
+        target_role: 目标角色名（六角色或 legacy 基线角色）。
+        target_uid: 目标用户 id（改基线路径传，用于撤方向探测；其余路径 None）。
+    """
+    if target_uid is not None and ({"dict_admin", "sys_admin"} & set(list_roles(int(target_uid)))):
+        target_role = "admin"  # 撤方向封堵：等价一次管理角色撤销 → 同闸
+    if target_role in ("dict_admin", "sys_admin", "admin"):
+        allowed, action = ("dict_admin",), _ACTION_ADMIN_ROLES
+    elif target_role == "viewer":
+        allowed, action = ("dict_admin", "sys_admin"), _ACTION_VIEWER_ROLE
+    elif target_role in ("reviewer", "editor", "annotator"):
+        allowed = (
+            ("dict_admin", "sys_admin")
+            if _SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT
+            else ("dict_admin",)
+        )
+        action = _ACTION_FUNCTIONAL_ROLE
+    else:
+        allowed, action = (), "未知角色的设置"
+    try:
+        guards.require_role(me, allowed=allowed, action=action)
+    except PermissionError as e:
+        return f"⛔ {e}"
+    return None
 
 
 def _badge(text: str, color: str) -> str:
@@ -155,6 +277,17 @@ def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
     if not submitted:
         return
     uid = options[label]
+    # 提权硬闸门（批次 4-N 旁路封堵，批次 6-T 收口到 guards.require_role）：
+    # 基线改为 admin ≙ 授予 dict_admin+sys_admin；对兼有管理角色的用户改基线
+    # ≙ 撤销管理角色（user_roles 被重置）——双向同闸（见 _gate_error）
+    gate_error = _gate_error(me, role, target_uid=uid)
+    if gate_error:
+        st.error(gate_error)
+        logger.error(
+            f"用户 {me.get('username')} 尝试将 id={uid} 基线角色改为 {role}，"
+            "被提权硬闸门拒绝（guards.require_role）"
+        )
+        return
     if set_role(uid, role):
         st.success(f"已将用户 id={uid} 的角色改为「{ROLE_LABELS.get(role, role)}」。")
         logger.info(f"admin {me.get('username')} 将用户 id={uid} 角色改为 {role}")
@@ -186,9 +319,13 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
         st.error("操作失败：用户不存在、状态未变化或数据库错误。")
 
 
-def _render_create_user_form() -> None:
+def _render_create_user_form(me: Dict[str, Any]) -> None:
     """新建用户表单。密码框不回显，提交读取后立即从会话清除。"""
     st.markdown(f"<h3 style='{HEADER_H3}'>➕ 新建用户</h3>", unsafe_allow_html=True)
+    st.caption(
+        "新号默认 viewer（只读）——三级最小权限链第一级；初始口令须首次登录修改"
+        "（登录后出现强制改密提示），六角色叠加授权见上方「角色授予」面板。"
+    )
     with st.form("users_admin_create_form", clear_on_submit=True):
         username = st.text_input("用户名（唯一，≤50 字符）", max_chars=50, key="users_admin_create_username")
         password = st.text_input("初始密码", type="password", key="users_admin_create_password")
@@ -204,6 +341,16 @@ def _render_create_user_form() -> None:
     if not username.strip() or not password:
         st.error("用户名与初始密码不能为空。")
         return
+    # 提权硬闸门（批次 4-N 旁路封堵，批次 6-T 收口到 guards.require_role）：
+    # 建号即授 admin 基线 ≙ 授予管理角色
+    gate_error = _gate_error(me, role)
+    if gate_error:
+        st.error(gate_error)
+        logger.error(
+            f"用户 {me.get('username')} 尝试建号（'{username.strip()}'）即授 "
+            f"{role} 基线，被提权硬闸门拒绝（guards.require_role）"
+        )
+        return
     new_id = create_user(username.strip(), password, display_name.strip(), role)
     # 密码用完即焚：不留在 st.session_state（表单 clear_on_submit 之外兜底；
     # 键名与上方 text_input 的 key 一致）
@@ -216,18 +363,140 @@ def _render_create_user_form() -> None:
         st.error("创建失败：角色非法、用户名已存在或数据库错误。")
 
 
+def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) -> None:
+    """六角色授予面板（批次 3-K，平台架构设计规范 §8；批次 4-N 硬闸门）。
+
+    选用户 → 显示其当前 roles（users_db.list_roles 实时读 user_roles 表，
+    无行账号按旧 role 列映射兜底）→ 授予/撤销（grant_role / revoke_role，
+    granted_by 记当前操作人）。
+
+    提权硬闸门（批次 4-N）：授予/撤销提交后、调用数据层**之前**经 _gate_error
+    判定（批次 6-T 收口：判定走中央闸门 guards.require_role，口径见其
+    docstring）——管理角色（dict_admin/sys_admin）仅词典管理员可执行；纯
+    平台管理员（sys_admin）不提权口径下仅可授/撤 viewer；职能角色
+    （reviewer/editor/annotator）仅词典管理员（批次 5 决策开关
+    _SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT 可放宽）。被拒时 st.error 且
+    **不触数据层**（纵深防御第二层：本页闸门之外，敏感词典写路径另有
+    guards.require_dict_admin API 级闸门）。
+    当前登录管理员不在可操作名单里（与改角色/停用表单同一自保护口径：
+    legacy admin 的权柄来自旧 role 列，撤销自己的 user_roles 行也会被
+    list_roles 的旧列兜底映射复活，徒增困惑）。
+    """
+    st.markdown(f"<h3 style='{HEADER_H3}'>🎭 角色授予（六角色）</h3>", unsafe_allow_html=True)
+    st.caption(
+        "六角色可叠加（词典管理员 dict_admin · 平台管理员 sys_admin · 审校 reviewer · "
+        "撰写 editor · 标注 annotator · 只读 viewer）。新号默认 viewer；账号级角色在"
+        "本面板授予，项目内职能与任务分派走三级权限链（项目成员/任务分配页）。"
+    )
+    st.info(
+        "⚠️ **平台管理员不得自行提权（硬闸门已启用）**：授予/撤销 dict_admin"
+        "（词典管理员）或 sys_admin（平台管理员）仅词典管理员可执行，"
+        "越权提交将被拒绝且不写库；平台管理员只可授/撤 viewer。"
+    )
+
+    options = _user_options(users, exclude_id=int(me.get("id") or 0))
+    if not options:
+        st.info("没有可授予角色的其他用户。")
+        return
+
+    selected_label = st.selectbox("选择用户", list(options.keys()), key="role_grant_user")
+    target_uid = options[selected_label]
+    current_roles = list_roles(target_uid)
+
+    if current_roles:
+        badges = "".join(
+            _badge(
+                _html_escape(f"{ROLE_LABELS.get(r, r)}（{r}）"),
+                ROLE_BADGE_COLORS.get(r, "#718096"),
+            )
+            for r in current_roles
+        )
+        st.markdown(f"当前角色：{badges}", unsafe_allow_html=True)
+    else:
+        st.markdown("当前角色：（无六角色记录，按旧角色列兜底显示）")
+
+    grant_submitted = False
+    grant_role_sel: Optional[str] = None
+    with st.form("users_admin_grant_role_form", clear_on_submit=True):
+        grant_role_sel = st.selectbox(
+            "授予角色",
+            list(NEW_ROLES),
+            format_func=lambda r: f"{ROLE_LABELS.get(r, r)}（{r}）",
+        )
+        grant_submitted = st.form_submit_button("授予角色", use_container_width=True)
+
+    revoke_submitted = False
+    revoke_role_sel: Optional[str] = None
+    if current_roles:
+        with st.form("users_admin_revoke_role_form", clear_on_submit=True):
+            revoke_role_sel = st.selectbox(
+                "撤销角色",
+                current_roles,
+                format_func=lambda r: f"{ROLE_LABELS.get(r, r)}（{r}）",
+            )
+            revoke_submitted = st.form_submit_button("撤销角色", use_container_width=True)
+    else:
+        st.caption("该用户暂无可撤销的六角色（授予后可撤销）。")
+
+    granter_id = int(me.get("id") or 0)
+    granter_name = str(me.get("username") or "")
+    if grant_submitted and grant_role_sel:
+        # 提权硬闸门：先判定，被拒则不调数据层（批次 4-N 立，6-T 收口到 guards）
+        gate_error = _gate_error(me, grant_role_sel)
+        if gate_error:
+            st.error(gate_error)
+            logger.error(
+                f"用户 {granter_name} 授予用户 id={target_uid} 六角色 {grant_role_sel} "
+                "被提权硬闸门拒绝"
+            )
+        elif grant_role(target_uid, grant_role_sel, granted_by=granter_id):
+            st.success(
+                f"已授予用户 id={target_uid} 角色「{ROLE_LABELS.get(grant_role_sel, grant_role_sel)}」"
+                f"（granted_by={granter_id}）。"
+            )
+            logger.info(
+                f"admin {granter_name} 授予用户 id={target_uid} 六角色 {grant_role_sel}"
+            )
+            st.rerun()
+        else:
+            st.error("授予未生效：该用户已持有该角色、用户不存在或数据库错误。")
+    if revoke_submitted and revoke_role_sel:
+        # 提权硬闸门：先判定，被拒则不调数据层（批次 4-N 立，6-T 收口到 guards）
+        gate_error = _gate_error(me, revoke_role_sel)
+        if gate_error:
+            st.error(gate_error)
+            logger.error(
+                f"用户 {granter_name} 撤销用户 id={target_uid} 六角色 {revoke_role_sel} "
+                "被提权硬闸门拒绝"
+            )
+        elif revoke_role(target_uid, revoke_role_sel):
+            st.success(
+                f"已撤销用户 id={target_uid} 角色「{ROLE_LABELS.get(revoke_role_sel, revoke_role_sel)}」。"
+            )
+            logger.info(
+                f"admin {granter_name} 撤销用户 id={target_uid} 六角色 {revoke_role_sel}"
+            )
+            st.rerun()
+        else:
+            st.error("撤销未生效：该用户未持有该角色、用户不存在或数据库错误。")
+
+
 def render_users_admin_page() -> None:
     """
     用户管理页入口（规范 §5：侧边栏「👥 用户管理」）。
 
-    **role gate 在函数入口**（§6-4）：未登录或非 admin 一律拦截，
-    页面内容不渲染 —— 权限不信任前端隐藏。
+    **role gate 在函数入口**（§6-4）：未登录一律拦截；六角色口径（批次 4-N
+    收口）：有效六角色集（users_db.effective_six_roles，与 app.py 页面可见性
+    同源的单一实现）含 sys_admin 或 dict_admin 才放行 —— 账号生命周期是平台
+    管理员（sys_admin）职能；词典管理员（dict_admin）作为管理侧过渡期兼判
+    同样放行（legacy role=='admin' 账号经 LEGACY_ROLE_TO_NEW_ROLES 映射必然
+    两位一体，升级前后行为逐字节一致）。页面内容不渲染 —— 权限不信任前端隐藏。
     """
     me = _current_user()
     if not me:
         st.warning("请先登录。")
         return
-    if me.get("role") != "admin":
+    if not ({"sys_admin", "dict_admin"} & effective_six_roles(me)):
         st.error("⛔ 用户管理仅管理员可用。")
         return
 
@@ -255,6 +524,9 @@ def render_users_admin_page() -> None:
     with right:
         _render_toggle_active_form(users, me)
 
+    st.markdown("")
+    _render_role_grant_panel(users, me)
+
     st.markdown(
         f"<div style='{get_card_style()}'>"
         f"<strong>安全提示</strong>"
@@ -266,4 +538,4 @@ def render_users_admin_page() -> None:
     )
 
     st.markdown("")
-    _render_create_user_form()
+    _render_create_user_form(me)
