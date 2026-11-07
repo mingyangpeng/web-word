@@ -1089,7 +1089,11 @@ class TestDbUnavailableDegrade:
     #      注入会话用户模拟「断库前已登录」的残留会话）----
 
     def test_cluster_page_offline_graceful(self, db_down):
-        """断库：cluster 页 get_categories 降级为空 → info 引导灌库，不抛异常。"""
+        """断库：cluster 页数据层探针失败 → warning「数据不可用」，不抛异常。
+
+        R4-1/R4-5 三口径归因后，断库（探针 SELECT COUNT(*) FROM cs_cluster_runs
+        连不上）走「数据不可用：<原因>（勿重跑灌库）」分支，不再误报「未灌入」
+        （原文案「暂无聚类运行数据」仍归空库用例 TestS3NewPagesMatrix 固化）。"""
         import src.cluster_analysis as ca
 
         ca._load_page_data.clear()  # 清掉 DB-up 用例的页面缓存，真跑断库路径
@@ -1099,7 +1103,12 @@ class TestDbUnavailableDegrade:
         at.session_state["page"] = "cluster"
         at.run()
         assert not at.exception
-        assert any("暂无聚类运行数据" in str(i.value) for i in at.info)
+        warnings_and_infos = [str(w.value) for w in at.warning] + \
+                             [str(i.value) for i in at.info]
+        assert any("数据不可用" in t for t in warnings_and_infos), \
+            "断库下 cluster 页应给「数据不可用」提示"
+        assert any("勿重跑灌库" in t for t in warnings_and_infos), \
+            "「数据不可用」提示应明确勿重跑灌库"
         assert not at.error
 
     def test_template_page_offline_graceful(self, db_down):

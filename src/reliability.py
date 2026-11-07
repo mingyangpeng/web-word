@@ -391,16 +391,24 @@ def _fetch_submissions(category: str, task_type: str) -> Optional[list[dict]]:
 
 
 def _ensure_reliability_table() -> bool:
-    """幂等建 reliability_runs（规范 §2 DDL 原样）+ 旧表补 created_by 列。
+    """幂等建 reliability_runs（规范 §2 DDL 原样）+ 旧表补 created_by 列
+    + (category, task_type) 查询索引。
 
     迁移幂等（R5 遗留 2）：CREATE TABLE IF NOT EXISTS 对已存在的旧表是空操作，
     故再用 INFORMATION_SCHEMA 查列，缺 created_by 则 ALTER TABLE ADD COLUMN ——
     重复调用不炸、不重复加列。失败返回 False（只算不写）。
+
+    R5-10（P3）：页面按 (category, task_type) 过滤 reliability_runs
+    （_fetch_submissions 同型的提交读路径在 annotation_submissions；
+    runs 表的历史清单读 category+task_type），无索引时全表扫描。
+    MySQL 8 无 CREATE INDEX IF NOT EXISTS —— 用 INFORMATION_SCHEMA.STATISTICS
+    探测后建，幂等模式同 _migrate_created_by_column。
     """
     try:
         with get_db_cursor() as cursor:
             cursor.execute(RELIABILITY_RUNS_DDL)
             _migrate_created_by_column(cursor)
+            _migrate_category_index(cursor)
         return True
     except Exception as exc:
         logger.error("建 reliability_runs 表失败: %s", exc)
@@ -426,6 +434,35 @@ def _migrate_created_by_column(cursor) -> None:
             "ALTER TABLE reliability_runs ADD COLUMN created_by INT NULL"
         )
         logger.info("reliability_runs 已补 created_by 归属列（幂等迁移）")
+
+
+# runs 历史清单按 (category, task_type) 读取的复合索引名（R5-10）
+_RELIABILITY_RUNS_CATEGORY_INDEX = "idx_reliability_runs_category"
+
+
+def _migrate_category_index(cursor) -> None:
+    """reliability_runs 补 (category, task_type) 复合索引（幂等，R5-10）。
+
+    MySQL 8 不支持 CREATE INDEX IF NOT EXISTS —— 先探
+    INFORMATION_SCHEMA.STATISTICS（同库同表同索引名任一行存在即视为已建，
+    与 _index_exists 的既有迁移口径一致），缺则 CREATE INDEX。库/表/索引名
+    不拼接用户输入，一律字面量（规范 §6-1：无值可参数化的标识符用常量）。
+    """
+    cursor.execute(
+        "SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.STATISTICS "
+        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reliability_runs' "
+        "AND INDEX_NAME = %s",
+        (_RELIABILITY_RUNS_CATEGORY_INDEX,),
+    )
+    row = cursor.fetchone()
+    if row is None:
+        return  # 假游标/异常通道拿不到结果：按无需迁移处理，不让建表流程炸掉
+    if int(row.get("n") or 0) == 0:
+        cursor.execute(
+            "CREATE INDEX idx_reliability_runs_category "
+            "ON reliability_runs (category, task_type)"
+        )
+        logger.info("reliability_runs 已补 (category, task_type) 查询索引（幂等迁移）")
 
 
 def _persist_run(result: dict, created_by: Optional[int] = None) -> None:

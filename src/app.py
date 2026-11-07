@@ -20,9 +20,9 @@ from src.mysql_db import (
     get_corpus_overview, get_corpus_word_stats, get_corpus_schema_scores,
     get_corpus_schema_evidence, get_corpus_collocations, corpus_dataset_ready,
     get_annotation_progress, update_sense_annotation, get_annotation_export_rows,
-    update_collocation_annotations,
+    update_collocation_annotations, count_feedbacks, cache_scope_key,
     domain_family_ready, get_domain_family_overview, get_domain_family_senses,
-    get_domain_family_examples,
+    get_domain_family_examples, get_db_cursor,
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
 from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usage_guide
@@ -109,15 +109,26 @@ if 'sidebar_collapsed' not in st.session_state:
 # ============================================
 # 数据库初始化（连接失败时降级为无数据库模式）
 # ============================================
+# R5-1（P1）单例守卫：init_database() 是全量 DDL（建表 + 迁移 + 视图 + 保留期
+# 清理），此前无守卫、每次 rerun 都重跑一遍 —— 每个会话的每轮交互都白付几十条
+# DDL 往返。现仿下方 `_user_tables_ready` 的 session 旗标模式：每个会话只跑一次，
+# 判定结果（DB_AVAILABLE）一并入会话；DB_AVAILABLE 的取值语义不变（成功 True /
+# 失败或异常 False），只是不再每轮重算。跨会话不共享 —— 故意不做成进程级单例：
+# db_down 类测试各自独立会话，进程级缓存会把上一次的判定串进下一个会话。
 DB_AVAILABLE = False
-try:
-    # Initialize MySQL database
-    if init_database():
-        DB_AVAILABLE = True   # 连接成功保持静默：健康是默认态，状态看侧边栏底部圆点
-    else:
-        st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
-except Exception as e:
-    st.warning(f"⚠️ 数据库初始化失败，使用离线模式：{e}")
+if st.session_state.get("_init_db_done"):
+    DB_AVAILABLE = bool(st.session_state.get("_db_available", False))
+else:
+    try:
+        # Initialize MySQL database
+        if init_database():
+            DB_AVAILABLE = True   # 连接成功保持静默：健康是默认态，状态看侧边栏底部圆点
+        else:
+            st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
+    except Exception as e:
+        st.warning(f"⚠️ 数据库初始化失败，使用离线模式：{e}")
+    st.session_state["_init_db_done"] = True
+    st.session_state["_db_available"] = DB_AVAILABLE
 
 # 多人标注系统：登录数据层（users 表 + 内置 admin，幂等建表，规范 §5/§6-5）。
 # 每会话只跑一次（session_state 旗标）；失败只记日志不崩，登录框照常渲染。
@@ -204,6 +215,24 @@ def _logout() -> None:
     st.session_state[_LOGOUT_FLASH_KEY] = True
 
 
+def _users_table_reachable() -> bool:
+    """users 表可达性探针（R4-4）：区分「账号已停用/删除」与「服务暂不可用」。
+
+    get_user_role 把「查无此人/已停用」与「库读不出来」都折叠成 None（fail-closed
+    契约不变），但两者的用户提示应当不同 —— 断库时登出提示若仍说「账号已被停用
+    或删除」会误导用户去猜账号问题。本探针只发一条最小查询（不取数、不校验角色），
+    异常即视为服务暂不可用。仅 DB_AVAILABLE 且会话回查失败时调用，不在正常路径上。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT 1 FROM users LIMIT 1")
+            cursor.fetchone()
+        return True
+    except Exception as e:
+        logger.warning(f"users 表可达性探针失败（按服务暂不可用处理）: {e}")
+        return False
+
+
 def _refresh_session_user() -> Optional[Dict[str, Any]]:
     """会话角色防陈旧（R1-P2b）：每次 rerun 对真实登录会话回查 users 表。
 
@@ -233,9 +262,16 @@ def _refresh_session_user() -> Optional[Dict[str, Any]]:
     uid = int(user.get("id") or 0)
     fresh_role = get_user_role(uid)
     if fresh_role is None:
-        # 停用 / 删除（含库暂时不可读）：登出并提示，下次操作即生效
+        # 停用 / 删除 / 库暂时不可读：登出并提示，下次操作即生效。
+        # R4-4：提示语分流 —— users 表探针可达才说「停用或删除」；
+        # 探针失败说明是服务端暂时不可用，如实告知账号状态无法核实，
+        # 避免误导用户排查账号问题（登出动作 fail-closed 不变）。
         _logout()
-        st.warning("⛔ 账号已被停用或删除，会话已失效，请重新登录。")
+        if _users_table_reachable():
+            st.warning("⛔ 账号已被停用或删除，会话已失效，请重新登录。")
+        else:
+            st.warning("⚠️ 账号状态暂无法核实（服务暂不可用），已登出；"
+                       "服务恢复后请重新登录。")
         return None
     # 六角色快照回查（list_roles fail-closed：读不出来返回 []，与停用登出
     # 的口径由 get_user_role 先行兜底，不会把正常在线用户误登出）
@@ -653,6 +689,26 @@ def render_card_header(card_key: str, title: str, icon: str) -> None:
         args=(card_key,),
     )
 
+def _mock_source_badge_html(verb: str) -> str:
+    """R4-6（P3）：MOCK 兜底来源徽章（复用释义来源分级徽章样式）。
+
+    当前释义解析自 MOCK_DEFINITIONS（离线兜底）时返回「内置示例（非词典数据）」
+    徽章 HTML；DB/LLM 路径返回空串（不渲染）。颜色取来源分级的中间档琥珀色
+    （#dd6b20，与「二手转写」同级警示），样式与 render_card_annotation 的
+    释义来源徽章一致。
+    """
+    try:
+        display = get_display_definition(verb)
+    except Exception:
+        return ""
+    if display.get("source") != "内置示例":
+        return ""
+    badge = ('background-color: #dd6b20; color: white; padding: 2px 10px; '
+             'border-radius: 10px; font-size: 0.85em;')
+    return ('<p style="color: #2d3748; margin: 0 0 12px 0;"><strong>释义来源：</strong>'
+            f'<span style="{badge}">内置示例（非词典数据）</span></p>')
+
+
 def render_card_prototype(verb):
     """
     渲染原型与位移事件分析卡片。
@@ -669,6 +725,7 @@ def render_card_prototype(verb):
     <div style="padding: 20px;">
         <h4 style="color: #667eea; font-weight: 600; margin: 0 0 16px 0;">🧬 原型与位移事件分析</h4>
     '''
+    html += _mock_source_badge_html(verb)
 
     if semantic_table:
         html += ('<p style="color: #2d3748; margin-bottom: 12px;"><strong>动词:</strong> '
@@ -698,7 +755,8 @@ def render_card_annotation(verb):
     二手拼装、是已定稿还是候选值。
     """
     definition = get_definition_by_verb(verb) if DB_AVAILABLE else None
-    senses = get_senses(verb) if DB_AVAILABLE else []
+    # get_senses 查询失败返 None（R4-1）：义位明细表降级为不渲染，None 归一成 []
+    senses = (get_senses(verb) or []) if DB_AVAILABLE else []
 
     html = '''
     <div style="padding: 20px;">
@@ -787,6 +845,7 @@ def render_card_anchor(verb):
     <div style="padding: 20px;">
         <h4 style="color: #48bb78; font-weight: 600; margin: 0 0 16px 0;">🎯 范畴锚定</h4>
     '''
+    html += _mock_source_badge_html(verb)
 
     html += '<p style="color: #2d3748; margin-bottom: 12px;"><strong>所属范畴:</strong> 运动方式复合事件</p>'
 
@@ -823,6 +882,7 @@ def render_card_core(verb):
     <div style="padding: 20px;">
         <h4 style="color: #ed8936; font-weight: 600; margin: 0 0 16px 0;">📚 核心释义与多维辨异</h4>
     '''
+    html += _mock_source_badge_html(verb)
 
     if traditional:
         html += '<div style="background-color: #edf2f7; padding: 12px; border-radius: 8px; margin-bottom: 16px;">'
@@ -1132,6 +1192,9 @@ def _resolve_display_definition(verb: str) -> Dict[str, Any]:
             "optimized": mock.get("optimized", ""),
             "semantic_table": _normalize_mock_semantic_table(mock.get("semantic_table", [])),
             "example": "",
+            # R4-6（P3）：MOCK 兜底来源标记 —— 卡片渲染「内置示例（非词典数据）」
+            # 徽章，让离线兜底数据在 UI 上可辨识（与 DB/LLM 路径区分）。
+            "source": "内置示例",
         }
 
     # (6) Absolute last resort.
@@ -1715,7 +1778,7 @@ def render_sidebar():
     if DB_AVAILABLE:
         try:
             stats = get_stats()
-            hot_verbs = get_hot_verbs(limit=5)
+            hot_verbs = get_hot_verbs(cache_scope_key(), limit=5)
         except Exception as e:
             logger.error(f"侧边栏统计读取失败: {e}")
             stats = _empty_stats()
@@ -1724,19 +1787,25 @@ def render_sidebar():
         stats = _empty_stats()
         hot_verbs = []
 
+    # R4-2（P3）：离线统计显示 "—" 而非 0（口径对齐 ai_hub —— 0 是「统计到了
+    # 零条」，"—" 才是「无法统计」，离线时后者才是事实）。
+    _off = not DB_AVAILABLE
+    _dash = "—"
+
     # 口径说明：total_queries 来自 usage_logs（真实查询次数），
     # total_definitions 是已收录词条数 —— 两者含义不同，分开展示。
     st.sidebar.metric(
         "总查询次数",
-        stats["total_queries"],
-        delta=f"+{stats['queries_today']} 今天" if stats.get("queries_today") else None,
+        _dash if _off else stats["total_queries"],
+        delta=f"+{stats['queries_today']} 今天"
+              if (not _off and stats.get("queries_today")) else None,
     )
-    st.sidebar.metric("已收录词条", stats.get("total_definitions", 0))
+    st.sidebar.metric("已收录词条", _dash if _off else stats.get("total_definitions", 0))
     # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
-    st.sidebar.metric("词义簇", stats.get("total_clusters", 0))
-    st.sidebar.metric("词间关系", stats.get("total_relations", 0))
-    st.sidebar.metric("平均评分", f"{stats['avg_rating']:.1f}/5.0")
-    st.sidebar.metric("总反馈数", stats["total_feedbacks"])
+    st.sidebar.metric("词义簇", _dash if _off else stats.get("total_clusters", 0))
+    st.sidebar.metric("词间关系", _dash if _off else stats.get("total_relations", 0))
+    st.sidebar.metric("平均评分", _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
+    st.sidebar.metric("总反馈数", _dash if _off else stats["total_feedbacks"])
 
     st.sidebar.divider()
 
@@ -1767,26 +1836,42 @@ def render_sidebar():
     )
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 数据导出</h2>", unsafe_allow_html=True)
 
-    if DB_AVAILABLE:
-        try:
-            feedback_rows = get_feedback_data()
-            feedback_df = pd.DataFrame(feedback_rows)
-        except Exception:
-            feedback_df = pd.DataFrame(columns=["verb", "rating", "feedback_text", "created_at"])
+    # R5-3（P1）按需导出：此前每轮 rerun 都全表 SELECT * FROM feedbacks 只为
+    # 填 download_button 的 data。现在默认只渲染「生成导出」按钮 + 行数 caption
+    # （轻量 COUNT），点击后才真正取数并生成 CSV（导出功能保留，成本移到点击时）。
+    if not DB_AVAILABLE:
+        st.sidebar.caption("数据库离线，反馈导出暂不可用。")
     else:
-        feedback_df = pd.DataFrame(columns=["verb", "rating", "feedback_text", "created_at"])
-
-    # CSV 公式注入防护（R1-P2）：文本以 = + - @ \t 开头时前置单引号
-    csv = sanitize_csv_dataframe(feedback_df).to_csv(index=False).encode('utf-8-sig')
-
-    st.sidebar.download_button(
-        label="导出反馈数据 (CSV)",
-        data=csv,
-        file_name=f"feedback_data_{datetime.datetime.now().strftime('%Y%m%d')}.csv",
-        mime='text/csv',
-        type="primary",
-        use_container_width=True
-    )
+        _fb_count = count_feedbacks()
+        if _fb_count is None:
+            st.sidebar.caption("反馈行数读取失败（数据库异常），导出暂不可用。")
+        else:
+            st.sidebar.caption(f"当前反馈 {_fb_count} 条。")
+            if st.sidebar.button("生成并导出反馈 (CSV)",
+                                 key="sidebar_feedback_export",
+                                 use_container_width=True):
+                try:
+                    feedback_df = pd.DataFrame(get_feedback_data())
+                except Exception as e:
+                    logger.error(f"反馈导出取数失败: {e}")
+                    feedback_df = pd.DataFrame(
+                        columns=["verb", "rating", "feedback_text", "created_at"])
+                if feedback_df.empty:
+                    st.sidebar.info("暂无反馈数据可导出。")
+                else:
+                    # CSV 公式注入防护（R1-P2）：文本以 = + - @ \t 开头时前置单引号
+                    csv = sanitize_csv_dataframe(feedback_df).to_csv(
+                        index=False).encode('utf-8-sig')
+                    st.sidebar.download_button(
+                        label="下载反馈数据 (CSV)",
+                        data=csv,
+                        file_name=f"feedback_data_"
+                                  f"{datetime.datetime.now().strftime('%Y%m%d')}.csv",
+                        mime='text/csv',
+                        type="primary",
+                        key="sidebar_feedback_download",
+                        use_container_width=True
+                    )
 
 # ============================================
 # 主区域组件
@@ -2003,12 +2088,20 @@ def render_interactive_graph_page() -> None:
         return
 
     try:
-        graph = get_full_word_graph()
+        graph = get_full_word_graph(cache_scope_key())
     except Exception as e:
         logger.error(f"读取全库图谱失败: {e}")
         graph = None
 
-    if not graph or not graph.get("nodes"):
+    # R4-1 三口径：None=查询失败（数据不可用，勿重跑灌库）；
+    # []=表在但词库未灌（给灌库指引）；有数=正常渲染。
+    if graph is None:
+        st.warning(
+            "数据不可用：全库图谱读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
+    if not graph.get("nodes"):
         st.info(
             "暂无词间关系数据。运行 `python scripts/load_word_library.py` "
             "可载入 155 词词库及其 2143 条词间关系。"
@@ -2060,6 +2153,9 @@ def _pick_cluster_verb(cluster_id: int) -> None:
         g = get_cluster_graph_by_id(cluster_id)
     except Exception as e:
         logger.error(f"读取词簇 {cluster_id} 失败: {e}")
+        return
+    if not g:  # R4-1：查询失败（None）与空簇一律静默不导航（on_click 回调内不渲染 UI）
+        logger.error(f"词簇 {cluster_id} 不可用（读取失败或空簇），未跳转")
         return
     nodes = g.get("nodes") or []
     if not nodes:
@@ -2324,7 +2420,14 @@ def render_word_relation_section(verb: str) -> None:
         logger.error(f"读取词簇图失败 for '{verb}': {e}")
         graph = None
 
-    if not graph or not graph.get("nodes"):
+    # R4-1 三口径：None=查询失败；空图=该词未入簇/词库未灌；有数=正常渲染。
+    if graph is None:
+        st.warning(
+            "数据不可用：词簇图谱读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后重新查询即可。"
+        )
+        return
+    if not graph.get("nodes"):
         st.info(
             f"「{verb}」暂无词簇数据。词簇来自词库的次语义范畴划分；"
             "运行 `python scripts/load_word_library.py` 可载入词库及其词间关系。"
@@ -2609,6 +2712,13 @@ def _render_annotation_admin_view() -> None:
         return
 
     progress = get_annotation_progress()
+    # R4-1 三口径：None=查询失败（勿重跑灌库）；[]=词库未灌（给灌库指引）。
+    if progress is None:
+        st.warning(
+            "数据不可用：标注进度读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not progress:
         st.info("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。")
         return
@@ -2650,6 +2760,12 @@ def _render_annotation_admin_view() -> None:
                                index=verbs.index("walk") if "walk" in verbs else 0)
 
     senses = get_oald_senses(picked_verb)
+    if senses is None:
+        st.warning(
+            f"数据不可用：「{picked_verb}」的 OALD 义位读取失败"
+            "（数据库查询出错或连接中断），勿重跑灌库脚本，稍后重试。"
+        )
+        return
     if not senses:
         st.warning(f"「{picked_verb}」无 OALD 义位数据。"
                    f"（研究词表 996 义位 = 992 OALD + 4 人工补充"
@@ -2850,6 +2966,13 @@ def render_submission_flow() -> None:
                "写入 annotation_submissions（同一义位重复提交=覆盖更新）。")
 
     progress = get_annotation_progress()
+    # R4-1 三口径（与标注平台同口径）
+    if progress is None:
+        st.warning(
+            "数据不可用：标注进度读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not progress:
         st.info("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。")
         return
@@ -2861,6 +2984,12 @@ def render_submission_flow() -> None:
     )
 
     senses = get_oald_senses(picked_verb)
+    if senses is None:
+        st.warning(
+            f"数据不可用：「{picked_verb}」的 OALD 义位读取失败"
+            "（数据库查询出错或连接中断），勿重跑灌库脚本，稍后重试。"
+        )
+        return
     if not senses:
         st.warning(f"「{picked_verb}」无 OALD 义位数据。")
         return

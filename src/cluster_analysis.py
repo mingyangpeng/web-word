@@ -160,6 +160,15 @@ try:
 except ImportError:  # pragma: no cover - 环境无 scipy 时才触发
     HAS_SCIPY = False
 
+# plotly 为谱系树/义位图谱/单簇条形图的可选渲染依赖（requirements.txt 已列）。
+# 缺失时相关 tab 入口 warning＋return（R4-7，与上方 scipy 同款双层降级），
+# 不让 ImportError 炸页面；典型性排序数据与英汉对比侧不依赖 plotly。
+try:
+    import plotly  # noqa: F401  # 探测可用性；具体模块在函数内延迟导入
+    HAS_PLOTLY = True
+except ImportError:  # pragma: no cover - 环境无 plotly 时才触发
+    HAS_PLOTLY = False
+
 # ============================================
 # 配置常量
 # ============================================
@@ -401,6 +410,30 @@ def assign_tiers(distances: Sequence[float],
 # ============================================
 # 数据装载（cs_* 表 → 特征矩阵 + 簇结构）
 # ============================================
+
+def _categories_table_reachable() -> bool:
+    """categories 表可达性探针（R4-5/R4-1）。
+
+    底层 category_study.get_categories / category_study_ready 对异常静默
+    折叠成 []/False（我方不可改其契约），「JOIN 失败」与「真空表」在页面侧
+    无法区分 —— 这里直接发一条最小查询：成功即认为数据层可达（未灌入），
+    异常即服务端异常（数据不可用，勿重跑灌库）。仅空态分支调用，正常路径
+    零开销。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            # 探针带 cs_lexemes JOIN：get_categories 的计数子查询依赖同表族，
+            # 缺表/连接中断在这里同样会炸，归因更贴近真实失败面。
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM categories c "
+                "LEFT JOIN cs_lexemes l ON l.category_id = c.id"
+            )
+            cursor.fetchone()
+        return True
+    except Exception as e:
+        logger.warning(f"categories 表可达性探针失败（按服务暂不可用处理）: {e}")
+        return False
+
 
 def _resolve_run(category_id: int, language: str,
                  run_id: Optional[int]) -> Optional[Dict[str, Any]]:
@@ -1815,16 +1848,36 @@ def _load_page_data(cache_scope: str, category: str, language: str) -> Dict[str,
     参数不参与哈希**（Streamlit 明确行为）—— 曾把作用域传进 `_cache_scope`
     下划线参数，等于没进键，测试切换 MYSQL_DATABASE 指向测试库时键不变，
     会把业务库的聚类矩阵串进「空测试库」用例（S1 review 修复本身失效，
-    S3 合跑复现：换库必须换缓存槽位，跨库隔离）。"""
-    ranking = compute_medoid_ranking(category, language)
+    S3 合跑复现：换库必须换缓存槽位，跨库隔离）。
+
+    R4-1 fail-closed 归因：返回值新增 ``load_error`` 键（None=数据层可达，
+    str=cs_cluster_runs 探针查询失败的原因）。取数失败时 ranking 归 []、
+    dendro 归 {"load_error": 原因}，页面据此分流「数据不可用（勿重跑灌库）」
+    与「未灌入」（键只加不改，既有消费方不受影响）。"""
+    load_error: Optional[str] = None
+    try:
+        # 数据层可达性探针：底层 category_study.get_cluster_runs 对异常静默
+        # 返 []，无法区分「查询失败」与「真没数据」—— 这里直接探一次主表，
+        # 失败即归因为服务端异常（勿重跑灌库），成功则维持既有空态语义。
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS n FROM cs_cluster_runs")
+            cursor.fetchone()
+    except Exception as e:
+        load_error = f"范畴深挖数据读取失败：{e}"
+    ranking: List[Dict[str, Any]] = []
     dendro: Dict[str, Any] = {}
+    if load_error:
+        dendro = {"load_error": load_error}
+    else:
+        ranking = compute_medoid_ranking(category, language)
     scipy_missing = False
     if ranking:
         try:
             dendro = build_dendrogram_data(category, language)
         except ImportError:
             scipy_missing = True
-    return {"ranking": ranking, "dendro": dendro, "scipy_missing": scipy_missing}
+    return {"ranking": ranking, "dendro": dendro, "scipy_missing": scipy_missing,
+            "load_error": load_error}
 
 
 def _recut_comparison_rows(recut: Dict[str, Any]) -> pd.DataFrame:
@@ -1875,9 +1928,23 @@ def _render_recut_save(dendro: Dict[str, Any], recut: Dict[str, Any]) -> None:
 
 def _render_dendrogram(dendro: Dict[str, Any]) -> None:
     """谱系树 tab：plotly create_dendrogram（预计算 Gower 矩阵直传）+ k 切分参考线
-    + 交互式谱系切割（F2：fcluster maxclust 重切 + 保存为新运行版本）。"""
+    + 交互式谱系切割（F2：fcluster maxclust 重切 + 保存为新运行版本）。
+
+    降级三层（R4-7/R4-5）：plotly 缺失 → 入口 warning＋return（与 scipy 同款
+    双层降级）；取数失败（dendro.load_error）→ 「数据不可用：<原因>」；
+    树真为空（成员少于 2 个 / 运行缺 linkage）→ 数据不足提示。"""
     st.markdown(f"<h3 style='{HEADER_H3}'>谱系树（Gower + average 层次聚类）</h3>",
                 unsafe_allow_html=True)
+    if not HAS_PLOTLY:
+        st.warning("plotly 未安装，谱系树 tab 不可用（pip install plotly）；"
+                   "典型性排序不受影响。")
+        return
+    if dendro.get("load_error"):
+        st.warning(
+            f"数据不可用：{dendro['load_error']}。属服务端异常，"
+            "**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not dendro or not dendro.get("linkage"):
         st.warning("谱系树数据不足（簇成员少于 2 个）。")
         return
@@ -1957,6 +2024,9 @@ def _render_dendrogram(dendro: Dict[str, Any]) -> None:
 
 def _render_tier_bars(cluster: Dict[str, Any]) -> None:
     """单簇成员距离条形图（plotly 横条，tier 分色，最近成员在顶部）。"""
+    if not HAS_PLOTLY:
+        st.caption("（plotly 未安装，条形图不可用 —— 成员排序表不受影响。）")
+        return
     import plotly.express as px
 
     members = cluster["members"]
@@ -2223,6 +2293,13 @@ def _render_sense_division_tab(category: str, language: str,
     ensure_sense_split_columns()
     ensure_cluster_locked_column()
     dendro = (data or {}).get("dendro") or {}
+    # R4-5 三口径：取数失败（load_error，带原因）vs 真不足（成员少于 2 个）
+    if dendro.get("load_error"):
+        st.warning(
+            f"数据不可用：{dendro['load_error']}。属服务端异常，"
+            "**勿重跑灌库脚本**，分立复核暂不可用；恢复后刷新本页即可。"
+        )
+        return
     if not dendro or not dendro.get("linkage"):
         st.warning("谱系树数据不足（簇成员少于 2 个），分立复核不可用。")
         return
@@ -2322,12 +2399,26 @@ def _render_sense_graph_tab(dendro: Dict[str, Any]) -> None:
     numpy 特征分解）取前两主轴 —— 定义良好的最优 2D 投影，两轴解释率如实
     展示；「原型居中」以 medoid 星标大标记呈现，投影下几何居中不保证。
     全部差异在页面 caption 注明（论文 §7.2 口径）。
+
+    降级三层（R4-7/R4-5）：plotly 缺失 → 入口 warning＋return（不再让函数顶部
+    的 plotly import 直接炸 tab）；取数失败（dendro.load_error）→ 「数据不可用：
+    <原因>」；树真为空 → 数据不足提示。
     """
+    st.markdown(f"<h3 style='{HEADER_H3}'>义位图谱（原型居中 · 边=Gower 距离）</h3>",
+                unsafe_allow_html=True)
+    if not HAS_PLOTLY:
+        st.warning("plotly 未安装，义位图谱 tab 不可用（pip install plotly）；"
+                   "典型性排序不受影响。")
+        return
     import plotly.express as px
     import plotly.graph_objects as go
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>义位图谱（原型居中 · 边=Gower 距离）</h3>",
-                unsafe_allow_html=True)
+    if dendro.get("load_error"):
+        st.warning(
+            f"数据不可用：{dendro['load_error']}。属服务端异常，"
+            "**勿重跑灌库脚本**，义位图谱暂不可用；恢复后刷新本页即可。"
+        )
+        return
     if not dendro or not dendro.get("linkage"):
         st.warning("谱系树数据不足（簇成员少于 2 个），义位图谱不可用。")
         return
@@ -2493,7 +2584,14 @@ def render_semantic_analysis_page() -> None:
                             key="ca_language")
 
     data = _load_page_data(cache_scope_key(), category, language)
-    if not data["ranking"]:
+    # R4-1/R4-5 三口径：load_error=取数失败（数据不可用，勿重跑灌库）；
+    # ranking=[]（数据层可达）=未灌入（给灌库指引）；有数=正常渲染。
+    if data.get("load_error"):
+        st.warning(
+            f"数据不可用：{data['load_error']}。属服务端异常，"
+            "**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+    elif not data["ranking"]:
         st.info(
             f"范畴 {category}（{LANGUAGE_LABELS.get(language, language)}侧）"
             "暂无聚类运行数据。请先运行 scripts/load_category_study.py "
@@ -2504,14 +2602,22 @@ def render_semantic_analysis_page() -> None:
                    "典型性排序不受影响。")
 
     # —— 英汉对比侧数据（原 render_category_study_page 装载逻辑原样搬移：
-    #      ready → categories → _load_category 三级判定逐字保留）——
+    #      ready → categories → _load_category 三级判定保留；R4-5 在 False/空
+    #      分支各加一层可达性探针，区分「JOIN 失败」与「真没数据」）——
     cs_code: Optional[str] = None
     cs_cat: Optional[Dict[str, Any]] = None
     cs_data: Optional[Dict[str, Any]] = None
     if category_study_ready():
         categories = get_categories()
         if not categories:
-            st.warning("categories 为空。")
+            # ready() 已确认 categories 有行，到这里为空只剩 JOIN/读失败或竞态
+            if _categories_table_reachable():
+                st.warning("categories 为空。")
+            else:
+                st.warning(
+                    "数据不可用：categories 读取失败（JOIN 查询出错或连接中断），"
+                    "**勿重跑灌库脚本**；恢复后刷新本页即可。"
+                )
         else:
             if len(categories) == 1:
                 cs_code = categories[0]["code"]
@@ -2533,11 +2639,16 @@ def render_semantic_analysis_page() -> None:
                     f"英语 {cs_cat['en_lexemes']} 词 {cs_cat['en_senses']} 义位 / "
                     f"汉语 {cs_cat['zh_lexemes']} 词条 {cs_cat['zh_senses']} 义位条目"
                 )
-    else:
+    elif _categories_table_reachable():
         st.info(
             "范畴深挖数据尚未灌入。运行 "
             "`MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py` "
             "从 data/d1/ 跑范畴两个 xlsx 加载。"
+        )
+    else:
+        st.warning(
+            "数据不可用：categories 表读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
         )
 
     tab_tree, tab_typical, tab_division, tab_graph, tab_compare, tab_matrix, \
