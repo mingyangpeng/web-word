@@ -22,6 +22,18 @@
   * _advance_export_status 单步流转（假 cursor 驱动：单向流转表 + 乐观并发
     守卫）；快照按钮闸门 mock（guards 拒绝时不触 build_content_snapshot）。
 
+批次 11 Agent AV2 增补（G6 小尾巴收口：三卡灰注转硬检 + 资源登记块）：
+  * 体例终检硬检：style.yaml 在场**且**含 style_version 字段 → 已过（展示
+    体例版本；纯函数 _g6_style_version）；缺字段/缺文件 → 占位「体例文件
+    未研制」；
+  * 备份新鲜硬检：data/backups/ 树内最新 *.sql.gz/*.tar.gz（纯函数
+    _g6_scan_backups，scripts/backup_db.sh 落地产物）为主证据，无产物 →
+    占位「备份任务未运行」（快照≠灾备备份，仅快照也占位）；
+  * 许可终检 0 行口径：「空过（未登记资源）」注明；
+  * 资源登记块：纯函数 _registry_form_error（四项必填/超长）＋
+    _render_registry_form / _render_resource_registry_section 渲染
+    （_StubSt 扩展 text_input；guards 拒绝 → register_resource 不触达）。
+
 不要求 AppTest（未接线）；本文件不连数据库（import 各数据层模块不触发连接，
 G6 摘要与渲染层用例以注入函数 / monkeypatch 假对象驱动）。
 """
@@ -55,10 +67,16 @@ from src.dict_admin_pages import (  # noqa: E402
     _g6_gate_open,
     _g6_license_passed,
     _g6_license_summary,
+    _g6_scan_backups,
     _g6_style_summary,
+    _g6_style_version,
     _is_dict_admin,
     _parse_enum_csv,
+    _registry_form_error,
     _render_exports_flow,
+    _render_registry_form,
+    _render_registry_table,
+    _render_resource_registry_section,
     _render_snapshot_builder,
     _upload_target_path,
     _validate_upload,
@@ -345,13 +363,13 @@ def test_export_status_labels_cover_enum():
     assert set(EXPORT_STATUS_LABELS) == {"ready", "published", "revoked"}
 
 
-# --- G6 ① 许可终检（resource_registry 逐行 license 审计） ---
+# --- G6 ① 许可终检（resource_registry 逐行 license 审计，批次 11 硬检口径） ---
 
 def test_g6_license_placeholder_when_table_missing():
-    """表未建 → 灰注占位「资源登记未启用」（不编绿灯）。"""
+    """表未建（自举建表未生效）→ 灰注占位，不编绿灯。"""
     check = _g6_license_summary(exists_fn=lambda: False)
     assert check["status"] == G6_PLACEHOLDER
-    assert "资源登记未启用" in check["detail"]
+    assert "表未建" in check["detail"]
 
 
 def test_g6_license_placeholder_when_probe_fails():
@@ -365,21 +383,23 @@ def test_g6_license_placeholder_when_probe_fails():
 
 
 def test_g6_license_passed_when_all_licensed():
-    """逐行 license 非空 → 已过，行数如实展示。"""
+    """逐行 license 非空 → 已过（✅ n 行），行数如实展示。"""
     check = _g6_license_summary(exists_fn=lambda: True, stats_fn=lambda: (7, 0))
     assert check["status"] == G6_PASSED
     assert "7" in check["detail"]
 
 
 def test_g6_license_passed_vacuous_on_empty_table():
-    """表在场 0 行 → 审计空过（已过，0 行如实注明）。"""
+    """表在场 0 行 → 审计空过（已过，「空过（未登记资源）」注明）。"""
     check = _g6_license_summary(exists_fn=lambda: True, stats_fn=lambda: (0, 0))
     assert check["status"] == G6_PASSED
     assert "0 行" in check["detail"]
+    assert "空过" in check["detail"]
+    assert "未登记资源" in check["detail"]
 
 
 def test_g6_license_failed_when_missing_license_rows():
-    """license 空值行 >0 → 未过（无许可资源不得出版），计数进 detail。"""
+    """license 空值行 >0 → 未过 ❌ n/m（无许可资源不得出版）。"""
     check = _g6_license_summary(exists_fn=lambda: True, stats_fn=lambda: (4, 1))
     assert check["status"] == G6_FAILED
     assert "1/4" in check["detail"]
@@ -394,22 +414,48 @@ def test_g6_license_placeholder_when_stats_raise():
     assert check["status"] == G6_PLACEHOLDER
 
 
-# --- G6 ② 体例终检（style.yaml 在场检查） ---
+# --- G6 ② 体例终检（style.yaml 在场 + style_version 字段硬检，批次 11） ---
+
+def test_g6_style_version_parser(tmp_path):
+    """_g6_style_version：读不动（不存在/目录）→ None，不抛异常。"""
+    assert _g6_style_version(str(tmp_path / "no-such-file.yaml")) is None
+    assert _g6_style_version(str(tmp_path)) is None  # 目录 → OSError 折叠
+
 
 def test_g6_style_passed_when_style_yaml_present(tmp_path):
-    """候选路径任一在场 style.yaml → 已过（路径如实展示）。"""
+    """style.yaml 在场且含 style_version → 已过，体例版本如实展示。"""
     style = tmp_path / "style.yaml"
-    style.write_text("version: v1\n", encoding="utf-8")
+    style.write_text("# 体例文件\nstyle_version: 1.0\ndefining_vocab: {}\n",
+                     encoding="utf-8")
     check = _g6_style_summary(candidates=[str(style)])
     assert check["status"] == G6_PASSED
     assert "style.yaml" in check["detail"]
+    assert "1.0" in check["detail"]
+
+
+def test_g6_style_version_tolerates_quotes_and_comments(tmp_path):
+    """style_version: "1.0"  /  值后行尾注释 → 版本值干净解析。"""
+    style = tmp_path / "style.yaml"
+    style.write_text('style_version: "2.1"  # 版本履历\n', encoding="utf-8")
+    assert _g6_style_version(str(style)) == "2.1"
+    style.write_text("style_version: 3  # 待编者核定\n", encoding="utf-8")
+    assert _g6_style_version(str(style)) == "3"
+
+
+def test_g6_style_placeholder_when_style_version_missing(tmp_path):
+    """style.yaml 在场但缺 style_version 字段 → 占位（研制不完整）。"""
+    style = tmp_path / "style.yaml"
+    style.write_text("defining_vocab:\n  vocab_size: 2500\n", encoding="utf-8")
+    check = _g6_style_summary(candidates=[str(style)])
+    assert check["status"] == G6_PLACEHOLDER
+    assert "style_version" in check["detail"]
 
 
 def test_g6_style_placeholder_when_absent(tmp_path):
-    """全部候选缺位 → 灰注占位「体例工单未建」。"""
+    """全部候选缺位 → 灰注占位「体例文件未研制」。"""
     check = _g6_style_summary(candidates=[str(tmp_path / "nope.yaml")])
     assert check["status"] == G6_PLACEHOLDER
-    assert "体例工单未建" in check["detail"]
+    assert "体例文件未研制" in check["detail"]
 
 
 def test_g6_style_default_candidates_derive_from_repo_root(tmp_path, monkeypatch):
@@ -417,71 +463,98 @@ def test_g6_style_default_candidates_derive_from_repo_root(tmp_path, monkeypatch
     monkeypatch.setattr(dp, "_MEDIA_UPLOAD_BASE", str(tmp_path))
     cfg = tmp_path / "configs"
     cfg.mkdir()
-    (cfg / "style.yaml").write_text("version: v1\n", encoding="utf-8")
+    (cfg / "style.yaml").write_text("style_version: 1.0\n", encoding="utf-8")
     check = _g6_style_summary()
     assert check["status"] == G6_PASSED
     assert "configs/style.yaml" in check["detail"] or "configs\\style.yaml" in (
         check["detail"])
 
 
-# --- G6 ③ 备份新鲜（exports 最近快照 + mysqldump 最近文件） ---
+# --- G6 ③ 备份新鲜（data/backups 灾备产物为主证据，批次 11 硬检口径） ---
 
-def test_g6_backup_passed_with_both_evidences(tmp_path):
-    """快照目录 + mysqldump 文件都在 → 已过，两个最近时间如实展示。"""
+def test_g6_backup_passed_with_backup_artifacts(tmp_path):
+    """data/backups 有灾备产物（+ 快照也在）→ 已过，灾备路径与两时间展示。"""
     exports = tmp_path / "exports"
-    data = tmp_path / "data"
-    exports.mkdir()
-    data.mkdir()
+    backups = tmp_path / "data" / "backups" / "db"
+    exports.mkdir(parents=True)
+    backups.mkdir(parents=True)
     snap = exports / "snapshot-20261107-000000"
     snap.mkdir()
-    dump = data / "dump.sql"
-    dump.write_text("-- dump", encoding="utf-8")
+    dump = backups / "20261107-0215.sql.gz"
+    dump.write_bytes(b"\x1f\x8b fake-gzip")
     os.utime(snap, (1700000000, 1700000000))
     os.utime(dump, (1700000100, 1700000100))
-    check = _g6_backup_summary(export_root=exports, data_root=data)
-    assert check["status"] == G6_PASSED
-    assert "最近内容域快照" in check["detail"]
-    assert "最近 mysqldump" in check["detail"]
-
-
-def test_g6_backup_gray_note_when_mysqldump_missing(tmp_path):
-    """只有快照、无 mysqldump → 已过但卡内灰注（运维备份线未接入）。"""
-    exports = tmp_path / "exports"
-    data = tmp_path / "data"
-    (exports / "snapshot-20261107-120000").mkdir(parents=True)
-    data.mkdir()
-    check = _g6_backup_summary(export_root=exports, data_root=data)
-    assert check["status"] == G6_PASSED
-    assert "mysqldump 备份未探测到" in check["detail"]
-
-
-def test_g6_backup_passed_on_dump_alone(tmp_path):
-    """只有 mysqldump 文件（无快照）→ 备份证据在场即已过，快照位如实为 —。"""
-    data = tmp_path / "data"
-    data.mkdir()
-    (data / "backup.sql").write_text("-- dump", encoding="utf-8")
     check = _g6_backup_summary(
-        export_root=tmp_path / "exports", data_root=data)
+        export_root=exports, backups_root=tmp_path / "data" / "backups")
+    assert check["status"] == G6_PASSED
+    assert "最近灾备备份" in check["detail"]
+    assert "20261107-0215.sql.gz" in check["detail"]
+    assert "最近内容域快照" in check["detail"]
+
+
+def test_g6_backup_passed_on_media_tar_alone(tmp_path):
+    """只有 media/*.tar.gz（media 归档是同批产物之一）→ 已过，快照位如实为 —。"""
+    backups = tmp_path / "data" / "backups" / "media"
+    backups.mkdir(parents=True)
+    tarball = backups / "20261107-0215-media.tar.gz"
+    tarball.write_bytes(b"\x1f\x8b fake-gzip")
+    check = _g6_backup_summary(
+        export_root=tmp_path / "exports", backups_root=tmp_path / "data" / "backups")
     assert check["status"] == G6_PASSED
     assert "—" in check["detail"]
 
 
-def test_g6_backup_placeholder_when_no_evidence(tmp_path):
-    """两类备份证据全缺（含目录不存在）→ 占位。"""
+def test_g6_backup_placeholder_when_snapshot_only(tmp_path):
+    """只有内容域快照、无灾备产物 → 占位「备份任务未运行」（快照≠灾备备份）。"""
+    exports = tmp_path / "exports"
+    (exports / "snapshot-20261107-120000").mkdir(parents=True)
     check = _g6_backup_summary(
-        export_root=tmp_path / "exports", data_root=tmp_path / "data")
+        export_root=exports, backups_root=tmp_path / "data" / "backups")
     assert check["status"] == G6_PLACEHOLDER
-    assert "尚无备份证据" in check["detail"]
+    assert "备份任务未运行" in check["detail"]
+
+
+def test_g6_backup_placeholder_when_no_evidence(tmp_path):
+    """两类证据全缺（含目录不存在）→ 占位「备份任务未运行」。"""
+    check = _g6_backup_summary(
+        export_root=tmp_path / "exports", backups_root=tmp_path / "data" / "backups")
+    assert check["status"] == G6_PLACEHOLDER
+    assert "备份任务未运行" in check["detail"]
 
 
 def test_g6_backup_ignores_non_snapshot_entries(tmp_path):
     """exports 下非 snapshot-* 条目不算快照证据（口径：只认快照落盘目录）。"""
     exports = tmp_path / "exports"
-    data = tmp_path / "data"
     (exports / "not-a-snapshot").mkdir(parents=True)
-    data.mkdir()
     assert _g6_backup_summary(
-        export_root=exports, data_root=data)["status"] == G6_PLACEHOLDER
+        export_root=exports,
+        backups_root=tmp_path / "data" / "backups",
+    )["status"] == G6_PLACEHOLDER
+
+
+def test_g6_scan_backups_pure_scan(tmp_path):
+    """_g6_scan_backups：跨 db/media 子目录取最新；无匹配/无目录 → (None, '')。"""
+    backups = tmp_path / "data" / "backups"
+    (backups / "db").mkdir(parents=True)
+    (backups / "media").mkdir(parents=True)
+    assert _g6_scan_backups(backups) == (None, "")  # 空树
+    assert _g6_scan_backups(tmp_path / "nope") == (None, "")  # 目录不存在
+    db_dump = backups / "db" / "20261107-0215.sql.gz"
+    db_dump.write_bytes(b"x")
+    media_tar = backups / "media" / "20261106-0215-media.tar.gz"
+    media_tar.write_bytes(b"x")
+    stray = backups / "db" / "notes.txt"
+    stray.write_bytes(b"x")
+    os.utime(db_dump, (1700000100, 1700000100))
+    os.utime(media_tar, (1700000200, 1700000200))
+    ts, rel = _g6_scan_backups(backups)
+    assert ts == 1700000200.0  # 最新者胜（db 与 media 同权）
+    assert rel == os.path.join("media", "20261106-0215-media.tar.gz")
+    os.utime(db_dump, (1700000300, 1700000300))
+    assert _g6_scan_backups(backups)[0] == 1700000300.0
+    # 非灾备产物（.sql/.txt）不算数
+    os.utime(stray, (1700009900, 1700009900))
+    assert _g6_scan_backups(backups)[0] == 1700000300.0
 
 
 # --- G6 闸门判定（三项全过才放行 published） ---
@@ -498,7 +571,7 @@ def test_g6_checklist_order_and_shape():
         stats_fn=lambda: (0, 0),
         style_candidates=["/nonexistent/style.yaml"],
         export_root="/nonexistent/exports",
-        data_root="/nonexistent/data",
+        backups_root="/nonexistent/backups",
     )
     assert [c["key"] for c in checks] == ["license", "style", "backup"]
     for c in checks:
@@ -613,17 +686,24 @@ class _StubSt:
 
     clicked=True 时全部按钮可点；click_label 给定时只有点 label 含该子串的
     按钮返回 True（模拟真实页面上「未点的按钮不触发」）。
+    text_values 按 widget key 提供文本输入值（批次 11 资源登记表单用），
+    未配置的 key 返回 ''（模拟空表单）。
     """
 
-    def __init__(self, clicked=True, click_label=None):
+    def __init__(self, clicked=True, click_label=None, text_values=None):
         self.clicked = clicked
         self.click_label = click_label
+        self.text_values = dict(text_values or {})
         self.buttons = []
         self.messages = []
 
     def columns(self, spec, **kwargs):
         return [_StubCol() for _ in range(len(spec)) if True] if isinstance(
             spec, (list, tuple)) else [_StubCol() for _ in range(spec)]
+
+    def text_input(self, *args, **kwargs):
+        key = kwargs.get("key") or (args[0] if args else "")
+        return self.text_values.get(key, "")
 
     def button(self, *args, **kwargs):
         label = args[0] if args else ""
@@ -759,3 +839,158 @@ def test_exports_flow_publish_enabled_and_calls_advance(monkeypatch):
     assert pub["disabled"] is False
     assert calls == [(3, "ready", "published")]
     assert any(kind == "rerun" for kind, _ in stub.messages)
+
+
+# --- 资源登记块（批次 11 AV2：D⑥ 数据面；表单校验 + 闸门 + 渲染降级） ---
+
+def test_registry_form_error_requires_four_fields():
+    """四项必填：任一缺失（空/纯空白/非 str）给出可读文案；license 文案点明纪律。"""
+    assert "资源名称" in _registry_form_error("", "v", "c", "l")
+    assert "资源版本" in _registry_form_error("n", "  ", "c", "l")
+    assert "覆盖说明" in _registry_form_error("n", "v", None, "l")
+    assert "许可（license）必填" in _registry_form_error("n", "v", "c", "")
+    assert "D⑥ 许可纪律" in _registry_form_error("n", "v", "c", "   \t")
+    assert _registry_form_error("n", "v", "c", "l") is None
+
+
+def test_registry_form_error_rejects_overlong():
+    """超长拒绝（上限与 registry_db 列宽一致：120/64/255/120）。"""
+    assert "超长" in _registry_form_error("n" * 121, "v", "c", "l")
+    assert "超长" in _registry_form_error("n", "v" * 65, "c", "l")
+    assert "超长" in _registry_form_error("n", "v", "c" * 256, "l")
+    assert "超长" in _registry_form_error("n", "v", "c", "l" * 121)
+    assert _registry_form_error("n" * 120, "v" * 64, "c" * 255, "l" * 120) is None
+
+
+def test_registry_form_gate_blocks_before_register(monkeypatch):
+    """guards.require_dict_admin 拒绝 → st.error 转述，register_resource 不触达。"""
+    stub = _StubSt(text_values={
+        "pub_reg_name": "enTenTen21", "pub_reg_version": "2021",
+        "pub_reg_coverage": "69,943 搭配", "pub_reg_license": "CC BY 4.0",
+    })
+    monkeypatch.setattr(dp, "st", stub)
+
+    def _deny():
+        raise PermissionError("仅词典管理员可执行词典数据写操作。")
+
+    def _boom(*_a, **_k):
+        raise AssertionError("闸门拦下后不得触达数据层")
+
+    monkeypatch.setattr(dp.guards, "require_dict_admin", _deny)
+    monkeypatch.setattr(dp.registry_db, "register_resource", _boom)
+    _render_registry_form(_ME)
+    assert any(kind == "error" and "仅词典管理员" in text
+               for kind, text in stub.messages)
+
+
+def test_registry_form_passes_form_values_and_actor(monkeypatch):
+    """表单合法 → register_resource(四值, registered_by=username) + st.success。"""
+    stub = _StubSt(text_values={
+        "pub_reg_name": "enTenTen21", "pub_reg_version": "2021",
+        "pub_reg_coverage": "69,943 搭配", "pub_reg_license": "CC BY 4.0",
+    })
+    monkeypatch.setattr(dp, "st", stub)
+    monkeypatch.setattr(dp.guards, "require_dict_admin", lambda: _ME)
+    seen = {}
+
+    def _spy(name, version, coverage, license_text, registered_by=""):
+        seen.update(name=name, version=version, coverage=coverage,
+                    license_text=license_text, registered_by=registered_by)
+        return 5
+
+    monkeypatch.setattr(dp.registry_db, "register_resource", _spy)
+    _render_registry_form(_ME)
+    assert seen == {"name": "enTenTen21", "version": "2021",
+                    "coverage": "69,943 搭配", "license_text": "CC BY 4.0",
+                    "registered_by": "chief"}
+    assert any(kind == "success" and "#5" in text
+               for kind, text in stub.messages)
+
+
+def test_registry_form_missing_fields_error_before_gate(monkeypatch):
+    """表单缺必填 → st.error 拦在闸门之前（guards/register 都不触达）。"""
+    stub = _StubSt(text_values={"pub_reg_name": "enTenTen21"})
+    monkeypatch.setattr(dp, "st", stub)
+
+    def _boom(*_a, **_k):
+        raise AssertionError("表单未过校验不得触达闸门/数据层")
+
+    monkeypatch.setattr(dp.guards, "require_dict_admin", _boom)
+    monkeypatch.setattr(dp.registry_db, "register_resource", _boom)
+    _render_registry_form(_ME)
+    assert any(kind == "error" and "必填" in text
+               for kind, text in stub.messages)
+
+
+def test_registry_form_data_layer_failure_reports_error(monkeypatch):
+    """数据层返回 0（校验拒绝/库不可用）→ st.error 转述，不抛异常。"""
+    stub = _StubSt(text_values={
+        "pub_reg_name": "enTenTen21", "pub_reg_version": "2021",
+        "pub_reg_coverage": "69,943 搭配", "pub_reg_license": "CC BY 4.0",
+    })
+    monkeypatch.setattr(dp, "st", stub)
+    monkeypatch.setattr(dp.guards, "require_dict_admin", lambda: _ME)
+    monkeypatch.setattr(dp.registry_db, "register_resource",
+                        lambda *a, **k: 0)
+    _render_registry_form(_ME)
+    assert any(kind == "error" and "登记未生效" in text
+               for kind, text in stub.messages)
+
+
+def test_registry_section_lists_resources(monkeypatch):
+    """有登记 → 只读表渲染（许可列如实展示）；资源来自 registry_db.list_resources。"""
+    stub = _StubSt(clicked=False)  # 不点登记按钮，只看清单装配
+    monkeypatch.setattr(dp, "st", stub)
+    monkeypatch.setattr(
+        dp.registry_db, "list_resources",
+        lambda limit=50: [
+            {"id": 2, "name": "enTenTen21<v2>", "version": "2021",
+             "coverage": "69,943 搭配", "license": "CC BY 4.0",
+             "registered_by": "chief", "created_at": "2026-11-07"},
+            {"id": 1, "name": "OALD", "version": "第7版",
+             "coverage": "996 全义项", "license": "授权协议",
+             "registered_by": "", "created_at": "2026-11-06"},
+        ],
+    )
+    _render_resource_registry_section(_ME)
+    table_html = [text for kind, text in stub.messages if kind == "markdown"]
+    assert any("enTenTen21&lt;v2&gt;" in t for t in table_html)  # 过 _esc
+    assert any("CC BY 4.0" in t for t in table_html)
+
+
+def test_registry_section_empty_state(monkeypatch):
+    """无登记（list_resources 空表/库不可用返回 []）→ st.info 引导登记。"""
+    stub = _StubSt(clicked=False)
+    monkeypatch.setattr(dp, "st", stub)
+    monkeypatch.setattr(dp.registry_db, "list_resources", lambda limit=50: [])
+    _render_resource_registry_section(_ME)
+    assert any(kind == "info" and "暂无登记资源" in text
+               for kind, text in stub.messages)
+
+
+def test_registry_section_list_failure_degrades(monkeypatch):
+    """list_resources 抛异常 → 块内兜底为空清单（st.info），不拖垮出版 tab。"""
+    stub = _StubSt(clicked=False)
+    monkeypatch.setattr(dp, "st", stub)
+
+    def _boom(limit=50):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(dp.registry_db, "list_resources", _boom)
+    _render_resource_registry_section(_ME)
+    assert any(kind == "info" and "暂无登记资源" in text
+               for kind, text in stub.messages)
+
+
+def test_registry_table_renders_rows(monkeypatch):
+    """_render_registry_table 纯装配：行值经 _esc 进表格 HTML。"""
+    stub = _StubSt(clicked=False)
+    monkeypatch.setattr(dp, "st", stub)
+    _render_registry_table([
+        {"id": 1, "name": "<OALD>", "version": "第7版",
+         "coverage": "996 全义项", "license": "授权协议",
+         "registered_by": "chief", "created_at": "2026-11-06"},
+    ])
+    html = [text for kind, text in stub.messages if kind == "markdown"]
+    assert any("&lt;OALD&gt;" in t for t in html)
+    assert any("996 全义项" in t for t in html)
