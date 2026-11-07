@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把 docs/域系初判表v0.2.xlsx 灌入 MySQL 的 domain_family_senses 表。
+"""把 docs/research/tables/域系初判表v0.2.xlsx 灌入 MySQL 的 domain_family_senses 表。
 
 数据链：物理位移义位表（358）→ 义位筛选规则表（R1 剔 6）→ 域系初判 v0.2（352）。
 口径：词目层初判预览（义位图式暂取词目初判），最终域—系以义位层标注后重聚类为准。

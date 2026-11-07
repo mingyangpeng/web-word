@@ -1,7 +1,7 @@
 """
 OALD10 义项提取器。
 
-数据源：`docs/output-oald10en-for-senselist-1020.xlsx` —— OALD 第 10 版的逐义项导出。
+数据源：`docs/research/tables/output-oald10en-for-senselist-1020.xlsx` —— OALD 第 10 版的逐义项导出。
 一行的形态是「一个词条 + 一个词性 + 一个把全部义项打包成 Python 字面量的字符串」：
 
     headword='crawl'  pos='verb'  content="{'headword': 'crawl', 'pos': 'verb',
@@ -59,7 +59,7 @@ from src.word_source import (  # noqa: E402
 logger = logging.getLogger(__name__)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OALD_XLSX = os.path.join(ROOT, "docs/output-oald10en-for-senselist-1020.xlsx")
+OALD_XLSX = os.path.join(ROOT, "docs/research/tables/output-oald10en-for-senselist-1020.xlsx")
 
 SOURCE_NAME = "OALD10"
 

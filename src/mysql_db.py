@@ -510,7 +510,7 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
 
     从 v2 → v3 做的事：
 
-      5. 依据 `docs/义项判定标准.docx`，给 ``definitions`` 加义位层面的标注字段
+      5. 依据 `docs/research/protocols/义项判定标准.docx`，给 ``definitions`` 加义位层面的标注字段
          （意象图式 / 原型层级 / 英汉对齐等级 / 汉语句法特征 / 译义转化策略 / 释义来源…），
          给 ``word_clusters`` 加簇层面的图式与句法特征，并新建 ``word_senses`` 明细表。
 
@@ -592,7 +592,7 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
         cursor.execute("DROP TABLE statistics")
         summary["actions"].append(f"statistics dropped (had {n_stat} rows, unused)")
 
-    # --- 4. v3：义位层面的标注字段（依据 docs/义项判定标准.docx）---
+    # --- 4. v3：义位层面的标注字段（依据 docs/research/protocols/义项判定标准.docx）---
     #
     # 这些列全部可空：已有的 155 行不该因为加列而失败，灌库脚本随后会填上真实值。
     # 用 ADD COLUMN 而不是重建表，是为了不丢 feedback 与 usage_logs 引用的 verb 数据。
@@ -1385,7 +1385,7 @@ def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
                     'cluster_sub_cat': row['cluster_sub_cat'],
                     'cluster_size': row['cluster_size'],
                     'cluster_image_schema': row.get('cluster_image_schema'),
-                    # --- v3 义位标注字段（来源见 docs/义项判定标准.docx）---
+                    # --- v3 义位标注字段（来源见 docs/research/protocols/义项判定标准.docx）---
                     'en_ndef': row.get('en_ndef'),
                     'levin_source': row.get('levin_source'),
                     'cross_subclass': row.get('cross_subclass'),
@@ -1463,7 +1463,7 @@ def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None,
     """
     取回词义簇 id，不存在则创建。
 
-    簇的唯一键是 (main_cat, sub_cat)，对应 `docs/Levin移动动词候选词筛选表.xlsx`
+    簇的唯一键是 (main_cat, sub_cat)，对应 `docs/research/tables/Levin移动动词候选词筛选表.xlsx`
     的「主范畴 / 次类」两列。
 
     簇层面的 `image_schema` / `cn_syntax` / `translation_strategy` **只在非空时覆盖**：
@@ -2603,7 +2603,7 @@ def corpus_dataset_ready() -> bool:
 
 def replace_domain_family_senses(rows: List[Dict[str, Any]],
                                  example_rows: Optional[List[Dict[str, Any]]] = None) -> int:
-    """全量替换域—系初判义位表与例句子表（docs/域系初判表v0.2.xlsx 灌入）。
+    """全量替换域—系初判义位表与例句子表（docs/research/tables/域系初判表v0.2.xlsx 灌入）。
 
     主表行结构：word / sense_num / definition / definition_cn / example /
     lemma_schema / domain / family / sense_annotation / rule_tag / rule_note /

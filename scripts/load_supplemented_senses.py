@@ -2,7 +2,7 @@
 """把 4 条人工补充义位（scutter/kayak/oar/dodder）灌入 oald_senses。
 
 背景：研究词表共 996 义位 = 992 条 OALD10 + 4 条人工补充（见
-docs/词表版本说明.md —— 这 4 词的义项 OALD10 未收录，据 Levin brief 与
+docs/research/protocols/词表版本说明.md —— 这 4 词的义项 OALD10 未收录，据 Levin brief 与
 BCC 语料人工撰写）。补充义位的定稿在
 data/corpus/sense_sheets/<词>_义项.xlsx（与 171 词的义位标注表同构）。
 

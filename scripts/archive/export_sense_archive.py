@@ -5,12 +5,12 @@
   表1 原始提取总表（本文件，只读存档，严禁删改）
   表2 义项筛选判定表 = output/02_义位标注/<动词>_义项.xlsx 的人工列（L 意象图式 /
       M 准入标签 Y·拓展·N / N 判定理由 / O 备注）
-  表3 最终研究义位表 = docs/表3_最终研究义位表.xlsx（scripts/export_final_sense_list.py
+  表3 最终研究义位表 = docs/research/tables/表3_最终研究义位表.xlsx（scripts/export_final_sense_list.py
       从平台标注结果生成，标注完成后重跑）
 
-数据血缘：docs/词表义项清单.xlsx「义项明细」(+4 补充词)
+数据血缘：docs/research/tables/词表义项清单.xlsx「义项明细」(+4 补充词)
         → scripts/export_sense_annotation_sheets.py → output/02_义位标注/
-        → 本脚本原样汇出 → docs/表1_原始义项总表.xlsx
+        → 本脚本原样汇出 → docs/research/tables/表1_原始义项总表.xlsx
 """
 
 import sys
@@ -111,7 +111,7 @@ kv("表1（本文件）", "全部义项原样罗列，原始存档，不可删�
 kv("表2 筛选判定表", "output/02_义位标注/<动词>_义项.xlsx：A–K 列为本表的派生（只读），L–O 人工列即操作层——"
                  "意象图式、准入标签（Y / 拓展 / N）、判定理由、备注。每条义位的取舍必须写理由；"
                  "标 N（剔除）的义位不删行，留存理由备审稿核查。")
-kv("表3 最终研究义位表", "docs/表3_最终研究义位表.xlsx，由 scripts/export_final_sense_list.py 从平台"
+kv("表3 最终研究义位表", "docs/research/tables/表3_最终研究义位表.xlsx，由 scripts/export_final_sense_list.py 从平台"
                     "人工标注结果（human_reviewed=1）提取：Y 类为核心研究义位，拓展类单独成页；"
                     "标注进行中可随时重跑，当前为 0 行属预期。")
 rn += 1

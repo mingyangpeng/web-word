@@ -3,10 +3,10 @@
 
 数据来源（可复跑，与数据集血缘一致）：
   - 应用库 word_schema_scores / corpus_word_stats / corpus_collocations（词目层图式初筛与频次）
-  - docs/词表义项清单.xlsx「词表概览」（Levin 主范畴/次类/词目层图式初判）
+  - docs/research/tables/词表义项清单.xlsx「词表概览」（Levin 主范畴/次类/词目层图式初判）
   - data/corpus/pilot_verbs.json（试点 12 词及选取理由）
 
-产出：docs/图式候选核查表.xlsx，5 个工作表：
+产出：docs/research/tables/图式候选核查表.xlsx，5 个工作表：
   00 说明与论文对接 / 01 核查总表(136词) / 02 四图式构成与判读 /
   03 图式×次类交叉 / 04 试点覆盖检查
 """
@@ -156,7 +156,7 @@ info = [
     ("用途", "固化词目层图式候选初筛的核查结果，服务 MOVECAT/Lexikos Project 论文写作："
             "§4.1 试点选取依据、§2/§3 图式体系与工作流表述、RQ1 三域七系的词目层基础、33 个模糊词的人工复核清单。"),
     ("数据来源", "应用库 word_schema_scores / corpus_word_stats（初筛检索 2026-09-30，enTenTen21）＋ "
-               "docs/词表义项清单.xlsx「词表概览」（Levin 次类与词目层初判）＋ data/corpus/pilot_verbs.json（试点 12 词）。"),
+               "docs/research/tables/词表义项清单.xlsx「词表概览」（Levin 次类与词目层初判）＋ data/corpus/pilot_verbs.json（试点 12 词）。"),
     ("重要口径", "01–03 表均为【词目层】初筛（每词一个候选凸显图式，重心得分 S = Mean_logDice × log2(N+1)，"
               "未做语义归类），【不是义位层】结论；义位层图式归属以试点标注（232 义位）为准。"),
     ("复跑方式", "python3 scripts/export_schema_review_workbook.py（自动从库与词表重新生成本文件）。"),

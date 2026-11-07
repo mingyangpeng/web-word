@@ -4,7 +4,7 @@
 --     mysql -u root -p < scripts/grant_local_mysql.sql
 --     或本机 root 免密时：mysql -u root < scripts/grant_local_mysql.sql
 --
--- ## 授权对象分两类
+-- ## 授权对象分三类
 --
 -- 1. web_word_db —— 应用真正用的库。
 -- 2. web_word_migration_test —— tests/test_migration_integration.py 用的临时库。
@@ -12,6 +12,9 @@
 --    而它需要自己 CREATE / DROP 这个库。MySQL 的规则是：只要在某个具体库上被授予
 --    ALL，就在该库名上拥有 CREATE/DROP 权限，不需要全局权限 —— 所以这一条授权
 --    就够了，不必给 web_word_user 任何全局权限。
+-- 3. tests/ 各模块集成测试的独立测试库（2b/4b 两节：users/flow/ai_ledger/media/
+--    wordforms，grep -rn "web_word_.*_test" tests/ 的实测清单）—— 同样只需库名级
+--    ALL，fixture 自己 DROP/CREATE。
 --
 -- ## 库名里的下划线必须转义 —— 这是本文件最要紧的一条
 --
@@ -32,6 +35,28 @@ CREATE DATABASE IF NOT EXISTS web_word_db
 
 -- ---------- 2. 迁移集成测试用的临时库 ----------
 CREATE DATABASE IF NOT EXISTS web_word_migration_test
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- ---------- 2b. 集成测试库（tests/ 实测清单，幂等） ----------
+-- grep -rn "web_word_.*_test" tests/ 的实测清单；各模块集成测试的 fixture 自己
+-- DROP/CREATE 测试库，这里的 CREATE IF NOT EXISTS 只是让空库先存在（与上面
+-- migration 测试库同口径）。实测归属：
+--   web_word_users_test      test_users_db / test_org_db / test_dict_admin_db /
+--                            test_collab_pages / test_integration_apptest /
+--                            test_security_hardening / test_pipeline_status 共用
+--   web_word_flow_test       test_annotation_flow
+--   web_word_ai_ledger_test  test_ai_ledger
+--   web_word_media_test      test_media_db
+--   web_word_wordforms_test  test_wordforms_db
+CREATE DATABASE IF NOT EXISTS web_word_users_test
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS web_word_flow_test
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS web_word_ai_ledger_test
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS web_word_media_test
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS web_word_wordforms_test
     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- ---------- 3. 建用户（幂等）----------
@@ -59,8 +84,48 @@ GRANT ALL PRIVILEGES ON `web\_word\_db`.* TO 'web_word_user'@'%';
 GRANT ALL PRIVILEGES ON `web\_word\_migration\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_migration\_test`.* TO 'web_word_user'@'127.0.0.1';
 
+-- ---------- 4b. 集成测试库授权（库名一律 `\_` 转义；三 host 与应用库同口径，
+-- 容器里跑 pytest 时走 '%'） ----------
+GRANT ALL PRIVILEGES ON `web\_word\_users\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_users\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_users\_test`.* TO 'web_word_user'@'%';
+
+GRANT ALL PRIVILEGES ON `web\_word\_flow\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_flow\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_flow\_test`.* TO 'web_word_user'@'%';
+
+GRANT ALL PRIVILEGES ON `web\_word\_ai\_ledger\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_ai\_ledger\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_ai\_ledger\_test`.* TO 'web_word_user'@'%';
+
+GRANT ALL PRIVILEGES ON `web\_word\_media\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_media\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_media\_test`.* TO 'web_word_user'@'%';
+
+GRANT ALL PRIVILEGES ON `web\_word\_wordforms\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_wordforms\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_wordforms\_test`.* TO 'web_word_user'@'%';
+
 FLUSH PRIVILEGES;
 
 -- ---------- 5. 自检输出 ----------
 SELECT '授权完成' AS status;
 SELECT Host, Db AS granted_pattern FROM mysql.db WHERE User = 'web_word_user';
+
+-- 阶段 1 批次 5：按模块分库（防并行 pytest 互删，见 docs/spec/阶段1施工规范.md §8）
+GRANT ALL PRIVILEGES ON `web\_word\_org\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_org\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_dict\_admin\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_dict\_admin\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_collab\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_collab\_test`.* TO 'web_word_user'@'localhost';
+FLUSH PRIVILEGES;
+
+-- 阶段 2 批次 7/8：编纂成文域与端到端验收测试库
+GRANT ALL PRIVILEGES ON `web\_word\_writing\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_writing\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_lexical\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_lexical\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_stage1\_e2e\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_stage1\_e2e\_test`.* TO 'web_word_user'@'localhost';
+FLUSH PRIVILEGES;

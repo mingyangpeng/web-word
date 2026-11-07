@@ -40,7 +40,7 @@ from src.word_source import (  # noqa: E402
     load_oxford_cache,
 )
 
-DEFAULT_OUT = os.path.join(ROOT, "docs/词表义项清单.xlsx")
+DEFAULT_OUT = os.path.join(ROOT, "docs/research/tables/词表义项清单.xlsx")
 
 
 def collect():

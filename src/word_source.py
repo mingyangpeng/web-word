@@ -5,13 +5,13 @@
 
 | 来源 | 内容 | 地位 |
 |------|------|------|
-| `docs/Levin移动动词候选词筛选表.xlsx` | 171 个通过筛选的自移移动动词 + 三主范畴/十二次类 + 判断理由 | **词目层面的分类权威** |
+| `docs/research/tables/Levin移动动词候选词筛选表.xlsx` | 171 个通过筛选的自移移动动词 + 三主范畴/十二次类 + 判断理由 | **词目层面的分类权威** |
 | `data/dictionary.db` | 每个动词逐义位的 Ch-Def / En-Def / 例句 / 近义反义词 | **释义正确性的首选来源** |
 | `data/oxford_cache.json` | 英文释义缓存（联网抓取结果的落盘） | 补充来源，dictionary.db 未收录时使用 |
 
 ## 为什么「释义以 dictionary.db 为首选」
 
-`docs/义项判定标准.docx` 要求「所有判定结果，必须可回溯到 OALD 释义、例句原文，备注栏留存依据」。
+`docs/research/protocols/义项判定标准.docx` 要求「所有判定结果，必须可回溯到 OALD 释义、例句原文，备注栏留存依据」。
 `dictionary.db` 是 OALD 的本地结构化数据（`Ch-Def` 是已审校的中文释义，带例句、近义词、
 反义词），它天然带**原文可回溯**的属性；而大模型生成的释义无法回溯到词典原文。
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-LEVIN_XLSX = os.path.join(ROOT, "docs/Levin移动动词候选词筛选表.xlsx")
+LEVIN_XLSX = os.path.join(ROOT, "docs/research/tables/Levin移动动词候选词筛选表.xlsx")
 DICTIONARY_DB = os.path.join(ROOT, "data/dictionary.db")
 # dictionary.db（197MB，超 GitHub 100MB 限制不入库）的**子集快照**：
 # 171 个研究动词中有义位明细的 17 词 / 246 义位（Ch-Def/En-Def/例句/近反义）。
@@ -153,7 +153,7 @@ MAIN_CAT_MANNER = "方式聚焦型"
 
 def load_levin_table(path: str = None, scope: str = "all") -> List[Dict[str, Any]]:
     """
-    读 `docs/Levin移动动词候选词筛选表.xlsx` 的「去除不符合的」页。
+    读 `docs/research/tables/Levin移动动词候选词筛选表.xlsx` 的「去除不符合的」页。
 
     用这一页而不是「候选词筛选表」：前者是**筛选后**的词（Talmy 与 Levin 构式
     交替核查均为 Y），后者含 45 个被剔除的词及其剔除原因。两者的词目集合应满足
@@ -167,7 +167,7 @@ def load_levin_table(path: str = None, scope: str = "all") -> List[Dict[str, Any
             路径聚焦型 / 互动聚焦型词目捞回（它们已通过 Talmy 与构式核查），
             使源点脱离、终点抵达、互动位移三类图式拥有真实词元。
             ``"manner"`` 只取主范畴为「方式聚焦型」的 136 词 —— 9-28 至 10-07
-            间的历史词表范围，与 `docs/output-oald10en-for-senselist-1020.xlsx`
+            间的历史词表范围，与 `docs/research/tables/output-oald10en-for-senselist-1020.xlsx`
             当时的提取范围一致；保留该选项供对照与语料连续性检查使用。
 
     Returns:

@@ -13,7 +13,7 @@
 
 机械可用信号（数据现状）：
   is_idiom（可靠，全量）· grammar 语法码（437/665 有值，228 空）· 释义文本。
-产出：docs/表2_粗筛草稿_试点12词.xlsx
+产出：docs/research/tables/表2_粗筛草稿_试点12词.xlsx
 """
 
 import json
