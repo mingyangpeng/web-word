@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
 from src.writing_db import (  # noqa: E402
+    ADJUDICATE_DECISIONS,
     MAX_CONTENT_LEN,
     MAX_SENSE_REF_LEN,
     STATUS_APPROVED,
@@ -45,6 +46,7 @@ from src.writing_db import (  # noqa: E402
     _dump_ai_draft,
     _parse_ai_draft,
     add_comment,
+    adjudicate_final,
     approve,
     create_draft,
     ensure_writing_tables,
@@ -85,6 +87,11 @@ class TestConstantsAndGuards:
     def test_verdict_enum_full_set(self):
         """verdict 四值（pending + 通过/否决/要求修订）。"""
         assert VERDICTS == ("pending", "approved", "rejected", "revision_requested")
+
+    def test_adjudicate_decisions_subset_of_verdicts(self):
+        """终裁决策集 = verdict 的 {approved, rejected} 子集（批次 8 G6 契约）。"""
+        assert ADJUDICATE_DECISIONS == ("approved", "rejected")
+        assert set(ADJUDICATE_DECISIONS) <= set(VERDICTS)
 
     def test_valid_sense_ref_accepts_three_part(self):
         """三段式锚合法：常规 / 0 占位 / 带下划线连字符的范畴段。"""
@@ -247,6 +254,17 @@ class TestWritingDbIntegration:
             )
             return cursor.fetchone()
 
+    def _fetch_tasks(self, version_id):
+        """直接读库取版本的全部审校任务行（id 升序，验「不覆盖不删行」）。"""
+        from src.mysql_db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM review_tasks WHERE version_id = %s ORDER BY id",
+                (version_id,),
+            )
+            return list(cursor.fetchall() or [])
+
     def _count(self, table, where="1=1", params=()):
         """直接数行数（验证统计真相）。"""
         from src.mysql_db import get_db_cursor
@@ -258,6 +276,16 @@ class TestWritingDbIntegration:
     def _submit(self, version_id, reviewer_id=2, note=None):
         """提交初审（用例内高频步骤）。"""
         assert submit_for_review(version_id, reviewer_id, note) is True
+
+    def _set_status(self, version_id, status):
+        """直改版本状态（仅造两级终审中段态 approved 等测试前置，绕过状态机）。"""
+        from src.mysql_db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "UPDATE definition_versions SET status = %s WHERE id = %s",
+                (status, version_id),
+            )
 
     # --- 建表 ---
 
@@ -599,6 +627,165 @@ class TestWritingDbIntegration:
         assert publish(in_review, {"id": 1, "role": "admin"}) is False
         assert publish(999999, {"id": 1, "role": "admin"}) is False
         assert self._fetch(draft)["status"] == STATUS_DRAFT
+
+    # --- adjudicate_final：词典管理员终裁（批次 8 G6，两级终审收口） ---
+
+    DICT_ADMIN_ACTOR = {"id": 1, "username": "chief", "role": "viewer",
+                        "roles": ["dict_admin"]}
+    LEGACY_ADMIN_ACTOR = {"id": 1, "username": "admin", "role": "admin"}
+
+    def test_adjudicate_approve_in_review_direct_to_final(self, writing):
+        """in_review --approved--> final 直达（两级终审收口）；终裁落新任务行。"""
+        vid = create_draft(REF, 9, "争议词条初稿")
+        self._submit(vid, reviewer_id=2)
+        assert adjudicate_final(
+            vid, 1, "approved", "升级终裁：语义分立证据充分，收口。",
+            actor=self.DICT_ADMIN_ACTOR,
+        ) is True
+        assert self._fetch(vid)["status"] == STATUS_FINAL
+        tasks = self._fetch_tasks(vid)
+        assert len(tasks) == 2  # 受派审校任务行 + 终裁任务行（不覆盖不删行）
+        first, final = tasks[0], tasks[1]
+        assert (first["verdict"], first["round"], first["reviewer_id"]) == (
+            "pending", 1, 2)  # 受派人的 pending 任务保持原样（不代为裁决）
+        assert (final["verdict"], final["round"], final["reviewer_id"]) == (
+            "approved", 2, 1)  # round+1 标记终裁轮，verdict 按 decision
+        assert final["note"] == "升级终裁：语义分立证据充分，收口。"
+
+    def test_adjudicate_reject_in_review_to_rejected(self, writing):
+        """in_review --rejected--> rejected（终裁否决）；理由随任务行留痕。"""
+        vid = create_draft(REF, 9, "将被否决的初稿")
+        self._submit(vid, reviewer_id=2)
+        assert adjudicate_final(
+            vid, 1, "rejected", "释义不可代回语料原文，否决。",
+            actor=self.DICT_ADMIN_ACTOR,
+        ) is True
+        assert self._fetch(vid)["status"] == STATUS_REJECTED
+        final = self._fetch_task(vid)
+        assert final["verdict"] == "rejected"
+        assert final["round"] == 2
+        assert final["note"] == "释义不可代回语料原文，否决。"
+
+    def test_adjudicate_approve_note_optional(self, writing):
+        """note 缺省（""）终裁通过：任务行 note 为 NULL，状态照常收口。"""
+        vid = create_draft(REF, 9, "初稿")
+        self._submit(vid, reviewer_id=2)
+        assert adjudicate_final(
+            vid, 1, "approved", "", actor=self.DICT_ADMIN_ACTOR) is True
+        assert self._fetch(vid)["status"] == STATUS_FINAL
+        assert self._fetch_task(vid)["note"] is None
+
+    def test_adjudicate_supplement_from_approved_state(self, writing):
+        """补终裁：approved（两级链中段占位）--approved--> final；rejected 拒绝。"""
+        vid = create_draft(REF, 9, "两级链中段行")
+        self._submit(vid, reviewer_id=2)
+        self._set_status(vid, STATUS_APPROVED)  # 造 approved 态（中段占位）
+        assert adjudicate_final(
+            vid, 1, "approved", actor=self.LEGACY_ADMIN_ACTOR) is True
+        assert self._fetch(vid)["status"] == STATUS_FINAL
+        # approved 态行不允许终裁否决（否决只认 in_review）
+        other = create_draft(REF2, 9, "另一中段行")
+        self._submit(other, reviewer_id=2)
+        self._set_status(other, STATUS_APPROVED)
+        assert adjudicate_final(
+            other, 1, "rejected", "想否决", actor=self.DICT_ADMIN_ACTOR) is False
+        assert self._fetch(other)["status"] == STATUS_APPROVED
+
+    def test_adjudicate_rejects_other_states(self, writing):
+        """draft / final / published / rejected / reviewed / revised 一律拒绝。"""
+        draft = create_draft(REF, 9, "草稿")
+        assert adjudicate_final(
+            draft, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        self._submit(draft, reviewer_id=2)
+        approve(draft, 2)  # → final
+        assert adjudicate_final(
+            draft, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        assert adjudicate_final(
+            draft, 1, "rejected", "定稿后否决", actor=self.DICT_ADMIN_ACTOR) is False
+        assert self._fetch(draft)["status"] == STATUS_FINAL
+        published = create_draft(REF2, 9, "发布版")
+        self._submit(published, reviewer_id=2)
+        approve(published, 2)
+        publish(published, {"id": 1, "role": "admin"})
+        assert adjudicate_final(
+            published, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        rejected = create_draft("motion:14:0", 9, "已打回版")
+        self._submit(rejected, reviewer_id=2)
+        request_revision(rejected, 2, "打回")
+        assert adjudicate_final(
+            rejected, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        for idx, mid in enumerate((STATUS_REVIEWED, STATUS_REVISED)):
+            row = create_draft(f"motion:{15 + idx}:0", 9, "中段占位态")
+            self._submit(row, reviewer_id=2)
+            self._set_status(row, mid)
+            assert adjudicate_final(
+                row, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False, mid
+        assert self._count("review_tasks") == 5  # 只有各版本提交时的任务行，无终裁行
+
+    def test_adjudicate_requires_dict_admin_actor(self, writing):
+        """actor 显式传入且有效六角色须含 dict_admin（legacy admin 兼判）。"""
+        vid = create_draft(REF, 9, "初稿")
+        self._submit(vid, reviewer_id=2)
+        for actor in [
+            None, "admin", 42,
+            {"id": 3, "role": "viewer", "roles": ["reviewer"]},
+            {"id": 4, "role": "viewer", "roles": ["editor"]},
+            {"id": 6, "role": "viewer", "roles": ["sys_admin"]},
+            {"id": 7, "role": "viewer", "roles": ["viewer", "annotator"]},
+            {"id": 3, "role": "reviewer"},  # legacy 无六角色映射
+        ]:
+            assert adjudicate_final(
+                vid, 1, "approved", actor=actor) is False, f"应拒绝: {actor!r}"
+        assert self._fetch(vid)["status"] == STATUS_IN_REVIEW
+        assert self._count("review_tasks") == 1
+        assert adjudicate_final(
+            vid, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is True
+
+    def test_adjudicate_recusal_hard_block(self, writing):
+        """回避制无豁免（含词典管理员）：终裁人=撰写人直接拒绝，状态不动。"""
+        vid = create_draft(REF, 9, "管理员自写词条")
+        self._submit(vid, reviewer_id=2)
+        actor = {"id": 9, "username": "chief", "role": "viewer",
+                 "roles": ["dict_admin"]}
+        assert adjudicate_final(vid, 9, "approved", actor=actor) is False
+        assert self._fetch(vid)["status"] == STATUS_IN_REVIEW
+        assert self._count("review_tasks", "version_id = %s", (vid,)) == 1
+
+    def test_adjudicate_rejects_bad_args(self, writing):
+        """decision 非法 / id 非法 / note 超长一律拒绝（不进数据库）。"""
+        vid = create_draft(REF, 9, "初稿")
+        self._submit(vid, reviewer_id=2)
+        for decision in ("pending", "revision_requested", "bogus", "", None, 1):
+            assert adjudicate_final(
+                vid, 1, decision, actor=self.DICT_ADMIN_ACTOR) is False, decision
+        for vid_bad in (999999, 0, -1, "abc", None):
+            assert adjudicate_final(
+                vid_bad, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        for aid_bad in (0, -1, "me", None):
+            assert adjudicate_final(
+                vid, aid_bad, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        assert adjudicate_final(
+            vid, 1, "approved", note="n" * 16001,
+            actor=self.DICT_ADMIN_ACTOR) is False
+        assert self._fetch(vid)["status"] == STATUS_IN_REVIEW
+        assert self._count("review_tasks") == 1
+
+    def test_adjudicate_round_follows_existing_max(self, writing):
+        """终裁轮 = 既有任务 round 最大值 +1（多轮历史下不重号）。"""
+        vid = create_draft(REF, 9, "初稿")
+        self._submit(vid, reviewer_id=2)
+        from src.mysql_db import get_db_cursor
+
+        with get_db_cursor() as cursor:  # 造历史：手工补一条 round=3 的已决任务
+            cursor.execute(
+                "INSERT INTO review_tasks (version_id, reviewer_id, round, verdict) "
+                "VALUES (%s, 3, 3, 'approved')",
+                (vid,),
+            )
+        assert adjudicate_final(
+            vid, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is True
+        assert self._fetch_task(vid)["round"] == 4
+        assert self._fetch(vid)["status"] == STATUS_FINAL
 
     # --- 全链路：版本链（打回重提） ---
 

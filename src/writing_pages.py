@@ -20,13 +20,18 @@ reviewed→revised→approved→final→published。编纂协作与标注协作�
   ⚖️ 审校台   list_pending_reviews 待审列表 → expander 释义内容 ＋ ai_draft
               对照 → 意见线（add_comment / list_comments）→ 裁决
               （request_revision 打回 / approve 通过——终审即 final MVP）；
+              批次 8 G6 增「👑 词典管理员终裁」子视图（_can_adjudicate =
+              effective 含 dict_admin）：全部 in_review/approved 版本逐条
+              expander → 终裁通过（final 直达）/终裁否决（rejected＋理由必填）
+              → writing_db.adjudicate_final（两级终审的例外通道收口）；
   📚 版本历史 版本链表（版本/状态/作者/based_on_version/体例版本）＋ 逐版
               成文、意见线与 AI 快照，收口（resolve_comment）只标记不删行。
 
 权限（角色纯函数，**不 import app**）：_can_write（有效六角色 ∩ {editor,
-dict_admin}）/ _can_review（∩ {reviewer, dict_admin}），判定复用
-users_db.effective_six_roles 单一实现（过渡期 role=='admin' 经 legacy 映射
-兼判 dict_admin，无需另写分支）。页面入口先登录门；撰写台/审校台各自在
+dict_admin}）/ _can_review（∩ {reviewer, dict_admin}）/ _can_adjudicate
+（批次 8 G6：须含 dict_admin —— 终裁是例外通道，不随 reviewer 继承），判定
+复用 users_db.effective_six_roles 单一实现（过渡期 role=='admin' 经 legacy
+映射兼判 dict_admin，无需另写分支）。页面入口先登录门；撰写台/审校台各自在
 tab 内做角色门（版本历史全角色可读 —— 区级菜单「编纂产出区（全角色）」）。
 
 数据层（src/writing_db.py）负责状态机/回避制/乐观锁硬校验；本页面只做
@@ -52,7 +57,7 @@ import streamlit as st
 
 import src.writing_db as writing_db
 from src import users_db
-from src.design_system import HEADER_H1, HEADER_H2
+from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -85,16 +90,19 @@ GUIDE: Dict[str, Any] = {
         "释义可答「谁写的、基于哪版、哪个体例、AI 提了什么」；每版另记 "
         "style_version 占位（体例工单批次 8 接入）。",
         "两级终审（架构规范 §8）：普通词条 reviewer 审校通过即 final（MVP 单级"
-        "口径）；争议词条升级词典管理员终裁是例外通道而非必经站，其接口位留给"
-        "批次 8（reviewed→approved→final 扩展态已占位）；published 仅词典管理员"
-        "可执行，G6 许可/体例/备份硬闸门批次 8 接管。",
+        "口径）；争议词条升级词典管理员终裁是例外通道而非必经站 —— 批次 8 G6 "
+        "开通「👑 词典管理员终裁」子视图（仅 dict_admin 可见）：对全部 "
+        "in_review/approved 版本终裁通过（→ final 直达收口）或终裁否决（→ "
+        "rejected，理由必填），数据层 adjudicate_final 以同源 effective 口径"
+        "再校验角色与回避制；published 仅词典管理员可执行，G6 许可/体例/备份"
+        "硬闸门由词典管理区「📤 出版导出」tab 接管。",
         "乐观锁防互踩：改稿带 expect_version（表单装载时看到的版本号），草稿被"
         "流转或目标行已易主时保存被拒 —— 双开标签页/先存后提的竞态在数据层挡住。",
     ],
     "data_source": [
         "src/writing_db.py：definition_versions / review_tasks / review_comments "
-        "三表（建版/改稿/提交/裁决/发布 CRUD＋list_versions 版本链＋"
-        "list_pending_reviews 待审清单）—— 状态机与回避制硬校验都在数据层。",
+        "三表（建版/改稿/提交/裁决/终裁 adjudicate_final/发布 CRUD＋list_versions "
+        "版本链＋list_pending_reviews 待审清单）—— 状态机与回避制硬校验都在数据层。",
         "cs_senses / cs_lexemes / categories / cs_cluster_members / cs_clusters "
         "（category_study 8 表，本页私有只读查询）：撰写台义位下拉 —— 最新聚类"
         "运行的簇归属 ＋ locked 徽标（G3 闸门位），merged 义位过滤。",
@@ -118,6 +126,10 @@ GUIDE: Dict[str, Any] = {
         "对照释义内容与 AI/模板草稿快照，先「💬 挂意见」逐条留痕，再裁决 —— "
         "「⛔ 要求修订」给理由打回（in_review → rejected），「✅ 通过」即终审定稿"
         "（in_review → final）。",
+        "争议词条升级终裁（批次 8 G6）：词典管理员在审校台底部「👑 词典管理员"
+        "终裁」子视图看到全部 in_review/approved 版本 —— 逐条展开后「👑 终裁"
+        "通过」（→ final 直达，两级终审收口）或「⛔ 终裁否决」（→ rejected，"
+        "理由必填、随任务行留痕）；reviewer 单角色看不到该子视图。",
         "「📚 版本历史」按义位查版本链表：版本/状态/作者/基于版本/体例版本一目"
         "了然；逐版展开看成文、AI 快照与意见线，作者或审校人可把未处理意见"
         "「✔️ 标记已处理」（收口只标记不删行）。",
@@ -138,9 +150,12 @@ GUIDE: Dict[str, Any] = {
         "merged 义位禁选是硬口径（分立复核已并入他义位，再写释义即分叉）；未锁"
         "定簇/未入簇义位可选但页面如实标注 ⚠️ —— G3 的放宽消费是显式选择而非"
         "静默放行。",
-        "审校通过即 final 是 MVP 口径（普通词条 reviewer 终审即 final）；"
-        "reviewed/revised/approved 三个状态与词典管理员终裁接口为批次 8 预留，"
-        "本期状态机不经由它们。",
+        "审校通过即 final 是 MVP 口径（普通词条 reviewer 终审即 final）；批次 8 "
+        "G6 的词典管理员终裁（adjudicate_final）是例外通道：in_review/approved "
+        "→ final 直达或 in_review → rejected，reviewed/revised 两态仍为占位不经由。"
+        "终裁不覆盖受派审校人的既有任务行（伪造 verdict 即篡改审校记录），终裁以"
+        "新任务行落 review_tasks（round+1 标记终裁轮）；终裁后受派人的 pending "
+        "任务保持原样，其裁决动作会被数据层状态守卫拒绝。",
         "所有用户生成内容（成文/意见/词目/簇名/说明）渲染前一律转义；markdown "
         "正文走 Streamlit 自带转义通道 —— 释义里出现 HTML/标记只会被当普通文本。",
     ],
@@ -179,9 +194,11 @@ VERDICT_LABELS: Dict[str, str] = {
     "revision_requested": "要求修订",
 }
 
-# 角色口径（架构规范 §8 任务×角色矩阵）：撰写/例证/对译→editor+；审校→reviewer+
+# 角色口径（架构规范 §8 任务×角色矩阵）：撰写/例证/对译→editor+；审校→reviewer+；
+# 词典管理员终裁（批次 8 G6，例外通道）→dict_admin 单列（不继承 reviewer/editor）
 _WRITE_ROLES = {"editor", "dict_admin"}
 _REVIEW_ROLES = {"reviewer", "dict_admin"}
+_ADJUDICATE_ROLES = {"dict_admin"}
 
 
 # ============================================
@@ -211,6 +228,19 @@ def _can_review(user: Any) -> bool:
     if not isinstance(user, dict):
         return False
     return bool(users_db.effective_six_roles(user) & _REVIEW_ROLES)
+
+
+def _can_adjudicate(user: Any) -> bool:
+    """会话用户是否可词典管理员终裁（纯函数，fail-closed；批次 8 G6）。
+
+    有效六角色集须含 dict_admin（终裁是例外通道而非必经站，不随 reviewer
+    继承 —— reviewer 单角色不见终裁子视图）；过渡期 role=='admin' 经
+    effective_six_roles 的 legacy 映射兼判。数据层 adjudicate_final 以同一
+    effective 口径再校验（actor 显式传入，纵深防御两层）。
+    """
+    if not isinstance(user, dict):
+        return False
+    return bool(users_db.effective_six_roles(user) & _ADJUDICATE_ROLES)
 
 
 def _current_user() -> Optional[Dict[str, Any]]:
@@ -755,7 +785,8 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
 
 
 def _render_review_tab(me: Dict[str, Any]) -> None:
-    """⚖️ 审校台：待审列表 → 内容＋ai_draft 对照 → 意见线 → 打回/通过。"""
+    """⚖️ 审校台：待审列表 → 内容＋ai_draft 对照 → 意见线 → 打回/通过；
+    词典管理员末尾另见「👑 终裁」子视图（_render_adjudication_view）。"""
     if not _can_review(me):
         st.warning(
             "⛔ 审校台仅审校人可用（reviewer / dict_admin；过渡期 admin 兼判）。"
@@ -774,7 +805,15 @@ def _render_review_tab(me: Dict[str, Any]) -> None:
             "暂无待你审校的任务：撰写台提交初审后出现在这里（「待我审校」"
             "收件箱口径）。"
         )
-        return
+    else:
+        _render_pending_review_rows(me, rows)
+    # 批次 8 G6：词典管理员终裁子视图（例外通道收口；reviewer 单角色不可见）
+    if _can_adjudicate(me):
+        _render_adjudication_view(me)
+
+
+def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) -> None:
+    """待审任务列表渲染（审校台主体；裁决仅受派审校人，意见线非作者可挂）。"""
     st.caption(
         f"共 {len(rows)} 条待审。裁决动作（⛔ 打回 / ✅ 通过）仅受派审校人可执行；"
         "意见线任何非作者审校人可挂；回避制（审校人≠撰写人）在数据层硬校验、"
@@ -870,10 +909,94 @@ def _render_review_tab(me: Dict[str, Any]) -> None:
                     ):
                         st.success(
                             "已通过（in_review → final）：普通词条 reviewer 终审即"
-                            "定稿；争议词条词典管理员终裁接口批次 8 接入。"
+                            "定稿；争议词条走下方「👑 词典管理员终裁」子视图。"
                         )
                     else:
                         st.error("通过失败：任务已被处理或状态已变化，请刷新。")
+
+
+def _render_adjudication_view(me: Dict[str, Any]) -> None:
+    """👑 词典管理员终裁子视图（批次 8 G6；两级终审的例外通道收口）。
+
+    口径（架构规范 §8 / 施工规范 §12）：全部 in_review / approved 版本逐条
+    expander —— 「👑 终裁通过」走 writing_db.adjudicate_final(decision=
+    approved)，in_review/approved → final 直达（终裁通过 = final 直达，两级
+    终审收口）；「⛔ 终裁否决」decision=rejected，仅 in_review → rejected，
+    否决理由必填（页面侧强制）。adjudicate_final 返回 False（状态已变/权限/
+    回避制拦截）转 st.warning 如实转述，不静默。数据层再校验 actor 有效角色
+    （effective_six_roles 同源）与回避制（终裁人≠作者，无豁免）—— 本视图只
+    是第一层入口。
+    """
+    in_review = writing_db.list_versions(status=writing_db.STATUS_IN_REVIEW)
+    approved = writing_db.list_versions(status=writing_db.STATUS_APPROVED)
+    rows = in_review + approved
+    st.markdown(f"<h4 style='{HEADER_H3}'>👑 词典管理员终裁（两级终审收口）</h4>",
+                unsafe_allow_html=True)
+    if not rows:
+        st.caption(
+            "当前无 in_review / approved 态版本可终裁（普通词条 reviewer 审校"
+            "通过即 final，终裁是争议词条的例外通道而非必经站）。"
+        )
+        return
+    st.caption(
+        f"共 {len(rows)} 条（审校中 {len(in_review)} / 终审通过 {len(approved)}）。"
+        "终裁通过 = final 直达；终裁否决 → rejected（理由必填）。终裁人与撰写人"
+        "回避制在数据层硬校验（无豁免，含词典管理员）。"
+    )
+    names = _user_display_map()
+    for row in rows:
+        author = names.get(_safe_int(row.get("author_id")),
+                           f"#{row.get('author_id')}")
+        status = STATUS_LABELS.get(str(row.get("status")), str(row.get("status")))
+        with st.expander(
+            f"{row.get('sense_ref')} v{row.get('version')} · {status} · "
+            f"作者：{author}"
+        ):
+            st.markdown(str(row.get("content") or ""))
+            st.caption(
+                f"状态：{status} · 基于：v{row.get('based_on_version') or '—'} · "
+                f"体例版本：{row.get('style_version') or '—'} · 行 id：{row.get('id')}"
+            )
+            note = st.text_area(
+                "终裁意见（否决理由必填 / 通过留言可选）",
+                key=f"writing_final_note_{row['id']}", height=80,
+            )
+            col_ok, col_no = st.columns(2)
+            with col_ok:
+                if st.button("👑 终裁通过（→ final）",
+                             key=f"writing_final_ok_{row['id']}"):
+                    if writing_db.adjudicate_final(
+                        int(row["id"]), me.get("id"), "approved", note or "",
+                        actor=me,
+                    ):
+                        st.success(
+                            "终裁通过（→ final）：两级终审收口，该版本已定稿；"
+                            "发布由词典管理员走出版链路（G6 闸门）。"
+                        )
+                    else:
+                        st.warning(
+                            "终裁未生效：版本状态已变化、你不是词典管理员（会话"
+                            "快照滞后）或回避制拦截（终裁人=撰写人）——请刷新后"
+                            "重试。"
+                        )
+            with col_no:
+                if st.button("⛔ 终裁否决（→ rejected）",
+                             key=f"writing_final_no_{row['id']}"):
+                    if not note.strip():
+                        st.warning("终裁否决须给理由：请在终裁意见里写明否决依据"
+                                   "（理由随任务行留痕）。")
+                    elif writing_db.adjudicate_final(
+                        int(row["id"]), me.get("id"), "rejected", note, actor=me,
+                    ):
+                        st.success(
+                            "终裁否决（in_review → rejected）：作者可在撰写台"
+                            "重提 version+1（自动挂 based_on_version）。"
+                        )
+                    else:
+                        st.warning(
+                            "终裁未生效：版本状态已变化、你不是词典管理员或"
+                            "回避制拦截 —— 请刷新后重试。"
+                        )
 
 
 def _render_history_tab(me: Dict[str, Any]) -> None:
