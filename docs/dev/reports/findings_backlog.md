@@ -14,12 +14,12 @@
 - [ ] R5-9~14 P3
 
 ### 输入边界（R2，全 P3）
-- [ ] R2-1 建壳 chief 下拉双重转义显示错（去 _esc）
-- [ ] R2-2 上传准入加魔数一致性校验
-- [ ] R2-3 _coerce_value 补 date/长度专用报错
-- [ ] R2-4 plan_import 去重口径 docstring 对齐
-- [ ] R2-5 collab LIKE 与 _escape_like 对齐
-- [ ] R2-6 例证正文显式上限
+- [x] R2-1 建壳 chief 下拉双重转义（FX4 已修，6a0186e）
+- [x] R2-2 上传魔数一致性准入（FX4 已修；audio/video 嗅探兜底口径留批次 13）
+- [x] R2-3 date 真实性/文本超长专用报错（FX4 已修）
+- [x] R2-4 去重口径 docstring 对齐（FX4 已修）
+- [x] R2-5 collab LIKE 对齐 _escape_like＋ESCAPE（FX4 已修）
+- [x] R2-6 例证正文 20000 上限＋页面注明（FX4 已修）
 
 ### 降级（R4）
 - [ ] R4-1 P2 查询失败与未灌数据分流（fail-closed 返 None+reason，页面「数据不可用：<原因>」；灌库指引限 ready() 通过分支）——重点：防「重跑先删后插灌库」误导
