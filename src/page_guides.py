@@ -28,7 +28,7 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         "原型义位自动选择（word_source.select_prototype_index）：词典义位顺序默认可信（实测 17 个可取释义的词中 14 个首条即原型义），只有当首条完全不含位移语义、且存在另一义位同时满足「含位移语义 + 与原型主导义简述加权字符重合」时才覆盖——典型错例是 charge 首条为「要价，收费」，正确原型义是「猛冲向前」。"
     ],
     "data_source": [
-        "MySQL definitions / word_senses / oald_senses 表：词目层字段与义位明细，由 scripts/load_word_library.py 灌库；源头是 docs/Levin移动动词候选词筛选表.xlsx（171 词、三主范畴十二次类）与 data/dictionary.db（OALD 已审校中文释义，全库缺失时降级读子集快照 data/dictionary_senses_subset.json）。",
+        "MySQL definitions / word_senses / oald_senses 表：词目层字段与义位明细，由 scripts/load_word_library.py 灌库；源头是 docs/research/tables/Levin移动动词候选词筛选表.xlsx（171 词、三主范畴十二次类）与 data/dictionary.db（OALD 已审校中文释义，全库缺失时降级读子集快照 data/dictionary_senses_subset.json）。",
         "释义优先级链（src/word_source.py 的 SOURCE_RANK 1-5）：dictionary.db 的 Ch-Def → 既有词库 data/motion_verbs_extracted.json → xlsx「原型主导义简述」（levin-brief）→ data/oxford_cache.json 英文释义（中文待补）→ pending；「义位标注」卡片以彩色徽章如实显示实际命中了哪一级。",
         "实时 AI 释义：src/llm_api.py 按优先级取 ZHIPUAI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY 配置的提供商（三家均走 OpenAI 兼容 chat.completions，默认模型 glm-4，可用 LLM_PROVIDER 强制指定），PROMPT_TEMPLATE 要求返回traditional / optimized / 五要素 semantic_table / 例句 / 近义词的 JSON。",
         "语料证据卡片：MySQL 语料表，来自 Sketch Engine enTenTen21（475 亿词）的 Word Sketch 导出（data/corpus/），scripts/load_corpus_dataset.py 幂等灌库，提供词频、四类意象图式重心得分与逐槽位搭配明细。",
@@ -57,7 +57,7 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
     "label": "🕸️ 知识图谱",
     "purpose": "全库 171 个动词 / 1935 条近义关系 / 12 个语义簇的交互式力导向图，词与词关系的唯一总览入口：可搜索定位、可点选看词条详情、可按语义簇过滤。",
     "principle": [
-        "数据模型：词簇来自 docs/Levin移动动词候选词筛选表.xlsx 的三主范畴十二次类——方式聚焦型（136 词）/ 路径聚焦型（22 词）/ 互动聚焦型（13 词）为主范畴，来源类、终点类、陆地行进类、奔跑行进类、腾空跳跃类、匍匐爬行类、滚动滑行类、长途行进类、飞行游动类、运载工具类、目的类、参与者类为十二次类；同一主范畴+次类的动词构成一个词簇，MySQL word_clusters 表共 12 行。",
+        "数据模型：词簇来自 docs/research/tables/Levin移动动词候选词筛选表.xlsx 的三主范畴十二次类——方式聚焦型（136 词）/ 路径聚焦型（22 词）/ 互动聚焦型（13 词）为主范畴，来源类、终点类、陆地行进类、奔跑行进类、腾空跳跃类、匍匐爬行类、滚动滑行类、长途行进类、飞行游动类、运载工具类、目的类、参与者类为十二次类；同一主范畴+次类的动词构成一个词簇，MySQL word_clusters 表共 12 行。",
         "簇内完全图：词间关系不是逐对人工标注，而是由 scripts/load_word_library.py 的 build_synonym_pairs 从次类推导「簇内两两互为近义」并物化进 word_relations 表（171 词共 1935 条边）。因此每个节点的连线数（度数）恒等于所在簇大小 − 1，每簇边数 = size×(size−1)/2；节点大小按度数缩放，节点越大即所在词簇越大。",
         "力导向布局：前端用 vis-network 的 forceAtlas2Based 求解器（引力/斥力、弹簧长度 120、阻尼 0.4、避免重叠 0.8），初始稳定化 200 次迭代后自动关闭物理引擎——节点静止下来，用户拖动的位置才留得住。",
         "静态化 + 数据指纹缓存：get_full_word_graph 的数据经 src/graph_export.py 渲染成静态 HTML 文件 src/static/word_graph_<指纹>.html，指纹 = SHA256(模板版本号 + 排序后的节点 id 集合 + 边集合 + 节点全量载荷)。数据与模板都没变时 URL 不变，st.iframe 引用静态文件不会随 Streamlit 重跑而重载——拖好的布局、缩放视野、选中的节点全部保留；重新灌库后指纹变化生成新文件，旧文件自动清理。",
@@ -137,8 +137,8 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         "语料证据关联：freq 与 schema_scores 两列把 enTenTen21 词目频次与四图式重心得分挂到每条义位上作标注参考；指数是证据不是结论，最终标签须能被释义 + 例句回溯，边界案例进争议清单人工仲裁。"
     ],
     "data_source": [
-        "主表来源：docs/域系初判表v0.2.xlsx（01 域系总览 / 02 逐义位明细 / 03 口径说明三张工作表），由 scripts/load_domain_family.py 全量替换灌入 domain_family_senses（--if-empty 可仅空表灌入）。",
-        "释义与例句来源：docs/词表义项清单.xlsx 两页——「中英对照义位」页提供 dictionary.db 已审校中文释义与双语例句（覆盖 17 词 246 义位，例句按换行拆分后逐条 zip 对齐），「义项明细」页提供 OALD10 全部例句。",
+        "主表来源：docs/research/tables/域系初判表v0.2.xlsx（01 域系总览 / 02 逐义位明细 / 03 口径说明三张工作表），由 scripts/load_domain_family.py 全量替换灌入 domain_family_senses（--if-empty 可仅空表灌入）。",
+        "释义与例句来源：docs/research/tables/词表义项清单.xlsx 两页——「中英对照义位」页提供 dictionary.db 已审校中文释义与双语例句（覆盖 17 词 246 义位，例句按换行拆分后逐条 zip 对齐），「义项明细」页提供 OALD10 全部例句。",
         "例句子表：domain_family_examples（主键 word + sense_num + ex_num，外键级联删除），英文例句与中文翻译按 ex_num 同号同行对齐，source 标注 dictionary.db / OALD10；scripts/update_domain_family_data.py 补入 OALD 全量例句（352 义位约 1050 条，dictionary.db 双语在前、OALD10 补充在后、英文文本去重）并刷新主表首条例句冗余列。",
         "语料证据关联：scripts/update_domain_family_data.py 读取 wsketch_full / schema_evidence JSON，回写主表 freq（BIGINT，词目频次）与 schema_scores（JSON，四图式 prominence_score 保留两位）；127 词已有数据，35 个路径/互动词待 Sketch Engine 检索后补（freq 为 NULL 即未检索）。"
     ],
@@ -182,12 +182,12 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "人工可直接在其基础上修改保存。",
         ],
         "data_source": [
-            "OALD10 义项：docs/output-oald10en-for-senselist-1020.xlsx → "
+            "OALD10 义项：docs/research/tables/output-oald10en-for-senselist-1020.xlsx → "
             "scripts/load_word_library.py → oald_senses 表（992 条，含语法码/例句/习语标记）。",
             "LLM 初筛草稿：data/corpus/llm_screening/*.json → scripts/load_llm_screening.py "
             "→ domain_family_senses 表的 llm_tag/llm_schema/llm_align/llm_reason/llm_doubt 列。",
             "语料证据：corpus_schema_evidence / word_schema_scores 表（enTenTen21 Word Sketch）。",
-            "判定标准文档：docs/义项判定标准修改稿.docx（标准链的完整口径）。",
+            "判定标准文档：docs/research/protocols/义项判定标准修改稿.docx（标准链的完整口径）。",
             "标注写回：word_senses / oald_senses 的标注列（幂等，可重复修改）。",
         ],
         "steps": [
@@ -231,7 +231,7 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "提交读写：src/annotation_flow.py 的 submit_annotation / "
             "get_my_submissions（独立性入口，只看自己）。",
             "判定标准：configs/motion 范畴包 admission.yaml（Y/EXT/N 三分与边界"
-            "仲裁条款，页内只读展示）；设计规范 docs/p1/多人标注系统设计规范.md §2/§5。",
+            "仲裁条款，页内只读展示）；设计规范 docs/spec/多人标注系统设计规范.md §2/§5。",
         ],
         "steps": [
             "选择动词 → 选择义位（SenseID，选项含当前权威层状态与 LLM 草稿摘要）；",
@@ -252,59 +252,8 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "需要 MySQL 可用）。",
         ],
     },
-    "category": {
-        "label": "🏃‍♀️ 范畴深挖",
-        "purpose": "「跑」范畴英汉纵向对比的工作台：义位甄别 → P/M/C+A 特征编码 → "
-                   "双语独立聚类 → 双层跨语言对齐（簇层 + 图式层），五视图对应研究流水线。",
-        "principle": [
-            "研究流水线四阶段，页面五视图对应：义位甄别（保留/边缘/剔除三态）"
-            "→ P/M/C+A 特征编码 → 英汉各自独立聚类 → 双层对齐（簇层人工判定 + "
-            "图式层程序推导）。",
-            "特征编码 18 列：P1-P5（路径：源点/终点/有界达成/轴向/速度）、M1a-d"
-            "（主体：人/动物/车辆/无生）、M2（情态急促度）、M3a-d（介质）、C1"
-            "（动因：2 自主 / 1 受迫 / 0 依附）共 15 列进聚类矩阵；A1-A3 仅核验。",
-            "聚类算法 Gower 距离 + average 层次聚类（k=5 探索性切分），cophenetic "
-            "系数衡量保真度（英 0.825 / 汉 0.795）；簇对齐判定四类：完全 / 部分 / "
-            "零 / 错位（开题报告口径）。",
-            "图式层对齐由编码推导（derive_image_schema）：追逐标注 → 互动位移；"
-            "P1=1 → 源点脱离；P2/P3=1 → 终点抵达；其余 → 方式伴随 —— 与全词库"
-            "四图式体系一致。图式中心 = 两侧成员 15 维均值（/2 归一），阈值 "
-            "d<0.05 完全对齐 / d<0.15 部分对齐 / 一侧为空 = 零对齐。",
-            "当前数据为程序预编码版本（cluster_runs.version=预编码），正式流程需"
-            "双标注独立编码后做 IAA 一致性检验再重跑；schema 按版本共存，可对比。",
-        ],
-        "data_source": [
-            "甄别与编码：data/d1/ 跑范畴英汉义位甄别表.xlsx + 编码与独立聚类表.xlsx"
-            "（英 23 词 32 义位 / 汉 19 词条 25 义位条目）。",
-            "灌库链：scripts/load_category_study.py → categories / cs_lexemes / "
-            "cs_senses / cs_sense_features / cs_cluster_runs / cs_clusters / "
-            "cs_cluster_members / cs_cluster_alignment 共 8 表。",
-            "词典证据：《现汉7》mdx（data/ModernChineseDict）→ zh_dict_* 3 表"
-            "（70,113 词条 / 94,876 义项），「图式对齐」视图显示词典层规模，"
-            "「范畴总览」视图的词典原文对照逐义项关联甄别判定。",
-            "AI 聚类参考：数据表内标注「程序预编码」，正式 IAA 编码后以新 run 入库。",
-        ],
-        "steps": [
-            "「双语聚类对比」：英 5 簇 vs 汉 5 簇左右配对（按 Gower 距离对齐），"
-            "核心发现置顶（方式奔跑图式完全对齐 d=0.045）；点成员展开义位明细；",
-            "「编码矩阵热图」：义位 × 18 特征着色网格（P 路径 / M 主体方式 / C 动因"
-            "进聚类，A 仅核验），英/汉切换，汉语侧可按保留/边缘/剔除筛选；",
-            "「跨语言对齐」：簇二部图（连线按距离着色）+ 完全对齐簇对的雷达叠加；",
-            "「图式对齐」：双层对齐机制说明 + 四类图式（方式伴随/源点脱离/终点抵达/"
-            "互动位移）中英对照热图与成员清单 + 双语特征均值对比条形图 + "
-            "《现汉7》词典证据链规模卡；",
-            "「范畴总览与甄别清单」：英汉双清单、判定漏斗，以及《现汉7》词典原文对照"
-            "（逐义项释义/例句/语域/比喻标记，与甄别判定徽章并排）。",
-        ],
-        "notes": [
-            "数据链：data/d1/ 两个 xlsx → scripts/load_category_study.py → "
-            "categories/cs_* 8 表；当前为程序预编码版本，正式流程需双标注 IAA 后重跑；",
-            "图式由 P/M/C 编码推导（追逐→互动位移、P1→源点脱离、P2/P3→终点抵达、"
-            "其余→方式伴随），与全词库四图式体系一致。",
-        ],
-    },
     "users_admin": {
-        "label": "👥 用户管理",
+        "label": "👥 账号管理",
         "purpose": "管理员专用：账号创建、角色分配（admin/reviewer/annotator/viewer）"
                    "与停用/启用，多人标注流的权限入口。",
         "principle": [
@@ -370,27 +319,76 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         ],
     },
     "cluster": {
-        "label": "📈 谱系与典型性",
-        "purpose": "把跑范畴的聚类结果画成谱系树（dendrogram），并在每簇内按到簇代表点"
-                   "（medoid）的 Gower 距离自动排出原型 / 次典型 / 边缘三级典型性。",
+        "label": "📊 语义分析",
+        "purpose": "「跑」范畴语义分析的一页全收工作台（批次 8 合并原「🏃‍♀️ 范畴深挖」"
+                   "与「📈 谱系与典型性」）：谱系树与交互切割、典型性、分立复核、义位"
+                   "图谱四视图呈现聚类谱系（dendrogram + medoid 三级典型性 + G3 闸门），"
+                   "双语聚类对比、编码热图、跨语言对齐、图式对齐、总览甄别五视图对应"
+                   "英汉对比研究流水线。",
         "principle": [
-            "谱系树由预计算的 Gower 相异度方阵经 squareform + average linkage"
-            "（UPGMA）生成，带 k=5 探索性切分参考线；特征按范畴包 features.yaml 的 "
-            "value_type 走不同距离分支。",
+            "研究流水线四阶段，页面后五视图对应：义位甄别（保留/边缘/剔除三态）"
+            "→ P/M/C+A 特征编码 → 英汉各自独立聚类 → 双层对齐（簇层人工判定 + "
+            "图式层程序推导）。",
+            "特征编码 18 列：P1-P5（路径：源点/终点/有界达成/轴向/速度）、M1a-d"
+            "（主体：人/动物/车辆/无生）、M2（情态急促度）、M3a-d（介质）、C1"
+            "（动因：2 自主 / 1 受迫 / 0 依附）共 15 列进聚类矩阵；A1-A3 仅核验。",
+            "聚类算法 Gower 距离 + average 层次聚类（k=5 探索性切分），cophenetic "
+            "系数衡量保真度（英 0.825 / 汉 0.795）；簇对齐判定四类：完全 / 部分 / "
+            "零 / 错位（开题报告口径）。谱系树由预计算的 Gower 相异度方阵经 "
+            "squareform + average linkage（UPGMA）生成，带 k=5 探索性切分参考线；"
+            "特征按范畴包 features.yaml 的 value_type 走不同距离分支。",
             "典型性判定：medoid = 簇内到其他成员平均 Gower 距离最小的义位；成员按到 "
-            "medoid 的距离三分位自动划为 prototype / typical / periphery，替代人工判读。"
+            "medoid 的距离三分位自动划为 prototype / typical / periphery，替代人工判读；"
+            "谱系树 tab 另提供交互式切割（fcluster maxclust 重切，可保存为新运行版本，"
+            "与预计算版共存互不覆盖）。",
+            "图式层对齐由编码推导（derive_image_schema）：追逐标注 → 互动位移；"
+            "P1=1 → 源点脱离；P2/P3=1 → 终点抵达；其余 → 方式伴随 —— 与全词库"
+            "四图式体系一致。图式中心 = 两侧成员 15 维均值（/2 归一），阈值 "
+            "d<0.05 完全对齐 / d<0.15 部分对齐 / 一侧为空 = 零对齐。",
+            "当前数据为程序预编码版本（cluster_runs.version=预编码），正式流程需"
+            "双标注独立编码后做 IAA 一致性检验再重跑；schema 按版本共存，可对比。"
         ],
         "data_source": [
+            "甄别与编码：data/d1/ 跑范畴英汉义位甄别表.xlsx + 编码与独立聚类表.xlsx"
+            "（英 23 词 32 义位 / 汉 19 词条 25 义位条目）。",
+            "灌库链：scripts/load_category_study.py → categories / cs_lexemes / "
+            "cs_senses / cs_sense_features / cs_cluster_runs / cs_clusters / "
+            "cs_cluster_members / cs_cluster_alignment 共 8 表；谱系四 tab 读 "
             "cs_clusters / cs_cluster_members / cs_sense_features（跑范畴试点："
-            "英 32 义位、汉 19 条目）；特征元数据来自 configs/motion/features.yaml。"
+            "英 32 义位、汉 19 条目），特征元数据来自 configs/motion/features.yaml。",
+            "词典证据：《现汉7》mdx（data/ModernChineseDict）→ zh_dict_* 3 表"
+            "（70,113 词条 / 94,876 义项），「图式对齐」视图显示词典层规模，"
+            "「总览甄别」视图的词典原文对照逐义项关联甄别判定。",
+            "AI 聚类参考：数据表内标注「程序预编码」，正式 IAA 编码后以新 run 入库。",
         ],
         "steps": [
-            "侧边栏切到「📈 谱系与典型性」，选范畴与语言（en/zh）；",
-            "谱系树 tab 查看层次聚类结构与 k=5 切分参考线；",
-            "典型性 tab 逐簇展开：medoid 徽章 + 成员距离条形图 + 三级典型性标签。"
+            "侧边栏切到「📊 语义分析」，先看谱系侧顶部选范畴与语言（en/zh）；",
+            "「🌳 谱系树与交互切割」tab：查看层次聚类结构与 k=5 切分参考线，拖动"
+            "「切割簇数 k」滑杆（2–10）实时重切子簇，勾选确认后可「保存为新运行版本」；",
+            "「🏆 典型性」tab 逐簇展开：medoid 徽章 + 成员距离条形图 + 三级典型性标签；",
+            "「🧬 分立复核」tab（工序 8 · 闸门 G3）：簇证据视图核对成员/medoid/词频/"
+            "cs_senses 现状，登录者发起 merge/split/keep 建议，词典管理员/审校裁决"
+            "落地并锁定簇（locked 簇才允许流入释义撰写）；",
+            "「🕸️ 义位图谱」tab：经典 MDS 前两轴散点（簇着色、medoid 星标「原型居中」），"
+            "可选显示簇内两两 Gower 距离边表；",
+            "「🫱🫲 双语对比」tab：英 5 簇 vs 汉 5 簇左右配对（按 Gower 距离对齐），"
+            "核心发现置顶（方式奔跑图式完全对齐 d=0.045）；点成员展开义位明细；",
+            "「🔥 编码热图」tab：义位 × 18 特征着色网格（P 路径 / M 主体方式 / C 动因"
+            "进聚类，A 仅核验），英/汉切换，汉语侧可按保留/边缘/剔除筛选；",
+            "「🔀 跨语言对齐」tab：簇二部图（连线按距离着色）+ 完全对齐簇对的雷达叠加；",
+            "「⚖️ 图式对齐」tab：双层对齐机制说明 + 四类图式（方式伴随/源点脱离/"
+            "终点抵达/互动位移）中英对照热图与成员清单 + 双语特征均值对比条形图 + "
+            "《现汉7》词典证据链规模卡；",
+            "「📋 总览甄别」tab：英汉双清单、判定漏斗，以及《现汉7》词典原文对照"
+            "（逐义项释义/例句/语域/比喻标记，与甄别判定徽章并排）。",
         ],
         "notes": [
-            "k=5 为探索性切分，正式切分以义位层标注后重聚类为准；典型性阈值为三分位默认值，可在后续版本配置化。"
+            "数据链：data/d1/ 两个 xlsx → scripts/load_category_study.py → "
+            "categories/cs_* 8 表；当前为程序预编码版本，正式流程需双标注 IAA 后重跑；",
+            "图式由 P/M/C 编码推导（追逐→互动位移、P1→源点脱离、P2/P3→终点抵达、"
+            "其余→方式伴随），与全词库四图式体系一致。",
+            "k=5 为探索性切分，正式切分以义位层标注后重聚类为准；典型性阈值为三分位"
+            "默认值，可在后续版本配置化。",
         ]
     },
     "template": {
@@ -443,7 +441,42 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "规则层完全离线可用；LLM 层输出仅作解析参考，最终范畴归属仍由编者判断（同论文 §7.1 口径）。试点语料之外（如 march 不在 RUN 试点库）会如实提示覆盖范围。"
         ]
     },
+    "help": {
+        "label": "❓ 帮助中心",
+        "purpose": "平台帮助文档的界面入口：按七区菜单逐功能提供「功能说明 / 使用介绍 / "
+                   "原理说明 / 注意事项」四段式帮助，支持章节导航与关键词搜索；"
+                   "母本是 docs/help/平台功能使用说明.md，本页即其界面渲染。全员可见（含未登录）。",
+        "principle": [
+            "母本机制：docs/help/平台功能使用说明.md 是全部功能帮助的唯一事实源，"
+            "页面建成后对应章节原样迁入应用内「📖 使用说明」面板（page_guides），两处永不漂移。",
+            "状态标记约定：【已实现】【阶段1】【阶段2】分层标注——规划中功能的说明即验收标准，"
+            "没有说明的功能不算完成。"
+        ],
+        "data_source": [
+            "docs/help/平台功能使用说明.md（随仓库分发，离线可读）；文档缺失时本页降级提示，不抛错。"
+        ],
+        "steps": [
+            "在「章节导航」下拉选择分区（查阅展示/语义建模/…/系统管理）或选「📖 全文阅读」；",
+            "在搜索框输入关键词（如「信度」「导入」「盲标」）过滤命中的章节；",
+            "注意每条功能的【已实现】/【阶段1】/【阶段2】状态标记，规划中功能的说明即验收标准。"
+        ],
+        "notes": [
+            "本页全员可见（含未登录）——帮助不该有门槛；帮助文档与功能同步交付的纪律见 docs/README.md §五。"
+        ]
+    },
 }
+
+# 批次 2 区级页面：页面模块 GUIDE 原样并入（母本机制——模块 GUIDE 即唯一事实源，
+# 集成不复制文本，防两处漂移）；help 置于末尾（区级页面在其前）。
+from src.dict_admin_pages import GUIDE as _DICT_ADMIN_GUIDE  # noqa: E402
+from src.collab_pages import GUIDE as _AI_HUB_GUIDE  # noqa: E402
+from src.writing_pages import GUIDE as _WRITING_GUIDE  # noqa: E402
+from src.lexical_pages import GUIDE as _LEXICAL_GUIDE  # noqa: E402
+PAGE_GUIDES["dict_admin"] = _DICT_ADMIN_GUIDE
+PAGE_GUIDES["ai_hub"] = _AI_HUB_GUIDE
+PAGE_GUIDES["writing"] = _WRITING_GUIDE
+PAGE_GUIDES["lexical"] = _LEXICAL_GUIDE
+PAGE_GUIDES["help"] = PAGE_GUIDES.pop("help")
 
 # 页面键清单（侧边栏 radio 与使用说明共用，保证一一对应）
 PAGE_KEYS: List[str] = list(PAGE_GUIDES.keys())

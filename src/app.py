@@ -25,8 +25,12 @@ from src.mysql_db import (
     get_domain_family_examples,
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
-from src.category_study_page import render_category_study_page
 from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usage_guide
+from src.help_center import render_help_center_page
+from src.dict_admin_pages import render_dict_admin_page
+from src.writing_pages import render_writing_page
+from src.lexical_pages import render_lexical_page
+from src.collab_pages import pending_inbox_count, render_collab_page
 from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
@@ -36,20 +40,28 @@ from src.security import InputValidator, sanitize_csv_dataframe
 # 多人标注系统集成导入（设计规范 §3 模块契约 / §5 UI 集成契约）
 # ============================================
 from src.users_db import (
+    MIN_PASSWORD_LENGTH,
+    NEW_ROLES,
     change_password,
+    effective_six_roles,
     ensure_user_tables,
     get_user_role,
     is_using_default_password,
+    list_roles,
     list_users,
+    needs_password_change,
     verify_login,
+    verify_login_full,
 )
+# 词形还原数据层（与上述导入同区，沿用本文件 sys.path 前置的既定导入模式）
+from src.wordforms_db import ensure_wordforms_tables, resolve_form  # noqa: E402
 from src.annotation_flow import (
     ensure_flow_tables, submit_annotation, get_my_submissions,
     get_submissions_for_sense, detect_disagreements, save_adjudication,
     get_assignment_stats, STATUS_ADJUDICATED,
 )
 from src.reliability import render_reliability_page
-from src.cluster_analysis import render_cluster_analysis_page
+from src.cluster_analysis import render_semantic_analysis_page
 from src.template_engine import render_template_page
 from src.semantic_search import render_semantic_search_page
 from src.users_admin_page import render_users_admin_page, ROLE_LABELS, ROLE_BADGE_COLORS
@@ -117,6 +129,16 @@ if DB_AVAILABLE and not st.session_state.get("_user_tables_ready"):
     except Exception as e:
         logger.error(f"ensure_user_tables 失败（登录功能可能不可用）: {e}")
 
+# 词形还原索引（批次 3 ③）：wordforms 表幂等建表，供搜索页 resolve_form 前置
+# 查询使用。建表失败不拦启动 —— resolve_form 自身 fail-closed 返回 []，
+# 搜索页词形提示静默跳过（搜词主链路不受影响）。
+if DB_AVAILABLE and not st.session_state.get("_wordforms_table_ready"):
+    try:
+        ensure_wordforms_tables()
+        st.session_state["_wordforms_table_ready"] = True
+    except Exception as e:
+        logger.error(f"ensure_wordforms_tables 失败（词形还原可能不可用）: {e}")
+
 
 # ============================================
 # 登录态与页面权限（多人标注系统集成；规范 §1 角色语义 / §6-4 入口判定）
@@ -164,7 +186,9 @@ def _refresh_session_user() -> Optional[Dict[str, Any]]:
     规则：
       * 用户已被停用 / 删除（get_user_role 返回 None）→ 清会话 + st.warning
         提示（fail-closed：数据库暂时读不出来时同样登出，不留旧权限会话）；
-      * 角色已变更 → 就地更新快照，管理员改角色立即生效；
+      * 旧角色列或六角色列表已变更 → 就地更新快照，管理员改角色/授予撤销
+        （users_admin 角色授予面板）立即生效 —— 六角色会话（批次 3）下
+        _visible_page_keys 读的 roles 快照与 legacy role 一同回查；
       * 数据库离线（DB_AVAILABLE=False）→ 跳过回查保留旧快照（此时全部
         写路径不可用，页面各自降级，见各页 DB_AVAILABLE 分支）。
 
@@ -176,44 +200,101 @@ def _refresh_session_user() -> Optional[Dict[str, Any]]:
         return user
     if not DB_AVAILABLE:
         return user
-    fresh_role = get_user_role(int(user.get("id") or 0))
+    uid = int(user.get("id") or 0)
+    fresh_role = get_user_role(uid)
     if fresh_role is None:
         # 停用 / 删除（含库暂时不可读）：登出并提示，下次操作即生效
         _logout()
         st.warning("⛔ 账号已被停用或删除，会话已失效，请重新登录。")
         return None
-    if fresh_role != user.get("role"):
+    # 六角色快照回查（list_roles fail-closed：读不出来返回 []，与停用登出
+    # 的口径由 get_user_role 先行兜底，不会把正常在线用户误登出）
+    fresh_roles = list_roles(uid)
+    if fresh_role != user.get("role") or \
+            list(fresh_roles) != list(user.get("roles") or []):
         # 角色变更：快照仅用于显示，权限判定随本次入口检查即用新值
         refreshed = dict(user)
         refreshed["role"] = fresh_role
+        refreshed["roles"] = list(fresh_roles)
         st.session_state["user"] = refreshed
         return refreshed
     return user
 
 
-# 新增三页的角色可见性（规范 §5：用户管理=admin、信度报告=reviewer/admin、
-# 标注提交=annotator+）。不在表中的键为基础页，所有角色（含未登录）可见，
-# 未授权访问由各页渲染入口的 role gate 拦下。
+# ============================================
+# 页面权限（批次 3 六角色口径；平台架构设计规范 §8 / 施工规范 §6-K）
+# ============================================
+# 页面允许集的**权威表** `_PAGE_ACCESS_SIX`：值用六角色名（dict_admin=词典管理员、
+# sys_admin=平台管理员、reviewer=审校、editor=撰写、annotator=标注、viewer=只读；
+# user_roles 一人多角色，新号默认 viewer，语义见 src/users_db.py）。
+# 口径变化相对旧四角色表：admin 拆为 dict_admin/sys_admin 两闸 —— 用户管理
+# （账号生命周期）归平台管理员 sys_admin；词典管理区归词典管理员 dict_admin；
+# submission/标注类按「annotator 及以上」并入 editor（平台架构设计规范 §8
+# 任务×角色矩阵：撰写→editor+）。其余既有键可见性与升级前逐角色一致。
+#
+# 为什么另立 `_PAGE_ACCESS_SIX` 而不是直接改写 `_PAGE_ACCESS` 的值：
+# legacy 四角色表保留为六角色表的**投影别名**（dict_admin/sys_admin→admin、
+# editor→annotator 折叠回旧域，见 _SIX_TO_LEGACY_DOMAIN），键集、逐角色可见性
+# 与升级前逐字节一致，旧调用方继续读 `_PAGE_ACCESS` 不破。批次 4-N 收编后
+# tests/test_page_guides.py 的 test_page_access_table_consistent_with_registration
+# 对两表做双检：_PAGE_ACCESS_SIX 值域 ⊆ 六角色名（拼写漂移哨兵——未知角色折叠
+# 后仍会原样出现在投影里，照样被它拦下）＋ legacy 表恰为六角色表的投影。
+_PAGE_ACCESS_SIX: Dict[str, tuple] = {
+    "submission": ("dict_admin", "sys_admin", "reviewer", "editor", "annotator"),
+    "users_admin": ("sys_admin",),
+    "reliability": ("dict_admin", "sys_admin", "reviewer"),
+    "cluster": NEW_ROLES,
+    "template": NEW_ROLES,
+    "semantic": NEW_ROLES,
+    "dict_admin": ("dict_admin",),
+    "ai_hub": NEW_ROLES,
+    "writing": NEW_ROLES,
+    "lexical": ("dict_admin", "reviewer", "editor"),
+}
+
+# 六角色 → legacy 页面权限域的折叠（投影用）：两位一体的旧 admin、
+# editor 不低于 annotator 的可见域。
+_SIX_TO_LEGACY_DOMAIN: Dict[str, str] = {
+    "dict_admin": "admin",
+    "sys_admin": "admin",
+    "editor": "annotator",
+}
+
+# legacy 四角色口径别名表（由 _PAGE_ACCESS_SIX 投影派生，勿手工编辑；
+# tests/test_page_guides.py 钉死其键集与值域）。不在表中的键为基础页，
+# 所有角色（含未登录）可见，未授权访问由各页渲染入口的 role gate 拦下。
 _PAGE_ACCESS: Dict[str, tuple] = {
-    "submission": ("admin", "reviewer", "annotator"),
-    "users_admin": ("admin",),
-    "reliability": ("admin", "reviewer"),
-    "cluster": ("admin", "reviewer", "annotator", "viewer"),
-    "template": ("admin", "reviewer", "annotator", "viewer"),
-    "semantic": ("admin", "reviewer", "annotator", "viewer"),
+    key: tuple(sorted(
+        {_SIX_TO_LEGACY_DOMAIN.get(role, role) for role in roles}
+    ))
+    for key, roles in _PAGE_ACCESS_SIX.items()
 }
 
 
-def _visible_page_keys(role: Optional[str]) -> List[str]:
+# 批次 4-N 六角色收口：批次 3 ② 的本地折算实现（legacy role 映射 ∪ session
+# roles，含 fail-closed 忽略非法角色名）整体迁入 users_db.effective_six_roles
+# —— 页面可见性（本文件）、users_admin 页面体角色门与提权硬闸门自此同源调用
+# 同一实现，不再各自折算。此处保留模块级别名（非复制 def），_visible_page_keys
+# 与既有导入方的调用点行为逐字节不变。
+_effective_six_roles = effective_six_roles
+
+
+def _visible_page_keys(user: Optional[Dict[str, Any]]) -> List[str]:
     """PAGE_KEYS 的角色可见性过滤（选项仍以 PAGE_KEYS 为单一事实来源）。
 
-    基础六页对所有人可见；submission/users_admin/reliability 按 _PAGE_ACCESS
-    过滤 —— 未登录或角色不符的键不出现在侧边栏 radio 里（渲染入口另有 role gate）。
+    批次 3 六角色口径：页面允许集读 _PAGE_ACCESS_SIX（值=六角色名），用户
+    有效角色集见 _effective_six_roles（legacy role ∪ session roles），页面
+    允许集命中任一角色即可见。基础六页与帮助中心不在表中 → 所有人可见
+    （未授权访问由各页渲染入口的 role gate 拦下）；未登录或角色不符的键
+    不出现在侧边栏 radio 里。
+    签名说明：旧版按 role 字符串过滤，本轮改为接收会话 user dict（roles
+    感知），唯一调用点 render_sidebar 同步更新。
     """
     keys: List[str] = []
+    effective = _effective_six_roles(user)
     for key in PAGE_KEYS:
-        allowed = _PAGE_ACCESS.get(key)
-        if allowed is None or (role is not None and role in allowed):
+        allowed = _PAGE_ACCESS_SIX.get(key)
+        if allowed is None or (effective and set(allowed) & effective):
             keys.append(key)
     return keys
 
@@ -384,6 +465,7 @@ def search_verb() -> None:
         st.session_state.show_result = True
         st.session_state["page"] = "search"  # 从图谱页发起搜索时切回搜索页
         _record_query(value)
+        _resolve_wordform_hint(value)  # 词形还原前置查询（批次 3 ③）
 
 
 def select_example_verb(verb: str) -> None:
@@ -393,6 +475,56 @@ def select_example_verb(verb: str) -> None:
     st.session_state["搜索动词"] = verb
     st.session_state["page"] = "search"  # 从图谱页点热门词时切回搜索页
     _record_query(verb)
+    _resolve_wordform_hint(verb)  # 词形还原前置查询（批次 3 ③）
+
+
+# ============================================
+# 词形还原提示（批次 3 ③：wordforms_db.resolve_form 前置查询）
+# ============================================
+# 查询词命中 wordforms（拼音/屈折/异体词形）且还原出的词目与查询词不同时，
+# 在搜索页给出一行「词形「X」→ 词目「Y」」提示与一键切换查询按钮；
+# DB 不可用 / 表缺失 / 无命中时静默跳过，搜词主链路（所见即所得的六卡片
+# 结果结构）不变。提示只在会话里暂存，不进库。
+_WORDFORM_HINT_KEY = "_wordform_hint"
+
+
+def _resolve_wordform_hint(query: str) -> None:
+    """查询词词形还原（search_verb 链路入口处调用）：记录或清除提示信息。
+
+    Args:
+        query: 本次提交的查询词（调用方已保证非空、1–50 字符）。
+
+    行为：
+      * 先清掉旧提示（每次新查询重新判定，不残留）；
+      * DB 不可用直接跳过；resolve_form 自身 fail-closed（表缺失/查询失败
+        返回 []），这里再兜一层异常防线；
+      * 命中行里取第一条 lemma_word ≠ 查询词 的记录写入会话
+        （同形多词目时取库序第一条，交由词形表灌库顺序决定）；
+      * 全部命中的词目都与查询词相同（查的就是词目本身）→ 不提示。
+    """
+    st.session_state.pop(_WORDFORM_HINT_KEY, None)
+    if not DB_AVAILABLE or not query:
+        return
+    try:
+        hits = resolve_form(str(query))
+    except Exception as e:  # 防御：词形提示永不打断搜词主链路
+        logger.error(f"词形还原查询失败 for '{query}': {e}")
+        return
+    for hit in hits:
+        lemma = str(hit.get("lemma_word") or "")
+        if lemma and lemma != query:
+            st.session_state[_WORDFORM_HINT_KEY] = {"form": str(query), "lemma": lemma}
+            return
+
+
+def _switch_to_wordform_lemma(lemma: str) -> None:
+    """词形提示的「切换到词目」回调：以还原出的词目重新发起一次等价查询。"""
+    st.session_state.verb_result = lemma
+    st.session_state.show_result = True
+    st.session_state["搜索动词"] = lemma
+    st.session_state["page"] = "search"
+    _record_query(lemma)
+    _resolve_wordform_hint(lemma)  # 词目本身若仍是词形（链式还原）则继续提示
 
 
 def filter_hot_verbs(hot_verbs: List[dict], query: str) -> List[dict]:
@@ -524,7 +656,7 @@ def render_card_annotation(verb):
     """
     渲染「义位标注」卡片。
 
-    字段与取值全部来自 `docs/义项判定标准.docx`：
+    字段与取值全部来自 `docs/research/protocols/义项判定标准.docx`：
 
       * 原型层级 —— Y 原型物理位移义 / 拓展 隐喻引申义 / N 剔除
       * 意象图式 —— 源点脱离 / 终点抵达 / 方式伴随 / 互动位移（四类，不可自增）
@@ -1322,6 +1454,34 @@ def _empty_stats() -> Dict[str, Any]:
     }
 
 
+def _render_must_change_password_banner(user: Dict[str, Any]) -> None:
+    """强制改密横幅（批次 3 ①，平台架构设计规范 §8 / users_db 契约）：
+    needs_password_change=1 的账号登录后提示改密。
+
+    判据实时取库（users_db.needs_password_change：users.must_change_password
+    生命周期标志 —— create_user 建号与内置 admin bootstrap 时置 1，改密成功
+    后清零）。与 _render_default_password_guard 的分工：后者针对「口令仍是
+    内置默认值」的弱口令判据并在侧边栏内联提供改密表单；本横幅面向管理员
+    签发的**非默认**初始口令，仅做引导提示。批次 4-N 起改密动作走侧边栏
+    「🔑 修改密码」自助 expander（_render_self_change_password_form：
+    change_password 落库成功即清标志，横幅随之消失）。默认口令情形已被
+    guard 表单覆盖，这里不再叠加同一条横幅。
+    """
+    try:
+        uid = int(user.get("id"))
+    except (TypeError, ValueError):
+        return
+    if is_using_default_password(uid):
+        # 内置默认口令：_render_default_password_guard 已带常驻横幅+改密表单
+        return
+    if not needs_password_change(uid):
+        return
+    st.sidebar.warning(
+        "🔐 **初始口令必须修改**：当前账号仍在使用管理员签发的初始口令，"
+        "请通过下方「🔑 修改密码」入口修改后再继续使用。"
+    )
+
+
 def _render_default_password_guard(user: Dict[str, Any]) -> None:
     """内置默认口令强制改密横幅（R1-P2c）：侧边栏常驻直到口令已改。
 
@@ -1357,14 +1517,69 @@ def _render_default_password_guard(user: Dict[str, Any]) -> None:
             st.sidebar.error("修改失败（数据库未写入），请重试。")
 
 
+def _render_self_change_password_form(user: Dict[str, Any]) -> None:
+    """个人自助改密表单（批次 4-N）：侧边栏「🔑 修改密码」expander 内。
+
+    三输入：当前密码 + 新密码 + 确认新密码。校验链（任一失败 st.error，
+    不触数据层写路径）：
+      1. 输入完整且两次新密码一致；
+      2. 新密码长度 ≥ MIN_PASSWORD_LENGTH（与 users_db.change_password 同一口径，
+         应用层先拒，弱口令不进数据层）；
+      3. 当前密码校验走 verify_login（与登录**同一鉴权路径**：users_db 契约
+         不变，password_hash 不出数据层；无此用户/密码错/已停用统一 False，
+         fail-closed —— 停用会话改不了密码）；
+    全部通过后 change_password 落库（pbkdf2 新随机盐，旧口令立即失效），
+    成功即清 must_change_password（强制改密横幅下次 rerun 消失）→ st.success；
+    失败 st.error。与默认口令守卫表单（_render_default_password_guard）键名
+    不同、互不影响，可并存。
+    """
+    with st.sidebar.form("self_change_password_form", clear_on_submit=True):
+        st.markdown("**🔑 修改密码**")
+        old_password = st.text_input("当前密码", type="password",
+                                     key="self_pw_old", max_chars=128)
+        new_password = st.text_input("新密码（≥8 位）", type="password",
+                                     key="self_pw_new", max_chars=128)
+        confirm_password = st.text_input("确认新密码", type="password",
+                                         key="self_pw_again", max_chars=128)
+        submitted = st.form_submit_button("修改密码", use_container_width=True)
+    if not submitted:
+        return
+    username = str(user.get("username") or "")
+    try:
+        uid = int(user.get("id"))
+    except (TypeError, ValueError):
+        st.sidebar.error("会话用户信息不完整，请重新登录后再试。")
+        return
+    if not old_password or not new_password or new_password != confirm_password:
+        st.sidebar.error("请填写当前密码与新密码，且两次新密码一致。")
+        return
+    if len(new_password) < MIN_PASSWORD_LENGTH:
+        st.sidebar.error(f"新密码长度至少 {MIN_PASSWORD_LENGTH} 位。")
+        return
+    if not verify_login(username, old_password):
+        st.sidebar.error("当前密码不正确。")
+        return
+    if change_password(uid, new_password):
+        st.sidebar.success("✅ 密码已修改，下次登录请使用新密码。")
+    else:
+        st.sidebar.error("修改失败（数据库未写入），请重试。")
+
+
 def _render_login_section() -> None:
     """侧边栏登录区（规范 §5）：未登录显示登录表单，已登录显示用户名+角色徽章+退出。
 
     数据库离线时显示「登录不可用（数据库离线）」info，不崩溃；登录失败
-    st.error 提示（verify_login 对无此用户/密码错/已停用统一返回 None，防枚举）。
-    表单 clear_on_submit=True：密码不常驻会话（规范 §6-2）。
+    st.error 提示（verify_login_full 对无此用户/密码错/已停用统一返回 None，
+    防枚举）。表单 clear_on_submit=True：密码不常驻会话（规范 §6-2）。
+    批次 3 六角色会话：改调 verify_login_full —— session user 在旧四键
+    （id/username/display_name/role，role 仍为旧列值向后兼容）基础上增加
+    roles 列表（六角色按优先级降序），供 _visible_page_keys 与页面层读取。
     登录成功后（R1-P2c）：若该用户当前哈希仍匹配内置默认口令，侧边栏顶部
-    常驻强制改密横幅（_render_default_password_guard），直到口令已改。
+    常驻强制改密横幅+表单（_render_default_password_guard）；管理员签发的
+    非默认初始口令（must_change_password=1）由 _render_must_change_password_
+    banner 提示改密。批次 4-N：已登录区新增「🔑 修改密码」自助 expander
+    （旧密码校验 + change_password 落库），仅对真实登录会话渲染 —— 与两条
+    强制改密路径并存、互不影响。
     """
     if not DB_AVAILABLE:
         st.sidebar.info("登录不可用（数据库离线）")
@@ -1382,9 +1597,13 @@ def _render_login_section() -> None:
         )
         st.sidebar.button("🚪 退出登录", key="logout_button",
                           use_container_width=True, on_click=_logout)
-        # 默认口令强制改密（R1-P2c）：仅对真实登录会话（_user_db_backed）回查
+        # 强制改密（R1-P2c 默认口令表单 / 批次 3 初始口令横幅 / 批次 4-N 自助
+        # 改密 expander）：仅对真实登录会话（_user_db_backed）渲染
         if st.session_state.get(_USER_DB_BACKED_KEY):
             _render_default_password_guard(user)
+            _render_must_change_password_banner(user)
+            with st.sidebar.expander("🔑 修改密码", expanded=False):
+                _render_self_change_password_form(user)
         return
 
     with st.sidebar.form("login_form", clear_on_submit=True):
@@ -1393,7 +1612,7 @@ def _render_login_section() -> None:
         password = st.text_input("密码", type="password", key="login_password", max_chars=128)
         submitted = st.form_submit_button("登录", use_container_width=True)
     if submitted:
-        info = verify_login(username or "", password or "")
+        info = verify_login_full(username or "", password or "")
         if info:
             st.session_state["user"] = info
             st.session_state[_USER_DB_BACKED_KEY] = True
@@ -1429,14 +1648,14 @@ def render_sidebar():
     # ---- 登录区（侧边栏顶部、页面切换之前；规范 §5 UI 集成契约）----
     _render_login_section()
 
-    # 页面切换：基础六页 + 提交/用户管理/信度三页（按角色可见性过滤）。
+    # 页面切换：基础六页 + 受保护页/区级页（按六角色可见性过滤，批次 3 ②）。
     # 选项仍来自 page_guides.PAGE_KEYS（页面 ↔ 使用说明一一对应的单一事实来源），
-    # 只是按 _PAGE_ACCESS 过滤子集 —— 不硬编码页面清单。
+    # 只是按 _PAGE_ACCESS_SIX 过滤子集 —— 不硬编码页面清单。
     # 残留页（登出/换角色后当前页不在可见集合）回搜索页，避免 radio 的
     # session_state 值不在 options 里抛 StreamlitAPIException。
     # 不要再传 index=：key="page" 一旦存在于 session_state，再传 index 会在
     # 旧版 Streamlit 上抛 StreamlitAPIException、新版上打重复赋值警告。
-    visible_keys = _visible_page_keys((_current_user() or {}).get("role"))
+    visible_keys = _visible_page_keys(_current_user())
     if st.session_state.get("page") not in visible_keys:
         st.session_state["page"] = "search"
     st.sidebar.radio(
@@ -1447,6 +1666,26 @@ def render_sidebar():
         horizontal=True,
     )
     st.sidebar.divider()
+
+    # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）
+    if st.session_state.get("user"):
+        _inbox_n = pending_inbox_count()
+        if _inbox_n:
+            if st.sidebar.button(f"🤖 AI 待办 {_inbox_n} 条 · 去处理",
+                                 key="sidebar_inbox_badge"):
+                st.session_state["page"] = "ai_hub"
+                st.rerun()
+            st.sidebar.divider()
+
+    # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）
+    if st.session_state.get("user"):
+        _inbox_n = pending_inbox_count()
+        if _inbox_n:
+            if st.sidebar.button(f"🤖 AI 待办 {_inbox_n} 条 · 去处理",
+                                 key="sidebar_inbox_badge"):
+                st.session_state["page"] = "ai_hub"
+                st.rerun()
+            st.sidebar.divider()
 
     st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 实验统计</h2>", unsafe_allow_html=True)
 
@@ -1544,6 +1783,25 @@ def render_main_area():
             key="搜索动词",
             on_change=search_verb
         )
+
+    # 词形还原提示（批次 3 ③）：查询词命中 wordforms 词形表且还原出的词目
+    # 与查询词不同时，渲染一行「词形「X」→ 词目「Y」」提示 + 一键切换查询。
+    # 提示由 search_verb / select_example_verb / 切换回调在入口处写入会话；
+    # DB 不可用或无命中时会话里没有该键，这里什么都不渲染 —— 既有所见即
+    # 所得的结果结构（六卡片 + 词间关系 + 示例库）不变。
+    _hint = st.session_state.get(_WORDFORM_HINT_KEY)
+    if _hint:
+        _col_hint, _col_switch = st.columns([3, 1])
+        with _col_hint:
+            st.info(f"🔁 词形「{_hint.get('form')}」→ 词目「{_hint.get('lemma')}」")
+        with _col_switch:
+            st.button(
+                f"查询「{_hint.get('lemma')}」",
+                key="wordform_switch_button",
+                use_container_width=True,
+                on_click=_switch_to_wordform_lemma,
+                args=(_hint.get("lemma"),),
+            )
 
     # 欢迎消息（当没有结果时显示）
     if not hasattr(st.session_state, 'show_result') or not st.session_state.show_result:
@@ -2074,7 +2332,7 @@ def render_word_relation_section(verb: str) -> None:
 def render_domain_family_page() -> None:
     """🧭 域系初判：352 保留义位按词目层初判归入三域十二系的浏览与对照。
 
-    数据来自 docs/域系初判表v0.2.xlsx（scripts/load_domain_family.py 灌入）。
+    数据来自 docs/research/tables/域系初判表v0.2.xlsx（scripts/load_domain_family.py 灌入）。
     口径：词目层初判预览——义位图式暂取词目初判，最终域—系以义位层
     人工标注后重聚类为准；R2/R3 行携带筛选规则理由。
     """
@@ -2088,7 +2346,7 @@ def render_domain_family_page() -> None:
         st.info(
             "域系初判数据尚未灌入。运行 "
             "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
-            "从 docs/域系初判表v0.2.xlsx 加载。"
+            "从 docs/research/tables/域系初判表v0.2.xlsx 加载。"
         )
         return
 
@@ -2277,7 +2535,7 @@ def _render_annotation_admin_view() -> None:
     """
     🏷️ 标注平台 · 管理员快速通道视图（原单人流，逻辑不变）。
 
-    对应标注手册（docs/义项判定标准修改稿.docx）的义位级操作：
+    对应标注手册（docs/research/protocols/义项判定标准修改稿.docx）的义位级操作：
       标准1 准入标签（Y/拓展/N）→ 标准2 意象图式（四选一）→
       标准4 英汉对齐（三选一）→ 汉语句法特征 / 译义转化策略；
       边界争议打存疑标记进仲裁清单。判定依据 = OALD 释义 + 例句，
@@ -2289,7 +2547,7 @@ def _render_annotation_admin_view() -> None:
     render_page_usage_guide("annotate")
     st.caption("义位准入 → 意象图式 → 英汉对齐 → 句法特征/译义策略；"
                "依据 OALD 释义与例句判定，存疑案例打标进仲裁清单。"
-               "完整标准见 docs/义项判定标准修改稿.docx。")
+               "完整标准见 docs/research/protocols/义项判定标准修改稿.docx。")
 
     if not DB_AVAILABLE:
         st.info("数据库不可用，标注平台不可用。")
@@ -2832,15 +3090,24 @@ def render_reviewer_panel() -> None:
 # 主函数
 # ============================================
 def main():
-    """主函数：按 session_state["page"] 分派到各页（九页；规范 §5 UI 集成契约）。
+    """主函数：按 session_state["page"] 分派到各页（十四页：十一功能页 +
+    词典管理区/AI 协作区两区级页面 + 帮助中心；规范 §5 UI 集成契约；
+    批次 8「🏃‍♀️ 范畴深挖」并入「📊 语义分析」后 15→14）。
 
     登录门在分派处判定（require_login，规范 §6-4）：标注页与新增三页
     （submission / users_admin / reliability）未登录渲染「请先登录」并 return；
     角色门在各页渲染入口再判一次（纵深防御）。
     _page 在 render_sidebar 之前取值：侧边栏可能因角色可见性把残留页重置回
     search（只影响下一次运行），本次运行仍按用户请求的页分派并给出权限提示。
+    旧键重定向（批次 8）：_page == "category" 就地置 "cluster" —— 页面合并后
+    旧书签/残留会话重定向一次不断链；置于 render_sidebar 之前，radio(key="page")
+    本次运行即选中 cluster，cluster 不可见的会话（未登录）由侧边栏残留页回退兜回
+    search，本次运行照常走 cluster 分支给出「请先登录」提示。
     """
     _page = st.session_state.get("page")
+    if _page == "category":
+        _page = "cluster"
+        st.session_state["page"] = "cluster"
     render_sidebar()
     if _page == "graph":
         render_interactive_graph_page()
@@ -2851,8 +3118,6 @@ def main():
     elif _page == "annotate":
         if require_login() is not None:
             render_annotation_page()
-    elif _page == "category":
-        render_category_study_page()
     elif _page == "submission":
         if require_login() is not None:
             render_submission_page()
@@ -2871,6 +3136,16 @@ def main():
     elif _page == "semantic":
         if require_login() is not None:
             render_semantic_entry()
+    elif _page == "dict_admin":
+        render_dict_admin_entry()
+    elif _page == "ai_hub":
+        render_ai_hub_entry()
+    elif _page == "writing":
+        render_writing_entry()
+    elif _page == "lexical":
+        render_lexical_entry()
+    elif _page == "help":
+        render_help_entry()
     else:
         render_main_area()
 
@@ -2888,9 +3163,14 @@ def render_reliability_entry() -> None:
 
 
 def render_cluster_entry() -> None:
-    """📈 谱系与典型性入口：使用说明 + 聚类可视化页（需登录，全角色可看）。"""
+    """📊 语义分析入口：使用说明 + 语义分析合并页（需登录，全角色可看）。
+
+    批次 8：「🏃‍♀️ 范畴深挖」并入本页（key=cluster，guide 键仍为 "cluster"，
+    旧键 category 在 main() 顶部重定向）；页面本体为
+    cluster_analysis.render_semantic_analysis_page（谱系四 tab + 英汉对比五 tab）。
+    """
     render_page_usage_guide("cluster")
-    render_cluster_analysis_page()
+    render_semantic_analysis_page()
 
 
 def render_template_entry() -> None:
@@ -2903,6 +3183,36 @@ def render_semantic_entry() -> None:
     """🧠 以句搜义入口：使用说明 + 以句搜义页（需登录，全角色可看）。"""
     render_page_usage_guide("semantic")
     render_semantic_search_page()
+
+
+def render_dict_admin_entry() -> None:
+    """📖 词典管理区入口：使用说明 + 区级页面（驾驶舱/成员/定制属性/导入/浏览器/任务分配）。"""
+    render_page_usage_guide("dict_admin")
+    render_dict_admin_page()
+
+
+def render_ai_hub_entry() -> None:
+    """🤖 AI 协作区入口：使用说明 + 区级页面（协作收件箱/协同度量）。"""
+    render_page_usage_guide("ai_hub")
+    render_collab_page()
+
+
+def render_writing_entry() -> None:
+    """✍️ 释义撰写与审校入口：使用说明 + 撰写/审校/版本历史三 tab（编纂成文域）。"""
+    render_page_usage_guide("writing")
+    render_writing_page()
+
+
+def render_lexical_entry() -> None:
+    """📖 例证与对译入口：使用说明 + 例证配置/对译定稿两 tab（编纂成文域）。"""
+    render_page_usage_guide("lexical")
+    render_lexical_page()
+
+
+def render_help_entry() -> None:
+    """❓ 帮助中心入口：使用说明 + 母本文档渲染页（全员可见，含未登录——帮助不该有门槛）。"""
+    render_page_usage_guide("help")
+    render_help_center_page()
 
 # ============================================
 # 启动应用
