@@ -256,7 +256,7 @@ class TestValidatePayload:
 
         两个下游消费方（本模块 _normalize_for_compare 与
         reliability._is_usable_label）都把这类串按缺失剔除 —— 静默入库只会
-        存垃圾值，与「非法值根本不进数据库」口径矛盾（docs/review_R4.md 1a）。
+        存垃圾值，与「非法值根本不进数据库」口径矛盾（docs/dev/reviews/review_R4.md 1a）。
         """
         for bad in ("nan", "NaN", " nan "):
             assert not validate_payload("feature_coding", {"features": {"P1": bad}}), bad
@@ -663,7 +663,7 @@ class TestDetectDisagreementsFeatureCoding:
         """R2 修复回归：字符串 'nan'（float 可解析出 NaN）按缺失，不做假标签。
 
         修复前：'nan' 与对方真实取值比较会报出假分歧（reliability 侧同一取值
-        按缺失跳过，两个分歧口径不一致）；修复后两侧口径一致（docs/review_R2.md F1）。
+        按缺失跳过，两个分歧口径不一致）；修复后两侧口径一致（docs/dev/reviews/review_R2.md F1）。
         """
         rows = [
             _row(201, 7, {"features": {"P1": 1, "P5": "nan"}}, task_type="feature_coding"),

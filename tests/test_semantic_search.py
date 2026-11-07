@@ -419,7 +419,7 @@ class TestRealData:
     def test_paper_example_zh_hits_jog_trot(self, pack):
         """论文例句（汉语侧）：小跑①「快步走，接近于跑」= 距离 0 的最近邻。
 
-        march 属步行范畴、不在 RUN 试点库（与 docs/dev_template_engine.md
+        march 属步行范畴、不在 RUN 试点库（与 docs/dev/reports/dev_template_engine.md
         同一事实），语义最近的义位是 小跑（编码 M1a=1 人主体 / M2=0 轻缓，
         与查询向量完全一致）。
         """
