@@ -11,6 +11,11 @@ import logging
 from contextlib import contextmanager
 from typing import Optional, Dict, List, Any
 
+# st.cache_data 页面级缓存（R5-2/R5-9）：重查询包缓存的范式与
+# cluster_analysis._load_page_data 一致 —— 首参 cache_scope_key()，
+# 换库即换缓存槽位（业务库/测试库互不污染）。
+import streamlit as st
+
 # Try to import PyMySQL, provide fallback to SQLite
 try:
     import pymysql
@@ -1258,7 +1263,7 @@ def _parse_json_columns(rows: List[Dict[str, Any]], fields: tuple) -> List[Dict[
     return rows
 
 
-def get_oald_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
+def get_oald_senses(verb: str, limit: int = 200) -> Optional[List[Dict[str, Any]]]:
     """
     取某个动词的 OALD10 义项（英文，带语法码与语义分组）。
 
@@ -1268,6 +1273,8 @@ def get_oald_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
 
     Returns:
         义项列表，``examples`` / ``example_patterns`` 已解析成列表。
+        查询失败（R4-1 fail-closed）返回 None —— 区别于「词在库中但无义项/词未
+        收录」的空列表，页面据此分流「数据不可用（勿重跑灌库）」与「未灌入」。
     """
     try:
         with get_db_cursor() as cursor:
@@ -1287,10 +1294,10 @@ def get_oald_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
             rows = cursor.fetchall()
     except pymysql.Error as e:
         logger.error(f"Failed to fetch OALD senses for '{verb}': {e}")
-        return []
+        return None  # R4-1：查询失败 ≠ 未收录
     except Exception as e:
         logger.error(f"Unexpected error fetching OALD senses: {e}")
-        return []
+        return None  # R4-1：同上
 
     return _parse_json_columns(rows, ("examples", "example_patterns"))
 
@@ -1308,7 +1315,7 @@ def get_all_senses(verb: str) -> Dict[str, List[Dict[str, Any]]]:
     }
 
 
-def get_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
+def get_senses(verb: str, limit: int = 200) -> Optional[List[Dict[str, Any]]]:
     """
     取某个动词的 dictionary.db 义位明细（中英对照），供页面展示与文档生成。
 
@@ -1321,6 +1328,8 @@ def get_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
 
     Returns:
         义项列表，JSON 列已解析成 Python 对象（坏值归一成空列表）。
+        查询失败（R4-1 fail-closed）返回 None —— 区别于「词在库中但无义位」的
+        空列表（同 get_oald_senses 口径）。
     """
     try:
         with get_db_cursor() as cursor:
@@ -1335,10 +1344,10 @@ def get_senses(verb: str, limit: int = 200) -> List[Dict[str, Any]]:
             rows = cursor.fetchall()
     except pymysql.Error as e:
         logger.error(f"Failed to fetch senses for '{verb}': {e}")
-        return []
+        return None  # R4-1：查询失败 ≠ 无义位
     except Exception as e:
         logger.error(f"Unexpected error fetching senses: {e}")
-        return []
+        return None  # R4-1：同上
 
     return _parse_json_columns(rows, ("examples", "ch_examples", "synonyms", "antonyms"))
 
@@ -1777,7 +1786,7 @@ def _build_cluster_graph(cursor, cluster_id: int, center, max_members: int) -> D
     }
 
 
-def get_cluster_graph(center: str, max_members: int = 200) -> Dict[str, Any]:
+def get_cluster_graph(center: str, max_members: int = 200) -> Optional[Dict[str, Any]]:
     """
     取「中心词 + 其所属词簇」的完全图，供页面用 graphify 风格可视化。
 
@@ -1826,14 +1835,14 @@ def get_cluster_graph(center: str, max_members: int = 200) -> Dict[str, Any]:
 
     except pymysql.Error as e:
         logger.error(f"Failed to get cluster graph for '{center}': {e}")
-        return empty
+        return None  # R4-1：查询失败 ≠ 该词无簇，页面按「数据不可用」分流
     except Exception as e:
         logger.error(f"Unexpected error building cluster graph: {e}")
-        return empty
+        return None  # R4-1：同上
 
 
 def get_cluster_graph_by_id(cluster_id: int, center: str = None,
-                           max_members: int = 200) -> Dict[str, Any]:
+                           max_members: int = 200) -> Optional[Dict[str, Any]]:
     """
     按簇 id 直接取完全图 —— 这是页面上「切换簇」的入口。
 
@@ -1846,16 +1855,8 @@ def get_cluster_graph_by_id(cluster_id: int, center: str = None,
         max_members: 单簇参与绘制的最大成员数
 
     Returns:
-        与 get_cluster_graph 相同结构
+        与 get_cluster_graph 相同结构；查询失败（R4-1）返回 None。
     """
-    empty = {
-        "center": center or "",
-        "cluster": None,
-        "nodes": [],
-        "links": [],
-        "truncated": False,
-        "complete_edge_count": 0,
-    }
     try:
         with get_db_cursor() as cursor:
             graph = _build_cluster_graph(cursor, cluster_id, center, max_members)
@@ -1869,10 +1870,10 @@ def get_cluster_graph_by_id(cluster_id: int, center: str = None,
         return graph
     except pymysql.Error as e:
         logger.error(f"Failed to get cluster graph for cluster {cluster_id}: {e}")
-        return empty
+        return None  # R4-1：查询失败 ≠ 簇不存在，调用方按「数据不可用」分流
     except Exception as e:
         logger.error(f"Unexpected error building cluster graph {cluster_id}: {e}")
-        return empty
+        return None  # R4-1：同上
 
 
 def list_clusters(limit: int = 500) -> List[Dict[str, Any]]:
@@ -1945,7 +1946,8 @@ def _json_list(value: Any) -> List[Any]:
     return []
 
 
-def get_full_word_graph() -> Dict[str, Any]:
+@st.cache_data(ttl=300, show_spinner=False)
+def get_full_word_graph(cache_scope: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     取全库词间关系图：所有词 + 所有关系边（各簇完全图的并集）。
 
@@ -1957,8 +1959,22 @@ def get_full_word_graph() -> Dict[str, Any]:
       * get_cluster_graph —— 单个词的簇，节点几十个，用于「看清这个词跟谁近义」；
       * get_full_word_graph —— 整库 155 词 / 2143 边，用于「浏览全局语义地图」。
 
+    缓存（R5-2，P1）：本函数一次全量 fetchall 五张表，此前每次 rerun 都重跑，
+    是图谱页最重的查询。现包 st.cache_data(ttl=300)（5 分钟），首参 cache_scope
+    由调用方传 ``mysql_db.cache_scope_key()``（仿 cluster_analysis._load_page_data
+    范式：st.cache_data 的键只含入参，换库必须换缓存槽位，业务库/测试库互不
+    污染；下划线开头参数不参与哈希，**不得**改名为 `_cache_scope`）。
+    灌库脚本（scripts/load_word_library.py 等）若在长驻进程内灌库后需要立即
+    刷新图谱，调用 ``get_full_word_graph.clear()`` 清缓存；脚本进程通常一次
+    性运行不受影响。graph_export 的指纹逻辑消费其返回值：缓存命中返回同一
+    dict，指纹不变 → 产物 URL 不变，行为一致。
+
     nodes 里带 degree（度数），前端据此决定节点大小；带 cluster_label/sub_cat
     供图例分组与信息面板展示。
+
+    Args:
+        cache_scope: 缓存作用域键（cache_scope_key()），None 时调用方自担
+            跨库串缓存风险（仅假游标测试直调时使用）。
 
     Returns:
         {
@@ -1968,9 +1984,9 @@ def get_full_word_graph() -> Dict[str, Any]:
           "clusters": [{"id","label","sub_cat","size","edge_count"}],
           "stats": {"node_count","edge_count","cluster_count"},
         }
+        查询失败（R4-1 fail-closed）返回 None —— 区别于「表在但无数据」的
+        空图（nodes=[]），页面据此分流「数据不可用（勿重跑灌库）」与「未灌入」。
     """
-    empty = {"nodes": [], "links": [], "clusters": [],
-             "stats": {"node_count": 0, "edge_count": 0, "cluster_count": 0}}
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -2034,10 +2050,10 @@ def get_full_word_graph() -> Dict[str, Any]:
             cluster_rows = cursor.fetchall()
     except pymysql.Error as e:
         logger.error(f"Failed to build full word graph: {e}")
-        return empty
+        return None  # R4-1：查询失败 ≠ 未灌数据，页面按「数据不可用」分流
     except Exception as e:
         logger.error(f"Unexpected error building full word graph: {e}")
-        return empty
+        return None  # R4-1：同上
 
     links = [
         {"source": r["source"], "target": r["target"], "relation": r["relation"]}
@@ -2224,6 +2240,26 @@ def get_feedback_data() -> List[Dict[str, Any]]:
         return []
 
 
+def count_feedbacks() -> Optional[int]:
+    """
+    反馈总行数轻量计数（R5-3，P1）：侧边栏数据导出区默认只显示行数 caption，
+    不再每轮 rerun 全表 SELECT * —— 全量取数移到点击导出按钮后按需执行。
+
+    Returns:
+        反馈行数；查询失败返回 None（区别于 0 行，页面据此提示数据不可用）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS n FROM feedbacks")
+            return int(cursor.fetchone()["n"] or 0)
+    except pymysql.Error as e:
+        logger.error(f"Failed to count feedbacks: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error counting feedbacks: {e}")
+        return None
+
+
 # ============================================
 # Statistics Operations
 # ============================================
@@ -2304,7 +2340,9 @@ def get_stats() -> Dict[str, Any]:
         return empty
 
 
-def get_hot_verbs(limit: int = 5) -> List[Dict[str, Any]]:
+@st.cache_data(ttl=60, show_spinner=False)
+def get_hot_verbs(cache_scope: Optional[str] = None,
+                  limit: int = 5) -> List[Dict[str, Any]]:
     """
     Get hot verbs based on **real query frequency**.
 
@@ -2313,7 +2351,12 @@ def get_hot_verbs(limit: int = 5) -> List[Dict[str, Any]]:
     根本不是热门查询。现在以 usage_logs 的查询次数为准，并用待查词的原词形
     关联 definitions/feedbacks 取评分。
 
+    缓存（R5-9，P3）：usage_logs 全表 GROUP BY 每轮 rerun 重算，现包
+    st.cache_data(ttl=60)。首参 cache_scope 由调用方传 cache_scope_key()
+    （同 get_full_word_graph 的跨库隔离口径，换库换缓存槽位）。
+
     Args:
+        cache_scope: 缓存作用域键（cache_scope_key()）
         limit: Maximum number of verbs to return
 
     Returns:
@@ -2728,9 +2771,13 @@ def get_domain_family_examples(word: str, sense_num: int) -> List[Dict[str, Any]
 # MOVECAT 标注平台（义位准入 / 图式五维标注 / 进度与导出）
 # ============================================
 
-def get_annotation_progress() -> List[Dict[str, Any]]:
+def get_annotation_progress() -> Optional[List[Dict[str, Any]]]:
     """逐动词标注进度（oald_senses，研究词表 996 义位 = 992 OALD + 4 人工补充）：
-    义位总数 / 已标注（prototype_level 非空）/ 存疑数。"""
+    义位总数 / 已标注（prototype_level 非空）/ 存疑数。
+
+    查询失败（R4-1 fail-closed）返回 None —— 区别于「表在但词库未灌」的空列表，
+    标注平台/提交流据此分流「数据不可用（勿重跑灌库）」与「词库为空，可灌库」。
+    """
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -2748,7 +2795,10 @@ def get_annotation_progress() -> List[Dict[str, Any]]:
             return list(cursor.fetchall())
     except pymysql.Error as e:
         logger.error(f"Failed to get annotation progress: {e}")
-        return []
+        return None  # R4-1：查询失败 ≠ 词库为空
+    except Exception as e:
+        logger.error(f"Unexpected error getting annotation progress: {e}")
+        return None  # R4-1：同上
 
 
 def update_sense_annotation(sense_id: int, prototype_level: Optional[str],
