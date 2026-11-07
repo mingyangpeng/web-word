@@ -29,3 +29,24 @@ annotation:
   domain_merging:              # 图式→域的归并假设（可被义位层重聚类推翻）
     domains:
       - {name: 请填写域名, families: [SCHEMA_1, SCHEMA_2]}
+
+# ============================================================
+# 模板拼装节（template_assembly）：释义模板引擎（src/template_engine.py）
+# 的槽位拼装配置 —— 批次 10 R-1 收口后拼装表外置到范畴包（本节），
+# 引擎只保留「特征取值 → 槽位词面」的通用拼装规则（零词类名词）。
+# ⚠️ 必填：范畴包缺本节时引擎 fail-closed（报「范畴包缺 template_assembly」，
+#    不回退任何词类的拼装表）。
+# 用法：按本范畴特征码研制段序与词面（成品样例参照 configs/motion 与
+#       configs/speech 的同名节）；段类型 text/codes/fragments/
+#       value_fragments/values/concat；修饰 joiner/prefix/suffix/
+#       template({value} 占位)/fallback/split_parts/first_only/strip_prefix。
+# 整句骨架：「{header}{主句各段，按 main_joiner 连接}{slots_section}」。
+# ============================================================
+template_assembly:
+  header: "【图式：{schema}】"            # {schema} = 图式名（引擎侧占位符）
+  main_joiner: "，"                       # 主句各段连接符
+  slots_section: "；[可变槽位: {slots}]"  # 槽位清单整节（{slots} = 条目串）
+  slots_joiner: "；"                      # 槽位条目连接符
+  slots_entry: "{label}={value}"          # 单条槽位：特征 label=本义位取值标签
+  slots_empty: "无（全要素簇内共享）"      # 无可变槽位时的清单词面（可按词类改）
+  segments: []                            # ← 占位：按本范畴特征研制主句段序后填写

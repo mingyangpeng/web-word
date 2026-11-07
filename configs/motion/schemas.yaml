@@ -43,3 +43,59 @@ annotation:
       - {name: 方式位移域, families: [MANNER_ACCOMP]}
       - {name: 路径位移域, families: [SOURCE_DETACH, GOAL_ARRIVE]}
       - {name: 互动位移域, families: [INTERACT_MOVE]}
+
+# ============================================================
+# 模板拼装节（template_assembly）—— 释义模板引擎（src/template_engine.py）
+# 的槽位拼装配置。批次 10 R-1 收口：引擎硬编码拼装表逐字迁移入包
+# （_SUBJECT_CODES / _SPEED_CODE / _MANNER_CODES / _MEDIUM_CODES /
+#   _MOTIVATION_CODE / _PATH_FRAGMENTS ＋「自源点出发」等固定词面），
+# 数值与键名的对应关系见各段注释；引擎只保留「特征取值 → 槽位词面」
+# 的通用拼装规则（段类型 text/codes/fragments/value_fragments/values/concat，
+# 修饰 joiner/prefix/suffix/template/fallback/split_parts/first_only/
+# strip_prefix），引擎代码零词类名词（框架文档 §4 纪律）。
+# 整句骨架：「{header}{主句各段，按 main_joiner 连接}{slots_section}」。
+# ============================================================
+template_assembly:
+  header: "【图式：{schema}】"          # {schema} = 图式名（引擎侧占位符）
+  main_joiner: "，"                     # 主句各段连接符
+  slots_section: "；[可变槽位: {slots}]"   # 槽位清单整节（{slots} = 条目串）
+  slots_joiner: "；"                    # 槽位条目连接符
+  slots_entry: "{label}={value}"        # 单条槽位：特征 label=本义位取值标签
+  slots_empty: "无（全要素簇内共享）"     # 无可变槽位时的清单词面
+  segments:                             # 主句段序（空段跳过）
+    # 主体短语 ← _SUBJECT_CODES：M1a–M1d 取 1 的特征 label（去「主体-」前缀）
+    #   按 "/" 连接＋「主体」后缀；无命中 →「主体不限」
+    - codes: [M1a, M1b, M1c, M1d]
+      strip_prefix: "主体-"
+      joiner: "/"
+      suffix: "主体"
+      fallback: "主体不限"
+    # 路径短语 ← _PATH_FRAGMENTS：P1–P4 取 1 时的固定片段（各占主句一段）
+    - fragments:
+        P1: 自源点出发
+        P2: 抵达终点
+        P3: 有界达成
+        P4: 沿垂直轴向
+      split_parts: true
+    # 谓词段 = 方式短语 ＋ 介质短语 ＋ 谓词核心词面（concat 同段拼接）
+    - concat:
+        # 方式短语 ← _SPEED_CODE（P5：值标签+「速」）＋ _MANNER_CODES
+        #   （M2：值标签）按 "、" 连接，「以…方式」包裹
+        - values:
+            - {code: P5, suffix: "速"}
+            - {code: M2}
+          joiner: "、"
+          prefix: "以"
+          suffix: "方式"
+        # 介质短语 ← _MEDIUM_CODES：M3a–M3d 取 1 者（去「介质-」前缀）
+        #   →「在 X 介质中」（首命中）
+        - codes: [M3a, M3b, M3c, M3d]
+          strip_prefix: "介质-"
+          first_only: true
+          template: "在{value}介质中"
+        # 谓词核心词面（固定，迁移自引擎原拼接字面量）
+        - text: "移动"
+    # 动因短语 ← _MOTIVATION_CODE：C1 值标签 →「动因 X」
+    - values:
+        - {code: C1}
+      prefix: "动因"

@@ -65,7 +65,7 @@ from src.cluster_analysis import render_semantic_analysis_page
 from src.template_engine import render_template_page
 from src.semantic_search import render_semantic_search_page
 from src.users_admin_page import render_users_admin_page, ROLE_LABELS, ROLE_BADGE_COLORS
-from src.category_pack import load_pack
+from src.category_pack import CATEGORIES, load_pack
 
 # ============================================
 # 设计系统导入
@@ -2869,10 +2869,15 @@ def render_submission_flow() -> None:
     else:
         st.caption("该义位暂无 LLM 初筛草稿（可直接人工判定）。")
 
-    # ---- 范畴包判定标准（configs/motion 六件套，只读展示）----
-    with st.expander("📋 准入判定标准（configs/motion 范畴包，只读）", expanded=False):
+    # ---- 范畴包判定标准（R-2 收口：按当前标注义位所属范畴取包，只读展示）----
+    # 范畴来源 = 标注页当前选中范畴（session/参数）：本提交流未提供范畴选择
+    # 件（提交流本体的范畴切换属 R-3 范围），取不到时按 CATEGORIES() 首个
+    # 范畴包取数并在 expander 标题注明；提交流接入范畴切换后本取数自动跟随。
+    _ann_cat = CATEGORIES()[0] if CATEGORIES() else ""
+    with st.expander(f"📋 准入判定标准（configs/{_ann_cat or '—'} 范畴包，只读）",
+                     expanded=False):
         try:
-            _adm = load_pack("motion").get("admission") or {}
+            _adm = load_pack(_ann_cat).get("admission") or {}
             _od = str(_adm.get("operational_definition") or "").strip()
             if _od:
                 st.markdown(f"**操作性定义**：{_html_escape(_od)}")
@@ -3233,48 +3238,12 @@ if __name__ == "__main__":
     main()
 
 # ============================================
-# ⚠️ 未来集成说明
+# 历史集成说明（开发者参考——勿以裸字符串书写：Streamlit magic 会渲染顶层字面量）
 # ============================================
-"""
-【已实现的数据库集成】
-1. MOCK_STATS → 从 MySQL 读取 (get_stats)
-2. MOCK_HOT_VERBS → 从 MySQL 统计热门动词 (get_hot_verbs)
-3. MOCK_DEFINITIONS → 待替换为大模型 API 调用返回的真实释义
-4. MOCK_FEEDBACK_DATA → 已替换为真实用户反馈记录 (get_feedback_data → MySQL)
-5. MOCK_FEEDBACK_DATA.to_csv() → 已接入真实数据库导出
-
-【需要新增的 API 调用】
-1. 大模型 API 调用 (DeepSeek/智谱/OpenAI)
-   - 输入：动词
-   - 输出：传统释义 + 优化释义（带语义分解）
-   - 位置：在生成按钮点击时触发
-
-2. 查询日志记录 (insert_query)
-   - 输入：动词、释义结果
-   - 存储：MySQL queries 表插入
-   - 位置：在搜索动词时触发
-
-【已实现的数据库存储 (MySQL 8.0)】
-1. queries 表：记录查询日志
-2. feedbacks 表：记录用户反馈
-3. 热门动词统计：从 queries + feedbacks 联合查询
-"""
-
-# ============================================
-# 技术栈说明
-# ============================================
-"""
-当前技术栈：
-- Streamlit：前端框架
-- Pandas：数据处理
-- Markdown：内容展示
-- PyMySQL：MySQL 8.0 数据库连接
-
-已集成：
-- MySQL 8.0：数据库存储 (queries + feedbacks)
-- 环境变量：数据库连接配置
-
-待添加：
-- OpenAI SDK：大模型 API 调用
-- 日志库：记录查询和反馈
-"""
+# 【已实现的数据库集成】MOCK_STATS→get_stats、MOCK_HOT_VERBS→get_hot_verbs、
+#   MOCK_FEEDBACK_DATA→get_feedback_data（均已接 MySQL）；MOCK_DEFINITIONS 为释义兜底级
+# 【需要新增的 API 调用】大模型调用已在 src/llm_api.py 实现（多提供商四级降级）；
+#   查询日志 insert_query 已实现（usage_logs 表）
+# 【已实现的数据库存储】queries→usage_logs、feedbacks、热门动词统计——均已接入
+#
+# 技术栈：Streamlit / Pandas / PyMySQL · 详见 docs/dev/ARCHITECTURE.md 与 README
