@@ -7,6 +7,8 @@
   * src/dict_admin_db.py   定制属性 EAV（字段定义/弃用/写值）
   * src/users_db.py        花名册与六角色（选人、dict_admin 实时兜底判定）
   * src/media_db.py        媒体资产两表（批次 4 增设 🖼️ 媒体库 tab）
+  * src/registry_db.py     资源登记（批次 11 增设：D⑥ resource_registry，
+                           G6 许可终检的数据面）
 
 是什么（平台架构设计规范 §8/§9 词典管理区阶段 1 MVP）：
   * 主编驾驶舱：项目自检问题清单（绿=✓ 无阻塞）+ AI 台账关键指标卡 + 项目/成员
@@ -22,10 +24,14 @@
     去重「已存在复用」）· 资产列表（按状态筛选）· 绑定资产（四锚 × 用途）·
     绑定列表与审定流转（候选→审定→发布，逐级单步）——**数据资产归词典管理员**
     口径（帮助文档 §4.5/§六：媒体是展示层资产，许可纪律是无许可不入库）。
-  * 📤 出版导出（批次 8 Agent G6；工序 15，G6 闸门执行页）：G6 检查清单三卡
-    （许可终检=resource_registry 逐行 license 审计，表未建灰注占位／体例终检=
-    style.yaml 在场检查，体例工单未建灰注占位／备份新鲜=data/exports 最近快照
-    时间＋mysqldump 最近文件，缺则灰注）＋内容域快照（guards 闸门→
+  * 📤 出版导出（批次 8 Agent G6；工序 15，G6 闸门执行页；批次 11 AV2 灰注
+    转硬检）：G6 检查清单三卡（许可终检=resource_registry 逐行 license 审计，
+    表随页面自举建、0 行=「空过（未登记资源）」注明，有空行=未过 n/m／体例终检
+    =configs/style.yaml 在场＋含 style_version 字段（展示体例版本），缺失=
+    「体例文件未研制」灰注／备份新鲜=data/backups/ 最新 *.sql.gz/*.tar.gz
+    mtime（scripts/backup_db.sh 落地产物），无=「备份任务未运行」灰注）＋
+    🗂️ 资源登记块（登记表单 name/version/coverage/license 必填＋资源清单，
+    registry_db 数据面；双人双签审定线批次 12）＋内容域快照（guards 闸门→
     export_center.build_content_snapshot 只读调用）＋快照清单与状态流转
     （ready→published 需三项全过；ready→revoked 撤销单向不可逆）——**占位项
     不拦内部快照（MANIFEST 如实标注），拦 published**（§15 内容性导出唯一
@@ -63,6 +69,16 @@ PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
   （闸门判定）＋ _advance_export_status（快照状态单步流转，export_center
   契约未含的私有辅助，乐观并发守卫）；页面 _render_publication_tab；
   widget key 前缀 'pub_'（本 tab 内）。
+批次 11 AV2（G6 小尾巴收口：灰注转硬检）：体例终检升级为「style.yaml 在场
+  ＋含 style_version 字段」硬检（纯函数 _g6_style_version，展示体例版本，
+  缺失=「体例文件未研制」占位；体例文件 configs/style.yaml 本批次研制）；
+  备份新鲜升级为扫 data/backups/ 最新 *.sql.gz / *.tar.gz（纯函数
+  _g6_scan_backups，scripts/backup_db.sh 落地产物，无=「备份任务未运行」
+  占位，快照≠灾备备份）；许可终检数据面接通（页面自举
+  registry_db.ensure_resource_registry_tables，0 行=「空过（未登记资源）」
+  注明）；新增 🗂️ 资源登记块（纯函数 _registry_form_error ＋
+  _render_registry_form / _render_registry_table，写路径 guards 闸门后调
+  registry_db.register_resource，UNIQUE(name, version) 去重）。
 """
 
 import hashlib
@@ -77,6 +93,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import streamlit as st
 
 from src import ai_ledger, dict_admin_db, export_center, media_db, org_db
+from src import registry_db
 from src import pipeline_status, users_db
 from src.mysql_db import get_db_cursor
 from src import guards
@@ -125,13 +142,14 @@ GUIDE: Dict[str, Any] = {
         "进度漏斗如实缺位：十五道工序的进度数据源（get_cluster_pipeline_status）"
         "批次 3 才建，本版驾驶舱不画假漏斗，只给自检清单 + 台账指标 + 成员规模三类"
         "真数据。",
-        "G6 出版闸门（架构规范 §3 闸门表 / §15，批次 8 开通）：许可检查＋体例终检"
-        "＋备份新鲜三项全过才允许把 ready 快照标记为 published —— 占位/未过项不拦"
-        "「生成内容域快照」（内部快照，MANIFEST 如实标注、不得对外交付），但拦 "
-        "published 流转；许可终检探 resource_registry 逐行 license（表未建灰注占位"
-        "「资源登记未启用」）、体例终检探 style.yaml 在场（体例工单未建灰注占位）、"
-        "备份新鲜探 data/exports 最近快照与 mysqldump 最近文件（缺则卡内灰注）——"
-        "占位如实展示，绝不画假绿灯。",
+        "G6 出版闸门（架构规范 §3 闸门表 / §15，批次 8 开通、批次 11 灰注转硬检）："
+        "许可检查＋体例终检＋备份新鲜三项全过才允许把 ready 快照标记为 published "
+        "—— 占位/未过项不拦「生成内容域快照」（内部快照，MANIFEST 如实标注、"
+        "不得对外交付），但拦 published 流转；许可终检=resource_registry 逐行 "
+        "license 审计（0 行=空过「未登记资源」注明，有空行=未过 n/m）、体例终检="
+        "configs/style.yaml 在场＋含 style_version 字段（缺失=「体例文件未研制」）、"
+        "备份新鲜=data/backups/ 最新 *.sql.gz/*.tar.gz 灾备产物（无=「备份任务"
+        "未运行」，快照≠灾备备份）——占位如实展示，绝不画假绿灯。",
         "快照状态单向流转：ready→published（G6 全过才可用，published 终态）／"
         "ready→revoked（撤销=作废退出出版通道，单向不可逆，如需再出版须重新生成"
         "快照，防「撤销又复活」的审计断链）；流转带乐观并发守卫（两人同转只有一人"
@@ -154,6 +172,10 @@ GUIDE: Dict[str, Any] = {
         "快照机械（逐表 CSV→zip→export_batches 登记线，角色闸在调用点再校验一次）"
         "＋ list_exports 最近快照清单——本页负责其前置的 G6 三检与 ready 状态后的 "
         "published/revoked 流转（私有单步辅助 _advance_export_status）。",
+        "src/registry_db.py（批次 11）：resource_registry（D⑥ 资源发布域数据面）"
+        "——登记表单 register_resource（name/version/coverage/license 必填，"
+        "UNIQUE(name, version) 去重）＋ list_resources 资源清单；G6 许可终检"
+        "逐行审计的就是这张表。",
     ],
     "steps": [
         "进入「📖 词典管理」先看主编驾驶舱：顶部指标卡给项目数/成员人次/AI 提案总数/"
@@ -178,11 +200,18 @@ GUIDE: Dict[str, Any] = {
         "命中已有资产即提示「已存在，复用」（上传命中可直接转入绑定）；再「绑定资产」"
         "到四锚（词目/义位/例证/图式）并给用途与图注；绑定以「候选」态起步，在绑定"
         "列表逐级单步流转（候选→审定→发布），词条装配只取发布态。",
-        "「📤 出版导出」先读 G6 三卡：许可终检（资源登记未启用时灰注占位）、体例终检"
-        "（style.yaml 不在场时灰注占位）、备份新鲜（无任何备份证据时灰注占位）——"
-        "占位/未过仍可「生成内容域快照」（内部快照，zip 路径/行数/包含表/跳过表如实"
-        "展示），但「标记 published」按钮禁用并注明原因；三项全过后选 ready 快照"
-        "「标记 published」出版交付，或「撤销快照」（ready→revoked，单向不可逆）。",
+        "「📤 出版导出」先读 G6 三卡：许可终检（resource_registry 逐行 license "
+        "审计——0 行=空过「未登记资源」注明，有空 license 行=未过 n/m）、体例终检"
+        "（configs/style.yaml 在场＋含 style_version 字段，展示体例版本；缺失="
+        "「体例文件未研制」占位）、备份新鲜（data/backups/ 灾备产物在场=已过，"
+        "无=「备份任务未运行」占位）——占位/未过仍可「生成内容域快照」（内部快照，"
+        "zip 路径/行数/包含表/跳过表如实展示），但「标记 published」按钮禁用并注明"
+        "原因；三项全过后选 ready 快照「标记 published」出版交付，或「撤销快照」"
+        "（ready→revoked，单向不可逆）。",
+        "「📤 出版导出」的「🗂️ 资源登记」块（D⑥ 数据面）：填资源名称/版本/覆盖"
+        "说明/许可（四项必填）后「登记资源」——同（名称, 版本）重复登记复用既有行"
+        "（UNIQUE 去重），登记留痕 registered_by；下方资源清单实时展示。语料库/"
+        "参考词典/媒体包等一切进入平台的外部资源都应先登记（无许可不入库）。",
     ],
     "notes": [
         "权限口径：本区仅词典管理员（dict_admin）可用；过渡期内置 admin 账号视为兼有 "
@@ -210,12 +239,17 @@ GUIDE: Dict[str, Any] = {
         "形态用规范后缀兜底；扩展名与 MIME 双白名单且须对应，防改名伪装。落盘成功但"
         "登记失败时文件保留在落盘路径，可改走服务器路径登记补登；任何上传失败只 "
         "st.error 提示不抛异常。",
-        "出版导出（批次 8 G6）的如实口径：许可终检在 resource_registry 表未建时是"
-        "**灰注占位**而非硬检（表接入后升级为逐行 license 审计硬检）；体例终检在"
-        "体例工单未建时只验 style.yaml 文件在场（版本对比/工单线升级项）；备份新鲜"
-        "只报 data/exports 最近快照与 mysqldump 最近文件时间（新鲜度阈值未设，运维"
-        "工单接入后再升级）——占位项不拦内部快照（license_checked=0 如实登记），"
-        "拦 published；mysqldump 备份归平台管理员，本页只探测不执行。",
+        "出版导出（批次 11 灰注转硬检后）的口径：许可终检数据面已接通——"
+        "resource_registry 随页面自举建表，逐行 license 审计出硬结论（0 行=空过"
+        "注明，不画假绿灯）；体例终检验 configs/style.yaml 在场＋含 style_version "
+        "字段（体例文件批次 11 研制，版本对比/变更工单线批次 12 接入）；备份新鲜"
+        "主证据=data/backups/ 灾备产物（scripts/backup_db.sh，平台管理员运维线，"
+        "本页只探测不执行），内容域快照只是参考证据（快照≠灾备）——占位项不拦内部"
+        "快照（license_checked=0 如实登记），拦 published；新鲜度阈值（如「24 小时"
+        "内有备份」）待批次 12 运维工单，不编假阈值。",
+        "资源登记（批次 11）的数据面边界：登记=词典管理员（guards 中央闸门后调 "
+        "registry_db.register_resource）；「双人双签」（技术录入＋许可审定两条签署"
+        "线）为批次 12 工单，本版登记行以 registered_by 留痕，审定态字段未开。",
     ],
 }
 
@@ -337,14 +371,21 @@ G6_KEY_LICENSE = "license"
 G6_KEY_STYLE = "style"
 G6_KEY_BACKUP = "backup"
 
-# 体例终检的 style.yaml 候选路径（相对仓库根；体例配置页 6.7 的工单线批次 8
-# 未建，先验「体例文件在场」这一硬前提，在场路径如实展示）
+# 体例终检的 style.yaml 候选路径（相对仓库根；批次 11 起为硬检：文件在场＋
+# 含 style_version 字段才算过——体例文件 configs/style.yaml 批次 11 研制；
+# 版本对比/变更工单线归体例配置页 6.7，批次 12 接入）
 _G6_STYLE_CANDIDATE_RELS = (
     "configs/style.yaml", "config/style.yaml", "data/style.yaml", "style.yaml",
 )
 
-# 许可终检探测的表名（D⑥ 资源发布域 resource_registry：许可必填、双人双签；
-# 批次 8 表未建 → 灰注「资源登记未启用」占位）
+# style_version 字段解析（体例终检硬检项；允许行尾注释与成对引号）
+_G6_STYLE_VERSION_RE = re.compile(
+    r"^\s*style_version:\s*(?P<value>.+?)\s*(?:#.*)?$"
+)
+
+# 许可终检审计的表名（D⑥ 资源发布域 resource_registry：许可必填、双人双签；
+# 批次 11 起数据面接通——页面自举 ensure_resource_registry_tables 建表，
+# 许可终检按逐行 license 审计出硬结论，不再以「表未建」灰注常态存在）
 _G6_LICENSE_TABLE = "resource_registry"
 
 
@@ -726,9 +767,51 @@ def _render_cockpit_tab() -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>🩺 项目自检（≥1 名在用 chief 等约束）</h3>",
                 unsafe_allow_html=True)
     if not projects:
-        st.info("尚无词典项目：项目壳由平台管理员创建（org_db.create_project），"
-                "创建后此处逐项目体检。")
-        return
+        st.info("尚无词典项目：在下方「🏗️ 创建项目（建壳）」建壳并指定首位词典管理员。")
+
+    # —— 建壳表单（批次 12 修复：创建项目此前无 UI 入口，词典管理链整体空转）——
+    # 口径（架构 §8）：项目壳由平台管理员建壳并指定首位 chief；词典管理员亦可为
+    # 自己的课题建壳（本区门已含 dict_admin）。chief 候选=有效六角色含 dict_admin
+    # 的在用账号（首位词典管理员须能履行词典管理员职能）。
+    me = _current_user() or {}
+    candidates = []
+    for u in users_db.list_users():
+        if not u.get("active", True):
+            continue
+        eff = users_db.effective_six_roles(u)
+        if "dict_admin" in eff:
+            candidates.append(u)
+    chief_opts = {f"{_esc(u['display_name'])}（{u['username']}）": int(u["id"])
+                  for u in candidates}
+    with st.expander("🏗️ 创建项目（建壳并指定首位词典管理员）"):
+        if not chief_opts:
+            st.warning("当前没有可任 chief 的账号（有效角色含 dict_admin）——"
+                       "请先在「👥 账号管理」为用户授予 dict_admin。")
+        else:
+            with st.form("dict_admin_project_create_form", clear_on_submit=True):
+                pname = st.text_input("项目名称", key="dict_admin_proj_name")
+                pcats = st.text_input("范畴包（逗号分隔，如 motion, speech）",
+                                      value="motion", key="dict_admin_proj_cats")
+                pchief = st.selectbox("首位词典管理员（chief）",
+                                      options=list(chief_opts.keys()),
+                                      key="dict_admin_proj_chief")
+                pdesc = st.text_input("项目描述（可空）", key="dict_admin_proj_desc")
+                if st.form_submit_button("创建项目"):
+                    name = pname.strip()
+                    if not name:
+                        st.error("项目名称必填。")
+                    else:
+                        cats = [c.strip() for c in pcats.split(",") if c.strip()]
+                        pid = org_db.create_project(
+                            name, chief_opts[pchief], cats or ["motion"],
+                            description=pdesc.strip())
+                        if pid:
+                            st.success(f"项目 #{pid}「{name}」已建壳，"
+                                       "chief 已同事务入册——可在「👥 项目成员」与"
+                                       "「🏷️ 定制属性」继续配置。")
+                            st.rerun()
+                        else:
+                            st.error("建壳失败（名称重复或数据库异常），详见服务端日志。")
     for p in projects:
         pid = int(p.get("id") or 0)
         name = str(p.get("name") or f"项目#{pid}")
@@ -1674,11 +1757,14 @@ def _g6_license_summary(
 ) -> Dict[str, str]:
     """G6 ① 许可终检（施工规范 §12）：resource_registry 逐行 license 审计。
 
-    口径（架构规范 §3 G6「许可检查」/ D⑥ 许可纪律）：
-      * resource_registry 表未建（资源发布域批次 8 未接入）或库不可用 →
-        灰注占位「资源登记未启用」；
-      * 表在场 → 逐行审计：license 空值行 >0 → 未过（无许可资源不得出版）；
-        全部非空（含 0 行审计空过）→ 已过，行数如实展示。
+    口径（架构规范 §3 G6「许可检查」/ D⑥ 许可纪律；批次 11 灰注转硬检——
+    表随页面自举 registry_db.ensure_resource_registry_tables 建，数据面
+    接通后本卡常态出硬结论）：
+      * resource_registry 表未建（自举建表未生效）或库不可用 →
+        灰注占位（降级如实，不画假绿灯）；
+      * 表在场 → 逐行审计：license 空值行 >0 → 未过（❌ n/m 为空，
+        无许可资源不得出版）；全非空 → 已过（✅ n 行）；
+        0 行 → 已过但注明「空过（未登记资源）」。
 
     Args:
         exists_fn: 表在场探测（True/False，None=探测失败）；缺省查库。
@@ -1703,8 +1789,8 @@ def _g6_license_summary(
     if not present:
         return _g6_check(
             G6_KEY_LICENSE, G6_PLACEHOLDER, "许可终检",
-            "资源登记未启用（resource_registry 表未建，D⑥ 资源发布域未接入）："
-            "许可终检占位 —— 表接入后逐行 license 审计；"
+            "resource_registry 表未建（页面自举建表未生效，D⑥ 数据面未接通）："
+            "许可终检占位 —— 建表接通后逐行 license 审计；"
             "占位不拦内部快照、拦 published。",
         )
     try:
@@ -1725,7 +1811,8 @@ def _g6_license_summary(
     if total == 0:
         return _g6_check(
             G6_KEY_LICENSE, G6_PASSED, "许可终检",
-            "resource_registry 已建、暂无登记资源（0 行审计空过）。",
+            "resource_registry 已建：0 行审计空过（未登记资源）—— 登记后"
+            "逐行许可审计才有实质约束。",
         )
     return _g6_check(
         G6_KEY_LICENSE, G6_PASSED, "许可终检",
@@ -1733,14 +1820,38 @@ def _g6_license_summary(
     )
 
 
-def _g6_style_summary(candidates: Optional[List[str]] = None) -> Dict[str, str]:
-    """G6 ② 体例终检：style.yaml 版本在场检查（在场→已过；全缺→灰注占位）。
+def _g6_style_version(path: str) -> Optional[str]:
+    """从 style.yaml 文本解析 style_version 字段值（纯函数；无字段返回 None）。
 
-    体例工单（style.yaml 查看＋版本对比＋变更工单，帮助文档 6.7）批次 8 未建，
-    本版只验「体例文件在场」这一硬前提：候选路径（configs/、config/、data/、
-    仓库根）任一存在 style.yaml → 已过（在场路径如实展示，版本解析归体例
-    工单）；全部缺位 → 灰注「体例工单未建」占位 —— 占位不拦内部快照、
-    拦 published。
+    体例终检硬检口径（批次 11）：configs/style.yaml 在场**且**含
+    ``style_version:`` 字段才算体例文件已研制。版本行形如
+    ``style_version: 1.0``（允许行尾注释与成对引号）——只解析这一个键，
+    不引完整 YAML 解析：本检查不该被 YAML 语法错误拖垮，正则足够。
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return None
+    for line in text.splitlines():
+        matched = _G6_STYLE_VERSION_RE.match(line)
+        if matched:
+            version = matched.group("value").strip().strip("'\"").strip()
+            return version or None
+    return None
+
+
+def _g6_style_summary(candidates: Optional[List[str]] = None) -> Dict[str, str]:
+    """G6 ② 体例终检：style.yaml 在场＋style_version 字段硬检（批次 11 接真）。
+
+    口径（架构规范 §3 G6「体例终检」/ §7 词典层体例文件）：
+      * 候选路径（configs/、config/、data/、仓库根）任一存在 style.yaml
+        **且**能解析出 style_version 字段 → 已过（在场路径与体例版本如实
+        展示）；
+      * 文件在场但缺 style_version 字段 → 占位（体例文件研制不完整）；
+      * 全部缺位 → 占位「体例文件未研制」；
+      * 工单线（体例配置页 6.7 的版本对比/变更工单）批次 12 接入后升级为
+        版本对比检查；占位不拦内部快照、拦 published。
 
     Args:
         candidates: 候选绝对路径清单（测试可注入 tmp_path）；缺省取模块常量
@@ -1757,46 +1868,98 @@ def _g6_style_summary(candidates: Optional[List[str]] = None) -> Dict[str, str]:
         except OSError:  # 防御：异常路径按缺位处理，不让单路径拖垮检查
             continue
     if found:
+        version: Optional[str] = None
+        for path in found:
+            version = _g6_style_version(path)
+            if version:
+                break
         shown: List[str] = []
         for path in found[:2]:
             try:
                 shown.append(os.path.relpath(path, _MEDIA_UPLOAD_BASE))
             except ValueError:  # 跨盘等 relpath 失败 → 原样展示
                 shown.append(path)
+        if version:
+            return _g6_check(
+                G6_KEY_STYLE, G6_PASSED, "体例终检",
+                f"style.yaml 在场：{'、'.join(shown)}（体例版本 style_version "
+                f"{version}，五节体例已研制；版本对比与变更工单归体例配置页 "
+                "6.7，批次 12 工单线接入）。",
+            )
         return _g6_check(
-            G6_KEY_STYLE, G6_PASSED, "体例终检",
-            f"style.yaml 在场：{'、'.join(shown)}（版本对比与变更工单归体例配置页 "
-            "6.7，工单线接入后升级为版本在场检查）。",
+            G6_KEY_STYLE, G6_PLACEHOLDER, "体例终检",
+            f"style.yaml 在场但未含 style_version 字段（{'、'.join(shown)}）："
+            "体例文件研制不完整 —— 补 style_version 后转硬检；"
+            "占位不拦内部快照、拦 published。",
         )
     return _g6_check(
         G6_KEY_STYLE, G6_PLACEHOLDER, "体例终检",
-        "style.yaml 不在场（体例工单未建）：体例终检占位 —— 工单线接入后按 "
-        "style.yaml 版本在场检查；占位不拦内部快照、拦 published。",
+        "style.yaml 不在场（体例文件未研制）：体例终检占位 —— 体例文件按架构"
+        "规范 §7 词典层清单研制入 configs/ 后转硬检；占位不拦内部快照、"
+        "拦 published。",
     )
 
 
-def _g6_backup_summary(
-    export_root: Any = None, data_root: Any = None
-) -> Dict[str, str]:
-    """G6 ③ 备份新鲜：data/exports 最近快照时间 ＋ mysqldump 最近文件时间。
+def _g6_scan_backups(backups_root: Any) -> Tuple[Optional[float], str]:
+    """扫灾备根内最新 *.sql.gz / *.tar.gz（纯文件系统函数，tests 注 tmp_path）。
 
-    口径（施工规范 §12「备份新鲜=data/exports 与 mysqldump 最近时间」）：
-      * 扫 exports 根的 snapshot-* 目录与 data 根的 *.sql 文件，各取最近
-        mtime 如实展示；**mysqldump 未探测到 → 卡内灰注**（运维备份三件套归
-        平台管理员，词典管理区只探测不执行）；
-      * 两类备份证据全缺 → 占位「尚无备份证据」；
-      * 新鲜度阈值未设（运维工单未建）—— MVP 口径＝备份证据在场＋最近时间
-        如实展示，docstring/GUIDE 留痕，不编「X 天内」假阈值。
+    口径（批次 11 备份新鲜硬检）：灾备备份＝scripts/backup_db.sh 落地产物
+    （db/YYYYMMDD-HHMM.sql.gz ＋ media/YYYYMMDD-HHMM-media.tar.gz 同批），
+    全树递归取最新 mtime；目录不存在 / 扫描失败 / 无匹配文件 → (None, '')。
+
+    Returns:
+        tuple: (最新 mtime, 相对 backups_root 的文件路径)；无产物 (None, '')。
+    """
+    root = str(backups_root)
+    latest_ts: Optional[float] = None
+    latest_rel = ""
+    try:
+        for dirpath, _dirnames, filenames in os.walk(root):
+            for fname in filenames:
+                low = fname.lower()
+                if not (low.endswith(".sql.gz") or low.endswith(".tar.gz")):
+                    continue
+                try:
+                    ts = os.stat(os.path.join(dirpath, fname)).st_mtime
+                except OSError:
+                    continue
+                if latest_ts is None or ts > latest_ts:
+                    latest_ts = ts
+                    try:
+                        latest_rel = os.path.relpath(
+                            os.path.join(dirpath, fname), root)
+                    except ValueError:  # 跨盘等 relpath 失败 → 文件名兜底
+                        latest_rel = fname
+    except OSError as e:
+        logger.warning(f"G6 备份新鲜：backups 目录扫描失败（{root}）: {e}")
+        return None, ""
+    return latest_ts, latest_rel
+
+
+def _g6_backup_summary(
+    export_root: Any = None, backups_root: Any = None
+) -> Dict[str, str]:
+    """G6 ③ 备份新鲜：data/backups 灾备产物 mtime ＋ data/exports 最近快照。
+
+    口径（批次 11 接真；架构规范 §6 备份三件套 / §15 运维性备份归平台管理员）：
+      * 主证据＝data/backups/ 树内最新 *.sql.gz / *.tar.gz（备份脚本
+        scripts/backup_db.sh 的落地产物）；参考证据＝data/exports 最近
+        snapshot-* 目录（内容域快照是交付物，**快照≠灾备备份**）；
+      * 灾备产物在场 → 已过（两条时间如实展示）；
+      * 灾备产物缺席 → 占位「备份任务未运行」（即使快照在场）；
+      * 新鲜度阈值（如「24 小时内有备份」）未设：运维工单未建，不编假阈值，
+        本版只验「在场＋时间如实展示」；阈值化归批次 12 运维工单。
 
     Args:
         export_root: exports 根（缺省 export_center.EXPORT_ROOT；测试注入 tmp_path）。
-        data_root: data 根（缺省仓库 data/；测试注入 tmp_path）。
+        backups_root: 灾备根（缺省仓库 data/backups；测试注入 tmp_path）。
     """
     root = str(export_root) if export_root is not None else str(
         export_center.EXPORT_ROOT)
-    droot = str(data_root) if data_root is not None else os.path.join(
-        _MEDIA_UPLOAD_BASE, "data")
+    broot = str(backups_root) if backups_root is not None else os.path.join(
+        _MEDIA_UPLOAD_BASE, "data", "backups")
 
+    backup_ts, backup_rel = _g6_scan_backups(broot)
     snap_ts: Optional[float] = None
     try:
         with os.scandir(root) as it:
@@ -1811,38 +1974,31 @@ def _g6_backup_summary(
                     snap_ts = ts
     except OSError as e:
         logger.warning(f"G6 备份新鲜：exports 目录扫描失败（{root}）: {e}")
-    dump_ts: Optional[float] = None
-    try:
-        with os.scandir(droot) as it:
-            for entry in it:
-                if not entry.is_file() or not entry.name.lower().endswith(".sql"):
-                    continue
-                try:
-                    ts = entry.stat().st_mtime
-                except OSError:
-                    continue
-                if dump_ts is None or ts > dump_ts:
-                    dump_ts = ts
-    except OSError as e:
-        logger.warning(f"G6 备份新鲜：data 目录扫描失败（{droot}）: {e}")
 
     def _fmt(ts: Optional[float]) -> str:
         return "—" if ts is None else datetime.fromtimestamp(ts).strftime(
             "%Y-%m-%d %H:%M")
 
-    if snap_ts is None and dump_ts is None:
+    if backup_ts is None:
+        if snap_ts is None:
+            return _g6_check(
+                G6_KEY_BACKUP, G6_PLACEHOLDER, "备份新鲜",
+                "备份任务未运行（data/backups/ 未探测到 *.sql.gz / *.tar.gz "
+                "灾备产物、data/exports 亦无内容域快照）：由平台管理员运行 "
+                "scripts/backup_db.sh 或配置 cron（§6 备份三件套）；"
+                "占位不拦内部快照、拦 published。",
+            )
         return _g6_check(
             G6_KEY_BACKUP, G6_PLACEHOLDER, "备份新鲜",
-            "尚无备份证据（data/exports 无内容域快照、data/ 未探测到 mysqldump "
-            "*.sql 文件）：先「生成内容域快照」，或由平台管理员执行灾备备份；"
-            "占位不拦内部快照、拦 published。",
+            "备份任务未运行（data/backups/ 未探测到 *.sql.gz / *.tar.gz 灾备"
+            "产物）：仅有内容域快照 " + _fmt(snap_ts) + "（快照≠灾备备份，"
+            "§15 运维性备份归平台管理员）——运行 scripts/backup_db.sh 或配 "
+            "cron 后转已过；占位不拦内部快照、拦 published。",
         )
-    parts = [f"最近内容域快照：{_fmt(snap_ts)}"]
-    if dump_ts is not None:
-        parts.append(f"最近 mysqldump：{_fmt(dump_ts)}")
-    else:
-        parts.append("mysqldump 备份未探测到（灰注：运维备份线未接入，灾备三件套"
-                     "归平台管理员，详见架构规范 §10）")
+    parts = [
+        f"最近灾备备份（data/backups）：{_fmt(backup_ts)}（{backup_rel}）",
+        f"最近内容域快照：{_fmt(snap_ts)}",
+    ]
     return _g6_check(
         G6_KEY_BACKUP, G6_PASSED, "备份新鲜", "；".join(parts) + "。",
     )
@@ -1853,13 +2009,13 @@ def _g6_checklist(
     stats_fn: Optional[Callable[[], Tuple[int, int]]] = None,
     style_candidates: Optional[List[str]] = None,
     export_root: Any = None,
-    data_root: Any = None,
+    backups_root: Any = None,
 ) -> List[Dict[str, str]]:
     """G6 三卡组装（顺序固定：许可 → 体例 → 备份；各卡独立降级不互相拖垮）。"""
     return [
         _g6_license_summary(exists_fn, stats_fn),
         _g6_style_summary(style_candidates),
-        _g6_backup_summary(export_root, data_root),
+        _g6_backup_summary(export_root, backups_root),
     ]
 
 
@@ -2084,13 +2240,147 @@ def _render_exports_flow(
                            "或数据库不可用。")
 
 
+# ============================================
+# 🗂️ 资源登记（批次 11 AV2：D⑥ resource_registry 数据面——G6 许可终检取数表）
+# ============================================
+
+# 表单字段上限（registry_db 列宽同款：应用层先拒超长值，不入库）
+_REGISTRY_FORM_LIMITS = {
+    "name": registry_db.MAX_NAME_LEN,
+    "version": registry_db.MAX_VERSION_LEN,
+    "coverage": registry_db.MAX_COVERAGE_LEN,
+    "license": registry_db.MAX_LICENSE_LEN,
+}
+
+
+def _registry_form_error(name: Any, version: Any, coverage: Any,
+                         license_text: Any) -> Optional[str]:
+    """资源登记表单校验（纯函数）：必填缺失/超长返回错误文案，合法返回 None。
+
+    口径（D⑥ resource_registry：name/version/coverage/license 四项必填；
+    长度上限与 registry_db 列宽一致）。页面先给可读错误，registry_db 数据层
+    再拒一道（纵深防御）。
+    """
+    checks = (
+        ("name", "资源名称", name),
+        ("version", "资源版本", version),
+        ("coverage", "覆盖说明", coverage),
+        ("license", "许可（license）", license_text),
+    )
+    for key, label, value in checks:
+        if not isinstance(value, str) or not value.strip():
+            if key == "license":
+                return "许可（license）必填：无许可资源不得登记（D⑥ 许可纪律）。"
+            return f"{label}必填。"
+        if len(value.strip()) > _REGISTRY_FORM_LIMITS[key]:
+            return f"{label}超长（≤{_REGISTRY_FORM_LIMITS[key]} 字符）。"
+    return None
+
+
+def _render_registry_table(resources: List[Dict[str, Any]]) -> None:
+    """已登记资源只读表（ID/名称/版本/覆盖/许可/登记人/登记时间）。"""
+    rows = [
+        [
+            str(int(r.get("id") or 0)),
+            _esc(str(r.get("name") or "")),
+            _esc(str(r.get("version") or "")),
+            _esc(str(r.get("coverage") or "")),
+            _esc(str(r.get("license") or "")),
+            _esc(str(r.get("registered_by") or "—")),
+            _esc(str(r.get("created_at") or "—")),
+        ]
+        for r in resources
+    ]
+    _render_table(
+        ["ID", "资源名称", "版本", "覆盖说明", "许可", "登记人", "登记时间"],
+        rows,
+    )
+
+
+def _render_registry_form(me: Dict[str, Any]) -> None:
+    """资源登记表单：name/version/coverage/license 四项必填。
+
+    写路径纵深防御（§15）：tab 入口已过角色门，登记调用点再过
+    guards.require_dict_admin 中央闸门，通过后调 registry_db.register_resource
+    （数据层守卫：必填/超长先拒，UNIQUE(name, version) 去重复用既有行）。
+    """
+    st.caption(
+        "外部资源（语料库/参考词典/媒体包等）进入平台先在此登记：四项必填，"
+        "同（名称, 版本）重复登记复用既有行；**许可必填** —— 无许可资源根本"
+        "进不了库（D⑥ 许可纪律），G6 许可终检逐行审计的就是本表。双人双签"
+        "审定线（技术录入＋词典管理员审定）批次 12 接入。"
+    )
+    col_a, col_b = st.columns(2)
+    with col_a:
+        name = st.text_input("资源名称（如 enTenTen21）", key="pub_reg_name")
+        coverage = st.text_input(
+            "覆盖说明（如 996 全义项）", key="pub_reg_coverage")
+    with col_b:
+        version = st.text_input("资源版本（如 2021）", key="pub_reg_version")
+        license_text = st.text_input(
+            "许可（如 CC BY 4.0）", key="pub_reg_license")
+    if st.button("🗂️ 登记资源", key="pub_reg_submit", type="primary"):
+        err = _registry_form_error(name, version, coverage, license_text)
+        if err:
+            st.error(f"⛔ {err}")
+            return
+        try:
+            guards.require_dict_admin()
+        except PermissionError as e:
+            st.error(f"⛔ {e}")
+            return
+        rid = registry_db.register_resource(
+            name, version, coverage, license_text,
+            registered_by=str(me.get("username") or ""),
+        )
+        if rid:
+            st.success(
+                f"资源已登记：#{rid}（同（名称, 版本）已存在时复用既有登记行；"
+                "许可变更批次 12 走审定工单。）"
+            )
+            logger.info(
+                f"dict_admin {me.get('username')} 登记资源 #{rid}："
+                f"{name} v{version}（coverage={coverage}, "
+                f"license={license_text}）"
+            )
+        else:
+            st.error(
+                "登记未生效（数据层校验拒绝或数据库不可用，详见服务端日志）。"
+            )
+
+
+def _render_resource_registry_section(me: Dict[str, Any]) -> None:
+    """🗂️ 资源登记块（登记表单＋资源清单；清单读取降级不拖垮本 tab）。"""
+    st.markdown("")
+    st.markdown(
+        f"<h4 style='{HEADER_H3}'>🗂️ 资源登记（D⑥ 资源发布域数据面）</h4>",
+        unsafe_allow_html=True,
+    )
+    try:
+        resources = registry_db.list_resources(limit=50)
+    except Exception as e:  # noqa: BLE001 —— list_resources 常态自降级为 []
+        logger.warning(f"资源清单读取异常: {e}")
+        resources = []
+    if resources:
+        _render_registry_table(resources)
+    else:
+        st.info(
+            "暂无登记资源：语料库（enTenTen21）、参考词典（OALD/现汉7）、媒体包"
+            "等进入平台的外部资源都应在此登记（license 必填）——登记后 G6 许可"
+            "终检的逐行审计才有了审计对象。"
+        )
+    st.markdown("")
+    _render_registry_form(me)
+
+
 def _render_publication_tab(me: Dict[str, Any]) -> None:
     """📤 出版导出：G6 闸门执行页（工序 15；§15 内容性导出唯一权利人=词典管理员）。
 
-    三卡检查清单（许可终检/体例终检/备份新鲜）＋内容域快照（生成＋清单＋
-    ready→published / ready→revoked 单步流转）：占位项不拦内部快照、拦
-    published；快照生成与状态流转都在 guards.require_dict_admin 闸门之后
-    （纵深防御：tab 入口已过角色门，写路径调用点再过中央闸门）。
+    G6 三卡检查清单（许可终检/体例终检/备份新鲜——批次 11 灰注转硬检）＋
+    🗂️ 资源登记块（许可终检数据面）＋内容域快照（生成＋清单＋ready→published /
+    ready→revoked 单步流转）：占位项不拦内部快照、拦 published；快照生成/
+    资源登记/状态流转都在 guards.require_dict_admin 闸门之后（纵深防御：
+    tab 入口已过角色门，写路径调用点再过中央闸门）。
     """
     st.markdown(f"<h3 style='{HEADER_H3}'>🚧 G6 出版闸门检查清单（装配→出版）</h3>",
                 unsafe_allow_html=True)
@@ -2101,6 +2391,7 @@ def _render_publication_tab(me: Dict[str, Any]) -> None:
     checks = _g6_checklist()
     gate_open = _render_g6_checklist(checks)
     blockers = _g6_gate_blockers(checks)
+    _render_resource_registry_section(me)
     _render_snapshot_builder(_g6_license_passed(checks), me)
     st.markdown("")
     st.markdown(f"<h4 style='{HEADER_H3}'>🗂️ 快照清单与状态流转</h4>",
@@ -2117,7 +2408,8 @@ def _render_publication_tab(me: Dict[str, Any]) -> None:
 
 def render_dict_admin_page() -> None:
     """📖 词典管理区入口（区级页面；页内八 tab，集成步骤挂进 app.py；
-    批次 8 G6 末位增「📤 出版导出」tab —— G6 三卡检查清单＋内容域快照）。
+    批次 8 G6 末位增「📤 出版导出」tab；批次 11 该 tab 增「🗂️ 资源登记」块，
+    G6 三卡灰注转硬检）。
 
     role gate 在函数入口（纵深防御 §6-4）：未登录提示登录；会话判定不过时
     再实时查库兜底；两层都不过渲染 st.warning「仅词典管理员」并 return ——
@@ -2134,11 +2426,14 @@ def render_dict_admin_page() -> None:
 
     # 页面自举：业务表幂等就位（CREATE TABLE IF NOT EXISTS，开销可忽略；
     # users 表由登录链路的 ensure_user_tables 先行，这里顺带再兜一次；
-    # 媒体两表随批次 4 媒体库 tab 一并就位）
+    # 媒体两表随批次 4 媒体库 tab 一并就位；resource_registry 随批次 11
+    # 出版 tab 的资源登记块与 G6 许可终检一并就位——表在场后许可终检
+    # 出硬结论，不再以「表未建」灰注常态存在）
     org_db.ensure_org_tables()
     ai_ledger.ensure_ai_ledger_tables()
     dict_admin_db.ensure_dict_admin_tables()
     media_db.ensure_media_tables()
+    registry_db.ensure_resource_registry_tables()
 
     st.markdown(f"<h1 style='{HEADER_H1}'>📖 词典管理</h1>", unsafe_allow_html=True)
     st.markdown(
@@ -2149,7 +2444,8 @@ def render_dict_admin_page() -> None:
         "主编驾驶舱（自检 + AI 台账指标）· 项目成员（三级权限链第二级）· "
         "定制属性（EAV 字段与锚值）· 数据导入（批次台账，业务写入批次 3）· "
         "词条浏览器 · 任务分配（回避制/负荷上限校验批次 3）· "
-        "媒体库（上传/登记/绑定/审定，双轨登记）· 出版导出（G6 闸门执行页）。"
+        "媒体库（上传/登记/绑定/审定，双轨登记）· 出版导出（G6 闸门执行页＋"
+        "资源登记数据面，批次 11 三卡灰注转硬检）。"
     )
 
     # 批次 2 集成：数据工具页（G）与任务分配 tab（H）并入本区——
@@ -2158,7 +2454,10 @@ def render_dict_admin_page() -> None:
     # 本区新增 🖼️ 媒体库 tab（媒体登记/绑定/审定，media_db 常量做下拉）；
     # 批次 8：媒体库开通上传落盘通道（登记双轨，见 _render_media_upload_form）；
     # 批次 8 G6：末位增 📤 出版导出 tab（G6 三卡检查清单＋内容域快照，
-    # export_center 只读调用，状态流转为本模块私有单步辅助）。
+    # export_center 只读调用，状态流转为本模块私有单步辅助）；
+    # 批次 11：出版 tab 增 🗂️ 资源登记块（registry_db 数据面，G6 许可终检
+    # 取数表），三卡灰注转硬检（体例=style.yaml+style_version，备份=
+    # data/backups 灾备产物）。
     import src.data_pages as data_pages
     import src.collab_pages as collab_pages
 
