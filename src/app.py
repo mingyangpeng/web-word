@@ -113,8 +113,7 @@ DB_AVAILABLE = False
 try:
     # Initialize MySQL database
     if init_database():
-        DB_AVAILABLE = True
-        st.success("✅ 数据库连接成功")
+        DB_AVAILABLE = True   # 连接成功保持静默：健康是默认态，状态看侧边栏底部圆点
     else:
         st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
 except Exception as e:
@@ -1729,6 +1728,12 @@ def render_sidebar():
 
     st.sidebar.divider()
 
+    # 数据库状态（极简一行：健康绿点/离线红点——代替旧版顶部 success 大横幅）
+    st.sidebar.markdown(
+        f"<p style='color:{'#48bb78' if DB_AVAILABLE else '#e53e3e'};font-size:0.8rem;"
+        f"margin:4px 0;'>{'🟢 MySQL 已连接' if DB_AVAILABLE else '🔴 MySQL 离线 · 功能降级'}</p>",
+        unsafe_allow_html=True,
+    )
     st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 数据导出</h2>", unsafe_allow_html=True)
 
     if DB_AVAILABLE:
