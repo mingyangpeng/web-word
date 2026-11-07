@@ -7,6 +7,9 @@
      c) 导出 CSV 单元格防公式注入（= 开头被前置单引号）。
   2. 配置桥接：cs 范畴代号（RUN）→ configs 范畴包（motion）的解析。
   3. MySQL 路径：真实 RUN 数据抽验（run-S1 对照论文样例），无库则 skip。
+  4. 批次 10 R-1 收口（拼装表外置进范畴包 template_assembly 节）：
+     speech 拼装节渲染言说动词口径词面 / 缺节 fail-closed（不回退
+     motion）/ motion 整句逐字护栏（收口前后渲染逐字相同）。
 """
 
 import csv
@@ -391,6 +394,143 @@ class TestResolvePack:
         monkeypatch.setattr(category_pack, "CATEGORIES", lambda: ())
         with pytest.raises(category_pack.CategoryPackError):
             te.resolve_pack("__nonexistent__", ["X9"])
+
+
+# ============================================
+# d) 批次 10 R-1 收口：拼装表外置（template_assembly 节）
+# ============================================
+
+@pytest.fixture(scope="module")
+def speech_meta():
+    """speech 范畴包特征元数据（言说动词验证帧；R-1 收口后渲染词面参照系）。"""
+    return te._feature_meta(load_pack("speech"))
+
+
+def speech_vector(**overrides):
+    """speech 全默认基线向量（S1 声道 = nominal 字符串值域原值）＋覆盖项。"""
+    base = {"I1": 0, "I2": 0, "I3": 0, "S1": "oral", "R1": 0, "R2": 0, "A1": 0}
+    base.update(overrides)
+    return base
+
+
+class TestMotionRenderVerbatim:
+    """护栏：motion 渲染逐字不变（R-1 收口 = 拼装表逐字迁移入包，非重设计）。"""
+
+    def test_run_s1_full_text_verbatim(self, feature_meta):
+        """run-S1 合成场景整句模板与收口前引擎输出逐字相同。"""
+        vecs = [_synthetic_run_s1_vector(), mkvector(M1a=1, M3a=1),
+                mkvector(M1a=1, M3a=1), mkvector(M1a=1, M3a=1)]
+        cluster_schema = _synthetic_cluster_schema(feature_meta, vecs)
+        tpl = te.build_template(
+            {"sense_id": 1, "lemma": "run", "sense_no": "1",
+             "sense_label": "足部奔跑义", "language": "en", "status": "目标",
+             "tag": None, "register": None, "subject_type": None,
+             "source_dict": "OALD10", "definition": RUN_S1_DEFINITION},
+            _synthetic_run_s1_vector(), cluster_schema, feature_meta)
+        assert tpl["template_text"] == (
+            "【图式：方式伴随图式】人/动物主体，以低速、一般方式在陆地介质中移动，"
+            "动因自主；[可变槽位: 主体-动物=动物主体；情态急促度=一般；动因=自主]")
+
+    def test_flee_full_text_verbatim(self, feature_meta):
+        """flee 式场景（P1=1 受迫）整句模板逐字不变（含路径片段与回退主体）。"""
+        vec = mkvector(P1=1, C1=1, M2=2, M3a=1)
+        cluster_schema = _synthetic_cluster_schema(feature_meta, [vec] * 4)
+        tpl = te.build_template(
+            {"sense_id": 9, "lemma": "flee", "sense_no": "1",
+             "sense_label": "逃离义", "language": "en", "status": "目标",
+             "tag": None, "register": None, "subject_type": None,
+             "source_dict": "OALD10", "definition": "[intransitive]to leave"},
+            vec, cluster_schema, feature_meta)
+        assert tpl["template_text"] == (
+            "【图式：源点脱离图式】主体不限，自源点出发，以低速、急促方式在陆地介质"
+            "中移动，动因受迫；[可变槽位: 无（全要素簇内共享）]")
+
+
+class TestSpeechTemplateAssembly:
+    """speech 包 template_assembly 节：render_template_text 产出言说动词口径释义。"""
+
+    def test_renders_speech_wordings_without_motion_residue(self, speech_meta):
+        """断言义向量 → 受话/引语/声道/话题/取向/正式度全按拼装节出词面。"""
+        text = te.render_template_text(
+            speech_meta, speech_vector(I1=1, I2=1, I3=1, R2=1),
+            {"name": "断言图式", "code": "ASSERT"}, [])
+        assert text.startswith("【图式：断言图式】")
+        assert "有受话" in text                       # I1 值标签直出
+        assert "有引语" in text                       # I2 值标签直出
+        assert "以口头声道就话题作出陈述" in text      # S1+I3+R1 谓词段拼接
+        assert "正式度中性" in text                   # R2 前缀＋值标签
+        assert "[可变槽位: 无（全要素簇内共享）]" in text
+        # 零 motion 词面残留（R-1 判据：非 motion 词面产物）
+        for residue in ("移动", "介质", "自源点出发", "主体不限", "动因"):
+            assert residue not in text
+
+    def test_wording_varies_with_vector(self, speech_meta):
+        """换取向/正式度/话题凸显/声道 → 词面随特征向量确定性变化。"""
+        directive = te.render_template_text(
+            speech_meta, speech_vector(I3=0, R1=1, R2=2, S1="written"),
+            {"name": "指令图式", "code": "DIRECTIVE"}, [])
+        assert "促使行动" in directive          # R1=1 → 指令取向词面
+        assert "就话题" not in directive        # I3=0 不凸显 → 话题词面不出
+        assert "以书面声道" in directive        # S1=written（nominal 原值）
+        assert "正式度正式" in directive        # R2=2
+        expressive = te.render_template_text(
+            speech_meta, speech_vector(I1=1, R1=2),
+            {"name": "表达图式", "code": "EXPRESSIVE"}, [])
+        assert "抒发情感" in expressive         # R1=2 → 表情取向词面
+        assert "有受话" in expressive
+
+    def test_variable_slots_render_with_speech_labels(self, speech_meta):
+        """槽位清单 = 本簇可变槽位 × 本义位取值标签（speech 同一机制）。"""
+        slots = [{"code": "R2"}, {"code": "S1"}]
+        text = te.render_template_text(
+            speech_meta, speech_vector(R2=1, S1="sign"),
+            {"name": "断言图式"}, slots)
+        assert "正式度=中性" in text
+        assert "声道使用=手势" in text
+        assert text.index("正式度=中性") < text.index("声道使用=手势")
+
+    def test_motion_pack_still_renders_via_own_assembly(self, feature_meta):
+        """对照锚：motion 渲染走 motion 拼装节（词面是移动动词口径）。"""
+        text = te.render_template_text(feature_meta, mkvector(M1a=1, P1=1),
+                                       {"name": "源点脱离图式"}, [])
+        assert "自源点出发" in text and "移动" in text
+
+
+class TestTemplateAssemblyFailClosed:
+    """范畴包缺 template_assembly → fail-closed（报错，不回退 motion 拼装表）。"""
+
+    @pytest.fixture()
+    def pack_without_assembly(self, monkeypatch):
+        """把 resolve_pack 指向剥掉 template_assembly 节的 speech 包。"""
+        pack = load_pack("speech")
+        pack["schemas"] = {k: v for k, v in pack["schemas"].items()
+                           if k != "template_assembly"}
+        monkeypatch.setattr(te, "resolve_pack", lambda *a, **k: pack)
+        return pack
+
+    def test_render_raises_category_pack_error(self, pack_without_assembly):
+        """缺节时 render_template_text 报「范畴包缺 template_assembly」。"""
+        with pytest.raises(te.CategoryPackError, match="template_assembly"):
+            te.render_template_text(
+                te._feature_meta(pack_without_assembly),
+                speech_vector(R1=0), {"name": "断言图式"})
+
+    def test_build_template_raises(self, pack_without_assembly):
+        """缺节时 build_template 同样 fail-closed（instantiate 链路降级为 None）。"""
+        with pytest.raises(te.CategoryPackError, match="template_assembly"):
+            te.build_template(
+                {"sense_id": 1, "lemma": "say", "sense_no": "1",
+                 "sense_label": "陈述义", "language": "en", "status": "目标",
+                 "tag": None, "register": None, "subject_type": None,
+                 "source_dict": "OALD10", "definition": "to speak"},
+                speech_vector(S1=0), None,   # 全整数向量（DB 存储口径）
+                te._feature_meta(pack_without_assembly))
+
+    def test_empty_assembly_raises(self, speech_meta):
+        """显式传入空拼装节（节为空）同样 fail-closed。"""
+        with pytest.raises(te.CategoryPackError, match="template_assembly"):
+            te.render_template_text(speech_meta, speech_vector(), None, [],
+                                    assembly={})
 
 
 # ============================================

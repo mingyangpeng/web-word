@@ -36,3 +36,54 @@ annotation:
       - {name: 命题传信域, families: [ASSERT]}
       - {name: 指令调节域, families: [DIRECTIVE]}
       - {name: 情感表达域, families: [EXPRESSIVE]}
+
+# ============================================================
+# 模板拼装节（template_assembly）—— 释义模板引擎（src/template_engine.py）
+# 的槽位拼装配置。批次 10 R-1 收口：拼装表外置到范畴包，引擎按本节渲染，
+# 引擎代码零词类名词（框架文档 §4 纪律）。
+# ------------------------------------------------------------
+# ⚠️ 虚构验证帧词面：本节词面由批次 10 按言说动词六特征（I1/I2/I3/S1/R1/R2）
+#    研制，仅用于跨词类复用验证（scripts/verify_category_reuse.py 第 5 步、
+#    tests/test_template_engine.py speech 用例）；**正式词面待言说动词编者
+#    定稿** —— 编者只需修改本节，引擎零修改。
+# 整句骨架：「{header}{主句各段，按 main_joiner 连接}{slots_section}」。
+# 段类型：text/codes/fragments/value_fragments/values/concat；
+# 修饰：joiner/prefix/suffix/template({value} 占位)/fallback/split_parts/
+#       first_only/strip_prefix（引擎通用规则，见 src/template_engine.py）。
+# ============================================================
+template_assembly:
+  header: "【图式：{schema}】"          # {schema} = 图式名（引擎侧占位符）
+  main_joiner: "，"                     # 主句各段连接符
+  slots_section: "；[可变槽位: {slots}]"   # 槽位清单整节（{slots} = 条目串）
+  slots_joiner: "；"                    # 槽位条目连接符
+  slots_entry: "{label}={value}"        # 单条槽位：特征 label=本义位取值标签
+  slots_empty: "无（全要素簇内共享）"     # 无可变槽位时的清单词面
+  segments:                             # 主句段序（空段跳过）
+    # 受话论元（I1，binary）：值标签直出（有受话 / 无受话）
+    - values:
+        - {code: I1}
+    # 引语论元（I2，binary）：值标签直出（有引语 / 无引语）
+    - values:
+        - {code: I2}
+    # 言说谓词段 = 声道 ＋ 话题前置 ＋ 言说核心词面（concat 同段拼接；
+    #   I3 凸显时前置「就话题」，与 R1 取值词面连读成「就话题作出陈述」类句式）
+    - concat:
+        # 声道使用（S1，nominal）：值标签 →「以 X 声道」（值域取 features.yaml
+        #   原值 oral/written/sign → 口头/书面/手势）
+        - values:
+            - {code: S1}
+          template: "以{value}声道"
+        # 话题论元（I3，binary）：凸显（取 1）时前置「就话题」，不凸显不出词面
+        - fragments:
+            I3: 就话题
+        # 信息取向（R1，ordinal）：取值 → 言说核心词面（描述→作出陈述 /
+        #   指令→促使行动 / 表情→抒发情感）
+        - code: R1
+          value_fragments:
+            0: 作出陈述
+            1: 促使行动
+            2: 抒发情感
+    # 正式度（R2，ordinal）：值标签 →「正式度 X」（随意/中性/正式）
+    - values:
+        - {code: R2}
+      prefix: "正式度"

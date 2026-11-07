@@ -8,9 +8,10 @@ LexiSchema 模板化释义 / 优化要点）。
 数据链（全部复用既有数据层，不新建表）::
 
     cs_clusters / cs_cluster_members / cs_sense_features（src/category_study.py）
-    configs/motion/features.yaml（特征 label / value_type / values 值域，
+    configs/<category>/features.yaml（特征 label / value_type / values 值域，
         经 src/category_pack.load_pack 读取）
-    configs/motion/schemas.yaml（四图式定义：名称 / 重心定义 / 证据槽位）
+    configs/<category>/schemas.yaml（图式定义：名称 / 重心定义 / 证据槽位；
+        另含模板拼装节 template_assembly，见下）
     cs_senses.definition（OALD10 / 现汉7 释义原文，对照用）
 
 两个主入口（均为确定性计算，**不调 LLM**）::
@@ -37,18 +38,18 @@ LexiSchema 模板化释义 / 优化要点）。
           对齐预留维度 空槽待填（跨语言簇对齐 / 双语同位义位回填后再实例化）
         OALD（或现汉7）原文释义一并返回供对照。
 
-模板文字生成（确定性槽位拼装，规则参照论文样例格式）::
+模板文字生成（确定性槽位拼装，拼装配置外置于范畴包）::
 
-    【图式：方式伴随图式】人/动物主体，以急促、高速方式在陆地介质中移动，
-    动因自主；[可变槽位: 速度=低速；主体-动物=非动物主体；…]
+    【图式：X】…主句各段…；[可变槽位: 特征=取值标签；…]
 
-    主体短语 ← M1a-M1d 取 1 的特征 label（去「主体-」前缀）按 "/" 连接；
-    方式短语 ← P5（值标签+"速"）、M2（值标签）按 "、" 连接；
-    介质短语 ← M3a-M3d 取 1 者（去「介质-」前缀）→「在 X 介质中」；
-    路径短语 ← P1/P2/P3/P4 取 1 时的固定片段（自源点出发/抵达终点/
-               有界达成/沿垂直轴向）；
-    动因短语 ← C1 值标签 →「动因 X」；
-    槽位清单 ← 本簇可变槽位 × 本义位取值标签。
+    拼装配置 = configs/<category>/schemas.yaml 的 ``template_assembly`` 节
+    （批次 10 R-1 收口：原引擎硬编码拼装表逐字迁移入各范畴包；引擎只保留
+    「特征取值 → 槽位词面」的通用段规则 —— 段类型 text / codes / fragments /
+    value_fragments / values / concat，修饰 joiner / prefix / suffix /
+    template({value} 占位) / fallback / split_parts / first_only /
+    strip_prefix，引擎代码零词类名词，框架文档 §4 纪律）。
+    范畴包缺 template_assembly 节 → 抛 CategoryPackError（fail-closed，
+    不回退任何词类的拼装表）；槽位清单 = 本簇可变槽位 × 本义位取值标签。
 
 导出（第四节：模板批量导出）::
 
@@ -61,9 +62,9 @@ LexiSchema 模板化释义 / 优化要点）。
 页面接入由集成步骤统一做：本模块只暴露 render_template_page()。
 
 约束与边界：
-  * 特征槽位拼装表（_SUBJECT_CODES / _PATH_FRAGMENTS 等）引用 motion 包的
-    特征编码，与 category_study.py 的口径一致（cs_* 表本身即范畴编码体系）；
-    换词类 = 换 configs/<category>/ 并扩展拼装表，引擎主流程不改。
+  * 槽位拼装配置外置于范畴包（schemas.yaml 的 template_assembly 节，
+    批次 10 R-1 收口）；换词类 = 换 configs/<category>/ 并研制该包的拼装节，
+    引擎主流程不改；缺节 fail-closed（见 render_template_text）。
   * 数据库不可用时主入口返回空列表 / None 并记日志（降级不崩，全库惯例）。
 """
 
@@ -100,8 +101,9 @@ TEMPLATE_CSV_COLUMNS = [
 def _feature_meta(pack: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """features.yaml → {code: {label, group, value_type, values, in_clustering}}。
 
-    values 的键统一转 int（yaml.safe_load 对 ``{0: 不凸显}`` 已产 int 键，
-    这里再防御一次字符串键的写法）。
+    values 的键：整数键统一转 int（yaml.safe_load 对 ``{0: 不凸显}`` 已产
+    int 键，这里再防御一次字符串数字键的写法）；非整数键（nominal 的字符
+    串值域，如声道/方式类特征）原样保留 —— 两类键并存，value_label 双路查找。
     """
     meta: Dict[str, Dict[str, Any]] = {}
     for feat in pack["features"].get("features") or []:
@@ -109,12 +111,12 @@ def _feature_meta(pack: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         if not code:
             continue
         raw_values = feat.get("values") or {}
-        values: Dict[int, str] = {}
+        values: Dict[Any, str] = {}
         for k, v in raw_values.items():
             try:
                 values[int(k)] = str(v)
             except (TypeError, ValueError):
-                continue
+                values[k] = str(v)  # nominal 字符串值域原样保留
         meta[code] = {
             "code": code,
             "label": str(feat.get("name") or code),
@@ -127,12 +129,20 @@ def _feature_meta(pack: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
 
 
 def value_label(feature: Dict[str, Any], value: Any) -> str:
-    """特征取值的中文标签（features.yaml values 值域；未知值回退数字字面量）。"""
+    """特征取值的中文标签（features.yaml values 值域；未知值回退字面量）。
+
+    两路查找：值原样命中（nominal 字符串值域）优先，整数键次之。
+    """
+    if value is None:
+        return ""
+    values = feature.get("values") or {}
+    if value in values:
+        return str(values[value])
     try:
         key = int(value)
     except (TypeError, ValueError):
-        return "" if value is None else str(value)
-    return feature["values"].get(key, str(key))
+        return str(value)
+    return str(values.get(key, key))
 
 
 def resolve_pack(category: str, observed_codes: Sequence[str] = ()) -> Dict[str, Any]:
@@ -381,23 +391,124 @@ def derive_cluster_schemas(category: str, language: str) -> List[Dict[str, Any]]
 
 
 # ============================================
-# 模板文字（确定性槽位拼装，不调 LLM）
+# 模板文字（确定性槽位拼装，不调 LLM；拼装配置外置于范畴包）
 # ============================================
 
-# 槽位拼装表：引用 motion 包特征编码（口径同 category_study.FEATURE_COLUMNS）。
-# 词面全部来自 features.yaml 的 name/values；拼接格式为引擎规则。
-_SUBJECT_CODES = ("M1a", "M1b", "M1c", "M1d")   # 主体：label 去「主体-」前缀
-_SPEED_CODE = "P5"                              # 速度：值标签 +「速」
-_MANNER_CODES = ("M2",)                         # 情态：值标签原样
-_MEDIUM_CODES = ("M3a", "M3b", "M3c", "M3d")    # 介质：label 去「介质-」前缀
-_MOTIVATION_CODE = "C1"                         # 动因：值标签
-# 路径片段：取 1 时进主句（凸显优先级顺序）
-_PATH_FRAGMENTS = {
-    "P1": "自源点出发",
-    "P2": "抵达终点",
-    "P3": "有界达成",
-    "P4": "沿垂直轴向",
+# 拼装节缺省骨架（骨架词面可被范畴包 template_assembly 逐键覆盖）；
+# 主句各段与固定词面只来自范畴包，引擎不含任何词类拼装表（批次 10 R-1）。
+_ASSEMBLY_SKELETON = {
+    "header": "【图式：{schema}】",
+    "main_joiner": "，",
+    "slots_section": "；[可变槽位: {slots}]",
+    "slots_joiner": "；",
+    "slots_entry": "{label}={value}",
+    "slots_empty": "无（全要素簇内共享）",
 }
+
+
+def _pack_assembly(pack: Dict[str, Any]) -> Dict[str, Any]:
+    """范畴包 → template_assembly 节（缺节 fail-closed，R-1 收口）。
+
+    拼装配置只来自范畴包；包缺节时抛 CategoryPackError（报「范畴包缺
+    template_assembly」），绝不静默回退任何词类的拼装表。
+    """
+    node = ((pack.get("schemas") or {}).get("template_assembly"))
+    if not isinstance(node, dict) or not node:
+        cat = ((pack.get("pack") or {}).get("category")) or "?"
+        raise CategoryPackError(
+            f"范畴包缺 template_assembly（category={cat}）：模板拼装配置必须"
+            "外置于范畴包 schemas.yaml 的 template_assembly 节（批次 10 R-1 "
+            "收口），引擎不回退任何词类的拼装表")
+    return node
+
+
+def _load_assembly(feature_meta: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """按特征码重合度解析范畴包（resolve_pack）→ template_assembly 节。
+
+    供纯函数直调路径（未显式传入拼装节）使用；DB 编排路径在
+    instantiate_template 里已持有包，直接取节传入。
+    """
+    return _pack_assembly(resolve_pack("", list(feature_meta)))
+
+
+def _is_on(value: Any) -> bool:
+    """特征取值是否「启用」（整数口径与旧拼装表逐字一致：取 1 进词面）；
+    nominal 字符串值域（引擎不预设取值编码）按非空即启用。"""
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value not in ("", "0")
+    try:
+        return int(value) == 1
+    except (TypeError, ValueError):
+        return bool(value)
+
+
+def _strip_prefix(label: str, prefix: Any) -> str:
+    prefix = str(prefix or "")
+    return label.replace(prefix, "") if prefix else label
+
+
+def _render_segment(seg: Any, feature_meta: Dict[str, Dict[str, Any]],
+                    vector: Dict[str, Any]) -> List[str]:
+    """拼装节单段 → 主句词面列表（空列表 = 本段不进主句）。
+
+    通用段规则（特征码与词面全部来自范畴包拼装节，引擎零词类名词）：
+      text            固定词面；
+      codes           启用（_is_on）的特征 → label（可去前缀 strip_prefix，
+                      first_only 只取首命中）；
+      fragments       {特征码: 固定词面}，启用者按序出词面；
+      value_fragments {取值: 固定词面}＋code，按本义位取值查表；
+      values          [{code, prefix?, suffix?}] → 值标签词面；
+      concat          子段按序拼接成一段。
+    通用修饰：joiner / prefix / suffix / template({value} 占位) /
+    fallback（全空时的词面）/ split_parts（各词面独立成主句段）。
+    """
+    seg = seg or {}
+    if isinstance(seg.get("concat"), list):
+        merged = "".join(
+            "".join(_render_segment(child, feature_meta, vector))
+            for child in seg["concat"])
+        return [merged] if merged else []
+
+    tokens: List[str] = []
+    if seg.get("text") is not None:
+        tokens.append(str(seg["text"]))
+    for code in seg.get("codes") or []:
+        feat = feature_meta.get(code)
+        if feat and _is_on(vector.get(code)):
+            tokens.append(_strip_prefix(str(feat["label"]), seg.get("strip_prefix")))
+            if seg.get("first_only"):
+                break
+    for code, text in (seg.get("fragments") or {}).items():
+        if code in feature_meta and _is_on(vector.get(code)):
+            tokens.append(str(text))
+    if seg.get("value_fragments"):
+        raw = vector.get(seg.get("code"))
+        table = {str(k): str(v) for k, v in (seg["value_fragments"] or {}).items()}
+        hit = table.get(str(raw)) if raw is not None else None
+        if hit:
+            tokens.append(hit)
+    for item in seg.get("values") or []:
+        code = (item or {}).get("code")
+        feat = feature_meta.get(code)
+        if not feat:
+            continue
+        label = value_label(feat, vector.get(code, 0))
+        if not label:
+            continue
+        tokens.append(str(item.get("prefix") or "") + str(label)
+                      + str(item.get("suffix") or ""))
+
+    tokens = [t for t in tokens if t]
+    if not tokens:
+        return [str(seg["fallback"])] if seg.get("fallback") else []
+    if seg.get("split_parts"):
+        return tokens
+    joined = str(seg.get("joiner") or "").join(tokens)
+    if seg.get("template"):
+        return [str(seg["template"]).format(value=joined)]
+    return [str(seg.get("prefix") or "") + joined + str(seg.get("suffix") or "")]
 
 
 def render_template_text(
@@ -405,64 +516,47 @@ def render_template_text(
     vector: Dict[str, Any],
     schema: Optional[Dict[str, Any]] = None,
     variable_slots: Optional[List[Dict[str, Any]]] = None,
+    assembly: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """确定性模板文字：「【图式：X】主体，路径，以方式移动，动因Y；[可变槽位: …]」。
+    """确定性模板文字：「【图式：X】…主句各段…；[可变槽位: …]」。
 
-    与论文 §6.4 样例（【图式：实体自主位移】[人/动物]，以快速、双腿交替的
-    步态移动；[可选参数：…]）同构：图式名来自 schemas.yaml 的映射结果，
-    主体/方式/介质/动因词面来自 features.yaml，槽位清单 = 本簇可变槽位 ×
-    本义位取值标签。全程无随机、无 LLM。
+    与论文 §6.4 样例同构：图式名来自 schemas.yaml 的映射结果；主句各段与
+    固定词面全部按范畴包 ``template_assembly`` 节渲染（批次 10 R-1 收口，
+    引擎不含任何词类拼装表）；槽位清单 = 本簇可变槽位 × 本义位取值标签。
+    全程无随机、无 LLM。
+
+    Args:
+        assembly: 范畴包的拼装节（instantiate_template 已持有包时显式传入）；
+            未传时按 feature_meta 的特征码重合度解析范畴包取节。范畴包缺节
+            时抛 CategoryPackError（fail-closed，不回退任何词类拼装表）。
     """
-    subject_labels = []
-    for code in _SUBJECT_CODES:
-        feat = feature_meta.get(code)
-        if feat and int(vector.get(code, 0) or 0) == 1:
-            subject_labels.append(feat["label"].replace("主体-", ""))
-    subject = "/".join(subject_labels) + "主体" if subject_labels else "主体不限"
+    if assembly is None:
+        assembly = _load_assembly(feature_meta)
+    if not isinstance(assembly, dict) or not assembly:
+        raise CategoryPackError("范畴包缺 template_assembly（拼装节为空）")
+    cfg = {**_ASSEMBLY_SKELETON, **assembly}
 
-    path_frags = [
-        _PATH_FRAGMENTS[code]
-        for code in _PATH_FRAGMENTS
-        if code in feature_meta and int(vector.get(code, 0) or 0) == 1
-    ]
-
-    manner_tokens = []
-    speed = feature_meta.get(_SPEED_CODE)
-    if speed:
-        s_val = int(vector.get(_SPEED_CODE, 0) or 0)
-        manner_tokens.append(value_label(speed, s_val) + "速")
-    for code in _MANNER_CODES:
-        feat = feature_meta.get(code)
-        if feat:
-            manner_tokens.append(value_label(feat, vector.get(code, 0)))
-    manner_tokens = [t for t in manner_tokens if t]
-
-    medium = ""
-    for code in _MEDIUM_CODES:
-        feat = feature_meta.get(code)
-        if feat and int(vector.get(code, 0) or 0) == 1:
-            medium = feat["label"].replace("介质-", "")
-            break
-    motion = ("以" + "、".join(manner_tokens) + "方式") if manner_tokens else ""
-    motion += (f"在{medium}介质中" if medium else "") + "移动"
-
-    parts = [subject] + path_frags + [motion]
-    motivation = feature_meta.get(_MOTIVATION_CODE)
-    if motivation:
-        parts.append("动因" + value_label(motivation, vector.get(_MOTIVATION_CODE, 0)))
+    parts: List[str] = []
+    for seg in cfg.get("segments") or []:
+        parts.extend(_render_segment(seg, feature_meta, vector))
 
     slot_entries = []
+    entry_template = str(cfg.get("slots_entry") or "{label}={value}")
     for slot in variable_slots or []:
-        feat = feature_meta.get(slot["code"])
+        feat = feature_meta.get((slot or {}).get("code"))
         if not feat:
             continue
-        slot_entries.append(
-            f"{feat['label']}={value_label(feat, vector.get(slot['code'], 0))}")
-    slot_text = "；".join(slot_entries) if slot_entries else "无（全要素簇内共享）"
+        slot_entries.append(entry_template.format(
+            label=str(feat["label"]),
+            value=value_label(feat, vector.get(slot["code"], 0))))
+    slot_text = (str(cfg.get("slots_joiner") or "；").join(slot_entries)
+                 or str(cfg.get("slots_empty") or ""))
 
-    schema_name = (schema or {}).get("name") or "未定图式"
-    return (f"【图式：{schema_name}】" + "，".join(parts)
-            + f"；[可变槽位: {slot_text}]")
+    schema_name = ((schema or {}).get("name")
+                   or str(cfg.get("schema_fallback") or "未定图式"))
+    header = str(cfg["header"]).format(schema=schema_name)
+    slots_section = str(cfg["slots_section"]).format(slots=slot_text)
+    return header + str(cfg["main_joiner"]).join(parts) + slots_section
 
 
 # ============================================
@@ -474,11 +568,14 @@ def build_template(
     vector: Dict[str, Any],
     cluster_schema: Optional[Dict[str, Any]],
     feature_meta: Dict[str, Dict[str, Any]],
+    assembly: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """【槽位实例化·纯函数】义位行 + 特征向量 + 母图式 → 四维模板。
 
     四维结构（论文 §6.2）：图式维度 / 语义参数维度 / 句法维度 / 对齐预留维度；
     词典原文（OALD10 / 现汉7）拆语法码后一并返回供 §6.4 式对照。
+    模板文字按范畴包 template_assembly 节渲染（assembly 未传时按特征码
+    解析范畴包取节；缺节 fail-closed，见 render_template_text）。
     """
     clustering = [c for c, f in feature_meta.items() if f["in_clustering"]]
     verify = [c for c, f in feature_meta.items() if not f["in_clustering"]]
@@ -521,7 +618,8 @@ def build_template(
     schema = (cluster_schema or {}).get("schema")
     template_text = render_template_text(
         feature_meta, vector, schema,
-        (cluster_schema or {}).get("variable_slots") or [])
+        (cluster_schema or {}).get("variable_slots") or [],
+        assembly=assembly)
 
     return {
         "sense_id": sense_row.get("sense_id"),
@@ -586,6 +684,7 @@ def instantiate_template(
             return None
         pack = resolve_pack(str(category), sense["_vector"].keys())
         feature_meta = _feature_meta(pack)
+        assembly = _pack_assembly(pack)  # 缺节 fail-closed（不回退任何词类拼装表）
 
         cluster_info = sense.pop("_cluster")
         cluster_schema = _pick_cluster_schema(engine_schema, cluster_info)
@@ -593,7 +692,7 @@ def instantiate_template(
             schemas = derive_cluster_schemas(str(category), str(language))
             cluster_schema = _pick_cluster_schema(schemas, cluster_info)
         return build_template(sense, sense.pop("_vector"), cluster_schema,
-                              feature_meta)
+                              feature_meta, assembly=assembly)
     except CategoryPackError as e:
         logger.error("template_engine: 范畴包加载失败 category=%s: %s", category, e)
         return None

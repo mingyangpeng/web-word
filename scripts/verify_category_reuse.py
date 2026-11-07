@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""跨词类复用验收脚本 —— 第二范畴（speech）仅凭配置包走通平台（批次 9 · Agent AT）。
+"""跨词类复用验收脚本 —— 第二范畴（speech）仅凭配置包走通平台（批次 9 · Agent AT；
+批次 10 · Agent AU 第 5 步收口：拼装表外置后按 speech 渲染实测转 ✅）。
 
 验收判据（docs/spec/跨词类通用框架.md §5「复用验证的客观判据」）：
     在第二个范畴上，仅通过编写配置包（不改引擎代码）走完
@@ -20,9 +21,12 @@
                                               （semantic）的范畴下拉均含 speech
                                               （monkeypatch 数据层为空态降级：
                                               验证「工具点亮、页面可切」而非数据）
-  ⑤ 五步验收表（markdown 打印）            —— 每步标注 ✅架构就绪 / ⚠️待数据，
-                                              speech 是虚构验证帧（无真实语料），
-                                              如实标注不编数；判据是「配置包跑通」。
+  ⑤ 五步验收表（markdown 打印）            —— 每步标注 ✅架构就绪 / ⚠️待数据；
+                                              第 5 步（模板实例化）自批次 10 R-1
+                                              收口（拼装表外置进范畴包
+                                              template_assembly 节）起，附纯函数
+                                              直渲染实测：speech 产物含言说动词
+                                              配置词面、零 motion 词面残留。
 
 如实标注原则：speech 无真实语料/无 cs_* 灌数，五步中凡引擎链路已验证为配置驱动、
 无词类硬编码的标 ✅架构就绪；凡「走完该步」必须等待数据的标 ⚠️待数据；凡引擎代码
@@ -195,12 +199,94 @@ def check_apptest_smoke() -> dict:
 
 
 # ============================================
+# 第 5 步渲染实测（批次 10 R-1 收口判据：speech 词面非 motion 残留）
+# ============================================
+
+# 纯函数直渲染探针向量（零 DB；speech=言说六特征验证帧，motion=run-S1 对照锚）
+SPEECH_PROBE_VECTOR = {"I1": 1, "I2": 1, "I3": 1, "S1": "oral", "R1": 0, "R2": 1,
+                       "A1": 1}
+MOTION_PROBE_VECTOR = {"M1a": 1, "M1b": 1, "M2": 1, "M3a": 1, "C1": 2, "A1": 1}
+
+
+def _assembly_wordings(node: object) -> list:
+    """拼装节 → 主句词面标记集合（text/fragments/value_fragments/values/
+    prefix/suffix/fallback 的字面量；含 {占位符} 的模板串与单字符修饰不算）。"""
+    marks: list = []
+    if isinstance(node, dict):
+        for key, val in node.items():
+            if key == "text" and isinstance(val, str):
+                marks.append(val)
+            elif key in ("fragments", "value_fragments") and isinstance(val, dict):
+                marks.extend(str(v) for v in val.values())
+            elif key == "values" and isinstance(val, list):
+                for item in val:
+                    if isinstance(item, dict):
+                        marks.extend(str(item[k]) for k in ("prefix", "suffix")
+                                     if isinstance(item.get(k), str))
+            elif key in ("template", "prefix", "suffix", "fallback") \
+                    and isinstance(val, str):
+                marks.append(val)
+            else:
+                marks.extend(_assembly_wordings(val))
+    elif isinstance(node, list):
+        for item in node:
+            marks.extend(_assembly_wordings(item))
+    return [m for m in marks if m and "{" not in m and len(m) >= 2]
+
+
+def check_template_render() -> dict:
+    """第 5 步判据实测：speech 包拼装节渲染产出言说动词词面（非 motion 残留）。
+
+    render_template_text 为纯函数（零 DB、零 LLM），直渲染两包探针向量：
+      ① speech 产物含其拼装节词面标记（言说动词口径）；
+      ② speech 产物不含 motion 拼装节任何词面标记（「移动」类残留为零）；
+      ③ motion 产物仍含自身词面标记（第一范畴护栏不回退）。
+    """
+    import src.template_engine as te
+    from src.category_pack import load_pack
+
+    speech_pack = load_pack(CATEGORY)
+    motion_pack = load_pack(BASELINE)
+    speech_text = te.render_template_text(
+        te._feature_meta(speech_pack), SPEECH_PROBE_VECTOR,
+        speech_pack["schemas"]["schemas"][0], [])
+    motion_text = te.render_template_text(
+        te._feature_meta(motion_pack), MOTION_PROBE_VECTOR,
+        motion_pack["schemas"]["schemas"][0], [])
+    speech_marks = _assembly_wordings(
+        speech_pack["schemas"].get("template_assembly") or {})
+    motion_marks = _assembly_wordings(
+        motion_pack["schemas"].get("template_assembly") or {})
+    _fail("speech 拼装节词面标记为空（template_assembly 缺失/为空）") \
+        if not speech_marks else None
+    _fail(f"speech 渲染产物不含任何拼装节词面标记: {speech_text!r}") \
+        if not any(m in speech_text for m in speech_marks) else None
+    residue = [m for m in motion_marks if m in speech_text]
+    _fail(f"speech 渲染产物含 motion 词面残留: {residue}") if residue else None
+    _fail(f"motion 渲染产物失去自身词面（护栏破坏）: {motion_text!r}") \
+        if not any(m in motion_text for m in motion_marks) else None
+    hits = sorted({m for m in speech_marks if m in speech_text})
+    return {
+        "ok": True,
+        "speech_text": speech_text,
+        "motion_text": motion_text,
+        "speech_marks": speech_marks,
+        "speech_mark_hits": hits,
+        "detail": (
+            f"speech 直渲染＝「{speech_text}」（含拼装节词面标记 {hits}，"
+            f"零 motion 词面残留）；motion 直渲染＝「{motion_text}」（护栏）"
+        ),
+    }
+
+
+# ============================================
 # ⑤ 五步验收表（判定 = 本脚本实测证据；数据缺口如实）
 # ============================================
 
 def check_five_steps(selfcheck_info: dict, pack_info: dict, smoke_info: dict) -> list:
     """五步验收表。判定口径（任务书）：✅架构就绪 / ⚠️待数据，不编数。"""
     n_schemas = pack_info["n_schemas"]
+    render = check_template_render()  # 批次 10：第 5 步判定附渲染实测
     rows = [
         {
             "step": "义位筛选",
@@ -251,25 +337,27 @@ def check_five_steps(selfcheck_info: dict, pack_info: dict, smoke_info: dict) ->
         },
         {
             "step": "模板实例化",
-            "verdict": "⚠️待数据＋复用断点(R-1)",
+            "verdict": "✅架构就绪（R-1 已收口，渲染实测）",
             "evidence": (
-                "机制就绪：template_engine.resolve_pack('speech') 成功、"
-                "instantiate_template 按包装配（配置侧五步走通）；但槽位拼装表"
-                "硬编码 motion 特征码（template_engine.py 的 _SUBJECT_CODES=M1a–M1d/"
-                "_SPEED_CODE=P5/_MANNER_CODES=M2/_MEDIUM_CODES=M3a–M3d/"
-                "_PATH_FRAGMENTS=P1–P4），speech 特征（I1/I2/I3/S1/R1/R2）不在其内"
-                "——实测渲染退化为「主体不限，移动」，词面含词类专属词"
+                "批次 10 R-1 收口：槽位拼装表外置进范畴包（configs/<category>/"
+                "schemas.yaml 的 template_assembly 节），引擎只保留「值标签 → "
+                "槽位词面」通用段规则，零词类硬编码（缺节 fail-closed 报"
+                "「范畴包缺 template_assembly」，不回退任何词类）；纯函数直渲染"
+                f"实测——speech 产物＝「{render['speech_text']}」"
+                f"（含言说动词拼装节词面标记 {render['speech_mark_hits']}，"
+                "零 motion 词面残留）；motion 包产物逐字保持原拼装（护栏测试全绿）"
             ),
-            "gap": "无义位数据可实例化；且即便灌数，实例化文字仍是 motion 专属拼装表"
-                   "的产物（违框架文档 §4「引擎代码出现任何具体词类名词即违规」）"
-                   "——拼装表外置到范畴包是复用收口前必须补的一步",
+            "gap": "speech 无义位数据可实例化（cs_* 表未灌 speech 行）——灌数后即可"
+                   "实走全链（义位 → 特征向量 → 四维模板）；词面为虚构验证帧研制值，"
+                   "正式词面待言说动词编者定稿（只改配置节，引擎零修改）",
         },
     ]
     _fail(f"五步表应恰含 {len(FIVE_STEPS)} 步") if len(rows) != len(FIVE_STEPS) else None
     return rows
 
 
-# 复用断点清单（本批次发现，如实列出；编号供五步表与集成报告引用）
+# 复用断点清单（批次 9 发现，如实列出；编号供五步表与集成报告引用。
+# R-1/R-2 已由批次 10 收口——方向栏标注收口方式，其余仍开放）
 BREAKPOINTS = [
     {
         "id": "R-1",
@@ -277,16 +365,21 @@ BREAKPOINTS = [
         "what": "render_template_text 的主体/速度/方式/介质/路径词面硬编码 motion "
                 "特征码（M1a–M1d/P5/M2/M3a–M3d/C1）与中文路径片段（「自源点出发」等），"
                 "speech 包特征不在其内——模板实例化对第二范畴退化为「主体不限，移动」",
-        "direction": "拼装表按框架文档 §2② 外置到 features.yaml（或 pack.yaml 声明的"
-                     "拼装节）；引擎只保留「值标签 → 槽位词面」的通用拼装规则",
+        "direction": "✅ 批次 10 已收口：拼装表外置进 configs/<category>/schemas.yaml "
+                     "的 template_assembly 节（motion 值逐字迁移；speech 按六特征 "
+                     "I1/I2/I3/S1/R1/R2 研制验证帧词面）；引擎只保留「值标签 → 槽位"
+                     "词面」通用段规则，缺节 fail-closed（报「范畴包缺 "
+                     "template_assembly」）；本脚本 check_template_render 实测 speech "
+                     "产物含言说动词词面、零 motion 残留",
     },
     {
         "id": "R-2",
         "where": "src/app.py（标注页「📋 准入判定标准」expander）",
         "what": "load_pack(\"motion\") 硬编码——准入标准只读展示永远显示 motion 包，"
                 "speech 义位的准入判定页看到的仍是移动动词的三分口径",
-        "direction": "改为 load_pack(当前会话选中的范畴)；或由 category_pack 提供"
-                     "「当前范畴」的取数入口",
+        "direction": "✅ 批次 10 已收口：expander 改按当前标注范畴取包——标注页范畴"
+                     "选择件（session/参数）取不到时按 CATEGORIES() 首个范畴包取数并"
+                     "在标题注明；提交流接入范畴切换后自动跟随",
     },
     {
         "id": "R-3",
@@ -324,7 +417,7 @@ BREAKPOINTS = [
 # ============================================
 
 def _print_markdown(checks: dict, rows: list) -> None:
-    print("# 跨词类复用验收报告（第二范畴 speech · 批次 9 Agent AT）\n")
+    print("# 跨词类复用验收报告（第二范畴 speech · 批次 9 Agent AT ／ 批次 10 Agent AU 第 5 步收口）\n")
     print(f"判据：在第二个范畴上，仅通过编写配置包（不改引擎代码）走完"
           f"「{' → '.join(FIVE_STEPS)}」五步。\n")
     for name, info in checks.items():
@@ -341,7 +434,9 @@ def _print_markdown(checks: dict, rows: list) -> None:
         print(f"- **{bp['id']}** {bp['where']}：{bp['what']}")
         print(f"  - 收口方向：{bp['direction']}")
     print("\n> speech 为虚构验证帧（框架文档 §3）：上表「数据缺口」列全部如实——"
-          "判据是「配置包跑通」，不编数据。引擎代码零修改（本脚本未改任何 src/ 文件）。")
+          "判据是「配置包跑通」，不编数据。批次 9 基线引擎零修改；批次 10 完成 "
+          "R-1/R-2 收口（拼装表外置进范畴包＋准入判定按范畴取包），第 5 步已按 "
+          "speech 渲染实测转 ✅。")
 
 
 def main() -> int:
