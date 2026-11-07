@@ -31,6 +31,15 @@
 
 ![登录与页面导航](screenshots/登录与页面导航_未登录态.png)
 
+## 📚 文档地图
+
+| 文档 | 内容 | 读者 |
+|------|------|------|
+| [docs/help/平台功能使用说明.md](docs/help/平台功能使用说明.md) | 每个功能的说明/使用介绍/原理说明（四段式，按七区菜单组织；应用内「📖 使用说明」面板的母本） | 编者与用户 |
+| [docs/spec/平台架构设计规范.md](docs/spec/平台架构设计规范.md) | 平台架构 v5.1 定稿：五构件、十五工序、六闸门、工具插件化、协作范式、配置治理、数据出入口纪律 | 开发者与审稿人 |
+| [docs/spec/跨词类通用框架.md](docs/spec/跨词类通用框架.md) | 范畴包六件套规范与新词类接入判据 | 研究者 |
+| [docs/spec/多人标注系统设计规范.md](docs/spec/多人标注系统设计规范.md) | 盲标协作底座（表结构/模块契约/验收标准） | 开发者 |
+
 ## 🚀 快速开始
 
 前置：**Python 3.11+**。数据库为 **MySQL 8.0**（应用不使用 SQLite）。
@@ -185,11 +194,17 @@ web-word/
 │   ├── dictionary.db.part00-02       # 197MB 全库词典分卷（90MB×3 + sha256，已提交，
 │   │                                 #   ./start 首启自动重组；本体不入库）
 │   ├── dictionary_senses_subset.json # 17 词 246 义位子集快照（全库缺席时降级）
-├── docs/                       # 研究文档与设计系统文档
+├── docs/                       # 全部文档（六类，见 docs/README.md 地图）
+│   ├── spec/                   # 平台设计与施工契约（架构规范 v5.1 等 6 份）
+│   ├── help/                   # 用户帮助（功能使用说明——帮助中心页母本）
+│   ├── dev/                    # 开发者文档（ARCHITECTURE/CONFIG/TESTING/CHANGELOG、
+│   │                           #   design-system、reports/、reviews/）
+│   └── research/               # 研究资料（tables 数据表×13、protocols 规程、
+│                               #   papers 期刊/大论文/Lexikos/系列论文+投稿包、notes）
 ├── graphify-out/               # 代码图谱生成物（已忽略，可重建）
 ├── Dockerfile / docker-compose.yml
 ├── requirements.txt
-└── README.md / CLAUDE.md / ARCHITECTURE.md / CHANGELOG.md / CONFIG.md / TESTING.md
+└── README.md / CLAUDE.md       # 根目录仅保留入口说明与 AI 助手配置（其余文档全部在 docs/）
 ```
 
 ## ⚙️ 配置说明
@@ -271,7 +286,7 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 
 ### 1b. 词表、义位与《英语自移移动动词词表》
 
-词表以 `docs/Levin移动动词候选词筛选表.xlsx` 的**方式聚焦型**子集（136 词）为准 ——
+词表以 `docs/research/tables/Levin移动动词候选词筛选表.xlsx` 的**方式聚焦型**子集（136 词）为准 ——
 自移移动动词就是这一类，筛选表里另外 35 个路径 / 互动聚焦型词不进词表（它们不是自移）。
 按文档规定的次类建簇（方式聚焦型下有 8 个次类）；释义以 `data/dictionary.db`（OALD 结构化数据）
 为**首选来源**，逐级降级并如实标注来源。
@@ -285,7 +300,7 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 
 #### 两个义项来源，为什么分两张表
 
-`data/dictionary.db` 与 `docs/output-oald10en-for-senselist-1020.xlsx` 是两套**切分体系**：
+`data/dictionary.db` 与 `docs/research/tables/output-oald10en-for-senselist-1020.xlsx` 是两套**切分体系**：
 
 | | `word_senses`（dictionary.db） | `oald_senses`（OALD10） |
 |--|-------------------------------|------------------------|
@@ -332,7 +347,7 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 **生成词表文档**：
 
 ```bash
-python scripts/generate_word_doc.py     # → docs/英语自移移动动词词表.docx
+python scripts/generate_word_doc.py     # → docs/research/protocols/英语自移移动动词词表.docx
 ```
 
 ### 1c. 交互式图谱页（graphify 风格）
@@ -577,7 +592,7 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 
 ## 👥 多人标注（MOVECAT Collab）
 
-> 设计规范：`docs/p1/多人标注系统设计规范.md`（唯一事实源）。端到端验收脚本：
+> 设计规范：`docs/spec/多人标注系统设计规范.md`（唯一事实源）。端到端验收脚本：
 > `tests/test_e2e_workflow.py`（真实 MySQL 七步协作工作流，无库自动跳过，可重复执行）。
 
 - **四角色**：`admin` 一切权限（用户管理 / 任务分配 / 仲裁 / 直写权威层快速通道）；
@@ -786,7 +801,7 @@ docker compose down            # 停止
 ## 📌 已知遗留
 
 - `data/dictionary.db`（197MB 第三方词典）**本体不入库**，按 90MB 分卷
-  （`dictionary.db.part00-02` + sha256）随仓库分发，部署时自动重组校验。它是释义正确性的首选来源，但只有 23 个词命中；缺失部分由旧词库与研究者标注兜底，详见 `docs/英语自移移动动词词表.docx` 的编者说明。原 155 词的释义已固化进
+  （`dictionary.db.part00-02` + sha256）随仓库分发，部署时自动重组校验。它是释义正确性的首选来源，但只有 23 个词命中；缺失部分由旧词库与研究者标注兜底，详见 `docs/research/protocols/英语自移移动动词词表.docx` 的编者说明。原 155 词的释义已固化进
   `data/motion_verbs_extracted.json`，`scripts/load_word_library.py` 离线即可建库。
   只有重跑 `scripts/archive/ingest_motion_verbs.py`（从词典/联网补释义）时才需要它。
 - `scripts/archive/ingest_motion_verbs.py`（一次性导入脚本，已归档）会 UPSERT `definitions` 表的行。它不设置 `cluster_id`，

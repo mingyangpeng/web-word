@@ -47,8 +47,8 @@ scripts/archive/build_knowledge_graphs.sh
 
 ## 架构设计
 
-分层、模块职责、数据流与遗留模块的完整说明见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。
-配置与环境变量的完整清单见 [`CONFIG.md`](CONFIG.md) 与 [`config/README.md`](config/README.md)。
+分层、模块职责、数据流与遗留模块的完整说明见 [`docs/dev/ARCHITECTURE.md`](docs/dev/ARCHITECTURE.md)。
+配置与环境变量的完整清单见 [`docs/dev/CONFIG.md`](docs/dev/CONFIG.md) 与 [`config/README.md`](config/README.md)。
 
 ### 分层
 
