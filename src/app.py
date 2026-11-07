@@ -1764,6 +1764,10 @@ def render_sidebar():
 # ============================================
 def render_main_area():
     """渲染主区域组件"""
+    # 词条装配预览（批次 9 Agent AS，工序 14 消费侧）函数级导入：本文件顶部
+    # import 块因 sys.path 前置本就整块 E402，此处仿 pandas 的函数级导入先例，
+    # 不给 flake8 新增告警。
+    from src.entry_assembly import render_entry_assembly
     render_page_usage_guide("search")
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃 动词释义优化器</h1>", unsafe_allow_html=True)
     st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
@@ -1850,6 +1854,21 @@ def render_main_area():
         # 避免旧版 SVG 完全图挤成毛球）。全库地图仍由「知识图谱」页承担。
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
         render_word_relation_section(verb)
+
+        # 词条装配预览（批次 9 Agent AS，工序 14 消费侧）：四卡片与词间关系
+        # 之后、示例库之前，按《平台架构设计规范》§6 成品词条内容模型装配
+        # 只读预览。懒加载 —— expander 用 on_change="rerun" 接线（与词条浏览器
+        # 义项脊柱同模式），收起时零取数；展开才调 render_entry_assembly，
+        # 各段独立降级，绝不打断既有结果结构。
+        st.markdown(get_section_spacing(), unsafe_allow_html=True)
+        with st.expander(
+            "📄 词条装配预览（头块 / 义项 coverage / 发布例证 / 对译三态 / "
+            "媒体 / 定制属性 / 参见）",
+            key="entry_assembly_expander",
+            on_change="rerun",
+        ) as assembly_expander:
+            if assembly_expander.open:
+                render_entry_assembly(verb)
 
         # 示例库
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
