@@ -777,7 +777,7 @@ class TestParticleAndFullscreen:
 
 
 # ============================================
-# v3：义位层面的结构（依据 docs/义项判定标准.docx）
+# v3：义位层面的结构（依据 docs/research/protocols/义项判定标准.docx）
 # ============================================
 class TestSchemaV3:
     """

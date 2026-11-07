@@ -276,7 +276,7 @@ class TestNotComputable:
 
 
 # ============================================
-# R2 独立复核：精确算术参照的回归锚点（docs/review_R2.md）
+# R2 独立复核：精确算术参照的回归锚点（docs/dev/reviews/review_R2.md）
 # ============================================
 class TestR2IndependentVerification:
     """R2 数据正确性 review 的独立复核结论固化。
@@ -387,7 +387,7 @@ class TestR2IndependentVerification:
         """R2 修复回归：字符串 'nan' 按缺失（库/回退两路径同结果）。
 
         修复前：库路径把数值化后的 nan 当缺失（→1.0），纯 Python 回退把它当
-        类别（→0.625），两路径分叉（docs/review_R2.md F1）。
+        类别（→0.625），两路径分叉（docs/dev/reviews/review_R2.md F1）。
         """
         units = {1: {1: 1, 2: "nan"}, 2: {1: 1, 2: 1}, 3: {1: 2, 2: 2}}
         lib, pure = self._both_paths(units, "nominal", monkeypatch)

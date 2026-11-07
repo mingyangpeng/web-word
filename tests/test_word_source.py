@@ -19,7 +19,7 @@ import src.word_source as ws  # noqa: E402
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LEVIN = os.path.join(ROOT, "docs/Levin移动动词候选词筛选表.xlsx")
+LEVIN = os.path.join(ROOT, "docs/research/tables/Levin移动动词候选词筛选表.xlsx")
 
 
 # ============================================

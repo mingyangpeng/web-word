@@ -1,6 +1,6 @@
 """多人标注系统 R5 端到端验收（真实 MySQL · 完整协作工作流，可重复执行）。
 
-七步验收流程（docs/review_R5.md 的可重复执行依据）：
+七步验收流程（docs/dev/reviews/review_R5.md 的可重复执行依据）：
 
   1 准备    ensure_user_tables + ensure_flow_tables；以 admin 建两个 annotator
             （coderA/coderB）与一个 reviewer；admin assign_task ×2
@@ -22,7 +22,7 @@
             （按用户名前缀定位）与 reliability_runs（按 id 水位线），保证可重复执行
 
 执行次序说明（任务书第 4/5 步）：任务书把「信度」列在「仲裁」之后，但按设计规范
-（docs/p1/多人标注系统设计规范.md §3 + annotation_flow.save_adjudication 契约），
+（docs/spec/多人标注系统设计规范.md §3 + annotation_flow.save_adjudication 契约），
 仲裁会把参与提交置为 'adjudicated' 并使其**退出**信度口径（reliability 只统计
 status='submitted'）——分歧一旦仲裁，「n_units=3、α<1」的快照不可复现。因此本
 脚本先取仲裁前信度快照（内部步骤 4），再做仲裁并复核退出行为（内部步骤 5）。

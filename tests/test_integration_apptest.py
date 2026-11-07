@@ -3,8 +3,9 @@
 与 tests/test_pages.py 的分工：
   * test_pages.py 直接向 session_state 注入 user（页面级渲染契约）；
   * 本文件走**真实登录表单**（填用户名/密码 → 点登录 → 会话就位），覆盖
-    「登录表单 → verify_login → session user → 角色分派」的完整接缝（R3 清单 5），
-    并把 角色×页面 权限矩阵固化为可执行断言（R3 清单 1）。
+    「登录表单 → verify_login_full → session user（四键+roles）→ 角色分派」
+    的完整接缝（R3 清单 5；批次 3-K 六角色会话升级），并把 角色×页面 权限
+    矩阵固化为可执行断言（R3 清单 1 + 批次 3 六角色可见性）。
 
 数据库：独立测试库 web_word_users_test（与 test_users_db.py 同一手法 ——
 CREATE DATABASE + patch db.MYSQL_DATABASE，连接池按键含库名互不污染）；
@@ -162,14 +163,48 @@ class TestLoginFlow:
         assert not at.exception
         user = _pget(at, "user")
         assert isinstance(user, dict)
-        # verify_login 返回规范四字段（无 password_hash，哈希不出数据层）
+        # 批次 3-K 六角色会话：verify_login_full 返回规范五字段 —— 旧四键
+        # 逐字段不变（role 仍为旧 users.role 列值，向后兼容）+ roles 六角色
+        # 列表（优先级降序）；无 password_hash，哈希不出数据层
         assert user["username"] == "r3_ann"
         assert user["role"] == "annotator"
+        assert user["roles"] == ["annotator"]
         assert user["display_name"] == "标注员'丙"
-        assert set(user.keys()) == {"id", "username", "display_name", "role"}
+        assert set(user.keys()) == {"id", "username", "display_name", "role", "roles"}
         # 登录框消失，退出按钮在场
         assert not any(t.key == "login_username" for t in at.sidebar.text_input)
         assert any("退出登录" in str(b.label) for b in at.sidebar.button)
+
+    def test_login_must_change_password_banner(self, r3_env):
+        """批次 3-K ①：管理员签发初始口令（must_change_password=1）→ 登录后横幅。
+
+        create_user 建号即置 must_change_password=1（r3_env 的测试账号全部
+        如此），登录成功后侧边栏应出现强制改密横幅（指向用户管理页改密）。
+        """
+        at = _new_at()
+        at.run()
+        at = _form_login(at, "r3_view", "r3-view-pw")
+        assert not at.exception
+        assert any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+
+    def test_must_change_password_banner_clears_after_change(self, r3_env):
+        """批次 3-K ①：改密成功（change_password 清零标志）后横幅消失。
+
+        专用账号 r3_chg，不动模块级共享账号（否则影响后续矩阵用例登录）。
+        """
+        from src.users_db import change_password, create_user
+
+        uid = create_user("r3_chg", "r3-chg-pw", "改密用户", "viewer")
+        assert isinstance(uid, int) and uid > 0
+        at = _new_at()
+        at.run()
+        at = _form_login(at, "r3_chg", "r3-chg-pw")
+        assert not at.exception
+        assert any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+        assert change_password(int(uid), "r3-chg-new-pw")
+        at.run()
+        assert not at.exception
+        assert not any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
 
     def test_login_wrong_password_no_user(self, r3_env):
         """错误密码：无 session user + 统一失败文案（防枚举，规范 §6）。"""
@@ -192,6 +227,77 @@ class TestLoginFlow:
         sidebar_md = "\n".join(str(m.value) for m in at.sidebar.markdown)
         assert "&lt;b&gt;x&lt;/b&gt;&amp;跑" in sidebar_md, "侧边栏未转义 display_name"
         assert "<b>x</b>" not in sidebar_md, "display_name 原文泄漏进 HTML"
+
+    def test_sidebar_self_change_password_flow(self, r3_env):
+        """批次 4-N：侧边栏「🔑 修改密码」自助改密 expander（旧密码＋新密码＋确认）。
+
+        三段：两次新密码不一致 → error 不落库；旧密码错 → error 不落库
+        （防越权改密）；旧密码对 + 长度合规 → 落库成功（旧口令立即失效、
+        新口令可登录、must_change_password 横幅随之消失）。
+        """
+        from src.users_db import change_password, create_user, verify_login
+
+        uid = create_user("r3_selfpw", "r3-selfpw-pw", "自助改密用户", "viewer")
+        assert isinstance(uid, int) and uid > 0
+
+        at = _new_at()
+        at.run()
+        at = _form_login(at, "r3_selfpw", "r3-selfpw-pw")
+        assert not at.exception
+        # 初始口令横幅在场（create_user 置 must_change_password=1）
+        assert any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+
+        expanders = [e for e in at.sidebar.expander if "修改密码" in str(e.label)]
+        assert expanders, "侧边栏缺「🔑 修改密码」expander"
+        inputs = {t.key: t for t in at.sidebar.text_input}
+        assert {"self_pw_old", "self_pw_new", "self_pw_again"} <= set(inputs), \
+            "自助改密表单缺三输入框"
+        submit = [b for b in at.sidebar.button
+                  if b.form_id and "修改密码" in str(b.label)]
+        assert submit, "「修改密码」提交按钮未找到"
+
+        # ① 两次新密码不一致：error，不落库
+        inputs["self_pw_old"].set_value("r3-selfpw-pw")
+        inputs["self_pw_new"].set_value("r3-selfpw-new1")
+        inputs["self_pw_again"].set_value("r3-selfpw-different")
+        submit[0].click()
+        at.run()
+        assert not at.exception
+        assert any("两次新密码" in str(e.value) for e in at.sidebar.error)
+        assert verify_login("r3_selfpw", "r3-selfpw-pw") is not None, "口令不应被改"
+
+        # ② 旧密码错误：error，不落库（改密须验证当前口令）
+        inputs = {t.key: t for t in at.sidebar.text_input}
+        inputs["self_pw_old"].set_value("totally-wrong")
+        inputs["self_pw_new"].set_value("r3-selfpw-new1")
+        inputs["self_pw_again"].set_value("r3-selfpw-new1")
+        submit = [b for b in at.sidebar.button
+                  if b.form_id and "修改密码" in str(b.label)]
+        submit[0].click()
+        at.run()
+        assert not at.exception
+        assert any("当前密码不正确" in str(e.value) for e in at.sidebar.error)
+        assert verify_login("r3_selfpw", "r3-selfpw-pw") is not None, "口令不应被改"
+
+        # ③ 正确旧密码 + 合规新密码：成功落库（旧口令失效、横幅消失）
+        inputs = {t.key: t for t in at.sidebar.text_input}
+        inputs["self_pw_old"].set_value("r3-selfpw-pw")
+        inputs["self_pw_new"].set_value("r3-selfpw-new2")
+        inputs["self_pw_again"].set_value("r3-selfpw-new2")
+        submit = [b for b in at.sidebar.button
+                  if b.form_id and "修改密码" in str(b.label)]
+        submit[0].click()
+        at.run()
+        assert not at.exception
+        assert any("密码已修改" in str(s.value) for s in at.sidebar.success), \
+            "自助改密成功后应 st.success"
+        assert verify_login("r3_selfpw", "r3-selfpw-pw") is None, "旧口令应立即失效"
+        assert verify_login("r3_selfpw", "r3-selfpw-new2") is not None, "新口令应可登录"
+        at.run()
+        assert not any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning), \
+            "改密成功后 must_change_password 横幅应消失"
+        # change_password 直接调用不破坏（对照：数据层接口不受影响）
+        assert change_password(uid, "r3-selfpw-new3")
 
 
 # ============================================
@@ -229,7 +335,7 @@ class TestRoleMatrix:
         at = _new_at()
         at.run()
         assert _radio_keys(at) == ["search", "graph", "corpus", "domain",
-                                   "annotate", "category"]
+                                   "annotate", "help"]
 
     def test_annotator_matrix(self, r3_env):
         """annotator：可见提交流；不可见他人提交/仲裁面板；用户管理与信度页拦截。"""
@@ -302,11 +408,19 @@ class TestRoleMatrix:
         assert any("仅管理员可用" in str(e.value) for e in at2.error)
 
     def test_admin_matrix(self, r3_env):
-        """admin：全部页面可用，标注页为快速通道（原单人流直写权威层）。"""
+        """admin：全部页面可用，标注页为快速通道（原单人流直写权威层）。
+
+        批次 3-K：legacy admin 六角色两位一体（roles=[dict_admin, sys_admin]），
+        _PAGE_ACCESS_SIX 口径下仍可见全部页面（radio == PAGE_KEYS 全集）。
+        """
         at = _new_at()
         at.run()
         at = _form_login(at, "r3_admin", "r3-admin-pw")
         assert not at.exception
+        user = _pget(at, "user")
+        assert user and user["role"] == "admin"
+        assert user["roles"] == ["dict_admin", "sys_admin"], \
+            "内置/legacy admin 六角色两位一体（词典管理员+平台管理员）"
 
         keys = _radio_keys(at)
         assert {"submission", "users_admin", "reliability"} <= set(keys)
@@ -365,6 +479,359 @@ class TestRoleMatrix:
 
 
 # ============================================
+# 批次 3-K ②：六角色会话的 radio 可见性（legacy role ∪ session roles）
+# ============================================
+
+class TestSixRoleSessionVisibility:
+    """session roles（六角色）与 legacy role 并集决定侧边栏可见性。
+
+    批次 3-K 核心口径：_PAGE_ACCESS_SIX（值=六角色名）+ _visible_page_keys
+    的 legacy→六角色换算。注入会话不触库（无 _user_db_backed 标记），故
+    不需要 r3_env —— 断库环境同样可跑（radio 过滤纯会话计算）。
+    """
+
+    _BASE_USER = {"id": 900, "username": "six_role_x", "display_name": "矩阵注入",
+                  "role": "viewer"}
+
+    def _radio_keys_for(self, user_extra: dict):
+        at = _new_at()
+        at.session_state["user"] = {**self._BASE_USER, **user_extra}
+        at.session_state["page"] = "search"
+        at.run()
+        assert not at.exception
+        return _radio_keys(at)
+
+    def test_legacy_only_baseline_unchanged(self):
+        """无 roles 键的旧结构会话：仅按 legacy role 折算，viewer 行为不变。"""
+        keys = self._radio_keys_for({})
+        assert "cluster" in keys and "ai_hub" in keys  # 全角色可见的四页
+        assert not {"submission", "users_admin", "reliability", "dict_admin"} & set(keys)
+
+    def test_session_roles_sys_admin_opens_users_admin_only(self):
+        """viewer + roles=[sys_admin]：用户管理可见；词典管理区不可见（六角色分闸）。"""
+        keys = self._radio_keys_for({"roles": ["sys_admin"]})
+        assert "users_admin" in keys, "sys_admin 会话角色应放开用户管理入口"
+        assert "dict_admin" not in keys, "未授词典管理员不得见词典管理区"
+
+    def test_session_roles_dict_admin_opens_dict_admin_only(self):
+        """viewer + roles=[dict_admin]：词典管理区可见；用户管理不可见。"""
+        keys = self._radio_keys_for({"roles": ["dict_admin"]})
+        assert "dict_admin" in keys
+        assert "users_admin" not in keys
+
+    def test_session_roles_annotator_adds_submission(self):
+        """viewer + roles=[annotator]：提交流入口可见（annotator 及以上）。"""
+        keys = self._radio_keys_for({"roles": ["annotator"]})
+        assert "submission" in keys
+        assert "users_admin" not in keys and "dict_admin" not in keys
+
+    def test_admin_legacy_role_maps_to_both_admin_pages(self):
+        """legacy role=admin（无 roles 键）：视为兼 dict_admin+sys_admin。"""
+        keys = self._radio_keys_for({"role": "admin"})
+        assert {"users_admin", "dict_admin", "submission", "reliability"} <= set(keys)
+
+    def test_page_access_tables_key_aligned(self):
+        """_PAGE_ACCESS_SIX 与 legacy 投影 _PAGE_ACCESS 键集一致（防两表漂移）。"""
+        from src.app import _PAGE_ACCESS, _PAGE_ACCESS_SIX
+
+        assert set(_PAGE_ACCESS) == set(_PAGE_ACCESS_SIX)
+        for key, roles in _PAGE_ACCESS_SIX.items():
+            assert roles, f"{key}: 六角色允许集为空（该页将对全员隐藏）"
+
+
+# ============================================
+# 批次 4-N ④：提权硬闸门（管理角色授予/撤销仅词典管理员）＋页面体角色门收口
+# ============================================
+
+def _user_roles_rows(username: str) -> list:
+    """直查测试库 user_roles（JOIN users 按用户名还原六角色行，按角色名排序）。
+
+    硬闸门用例用它断言「数据层未被调用」：被拒后库中角色行必须原封不动 ——
+    闸门只拦 UI 提交不够，必须证明 grant_role/revoke_role 根本没执行。
+    """
+    import pymysql
+
+    conn = pymysql.connect(
+        host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
+        password=db.MYSQL_PASSWORD, database=TEST_DB, charset=db.MYSQL_CHARSET,
+        cursorclass=pymysql.cursors.DictCursor, autocommit=True,
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT ur.role AS role FROM user_roles ur "
+                "JOIN users u ON u.id = ur.user_id "
+                "WHERE u.username = %s ORDER BY ur.role",
+                (username,),
+            )
+            return [str(r["role"]) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+class TestPrivilegeEscalationGate:
+    """提权硬闸门（批次 4-N，施工规范 §7-N / 平台架构设计规范 §8 三级链）。
+
+    口径：授予/撤销 dict_admin/sys_admin（管理角色）仅词典管理员（effective 集
+    含 dict_admin）可执行 —— 平台管理员不得自行提权；纯 sys_admin 不提权口径下
+    仅可授/撤 viewer；legacy admin（两位一体）全通过。被拒时 st.error 且
+    **不调数据层**（库中角色行不变）。页面体角色门收口为 effective_six_roles
+    含 sys_admin 或 dict_admin（词典管理员过渡期兼判）。
+
+    会话构造两种：注入 roles 会话（任务指定手法；无 _user_db_backed 标记，
+    不触发实时回查——快照即注入值）与真实登录（legacy admin 路径）。正用例
+    的注入 id 用真实账号 id（granted_by 外键必须可落库）。
+    """
+
+    def _open_users_admin(self, user: dict):
+        """注入会话直入用户管理页（模拟残留会话/直链进入）。"""
+        at = _new_at()
+        at.session_state["user"] = user
+        at.session_state["page"] = "users_admin"
+        at.run()
+        assert not at.exception
+        return at
+
+    @staticmethod
+    def _select_grant_target(at, target_label: str) -> None:
+        sels = [s for s in at.selectbox if s.key == "role_grant_user"]
+        assert sels, "角色授予面板的「选择用户」未找到"
+        sels[0].set_value(target_label)
+        at.run()
+        assert not at.exception
+
+    @staticmethod
+    def _submit_grant(at, role: str) -> None:
+        sels = [s for s in at.selectbox if s.label == "授予角色"]
+        assert sels, "「授予角色」selectbox 未找到"
+        sels[0].set_value(role)
+        submits = [b for b in at.button
+                   if b.form_id and "授予角色" in str(b.label)]
+        assert submits, "「授予角色」提交按钮未找到"
+        submits[0].click()
+        at.run()
+        assert not at.exception
+
+    @staticmethod
+    def _submit_revoke(at, role: str) -> None:
+        sels = [s for s in at.selectbox if s.label == "撤销角色"]
+        assert sels, "「撤销角色」selectbox 未找到"
+        sels[0].set_value(role)
+        submits = [b for b in at.button
+                   if b.form_id and "撤销角色" in str(b.label)]
+        assert submits, "「撤销角色」提交按钮未找到"
+        submits[0].click()
+        at.run()
+        assert not at.exception
+
+    def test_pure_sys_admin_enters_and_grant_dict_admin_rejected(self, r3_env):
+        """三态②：纯 sys_admin（roles 注入）可进用户管理，授 dict_admin 被拒。
+
+        被拒断言两层：st.error 出硬闸门口径文案；user_roles 表无 dict_admin 行
+        （数据层未被调用——页面层闸门真的拦住了写路径）。
+        """
+        from src.users_db import create_user, grant_role
+
+        actor_uid = create_user("r3_gate_sysadm", "r3-gate-sysadm-pw",
+                                "纯平台管理员", "viewer")
+        assert isinstance(actor_uid, int)
+        assert grant_role(actor_uid, "sys_admin")  # 纯平台管理员（无 dict_admin）
+        assert create_user("r3_gate_tgt1", "r3-gate-tgt1-pw", "闸门目标一", "viewer")
+
+        user = {"id": 9001, "username": "r3_gate_sysadm",
+                "display_name": "纯平台管理员", "role": "viewer",
+                "roles": ["sys_admin"]}
+        at = self._open_users_admin(user)
+        # 页面体角色门收口：纯 sys_admin 放行（六角色口径，不再读 legacy role）
+        assert "账号与角色" in _page_text(at), "纯 sys_admin 应可进入用户管理"
+
+        self._select_grant_target(at, "r3_gate_tgt1（闸门目标一）")
+        self._submit_grant(at, "dict_admin")
+        assert any("授予/撤销管理角色仅词典管理员可执行" in str(e.value)
+                   for e in at.error), "硬闸门未拒绝纯 sys_admin 授予 dict_admin"
+        assert "dict_admin" not in _user_roles_rows("r3_gate_tgt1"), \
+            "被拒后数据层不应写入 dict_admin 行"
+
+    def test_pure_sys_admin_revoke_dict_admin_rejected(self, r3_env):
+        """撤销同闸：纯 sys_admin 撤销 dict_admin 被拒，既有行原封不动。"""
+        from src.users_db import create_user, grant_role
+
+        assert create_user("r3_gate_sysadm2", "r3-gate-sysadm2-pw",
+                           "纯平台管理员二", "viewer")
+        target_uid = create_user("r3_gate_tgt2", "r3-gate-tgt2-pw",
+                                 "闸门目标二", "viewer")
+        assert isinstance(target_uid, int)
+        # 用例前置：经数据层直接授予 dict_admin（API 级闸门批次 5，测试可直调）
+        assert grant_role(target_uid, "dict_admin")
+        assert "dict_admin" in _user_roles_rows("r3_gate_tgt2")
+
+        user = {"id": 9002, "username": "r3_gate_sysadm2",
+                "display_name": "纯平台管理员二", "role": "viewer",
+                "roles": ["sys_admin"]}
+        at = self._open_users_admin(user)
+        self._select_grant_target(at, "r3_gate_tgt2（闸门目标二）")
+        self._submit_revoke(at, "dict_admin")
+        assert any("授予/撤销管理角色仅词典管理员可执行" in str(e.value)
+                   for e in at.error), "硬闸门未拒绝纯 sys_admin 撤销 dict_admin"
+        assert "dict_admin" in _user_roles_rows("r3_gate_tgt2"), \
+            "被拒后数据层不应删除既有 dict_admin 行"
+
+    def test_pure_sys_admin_can_grant_and_revoke_viewer(self, r3_env):
+        """不提权口径：纯 sys_admin 仅可授/撤 viewer（建号基线，三级链第一级）。"""
+        from src.users_db import create_user, grant_role
+
+        actor_uid = create_user("r3_gate_sysadm3", "r3-gate-sysadm3-pw",
+                                "纯平台管理员三", "viewer")
+        assert isinstance(actor_uid, int)
+        assert grant_role(actor_uid, "sys_admin")
+        target_uid = create_user("r3_gate_tgt3", "r3-gate-tgt3-pw",
+                                 "闸门目标三", "annotator")  # 基线无 viewer 行
+        assert isinstance(target_uid, int)
+
+        # 注入真实 id（granted_by 外键可落库）
+        user = {"id": int(actor_uid), "username": "r3_gate_sysadm3",
+                "display_name": "纯平台管理员三", "role": "viewer",
+                "roles": ["sys_admin"]}
+        at = self._open_users_admin(user)
+        self._select_grant_target(at, "r3_gate_tgt3（闸门目标三）")
+        self._submit_grant(at, "viewer")
+        assert "viewer" in _user_roles_rows("r3_gate_tgt3"), "授 viewer 应成功落库"
+
+        self._select_grant_target(at, "r3_gate_tgt3（闸门目标三）")
+        self._submit_revoke(at, "viewer")
+        assert "viewer" not in _user_roles_rows("r3_gate_tgt3"), "撤 viewer 应成功删行"
+
+    def test_legacy_admin_grant_dict_admin_allowed(self, r3_env):
+        """三态①（闸门正路径）：legacy admin 真实登录两位一体，授 dict_admin 通过。"""
+        from src.users_db import create_user
+
+        assert create_user("r3_gate_tgt4", "r3-gate-tgt4-pw", "闸门目标四", "viewer")
+
+        at = _new_at()
+        at.run()
+        at = _form_login(at, "r3_admin", "r3-admin-pw")
+        assert not at.exception
+        at.session_state["page"] = "users_admin"
+        at.run()
+        assert "账号与角色" in _page_text(at)
+
+        self._select_grant_target(at, "r3_gate_tgt4（闸门目标四）")
+        self._submit_grant(at, "dict_admin")
+        assert "dict_admin" in _user_roles_rows("r3_gate_tgt4"), \
+            "legacy admin（dict_admin+sys_admin 两位一体）授 dict_admin 应通过闸门落库"
+        assert not at.error, "正路径不应出现 error 通道"
+
+    def test_pure_sys_admin_cannot_demote_dict_admin_via_legacy_form(self, r3_env):
+        """legacy 修改角色表单旁路封堵（撤方向）：对兼有 dict_admin 的用户改基线
+        ≙ 撤销管理角色（set_role 重置 user_roles），纯 sys_admin 被拒且行不变。"""
+        from src.users_db import create_user
+
+        assert create_user("r3_gate_adminish", "r3-gate-adminish-pw",
+                           "闸门兼管理目标", "admin")  # 基线含 dict_admin+sys_admin
+        assert "dict_admin" in _user_roles_rows("r3_gate_adminish")
+
+        user = {"id": 9004, "username": "gate_actor4",
+                "display_name": "闸门注入会话", "role": "viewer",
+                "roles": ["sys_admin"]}
+        at = self._open_users_admin(user)
+        # 「修改角色」表单：第一个「选择用户」+「新角色」均在 form 内（AppTest
+        # 平铺访问）；目标下拉取首个匹配（先于停用表单的同名下拉渲染）
+        target_sel = [s for s in at.selectbox if s.label == "选择用户"]
+        assert target_sel, "修改角色表单的目标下拉未找到"
+        target_sel[0].set_value("r3_gate_adminish（闸门兼管理目标）")
+        role_sel = [s for s in at.selectbox if s.label == "新角色"]
+        assert role_sel, "修改角色表单的角色下拉未找到"
+        role_sel[0].set_value("reviewer")
+        submits = [b for b in at.button
+                   if b.form_id and "保存角色" in str(b.label)]
+        assert submits, "「保存角色」提交按钮未找到"
+        submits[0].click()
+        at.run()
+        assert not at.exception
+        assert any("授予/撤销管理角色仅词典管理员可执行" in str(e.value)
+                   for e in at.error), "改基线撤销管理角色未被硬闸门拒绝"
+        assert "dict_admin" in _user_roles_rows("r3_gate_adminish"), \
+            "被拒后目标的管理角色行不应被重置"
+
+    def test_editor_blocked_by_page_gate(self, r3_env):
+        """三态③：普通 editor（roles 注入）进用户管理被页面体角色门拦下。"""
+        user = {"id": 9003, "username": "gate_editor", "display_name": "纯编辑",
+                "role": "viewer", "roles": ["editor"]}
+        at = self._open_users_admin(user)
+        assert any("仅管理员可用" in str(e.value) for e in at.error), \
+            "editor 进用户管理未被拦下"
+        assert "账号与角色" not in _page_text(at), "editor 不应见用户管理内容"
+
+
+# ============================================
+# 批次 3-K ③：搜索页词形还原提示（resolve_form 前置查询 + 一键切换）
+# ============================================
+
+def _insert_wordform(lemma: str, form: str, kind: str = "pinyin") -> None:
+    """向测试库 wordforms 直插一行词形（INSERT IGNORE，幂等）。"""
+    import pymysql
+
+    conn = pymysql.connect(
+        host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
+        password=db.MYSQL_PASSWORD, database=TEST_DB, charset=db.MYSQL_CHARSET,
+        cursorclass=pymysql.cursors.DictCursor, autocommit=True,
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT IGNORE INTO wordforms (lemma_word, form, kind) "
+                "VALUES (%s, %s, %s)",
+                (lemma, form, kind),
+            )
+    finally:
+        conn.close()
+
+
+class TestSearchWordformHint:
+    """搜索链路入口的词形还原提示：词形「X」→ 词目「Y」+ 一键切换查询。"""
+
+    def test_wordform_hint_and_switch(self, r3_env):
+        """拼音词形命中：提示行渲染；点切换按钮后以词目重查、提示消失。"""
+        from src.wordforms_db import ensure_wordforms_tables
+
+        ensure_wordforms_tables()
+        _insert_wordform("跑", "pǎo")
+        at = _new_at()
+        at.run()  # 应用启动块幂等建 wordforms 表
+        inputs = {t.key: t for t in at.text_input}
+        inputs["搜索动词"].set_value("pǎo")
+        at.run()
+        assert not at.exception
+        assert any("词形「pǎo」→ 词目「跑」" in str(i.value) for i in at.info), \
+            "词形还原提示未渲染"
+        assert _pget(at, "verb_result") == "pǎo"
+
+        btn = [b for b in at.button if "查询「跑」" in str(b.label)]
+        assert btn, "一键切换查询按钮未渲染"
+        btn[0].click()
+        at.run()
+        assert not at.exception
+        assert _pget(at, "verb_result") == "跑", "切换后未以词目重新发起查询"
+        assert not any("词形「pǎo」" in str(i.value) for i in at.info), \
+            "切换后旧提示残留"
+
+    def test_wordform_no_hint_for_plain_lemma(self, r3_env):
+        """查询词即词目（无词形命中）：不渲染提示，搜词主链路照常。"""
+        from src.wordforms_db import ensure_wordforms_tables
+
+        ensure_wordforms_tables()
+        _insert_wordform("跑", "pǎo")
+        at = _new_at()
+        at.run()
+        inputs = {t.key: t for t in at.text_input}
+        inputs["搜索动词"].set_value("跑进来")
+        at.run()
+        assert not at.exception
+        assert _pget(at, "verb_result") == "跑进来"
+        assert not any("词形「" in str(i.value) for i in at.info)
+
+
+# ============================================
 # S3 清单 1/2/4：三新页（cluster/template/semantic）× 五会话矩阵
 # ============================================
 
@@ -377,6 +844,7 @@ def _page_text_with_expanders(at) -> str:
     parts.extend(str(e.label) for e in at.expander)
     return "\n".join(parts)
 
+
 # 空库（cs_* 范畴数据未灌）下三新页的预期降级哨兵（S3 清单 4：
 # info/warning 优雅降级而非异常；模板页 categories 为空走 info，
 # categories 有行但无运行走 warning，两者都含「范畴深挖数据尚未灌入」分支外的
@@ -388,7 +856,7 @@ _S3_EMPTY_DB_SENTINEL = {
 }
 # 三新页页面正文的特征标题（证明页面本体渲染，而非仅入口/使用说明）
 _S3_PAGE_TITLE = {
-    "cluster": "聚类可视化与典型性排序",
+    "cluster": "📊 语义分析",
     "template": "释义模板引擎",
     "semantic": "以句搜义",
 }
@@ -421,7 +889,7 @@ class TestS3NewPagesMatrix:
         keys = _radio_keys(at)
         assert not set(_S3_NEW_PAGES) & set(keys), "未登录侧边栏不应出现三新页"
         assert keys == ["search", "graph", "corpus", "domain",
-                        "annotate", "category"]
+                        "annotate", "help"]
 
     def _login_and_assert_new_pages(self, username: str, password: str):
         """真实登录 → 三新页 radio 可见 → 逐页渲染：guide + 页面标题 + 空库降级。"""
@@ -492,7 +960,7 @@ class TestS3EmptyDbExistingPages:
     """
 
     _EMPTY_DB_SENTINEL = {
-        "category": "范畴深挖数据尚未灌入",
+        # category 键已并入 cluster（语义分析页，空库降级由 S3 矩阵覆盖）
         "graph": "暂无词间关系数据",
         "domain": "域系初判数据尚未灌入",
     }

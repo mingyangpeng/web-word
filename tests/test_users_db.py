@@ -22,15 +22,24 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
 from src.users_db import (  # noqa: E402
+    NEW_ROLES,
     PBKDF2_ITERATIONS,
     ROLES,
+    _sort_roles_by_priority,
+    change_password,
     create_user,
     ensure_user_tables,
+    grant_role,
+    has_role,
     hash_password,
+    list_roles,
     list_users,
+    needs_password_change,
+    revoke_role,
     set_active,
     set_role,
     verify_login,
+    verify_login_full,
     verify_password,
 )
 
@@ -133,57 +142,59 @@ def _mysql_reachable() -> bool:
 HAS_MYSQL = _mysql_reachable()
 
 
+@pytest.fixture
+def users_db(monkeypatch):
+    """
+    建空测试库并让 users 模块指向它，测试结束 DROP。
+
+    与 test_migration_integration.v1_database 相同的手法：
+    get_db_cursor / _new_connection 在调用时读 mysql_db 模块全局，
+    monkeypatch MYSQL_DATABASE 即可，连接池按键含 db 名，互不污染。
+    账号无建库权限（生产账号常见）则 skip —— 环境能力问题，不是代码缺陷。
+    （模块级 fixture：TestUsersDbIntegration 与 TestMultiRoles 共用。）
+    """
+    import pymysql
+
+    conn = pymysql.connect(
+        host=db.MYSQL_HOST,
+        port=db.MYSQL_PORT,
+        user=db.MYSQL_USER,
+        password=db.MYSQL_PASSWORD,
+        charset=db.MYSQL_CHARSET,
+        cursorclass=pymysql.cursors.DictCursor,
+        connect_timeout=3,
+    )
+    cur = conn.cursor()
+    try:
+        cur.execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
+        cur.execute(
+            f"CREATE DATABASE {TEST_DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        )
+    except pymysql.err.OperationalError as e:
+        conn.close()
+        pytest.skip(f"当前 MySQL 账号无建库权限，跳过 users 集成测试: {e}")
+    conn.close()
+
+    monkeypatch.setattr(db, "MYSQL_DATABASE", TEST_DB)
+    yield
+    # 还原全局再删库：避免池中归还路径引用已删的库
+    conn = pymysql.connect(
+        host=db.MYSQL_HOST,
+        port=db.MYSQL_PORT,
+        user=db.MYSQL_USER,
+        password=db.MYSQL_PASSWORD,
+        charset=db.MYSQL_CHARSET,
+        cursorclass=pymysql.cursors.DictCursor,
+        connect_timeout=3,
+        autocommit=True,
+    )
+    conn.cursor().execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
+    conn.close()
+
+
 @pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过 users 数据层集成测试")
 class TestUsersDbIntegration:
     """数据层 CRUD + 内置默认 admin（跑在独立测试库 web_word_users_test）。"""
-
-    @pytest.fixture
-    def users_db(self, monkeypatch):
-        """
-        建空测试库并让 users 模块指向它，测试结束 DROP。
-
-        与 test_migration_integration.v1_database 相同的手法：
-        get_db_cursor / _new_connection 在调用时读 mysql_db 模块全局，
-        monkeypatch MYSQL_DATABASE 即可，连接池按键含 db 名，互不污染。
-        账号无建库权限（生产账号常见）则 skip —— 环境能力问题，不是代码缺陷。
-        """
-        import pymysql
-
-        conn = pymysql.connect(
-            host=db.MYSQL_HOST,
-            port=db.MYSQL_PORT,
-            user=db.MYSQL_USER,
-            password=db.MYSQL_PASSWORD,
-            charset=db.MYSQL_CHARSET,
-            cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=3,
-        )
-        cur = conn.cursor()
-        try:
-            cur.execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
-            cur.execute(
-                f"CREATE DATABASE {TEST_DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-            )
-        except pymysql.err.OperationalError as e:
-            conn.close()
-            pytest.skip(f"当前 MySQL 账号无建库权限，跳过 users 集成测试: {e}")
-        conn.close()
-
-        monkeypatch.setattr(db, "MYSQL_DATABASE", TEST_DB)
-        yield
-        # 还原全局再删库：避免池中归还路径引用已删的库
-        conn = pymysql.connect(
-            host=db.MYSQL_HOST,
-            port=db.MYSQL_PORT,
-            user=db.MYSQL_USER,
-            password=db.MYSQL_PASSWORD,
-            charset=db.MYSQL_CHARSET,
-            cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=3,
-            autocommit=True,
-        )
-        conn.cursor().execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
-        conn.close()
 
     # --- 内置默认管理员 ---
 
@@ -322,3 +333,238 @@ class TestUsersDbIntegration:
         ensure_user_tables()
         assert create_user("", "pw123456", "无名", "viewer") is None
         assert create_user("ghost", "", "空口令", "viewer") is None
+
+
+# ============================================
+# 纯函数：六角色优先级排序（无数据库）
+# ============================================
+
+class TestRolePriority:
+    """_sort_roles_by_priority：优先级降序 + 去重（无数据库）。"""
+
+    def test_priority_order(self):
+        """按 dict_admin > sys_admin > reviewer > editor > annotator > viewer 排列。"""
+        mixed = ["viewer", "dict_admin", "annotator", "reviewer", "editor", "sys_admin"]
+        assert _sort_roles_by_priority(mixed) == list(NEW_ROLES)
+
+    def test_dedup_and_partial(self):
+        """去重；部分角色也按相对优先级排。"""
+        assert _sort_roles_by_priority(["editor", "dict_admin", "editor"]) == [
+            "dict_admin", "editor",
+        ]
+        assert _sort_roles_by_priority(["viewer", "sys_admin"]) == ["sys_admin", "viewer"]
+
+    def test_unknown_role_last(self):
+        """未知角色（防御）排最后，不挤掉合法角色的相对顺序。"""
+        assert _sort_roles_by_priority(["mystery", "viewer", "dict_admin"]) == [
+            "dict_admin", "viewer", "mystery",
+        ]
+
+
+# ============================================
+# 集成测试：v5.1 六角色多角色 + must_change_password（真实 MySQL）
+# ============================================
+
+@pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过多角色集成测试")
+class TestMultiRoles:
+    """user_roles 多角色 API + 内置 admin 双角色迁移 + 改密标志（共用 users_db fixture）。"""
+
+    def _admin_id(self) -> int:
+        login = verify_login("admin", "admin123")
+        assert login is not None, "内置 admin 未就位"
+        return int(login["id"])
+
+    # --- 内置 admin 双角色迁移 ---
+
+    def test_default_admin_dual_roles(self, users_db):
+        """内置 admin 迁移为 dict_admin+sys_admin 双角色（按优先级排序）。"""
+        ensure_user_tables()
+        roles = list_roles(self._admin_id())
+        assert roles == ["dict_admin", "sys_admin"]
+        assert has_role(self._admin_id(), "dict_admin")
+        assert has_role(self._admin_id(), "sys_admin")
+        assert not has_role(self._admin_id(), "reviewer")
+
+    def test_admin_roles_migration_idempotent(self, users_db):
+        """ensure 重复调用不重复迁移（UNIQUE + INSERT IGNORE，角色不叠加）。"""
+        ensure_user_tables()
+        ensure_user_tables()
+        ensure_user_tables()
+        assert list_roles(self._admin_id()) == ["dict_admin", "sys_admin"]
+
+    def test_verify_login_full_roles(self, users_db):
+        """verify_login_full：四键 + roles；verify_login 保持四键向后兼容。"""
+        ensure_user_tables()
+        full = verify_login_full("admin", "admin123")
+        assert full is not None
+        assert set(full.keys()) == {"id", "username", "display_name", "role", "roles"}
+        assert full["roles"] == ["dict_admin", "sys_admin"]
+        assert full["role"] == "admin"  # 旧 role 列快照不变（向后兼容）
+        legacy = verify_login("admin", "admin123")
+        assert set(legacy.keys()) == {"id", "username", "display_name", "role"}
+        assert "roles" not in legacy
+
+    # --- create_user 默认 viewer + must_change_password ---
+
+    def test_create_user_defaults_viewer(self, users_db):
+        """create_user 缺省角色 = viewer（六角色模型「新号默认 viewer」）。"""
+        ensure_user_tables()
+        uid = create_user("newbie", "pw123456", "新人")
+        assert isinstance(uid, int) and uid > 0
+        login = verify_login("newbie", "pw123456")
+        assert login is not None and login["role"] == "viewer"
+        assert list_roles(uid) == ["viewer"]
+        users = {u["id"]: u for u in list_users()}
+        assert users[uid]["role"] == "viewer"
+
+    def test_create_user_maps_legacy_role_to_user_roles(self, users_db):
+        """create_user 旧角色同步映射进 user_roles（admin→双角色，其余同名）。"""
+        ensure_user_tables()
+        uid_admin = create_user("boss2", "pw123456", "另一个管理员", "admin")
+        assert uid_admin is not None
+        assert list_roles(uid_admin) == ["dict_admin", "sys_admin"]
+        uid_ann = create_user("worker", "pw123456", "标注工", "annotator")
+        assert uid_ann is not None
+        assert list_roles(uid_ann) == ["annotator"]
+
+    def test_must_change_password_lifecycle(self, users_db):
+        """建号 must_change_password=1；change_password 成功后清零。"""
+        ensure_user_tables()
+        uid = create_user("changer", "pw123456", "改密员", "viewer")
+        assert needs_password_change(uid) is True
+        assert needs_password_change(999999) is False  # 不存在 → False（不误报横幅）
+        assert change_password(uid, "brand-new-pw") is True
+        assert needs_password_change(uid) is False
+        assert verify_login("changer", "brand-new-pw") is not None
+
+    def test_builtin_admin_must_change_password(self, users_db):
+        """内置 admin 建号即必须改密（默认口令是公开 bootstrap 凭据）。"""
+        ensure_user_tables()
+        assert needs_password_change(self._admin_id()) is True
+
+    def test_must_change_password_column_migration(self, users_db):
+        """存量表迁移：DROP 掉 must_change_password 后 ensure 幂等补列。"""
+        from src.mysql_db import get_db_cursor
+
+        ensure_user_tables()
+        with get_db_cursor() as cursor:
+            cursor.execute("ALTER TABLE users DROP COLUMN must_change_password")
+        ensure_user_tables()  # 迁移应把列补回来
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
+                     AND COLUMN_NAME = 'must_change_password'"""
+            )
+            assert int(cursor.fetchone()["n"] or 0) == 1
+
+    # --- grant / revoke / has / list ---
+
+    def test_grant_revoke_flow(self, users_db):
+        """授予→列表（优先级序）→重复授予 False→撤销→再撤销 False。"""
+        ensure_user_tables()
+        uid = create_user("poly", "pw123456", "多角色", "viewer")
+        assert grant_role(uid, "editor", granted_by=self._admin_id()) is True
+        assert grant_role(uid, "reviewer", granted_by=self._admin_id()) is True
+        # 多角色叠加：基线 viewer 保留；优先级降序 reviewer(2) > editor(3) > viewer(5)
+        assert list_roles(uid) == ["reviewer", "editor", "viewer"]
+        # 重复授予：无实际变更 → False
+        assert grant_role(uid, "editor") is False
+        assert list_roles(uid) == ["reviewer", "editor", "viewer"]
+        # 撤销
+        assert revoke_role(uid, "editor") is True
+        assert list_roles(uid) == ["reviewer", "viewer"]
+        assert revoke_role(uid, "editor") is False  # 未持有 → False
+        assert revoke_role(uid, "dict_admin") is False
+
+    def test_full_priority_order(self, users_db):
+        """六个角色全授予时按 NEW_ROLES 优先级完整排序。"""
+        ensure_user_tables()
+        uid = create_user("allroles", "pw123456", "全家桶", "viewer")
+        for role in ("annotator", "editor", "reviewer", "sys_admin", "dict_admin"):
+            assert grant_role(uid, role) is True
+        assert list_roles(uid) == list(NEW_ROLES)
+
+    def test_grant_invalid_inputs(self, users_db):
+        """非法角色 / 不存在用户：一律 False，不进数据库。"""
+        ensure_user_tables()
+        uid = create_user("valid", "pw123456", "合法", "viewer")
+        assert grant_role(uid, "hacker") is False
+        assert grant_role(uid, "superadmin") is False
+        assert revoke_role(uid, "hacker") is False
+        assert has_role(uid, "hacker") is False
+        assert grant_role(999999, "editor") is False
+        assert revoke_role(999999, "viewer") is False
+        assert list_roles(999999) == []
+        # 库里没有非法角色行
+        from src.mysql_db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM user_roles WHERE role NOT IN "
+                "('dict_admin','sys_admin','reviewer','editor','annotator','viewer')"
+            )
+            assert int(cursor.fetchone()["n"] or 0) == 0
+
+    def test_list_roles_fail_closed_for_inactive(self, users_db):
+        """停用账号 fail-closed：list_roles=[] / has_role=False，启用后恢复。"""
+        ensure_user_tables()
+        uid = create_user("dormant", "pw123456", "休眠", "viewer")
+        assert grant_role(uid, "editor") is True
+        assert set_active(uid, False) is True
+        assert list_roles(uid) == []
+        assert has_role(uid, "editor") is False
+        assert set_active(uid, True) is True
+        assert list_roles(uid) == ["editor", "viewer"]  # 叠加的 editor + 基线 viewer
+
+    def test_list_roles_legacy_fallback(self, users_db):
+        """无 user_roles 行的存量账号按旧 role 列映射兜底（直插模拟存量）。"""
+        from src.mysql_db import get_db_cursor
+
+        ensure_user_tables()
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO users (username, password_hash, display_name, role, active) "
+                "VALUES (%s, %s, %s, %s, 1)",
+                ("legacy_rev", hash_password("pw123456"), "存量审核", "reviewer"),
+            )
+            cursor.execute(
+                "INSERT INTO users (username, password_hash, display_name, role, active) "
+                "VALUES (%s, %s, %s, %s, 1)",
+                ("legacy_admin", hash_password("pw123456"), "存量管理", "admin"),
+            )
+        assert list_roles(verify_login("legacy_rev", "pw123456")["id"]) == ["reviewer"]
+        assert list_roles(verify_login("legacy_admin", "pw123456")["id"]) == [
+            "dict_admin", "sys_admin",
+        ]
+
+    def test_set_role_syncs_user_roles(self, users_db):
+        """set_role 实际变更时重置 user_roles 为基线映射（防降级后残留提权）。"""
+        ensure_user_tables()
+        uid = create_user("demote", "pw123456", "待降级", "annotator")
+        assert grant_role(uid, "dict_admin") is True  # 叠加高角色
+        assert "dict_admin" in list_roles(uid)
+        # 基线降到 viewer：dict_admin 叠加必须被清掉（否则旧页面降级形同虚设）
+        assert set_role(uid, "viewer") is True
+        assert list_roles(uid) == ["viewer"]
+        # 目标值与现值相同（rowcount=0）：不动 user_roles，叠加角色不误清
+        assert grant_role(uid, "editor") is True
+        assert set_role(uid, "viewer") is False  # 未变更
+        assert list_roles(uid) == ["editor", "viewer"]
+
+    def test_user_roles_cascade_on_user_delete(self, users_db):
+        """账号物理删除时 user_roles 行级联消失（e2e 清理路径不被 FK 阻断）。"""
+        from src.mysql_db import get_db_cursor
+
+        ensure_user_tables()
+        uid = create_user("ghosted", "pw123456", "将被删除", "viewer")
+        assert grant_role(uid, "editor") is True
+        assert list_roles(uid) == ["editor", "viewer"]
+        with get_db_cursor() as cursor:
+            cursor.execute("DELETE FROM users WHERE id = %s", (uid,))
+        assert list_roles(uid) == []
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM user_roles WHERE user_id = %s", (uid,)
+            )
+            assert int(cursor.fetchone()["n"] or 0) == 0
