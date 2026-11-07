@@ -210,7 +210,8 @@ class TestStageOneE2E:
             media_tmp_path = state.get("media_tmp_path")
             db.MYSQL_DATABASE = old_database
             # 丢弃指向已删库的连接池条目（键含库名，防死连接滞留）
-            pool_key = f"{db.MYSQL_HOST}:{db.MYSQL_PORT}/{TEST_DB}"
+            # 弹池键与 mysql_db._pool_key() 同口径（(host, port, db, user) 四元组）
+            pool_key = (db.MYSQL_HOST, db.MYSQL_PORT, TEST_DB, db.MYSQL_USER)
             getattr(db, "_connection_pools", {}).pop(pool_key, None)
             conn = pymysql.connect(**conn_params)
             try:

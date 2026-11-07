@@ -1667,24 +1667,17 @@ def render_sidebar():
     )
     st.sidebar.divider()
 
-    # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）
+    # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）。
+    # 跳转用 on_click 回调（重跑前执行）：radio 的 key="page" 在本函数更下方
+    # 实例化，若在其实例化后改 session_state["page"] 会被 Streamlit 拒绝。
     if st.session_state.get("user"):
         _inbox_n = pending_inbox_count()
         if _inbox_n:
-            if st.sidebar.button(f"🤖 AI 待办 {_inbox_n} 条 · 去处理",
-                                 key="sidebar_inbox_badge"):
-                st.session_state["page"] = "ai_hub"
-                st.rerun()
-            st.sidebar.divider()
-
-    # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）
-    if st.session_state.get("user"):
-        _inbox_n = pending_inbox_count()
-        if _inbox_n:
-            if st.sidebar.button(f"🤖 AI 待办 {_inbox_n} 条 · 去处理",
-                                 key="sidebar_inbox_badge"):
-                st.session_state["page"] = "ai_hub"
-                st.rerun()
+            st.sidebar.button(
+                f"🤖 AI 待办 {_inbox_n} 条 · 去处理",
+                key="sidebar_inbox_badge",
+                on_click=lambda: st.session_state.__setitem__("page", "ai_hub"),
+            )
             st.sidebar.divider()
 
     st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 实验统计</h2>", unsafe_allow_html=True)
@@ -3109,9 +3102,9 @@ def render_reviewer_panel() -> None:
 # 主函数
 # ============================================
 def main():
-    """主函数：按 session_state["page"] 分派到各页（十四页：十一功能页 +
-    词典管理区/AI 协作区两区级页面 + 帮助中心；规范 §5 UI 集成契约；
-    批次 8「🏃‍♀️ 范畴深挖」并入「📊 语义分析」后 15→14）。
+    """主函数：按 session_state["page"] 分派到各页（十六页：十二功能页 +
+    词典管理/AI 协作/撰写审校/例证对译四工作区页 + 帮助中心；规范 §5 UI 集成契约；
+    批次 8「🏃‍♀️ 范畴深挖」并入「📊 语义分析」后 15→14，批次 9 增 writing/lexical）。
 
     登录门在分派处判定（require_login，规范 §6-4）：标注页与新增三页
     （submission / users_admin / reliability）未登录渲染「请先登录」并 return；
