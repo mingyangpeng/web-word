@@ -129,3 +129,9 @@ GRANT ALL PRIVILEGES ON `web\_word\_lexical\_test`.* TO 'web_word_user'@'localho
 GRANT ALL PRIVILEGES ON `web\_word\_stage1\_e2e\_test`.* TO 'web_word_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON `web\_word\_stage1\_e2e\_test`.* TO 'web_word_user'@'localhost';
 FLUSH PRIVILEGES;
+
+-- 批次 12：十轮 review 回归固化测试库
+GRANT ALL PRIVILEGES ON `web\_word\_review\_regression\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_review\_regression\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_review\_regression\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
