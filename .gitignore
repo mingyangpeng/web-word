@@ -44,6 +44,9 @@ data/zh_dict_senses.json
 
 # MySQL 数据目录（本机运行态，数百 MB，绝不应入库）
 data/mysql/
+# 媒体上传落盘（批次 8 上传通道：data/media/{kind}/YYYYMM/，内容寻址文件名；
+# 运行期资产不入库，入库走 media_assets 登记留痕）
+data/media/
 # 运行期日志与缓存
 data/logs/
 data/cache/
@@ -89,3 +92,4 @@ screenshots_final/
 # 它让图谱在断网/内网环境下也能渲染，这是刻意 vendored 的）
 src/static/word_graph_*.html
 docs/~$*.docx
+data/exports/
