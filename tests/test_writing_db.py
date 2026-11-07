@@ -375,13 +375,13 @@ class TestWritingDbIntegration:
         assert create_draft("RUN:7:0", 9, "仅研究层编码") > 0
         assert self._count("definition_versions") == 2
 
-    # --- update_draft：乐观锁 ---
+    # --- update_draft：乐观锁 + 作者守卫（R1-3） ---
 
     def test_update_draft_roundtrip(self, writing):
-        """更新成文/体例/快照全量覆盖；version 号保持不变。"""
+        """更新成文/体例/快照全量覆盖；version 号保持不变（R1-3 起须作者匹配）。"""
         vid = create_draft(REF, 9, "初稿", style_version=None)
         assert update_draft(vid, 1, "改定稿", style_version="style.yaml@v2",
-                            ai_draft={"k": "v"}) is True
+                            ai_draft={"k": "v"}, author_id=9) is True
         row = self._fetch(vid)
         assert row["content"] == "改定稿"
         assert row["style_version"] == "style.yaml@v2"
@@ -392,22 +392,22 @@ class TestWritingDbIntegration:
         """expect_version 不符拒绝（乐观锁口径）；正确版本可再更新。"""
         vid = create_draft(REF, 9, "初稿")
         # 表单装载时以为是 v2（实际 v1）→ 拒
-        assert update_draft(vid, 2, "过期表单的修改") is False
+        assert update_draft(vid, 2, "过期表单的修改", author_id=9) is False
         assert self._fetch(vid)["content"] == "初稿"
         # 正确版本号 → 成功
-        assert update_draft(vid, 1, "新鲜表单的修改") is True
+        assert update_draft(vid, 1, "新鲜表单的修改", author_id=9) is True
 
     def test_update_draft_rejects_non_draft(self, writing):
         """提交审校后（in_review）不可再改稿 —— 状态机口径。"""
         vid = create_draft(REF, 9, "初稿")
         self._submit(vid)
-        assert update_draft(vid, 1, "审校期间偷改") is False
+        assert update_draft(vid, 1, "审校期间偷改", author_id=9) is False
         assert self._fetch(vid)["content"] == "初稿"
 
     def test_update_draft_rejects_bad_args(self, writing):
         """行不存在 / 非法 id / 空 content / 非法 ai_draft 拒绝。"""
         vid = create_draft(REF, 9, "初稿")
-        assert update_draft(999999, 1, "x") is False
+        assert update_draft(999999, 1, "x", author_id=9) is False
         assert update_draft("abc", 1, "x") is False
         assert update_draft(None, 1, "x") is False
         assert update_draft(vid, 0, "x") is False
@@ -420,7 +420,33 @@ class TestWritingDbIntegration:
     def test_update_draft_nochange_still_succeeds(self, writing):
         """同内容重存（MySQL 计 0 受影响行）不算失败 —— 行存在即成功。"""
         vid = create_draft(REF, 9, "同样的话")
-        assert update_draft(vid, 1, "同样的话") is True
+        assert update_draft(vid, 1, "同样的话", author_id=9) is True
+
+    def test_update_draft_author_hijack_rejected(self, writing):
+        """R1-3 作者守卫：非作者（含不传 author_id 直调）改写他人草稿一律拒绝。"""
+        vid = create_draft(REF, 9, "本人草稿")
+        # 他人声称自己是作者 → 拒，内容不动
+        assert update_draft(vid, 1, "劫持内容", author_id=8) is False
+        # 直调不传 author_id（旧行为可 hijack）→ fail-closed 拒
+        assert update_draft(vid, 1, "劫持内容") is False
+        assert self._fetch(vid)["content"] == "本人草稿"
+        # 作者本人 → 放行
+        assert update_draft(vid, 1, "本人改定", author_id=9) is True
+        assert self._fetch(vid)["content"] == "本人改定"
+
+    def test_update_draft_author_null_row_only_null_claim(self, writing):
+        """author_id=NULL 的系统登记行：仅 author_id=None 的调用可改写。"""
+        vid = create_draft(REF, None, "系统登记行", allow_system=True)
+        assert update_draft(vid, 1, "冒名改写", author_id=9) is False
+        assert update_draft(vid, 1, "补登记改写", author_id=None) is True
+        assert self._fetch(vid)["content"] == "补登记改写"
+
+    def test_update_draft_rejects_bad_author_id(self, writing):
+        """author_id 非法值（0/负数/非整数）拒绝（fail-closed）。"""
+        vid = create_draft(REF, 9, "初稿")
+        for bad in (0, -1, "me", True):
+            assert update_draft(vid, 1, "x", author_id=bad) is False, bad
+        assert self._fetch(vid)["content"] == "初稿"
 
     # --- submit_for_review：状态机 + 回避制 ---
 
@@ -464,11 +490,37 @@ class TestWritingDbIntegration:
         assert self._count("review_tasks") == 0
         assert self._fetch(vid)["status"] == STATUS_DRAFT
 
-    def test_submit_author_null_allows_any_reviewer(self, writing):
-        """author_id 为 NULL（系统登记）：回避制无可比对对象，如实放行。"""
-        vid = create_draft(REF, None, "系统登记的草稿")
-        assert submit_for_review(vid, 9) is True
+    def test_submit_author_null_system_row_rejected(self, writing):
+        """R1-4：author_id 为 NULL（系统登记行）不可提交审校 —— 先补登记作者。"""
+        vid = create_draft(REF, None, "系统登记的草稿", allow_system=True)
+        assert submit_for_review(vid, 9) is False
+        assert self._fetch(vid)["status"] == STATUS_DRAFT
+        assert self._count("review_tasks") == 0
+
+    def test_create_draft_null_author_requires_allow_system(self, writing):
+        """R1-4：create_draft 无主行默认拒绝；allow_system=True 显式豁免。"""
+        assert create_draft(REF, None, "无主行默认拒") == 0
+        assert list_versions(REF) == []
+        vid = create_draft(REF, None, "系统登记行", allow_system=True)
+        assert vid > 0
+        assert self._fetch(vid)["author_id"] is None
+
+    def test_approve_author_null_system_row_rejected(self, writing):
+        """R1-4：author_id 为 NULL 的行不可审校通过（即使已伪造入审校态）。"""
+        vid = create_draft(REF, None, "系统登记行", allow_system=True)
+        self._set_status(vid, STATUS_IN_REVIEW)  # 造历史存量态（绕过提交守卫）
+        # 需要一条 pending 任务才走到回避制；先手工补任务行
+        from src.mysql_db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO review_tasks (version_id, reviewer_id, round, verdict) "
+                "VALUES (%s, 2, 1, 'pending')",
+                (vid,),
+            )
+        assert approve(vid, 2) is False
         assert self._fetch(vid)["status"] == STATUS_IN_REVIEW
+        assert self._fetch_task(vid)["verdict"] == "pending"
 
     # --- add_comment：意见线 + 回避制 ---
 
@@ -787,6 +839,35 @@ class TestWritingDbIntegration:
         assert self._fetch_task(vid)["round"] == 4
         assert self._fetch(vid)["status"] == STATUS_FINAL
 
+    def test_adjudicate_impersonation_rejected(self, writing):
+        """R1-4 冒名收口：adjudicator_id ≠ actor['id'] 一律拒绝（留痕不伪造）。"""
+        vid = create_draft(REF, 9, "初稿")
+        self._submit(vid, reviewer_id=2)
+        # A 会话（id=1）冒 B（id=2）之名终裁 → 拒，状态与任务行不动
+        assert adjudicate_final(
+            vid, 2, "approved", "冒名终裁", actor=self.DICT_ADMIN_ACTOR) is False
+        assert self._fetch(vid)["status"] == STATUS_IN_REVIEW
+        assert self._count("review_tasks", "version_id = %s", (vid,)) == 1
+        # actor 无有效 id（脏会话）同样拒绝
+        no_id_actor = {"username": "chief", "role": "viewer",
+                       "roles": ["dict_admin"]}
+        assert adjudicate_final(
+            vid, 1, "approved", actor=no_id_actor) is False
+        # adjudicator_id == actor['id'] → 放行
+        assert adjudicate_final(
+            vid, 1, "approved", "本人终裁", actor=self.DICT_ADMIN_ACTOR) is True
+        assert self._fetch(vid)["status"] == STATUS_FINAL
+        assert self._fetch_task(vid)["reviewer_id"] == 1
+
+    def test_adjudicate_author_null_system_row_rejected(self, writing):
+        """R1-4：author_id 为 NULL 的行不可终裁（先补登记作者）。"""
+        vid = create_draft(REF, None, "系统登记行", allow_system=True)
+        self._set_status(vid, STATUS_IN_REVIEW)
+        assert adjudicate_final(
+            vid, 1, "approved", actor=self.DICT_ADMIN_ACTOR) is False
+        assert self._fetch(vid)["status"] == STATUS_IN_REVIEW
+        assert self._count("review_tasks", "version_id = %s", (vid,)) == 0
+
     # --- 全链路：版本链（打回重提） ---
 
     def test_full_revision_chain(self, writing):
@@ -901,6 +982,36 @@ class TestWritingDbIntegration:
         assert latest["id"] == v2 and latest["version"] == 2
         assert get_latest_version("bad") is None
         assert get_latest_version("motion:999:888") is None
+
+    def test_get_latest_version_draft_masked_for_non_author(self, writing):
+        """R1-3 脱敏：draft 态最新版对非作者/未声明身份返回 draft_hidden 标记。"""
+        create_draft(REF, 9, "在途草稿内容")
+        # 未声明身份（直调缺省）→ 脱敏
+        masked = get_latest_version(REF)
+        assert masked["content"] is None
+        assert masked["draft_hidden"] is True
+        # 他者身份 → 脱敏
+        other = get_latest_version(REF, viewer_id=8)
+        assert other["content"] is None and other["draft_hidden"] is True
+        # 作者本人 → 不受限
+        mine = get_latest_version(REF, viewer_id=9)
+        assert mine["content"] == "在途草稿内容"
+        assert "draft_hidden" not in mine
+        # 审校侧声明 → 不受限
+        reviewer = get_latest_version(REF, viewer_id=2, allow_reviewer=True)
+        assert reviewer["content"] == "在途草稿内容"
+
+    def test_get_latest_version_masking_only_draft_state(self, writing):
+        """脱敏只作用于 draft 态：rejected 重提预填与定稿回看不受限。"""
+        v1 = create_draft(REF, 9, "被拒内容")
+        self._submit(v1, reviewer_id=2)
+        request_revision(v1, 2, "打回")
+        row = get_latest_version(REF, viewer_id=8)
+        assert row["status"] == STATUS_REJECTED
+        assert row["content"] == "被拒内容"
+        assert "draft_hidden" not in row
+        self._set_status(v1, STATUS_FINAL)
+        assert get_latest_version(REF)["content"] == "被拒内容"
 
     # --- 状态机总览：MVP 不经由的扩展占位态 ---
 

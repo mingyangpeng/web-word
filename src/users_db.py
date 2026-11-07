@@ -66,6 +66,11 @@ MUST_CHANGE_PASSWORD_COLUMN_SQL = (
     "ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0"
 )
 
+# R3-5 审计列：users.created_by —— 建号人 users.id（软引用，无外键；可 NULL，
+# 内置 admin bootstrap 无人建号）。create_user 缺省不传时不写（NULL），账号
+# 管理页建号传当前会话用户 id（谁签发的账号可追溯）。
+CREATED_BY_COLUMN_SQL = "ALTER TABLE users ADD COLUMN created_by INT NULL"
+
 # user_roles 多角色表（平台架构设计规范 §8 六角色）。一人可叠加，UNIQUE 去重；
 # FK 对 users ON DELETE CASCADE：账号物理删除（测试清理/运维清理）时角色行
 # 跟随消失，绝不阻断删除路径（e2e 清理只删 users，靠本 CASCADE 自愈）。
@@ -124,6 +129,66 @@ _TIMING_DUMMY_HASH = (
     f"{_PBKDF2_ALGO}${PBKDF2_ITERATIONS}$"
     f"{'0' * 32}${hashlib.sha256(b'no-such-user-timing-pad').hexdigest()}"
 )
+
+# ============================================
+# R1-1 数据层直调面：actor 足色闸门（施工规范 §14 批次 12）
+# ============================================
+# 敏感写函数（change_password / set_role / grant_role / revoke_role /
+# create_user / set_active）加 ``actor=None`` keyword：actor=None = 系统作业
+# （迁移脚本/灌库脚本直调；**页面调用点必须传 actor=当前会话用户**）；
+# actor 为 dict 时按 effective_six_roles 判定足色，不足抛 PermissionError。
+#
+# 注意：此处抛的是内建 PermissionError —— guards.PermissionError 即它
+# （src/guards.py import 本模块，本模块不得反向 import guards 造成环；
+# 判定语义与 guards.require_role 同源，单一实现在 effective_six_roles）。
+# 抛异常必须发生在函数入口（各函数的 try/except Exception 只兜数据库错误，
+# 不得吞掉权限拒绝 —— 调用方据 PermissionError 与 False 区分「越权」与
+# 「业务失败」）。
+
+# 账号生命周期/角色管辖的直调面足色：两类管理员（legacy admin 经映射
+# 两位一体自然通过）。页面层的提权硬闸门（guards.require_role，按目标
+# 角色细分 dict_admin-only / viewer 宽口）在其上游先行判定 —— 本粗门是
+# 数据层最后一道防线，不重复页面口径。
+_ACTOR_MANAGEMENT_ROLES = ("dict_admin", "sys_admin")
+
+
+def _require_actor_roles(
+    actor: Any,
+    action: str,
+    allowed_roles: tuple,
+    self_uid: Optional[int] = None,
+) -> None:
+    """直调面 actor 足色闸门（R1-1）：不足即抛 PermissionError。
+
+    Args:
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业放行）。
+            其余类型（str/数值/容器垃圾）一律 fail-closed 抛出。
+        action: 动作名（拼进拒绝文案）。
+        allowed_roles: 允许的六角色集（与管理口径对应的粗门）。
+        self_uid: 「本人操作」放行的目标 id（change_password 自助改密用：
+            用户改自己的口令无需管理角色）。
+    """
+    if actor is None:
+        return  # 系统作业（docstring 口径：页面调用点必须传 actor）
+    if not isinstance(actor, dict):
+        raise PermissionError(
+            f"{action}被拒绝：actor 须为会话用户 dict 或 None（系统作业）——"
+            "数据层直调面口径：页面调用点必须传 actor=当前会话用户。"
+        )
+    if self_uid is not None:
+        try:
+            if int(actor.get("id") or 0) == int(self_uid):
+                return  # 本人操作（如自助改密）无需管理角色
+        except (TypeError, ValueError):
+            pass  # id 脏值落不到本人分支，继续按角色判定
+    effective = effective_six_roles(actor)
+    if not (effective & set(allowed_roles)):
+        have = "/".join(sorted(effective)) if effective else "空"
+        raise PermissionError(
+            f"{action}被拒绝：当前用户（{actor.get('username', '?')}）有效角色集"
+            f"（{have}）不足。数据层直调面口径：页面调用点必须传 "
+            "actor=当前会话用户；None=系统作业（迁移/灌库脚本）。"
+        )
 
 
 def hash_password(plain: str) -> str:
@@ -228,10 +293,13 @@ def _column_exists(cursor, table: str, column: str) -> bool:
 
 
 def _migrate_users_columns(cursor) -> None:
-    """users 存量结构迁移：补 must_change_password 列（幂等，可重复运行）。"""
+    """users 存量结构迁移：补 must_change_password / created_by 列（幂等）。"""
     if not _column_exists(cursor, "users", "must_change_password"):
         cursor.execute(MUST_CHANGE_PASSWORD_COLUMN_SQL)
         logger.info("users.must_change_password 列已补齐（v5.1 存量表迁移）")
+    if not _column_exists(cursor, "users", "created_by"):
+        cursor.execute(CREATED_BY_COLUMN_SQL)
+        logger.info("users.created_by 列已补齐（R3-5 建号留痕迁移）")
 
 
 def _ensure_default_admin(cursor) -> None:
@@ -385,7 +453,10 @@ def verify_login_full(username: str, password: str) -> Optional[Dict[str, Any]]:
 
 
 def create_user(username: str, password: str, display_name: str,
-                role: str = "viewer") -> Optional[int]:
+                role: str = "viewer",
+                created_by: Optional[int] = None,
+                *,
+                actor: Any = None) -> Optional[int]:
     """
     新建用户（active=1，must_change_password=1），返回新用户 id。
 
@@ -396,32 +467,61 @@ def create_user(username: str, password: str, display_name: str,
     保持一致。新号 must_change_password=1：管理员签发的初始口令，首次登录
     必须修改（needs_password_change 供登录页横幅读取，change_password 清零）。
 
+    建号留痕（R3-5）：created_by = 建号人 users.id（keyword 缺省 None 不破坏
+    既有调用；账号管理页建号传当前会话用户 id）。非 None 时落 users.created_by
+    列，且 user_roles 行 granted_by 同取该值（默认 viewer 的授权人即建号人，
+    非 NULL 可追溯）；None（如内置 admin bootstrap 无人建号）两处均落 NULL。
+    created_by 须为正整数或 None，其余一律拒绝（审计字段不留脏值）；指向
+    不存在的用户会因 user_roles.granted_by 外键约束整体拒绝（返回 None）——
+    调用方传当前登录用户 id 即可。
+
+    **数据层直调面口径（R1-1，批次 12）**：keyword ``actor=None``——None =
+    系统作业（ensure_user_tables 的内置 admin bootstrap、迁移/灌库脚本）；
+    页面调用点**必须**传 ``actor=当前会话用户``。actor 为 dict 时其有效六角色
+    须含 dict_admin/sys_admin（账号生命周期是管理面职能，架构规范 §8），不足
+    抛 PermissionError（建号是 R1 报告复现①的提权入口，低权直调一律拒绝）；
+    其余类型 fail-closed 同抛。细粒度口径（管理角色基线仅词典管理员可授）由
+    页面层 guards.require_role 硬闸门先行判定，本粗门是数据层最后防线。
+
     角色必须是 ROLES 之一（应用层先拒，非法值不进数据库）；
     用户名重复（UNIQUE 约束）返回 None。users 行与 user_roles 行同事务写入，
     角色行失败则整体回滚（不留半初始化账号）。
 
     Returns:
-        int | None: 新用户 id；角色非法 / 参数为空 / 用户名重复 / 数据库错误 返回 None
+        int | None: 新用户 id；角色非法 / 参数为空 / created_by 非法 /
+        用户名重复 / 数据库错误 返回 None（actor 足色不足抛 PermissionError，
+        不落入 None 口径）
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（R1-1 直调面）。
     """
+    _require_actor_roles(actor, "创建用户", _ACTOR_MANAGEMENT_ROLES)
     if role not in ROLES:
         logger.error(f"create_user 拒绝非法角色: {role!r}")
         return None
     if not username or not password:
         logger.error("create_user 需要非空 username 与 password")
         return None
+    if created_by is not None:
+        if isinstance(created_by, bool) or not isinstance(created_by, int) \
+                or created_by <= 0:
+            logger.error(f"create_user 拒绝非法 created_by: {created_by!r}"
+                         "（须为建号人 users.id 正整数或 None）")
+            return None
     try:
         with get_db_cursor(autocommit=False) as cursor:
             cursor.execute(
                 "INSERT INTO users (username, password_hash, display_name, role, "
-                "active, must_change_password) VALUES (%s, %s, %s, %s, 1, 1)",
-                (username, hash_password(password), display_name, role),
+                "active, must_change_password, created_by) "
+                "VALUES (%s, %s, %s, %s, 1, 1, %s)",
+                (username, hash_password(password), display_name, role, created_by),
             )
             new_id = int(cursor.lastrowid)
             for new_role in LEGACY_ROLE_TO_NEW_ROLES.get(role, ()):
                 cursor.execute(
                     "INSERT INTO user_roles (user_id, role, granted_by) "
-                    "VALUES (%s, %s, NULL)",
-                    (new_id, new_role),
+                    "VALUES (%s, %s, %s)",
+                    (new_id, new_role, created_by),
                 )
         return new_id
     except pymysql.Error as e:
@@ -459,7 +559,7 @@ def list_users() -> List[Dict[str, Any]]:
         return []
 
 
-def set_role(user_id: int, role: str) -> bool:
+def set_role(user_id: int, role: str, *, actor: Any = None) -> bool:
     """
     修改用户角色（旧枚举兼容接口）。
 
@@ -469,16 +569,28 @@ def set_role(user_id: int, role: str) -> bool:
     （如 dict_admin），构成提权漏洞。六角色的叠加授权走 grant_role /
     revoke_role（不受本接口影响，除非基线实际变更）。
 
+    **数据层直调面口径（R1-1，批次 12）**：keyword ``actor=None``——None =
+    系统作业；页面调用点**必须**传 ``actor=当前会话用户``。actor 为 dict 时
+    其有效六角色须含 dict_admin/sys_admin（基线改写 ≙ 一次角色重置，管理面
+    职能），不足抛 PermissionError —— R1 报告复现①（低权改角色提权）的
+    数据层收口；其余类型 fail-closed 同抛。细粒度口径（授予/撤销管理角色仅
+    词典管理员）由页面层 guards.require_role 硬闸门先行判定。
+
     Args:
         user_id: 用户 id
         role: 目标角色（必须 ∈ ROLES）
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
 
     Returns:
         bool: 角色实际变更（或用户存在且值有变化）为 True；角色非法 /
         用户不存在 / 数据库错误为 False。目标值与现值相同时 MySQL 不计为
         变更行，返回 False（对页面而言等价于「未变更」，也不动 user_roles
         —— 显式叠加的角色不被误清）。
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（R1-1 直调面）。
     """
+    _require_actor_roles(actor, "修改用户基线角色", _ACTOR_MANAGEMENT_ROLES)
     if role not in ROLES:
         logger.error(f"set_role 拒绝非法角色: {role!r}")
         return False
@@ -506,17 +618,33 @@ def set_role(user_id: int, role: str) -> bool:
         return False
 
 
-def set_active(user_id: int, active: bool) -> bool:
+def set_active(user_id: int, active: bool, *, actor: Any = None) -> bool:
     """
     停用（False）/ 启用（True）用户。
 
     停用的用户 verify_login 返回 None（不能登录），但记录保留 ——
     历史 submissions 的 coder_id 外键仍指向他，物理删除会断引用。
 
+    **数据层直调面口径（R1-1 同款，批次 12 随账号管理页停用调用点提前收口
+    —— 其余写函数的 actor 化仍归批次 13）**：keyword ``actor=None``——None =
+    系统作业；页面调用点**必须**传 ``actor=当前会话用户``。actor 为 dict 时
+    其有效六角色须含 dict_admin/sys_admin（账号生命周期是平台管理员职能，
+    架构规范 §8；对管理角色账号的停用另有页面层管理闸门 R1-7），不足抛
+    PermissionError；其余类型 fail-closed 同抛。
+
+    Args:
+        user_id: 用户 id
+        active: True 启用 / False 停用
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
+
     Returns:
         bool: 状态实际变更为 True；用户不存在 / 数据库错误为 False。
         目标状态与现值相同时 MySQL 不计为变更行，返回 False。
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（R1-1 直调面）。
     """
+    _require_actor_roles(actor, "停用/启用用户", _ACTOR_MANAGEMENT_ROLES)
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -696,7 +824,8 @@ def has_role(user_id: int, role: str) -> bool:
     return role in list_roles(user_id)
 
 
-def grant_role(user_id: int, role: str, granted_by: Optional[int] = None) -> bool:
+def grant_role(user_id: int, role: str, granted_by: Optional[int] = None,
+               *, actor: Any = None) -> bool:
     """
     授予用户一个六角色（user_roles 多角色，一人可叠加）。
 
@@ -704,14 +833,26 @@ def grant_role(user_id: int, role: str, granted_by: Optional[int] = None) -> boo
     口径一致）；角色非法 / 用户不存在 / 数据库错误返回 False。
     停用用户允许预授权（启用后生效；读取侧 fail-closed 已兜底）。
 
+    **数据层直调面口径（R1-1，批次 12）**：keyword ``actor=None``——None =
+    系统作业（user_roles 存量迁移）；页面调用点**必须**传 ``actor=当前会话
+    用户``。actor 为 dict 时其有效六角色须含 dict_admin/sys_admin，不足抛
+    PermissionError —— R1 报告复现①（annotator grant_role 授 dict_admin
+    实现提权）的数据层收口；其余类型 fail-closed 同抛。细粒度提权硬闸门
+    （管理角色仅词典管理员可授/撤）由页面层 guards.require_role 先行判定。
+
     Args:
         user_id: 用户 id
         role: 六角色之一（NEW_ROLES）
         granted_by: 授权人 id（平台管理员；系统迁移可为 None）
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
 
     Returns:
         bool: 实际新增授权为 True。
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（R1-1 直调面）。
     """
+    _require_actor_roles(actor, "授予六角色", _ACTOR_MANAGEMENT_ROLES)
     if role not in NEW_ROLES:
         logger.error(f"grant_role 拒绝非法角色: {role!r}")
         return False
@@ -736,14 +877,28 @@ def grant_role(user_id: int, role: str, granted_by: Optional[int] = None) -> boo
         return False
 
 
-def revoke_role(user_id: int, role: str) -> bool:
+def revoke_role(user_id: int, role: str, *, actor: Any = None) -> bool:
     """
     撤销用户的一个六角色。
+
+    **数据层直调面口径（R1-1，批次 12）**：与 grant_role 同款 keyword
+    ``actor=None``——None = 系统作业；页面调用点必须传当前会话用户；actor
+    为 dict 时有效六角色须含 dict_admin/sys_admin，不足抛 PermissionError
+    （低权撤他人角色＝变相攻击面，与授予同闸）；其余类型 fail-closed 同抛。
+
+    Args:
+        user_id: 用户 id
+        role: 六角色之一（NEW_ROLES）
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
 
     Returns:
         bool: 实际撤销为 True；未持有 / 角色非法 / 数据库错误为 False
         （与 set_role/set_active「未变更= False」口径一致）。
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（R1-1 直调面）。
     """
+    _require_actor_roles(actor, "撤销六角色", _ACTOR_MANAGEMENT_ROLES)
     if role not in NEW_ROLES:
         logger.error(f"revoke_role 拒绝非法角色: {role!r}")
         return False
@@ -836,7 +991,7 @@ def is_using_default_password(user_id: int) -> bool:
 MIN_PASSWORD_LENGTH = 8
 
 
-def change_password(user_id: int, new_plain: str) -> bool:
+def change_password(user_id: int, new_plain: str, *, actor: Any = None) -> bool:
     """
     修改用户口令：长度 ≥ 8 校验 + pbkdf2 重哈希（新随机盐）后写库。
 
@@ -844,14 +999,29 @@ def change_password(user_id: int, new_plain: str) -> bool:
     create_user 相同（hash_password 每次生成新盐），旧口令立即失效；
     成功后同时清 must_change_password 标志（改密义务已履行）。
 
+    **数据层直调面口径（R1-1，批次 12）**：keyword ``actor=None``——None =
+    系统作业（改密义务批量清零等）；页面调用点**必须**传 ``actor=当前会话
+    用户``。actor 为 dict 时仅两条路放行：**本人**（actor["id"] == user_id，
+    自助改密/强制改密横幅）或有效六角色含 dict_admin/sys_admin（管理员重置，
+    架构规范 §8 账号生命周期）；其余抛 PermissionError —— R1 报告复现②
+    （低权 change_password 改他人口令＝账号接管）的数据层收口；非 dict
+    垃圾值 fail-closed 同抛。
+
     Args:
         user_id: 用户 id
         new_plain: 新明文口令（只在内存中出现，不落库、不落日志）
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
 
     Returns:
         bool: 修改成功为 True；新口令长度不足 8 / 非字符串 /
         用户不存在 / 数据库错误为 False。
+
+    Raises:
+        PermissionError: actor 非 None 且既非本人、有效角色集又不含管理角色
+            （含非 dict 垃圾值）—— R1-1 直调面。
     """
+    _require_actor_roles(actor, "修改用户口令", _ACTOR_MANAGEMENT_ROLES,
+                         self_uid=user_id)
     if not isinstance(new_plain, str) or len(new_plain) < MIN_PASSWORD_LENGTH:
         logger.error(
             f"change_password 拒绝弱口令（用户 {user_id}，长度 "

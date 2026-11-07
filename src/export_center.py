@@ -9,7 +9,10 @@
 - 内容性导出仅词典管理员——调用方传 actor（页面层 `guards.require_dict_admin()`
   通过后的用户 dict），本模块校验 effective 角色集含 dict_admin，否则拒绝；
 - 运维性备份（平台管理员）不是交付通道，与本中心分离；
-- 不含 users/密码等账号安全数据（内容域快照显式排除）。
+- 不含 users/密码等账号安全数据（内容域快照显式排除）；
+- definitions 导出排除 import_voided=1（R3-9c：导入回滚作废行不进出版交付
+  快照，行仍留库审计；见 _dump_table_csv）；
+- export_batches.operator_id 只落有效 users.id 或 NULL（R3-6，不落 0 假人）。
 
 降级：某内容表不存在→该表跳过并记入 `skipped`（如实，不编空文件）；
 库不可用→整单失败返回 error。
@@ -26,6 +29,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src.import_engine import has_import_voided_column
 from src.mysql_db import get_db_cursor
 from src.users_db import effective_six_roles
 
@@ -55,11 +59,37 @@ CONTENT_TABLES: List[str] = [
 
 EXPORT_ROOT = Path(__file__).resolve().parent.parent / "data" / "exports"
 
+# R3-4b 存量迁移：export_batches 补出版留痕两列（谁把快照流转到 published、
+# 何时）。建表 SQL 保持原样（存量库走 ALTER 幂等迁移，information_schema
+# 探测、已有则跳过；仿 users_db.must_change_password 先例）。revoked 流转
+# 不写这两列（列名语义即出版人；撤销留痕走服务端日志）。
+EXPORT_BATCHES_AUDIT_COLUMNS = (
+    ("published_by",
+     "ALTER TABLE export_batches ADD COLUMN published_by VARCHAR(64) NULL"),
+    ("published_at",
+     "ALTER TABLE export_batches ADD COLUMN published_at DATETIME NULL"),
+)
+
+
+def _column_exists(cursor, table: str, column: str) -> bool:
+    """表上是否已有该列（让 ALTER 幂等；仿 users_db._column_exists）。"""
+    cursor.execute(
+        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
+             AND COLUMN_NAME = %s""",
+        (table, column),
+    )
+    return int(cursor.fetchone()["n"] or 0) > 0
+
 
 def ensure_export_tables() -> None:
-    """幂等建 export_batches（快照审计线）。"""
+    """幂等建 export_batches（快照审计线）＋补出版留痕两列（R3-4b，幂等）。"""
     with get_db_cursor() as cursor:
         cursor.execute(EXPORT_BATCHES_TABLE_SQL)
+        for column, sql in EXPORT_BATCHES_AUDIT_COLUMNS:
+            if not _column_exists(cursor, "export_batches", column):
+                cursor.execute(sql)
+                logger.info(f"export_batches.{column} 列已补齐（R3-4b 出版留痕迁移）")
 
 
 def _table_exists(table: str) -> bool:
@@ -72,9 +102,16 @@ def _table_exists(table: str) -> bool:
 
 
 def _dump_table_csv(table: str) -> tuple[str, int]:
-    """导出单表全行为 CSV 文本（表头+行）；返回 (csv 文本, 行数)。"""
+    """导出单表全行为 CSV 文本（表头+行）；返回 (csv 文本, 行数)。
+
+    definitions 行外排除 import_voided=1（R3-9c）：导入回滚的作废行只留库
+    审计，不进出版交付的内容域快照；列缺失（存量库未跑过导入迁移）时如实
+    导出全表（探测见 import_engine.has_import_voided_column）。"""
+    sql = f"SELECT * FROM {table}"  # 表名来自模块常量白名单
+    if table == "definitions" and has_import_voided_column():
+        sql += " WHERE import_voided = 0"
     with get_db_cursor() as cursor:
-        cursor.execute(f"SELECT * FROM {table}")  # 表名来自模块常量白名单
+        cursor.execute(sql)
         rows = cursor.fetchall() or []
     if not rows:
         return "", 0
@@ -133,11 +170,19 @@ def build_content_snapshot(actor: Optional[Dict[str, Any]] = None,
                         f"总行数: {rows_total}\n"
                         f"许可终检: {'已过' if license_checked else '未过（仅内部使用）'}\n")
         with get_db_cursor() as cursor:
+            # operator_id 落库口径（R3-6）：actor 携带有效 id 才落正整数，
+            # 否则 NULL（审计「未知操作人」）—— 绝不落 0（users.id 从 1 起，
+            # 0 是不存在的假操作人，污染审计线）。列本就 NULL 可空，无需迁移。
+            operator_id = (
+                int(actor["id"])
+                if isinstance(actor, dict) and actor.get("id")
+                else None
+            )
             cursor.execute(
                 "INSERT INTO export_batches (operator_id, scope, file_path, "
                 "rows_total, tables_included, tables_skipped, license_checked, status) "
                 "VALUES (%s, 'content_snapshot', %s, %s, %s, %s, %s, 'ready')",
-                (int(actor.get("id") or 0), str(zip_path.relative_to(
+                (operator_id, str(zip_path.relative_to(
                     Path(__file__).resolve().parent.parent)), rows_total,
                  json.dumps(included), json.dumps(skipped),
                  1 if license_checked else 0),

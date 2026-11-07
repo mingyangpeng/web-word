@@ -166,11 +166,42 @@ def require_login() -> Optional[Dict[str, Any]]:
 # 测试或工具直接注入 session_state["user"] 的会话无标记，行为与旧版一致。
 _USER_DB_BACKED_KEY = "_user_db_backed"
 
+# 登出白名单（R1-6）：退出登录时**保留**的会话键 —— 只留三类基建键：
+#   * 幂等建表就绪旗标（_user_tables_ready / _wordforms_table_ready：
+#     每会话只跑一次的启动优化，与登录态无关，清了只是下轮重跑一次）；
+#   * 侧边栏折叠偏好（sidebar_collapsed：UI 偏好，非用户数据）。
+# 其余键全部 pop（遍历 keys() 快照）—— 业务键（verb_result / show_result /
+# card_expanded / _display_def_cache / page / hot_filter 等）与登录态键
+# （user / _user_db_backed）登出即清：上一用户的查询结果、卡片展开态、
+# 残留页不得泄漏给共享终端的下一使用者（R1-6 全清口径）。
+_LOGOUT_KEEP_KEYS = frozenset({
+    "_user_tables_ready",
+    "_wordforms_table_ready",
+    "sidebar_collapsed",
+})
+
+# 一次性登出提示旗标（R1-6 全清配套；_logout 落、main() pop 即消费）
+_LOGOUT_FLASH_KEY = "_logout_flash"
+
 
 def _logout() -> None:
-    """退出登录：清除会话用户（规范 §6-5，不做 cookie 持久化）。"""
-    st.session_state.pop("user", None)
-    st.session_state.pop(_USER_DB_BACKED_KEY, None)
+    """退出登录：会话**全清**＋启动白名单（R1-6；规范 §6-5 不做 cookie 持久化）。
+
+    旧实现只 pop user/_user_db_backed 两个键，业务键（查询结果 verb_result /
+    show_result、卡片展开态 card_expanded、释义缓存 _display_def_cache、
+    残留页 page、热门筛选 hot_filter）跨登出存活 —— 共享终端下下一使用者
+    可见上一用户的工作痕迹。现改为遍历 st.session_state.keys() 快照全清，
+    仅保留 _LOGOUT_KEEP_KEYS 三类基建键。
+
+    全清后本就不存在「残留受保护页」可供下一轮登录门拦截，退出动作改为
+    显式落一个一次性提示旗标（_LOGOUT_FLASH_KEY，main() 下一轮 pop 即
+    消费转 st.warning「…请先登录…」）—— 与旧版「残留页登出门提示请先
+    登录」同一用户可见语义（集成断言锁定），只是提示不再依赖残留页。
+    """
+    for key in list(st.session_state.keys()):
+        if key not in _LOGOUT_KEEP_KEYS:
+            st.session_state.pop(key)
+    st.session_state[_LOGOUT_FLASH_KEY] = True
 
 
 def _refresh_session_user() -> Optional[Dict[str, Any]]:
@@ -1510,7 +1541,7 @@ def _render_default_password_guard(user: Dict[str, Any]) -> None:
             st.sidebar.error("两次输入的新口令为空或不一致。")
         elif len(new1) < 8:
             st.sidebar.error("新口令长度至少 8 位。")
-        elif change_password(uid, new1):
+        elif change_password(uid, new1, actor=user):
             st.sidebar.success("✅ 口令已修改，本提示不再出现。")
         else:
             st.sidebar.error("修改失败（数据库未写入），请重试。")
@@ -1558,7 +1589,7 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
     if not verify_login(username, old_password):
         st.sidebar.error("当前密码不正确。")
         return
-    if change_password(uid, new_password):
+    if change_password(uid, new_password, actor=user):
         st.sidebar.success("✅ 密码已修改，下次登录请使用新密码。")
     else:
         st.sidebar.error("修改失败（数据库未写入），请重试。")
@@ -2518,20 +2549,27 @@ _LLM_TAG_TO_ADMIT = {"Y": "Y", "拓展": "EXT", "N": "N"}
 def render_annotation_page() -> None:
     """🏷️ 标注平台（按角色分派；规范 §5，权限判定在渲染入口 §6-4）。
 
-    * admin    → 既有单人流全部保留（原表单直写权威层的快速通道），
-                 页面顶部加快速通道提示；
-    * reviewer → 多人提交流 + 分歧清单与仲裁面板；
-    * annotator→ 多人提交流（annotator 互不可见，规范 §0 独立性）；
-    * viewer   → 无权限提示。
+    R1-2 收口（施工规范 §14 批次 12）：入口判定从 legacy role 列改为
+    **有效六角色集**（users_db.effective_six_roles，与侧边栏可见性同源）
+    —— 授予式用户（legacy 列与 user_roles 授予不一致，如旧列 viewer 但已
+    grant_role('annotator')）不再被拦在页外；判定口径：
+
+    * viewer 单角色（有效集除 viewer 外为空） → 无权限提示；
+    * dict_admin（legacy admin 经映射两位一体自然命中）→ 既有单人流全部
+      保留（原表单直写权威层的快速通道），页面顶部加快速通道提示 ——
+      直写权威层是词典数据写操作，与 guards.require_dict_admin 同口径；
+    * reviewer / dict_admin / sys_admin → 多人提交流 + 分歧清单与仲裁面板；
+    * editor / annotator → 多人提交流（annotator 互不可见，规范 §0 独立性）。
     """
     user = _current_user()
-    role = (user or {}).get("role")
+    effective = effective_six_roles(user)
 
-    if role == "viewer":
-        st.warning("⛔ 无权限：标注平台需要 annotator / reviewer / admin 角色（viewer 只读）。")
+    if not (effective - {"viewer"}):
+        st.warning("⛔ 无权限：标注平台需要 annotator / reviewer / editor / admin "
+                   "角色（viewer 只读）。")
         return
 
-    if role == "admin":
+    if "dict_admin" in effective:
         st.info(
             "🛠️ 管理员快速通道：本页表单**直写权威层**（word_senses / oald_senses）；"
             "多人提交流见「📥 标注提交」页。",
@@ -2540,11 +2578,11 @@ def render_annotation_page() -> None:
         _render_annotation_admin_view()
         return
 
-    # annotator / reviewer：多人提交流（AI 草稿可见，验收 V7）
+    # annotator / reviewer（及 editor / sys_admin 过渡兼容）：多人提交流（AI 草稿可见，验收 V7）
     st.markdown(f"<h1 style='{HEADER_H1}'>🏷️ 标注平台</h1>", unsafe_allow_html=True)
     render_page_usage_guide("submission")
     render_submission_flow()
-    if role == "reviewer":
+    if effective & {"dict_admin", "sys_admin", "reviewer"}:
         render_reviewer_panel()
 
 
@@ -2772,19 +2810,22 @@ def _submission_sense_status(s: dict) -> str:
 def render_submission_page() -> None:
     """📥 标注提交页：多人提交流的独立入口（annotator/reviewer/admin）。
 
-    权限判定在渲染入口（规范 §6-4）：viewer 无权限；reviewer/admin 额外
-    渲染分歧清单与仲裁面板。admin 的单人流快速通道在「🏷️ 标注平台」页。
+    权限判定在渲染入口（规范 §6-4），R1-2 收口为有效六角色集判定（授予式
+    用户不再被 legacy 列拦在页外）：有效集除 viewer 外为空 → 无权限；
+    reviewer/dict_admin/sys_admin 额外渲染分歧清单与仲裁面板。admin 的
+    单人流快速通道在「🏷️ 标注平台」页。
     """
     st.markdown(f"<h1 style='{HEADER_H1}'>📥 标注提交</h1>", unsafe_allow_html=True)
     render_page_usage_guide("submission")
 
-    role = (_current_user() or {}).get("role")
-    if role == "viewer":
-        st.warning("⛔ 无权限：标注提交需要 annotator / reviewer / admin 角色（viewer 只读）。")
+    effective = effective_six_roles(_current_user())
+    if not (effective - {"viewer"}):
+        st.warning("⛔ 无权限：标注提交需要 annotator / reviewer / editor / admin "
+                   "角色（viewer 只读）。")
         return
 
     render_submission_flow()
-    if role in ("admin", "reviewer"):
+    if effective & {"dict_admin", "sys_admin", "reviewer"}:
         render_reviewer_panel()
 
 
@@ -2993,15 +3034,17 @@ def render_submission_flow() -> None:
 def render_reviewer_panel() -> None:
     """⚖️ 仲裁面板（reviewer/admin）：分歧清单（各编码人取值对照）→ gold 定稿。
 
-    权限判定在函数入口（规范 §6-4）：annotator/viewer 一律拦截 ——
+    权限判定在函数入口（规范 §6-4），R1-2 收口为有效六角色集（与信度页
+    同一允许集 dict_admin/sys_admin/reviewer）：annotator/viewer 一律拦截 ——
     detect_disagreements / get_submissions_for_sense 属「看全部」入口，
-    不得暴露给 annotator（用户决策④）。
+    不得暴露给 annotator（用户决策④）。授予式 reviewer（legacy 列 viewer
+    但 user_roles 已授予 reviewer）自此放行。
     """
     user = _current_user()
     if user is None:
         st.warning("请先登录")
         return
-    if user.get("role") not in ("admin", "reviewer"):
+    if not (effective_six_roles(user) & {"dict_admin", "sys_admin", "reviewer"}):
         st.error("⛔ 仲裁面板仅 reviewer / admin 可用（annotator 之间互相不可见，规范 §0）。")
         return
     if not DB_AVAILABLE:
@@ -3079,7 +3122,8 @@ def render_reviewer_panel() -> None:
                         if g_align:
                             gold["alignment"] = g_align
                         if save_adjudication(d["sense_id"], "admission", adjudicator_id,
-                                             gold, sub_ids, (g_note.strip() or None)):
+                                             gold, sub_ids, (g_note.strip() or None),
+                                             actor=user):
                             # 提示写入会话旗标再 rerun：直接 st.success 会被
                             # st.rerun() 丢弃（本 run 输出整体作废）
                             st.session_state["_adjudication_done"] = (
@@ -3131,6 +3175,11 @@ def main():
         _page = "cluster"
         st.session_state["page"] = "cluster"
     render_sidebar()
+    # R1-6 全清配套的一次性登出提示（_logout 落旗标，这里 pop 即消费）：
+    # 全清后不再有「残留受保护页」供登录门拦截提示，退出即显式提示会话
+    # 已清空须重新登录（与旧版「请先登录」提示同一用户可见语义）。
+    if st.session_state.pop(_LOGOUT_FLASH_KEY, None):
+        st.warning("已退出登录：会话数据已清空，请先登录后再访问受保护页面。")
     if _page == "graph":
         render_interactive_graph_page()
     elif _page == "corpus":

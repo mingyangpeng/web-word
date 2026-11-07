@@ -121,7 +121,8 @@ def _current_user() -> Optional[Dict[str, Any]]:
 
 
 def _gate_error(me: Dict[str, Any], target_role: str,
-                target_uid: Optional[int] = None) -> Optional[str]:
+                target_uid: Optional[int] = None,
+                *, manage_action: Optional[str] = None) -> Optional[str]:
     """提权硬闸门（授予/撤销/改基线/建号四写路径共用；批次 6-T 收口）。
 
     写动作提交后、调用数据层**之前**判定：把目标角色映射为「允许角色集 +
@@ -150,26 +151,46 @@ def _gate_error(me: Dict[str, Any], target_role: str,
     （list_roles，含旧列兜底）探测目标是否兼有管理角色，是则无论新基线是
     什么都按管理角色闸门判定。
 
+    R1-7 扩展（manage_action keyword，批次 12）：停用/启用等**账号生命周期
+    动作**的目标不是角色而是用户 —— 传 manage_action（动作名）时按目标用户
+    实时角色判定：目标兼有管理角色（dict_admin/sys_admin）→ 操作人须
+    dict_admin（管理角色账号的停用/启停是词典管理员权柄，防止纯平台管理员
+    停用词典管理员）；普通账号 → 两类管理员皆可（账号生命周期归平台管理员，
+    架构规范 §8）。判定实现与角色路径同一 guards.require_role 调用。
+
     Args:
         me: 当前操作人会话用户 dict（显式传给 guards，测试可注入）。
-        target_role: 目标角色名（六角色或 legacy 基线角色）。
+        target_role: 目标角色名（六角色或 legacy 基线角色；manage_action
+            给定时忽略）。
         target_uid: 目标用户 id（改基线路径传，用于撤方向探测；其余路径 None）。
+        manage_action: R1-7 账号生命周期动作名（如「停用/启用管理角色账号」）；
+            给定时走目标用户管理角色探测分支，target_role 不参与判定。
     """
-    if target_uid is not None and ({"dict_admin", "sys_admin"} & set(list_roles(int(target_uid)))):
-        target_role = "admin"  # 撤方向封堵：等价一次管理角色撤销 → 同闸
-    if target_role in ("dict_admin", "sys_admin", "admin"):
-        allowed, action = ("dict_admin",), _ACTION_ADMIN_ROLES
-    elif target_role == "viewer":
-        allowed, action = ("dict_admin", "sys_admin"), _ACTION_VIEWER_ROLE
-    elif target_role in ("reviewer", "editor", "annotator"):
-        allowed = (
-            ("dict_admin", "sys_admin")
-            if _SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT
-            else ("dict_admin",)
-        )
-        action = _ACTION_FUNCTIONAL_ROLE
+    if manage_action is not None:
+        if target_uid is not None and (
+            {"dict_admin", "sys_admin"} & set(list_roles(int(target_uid)))
+        ):
+            allowed, action = ("dict_admin",), manage_action
+        else:
+            allowed, action = ("dict_admin", "sys_admin"), manage_action
     else:
-        allowed, action = (), "未知角色的设置"
+        if target_uid is not None and (
+            {"dict_admin", "sys_admin"} & set(list_roles(int(target_uid)))
+        ):
+            target_role = "admin"  # 撤方向封堵：等价一次管理角色撤销 → 同闸
+        if target_role in ("dict_admin", "sys_admin", "admin"):
+            allowed, action = ("dict_admin",), _ACTION_ADMIN_ROLES
+        elif target_role == "viewer":
+            allowed, action = ("dict_admin", "sys_admin"), _ACTION_VIEWER_ROLE
+        elif target_role in ("reviewer", "editor", "annotator"):
+            allowed = (
+                ("dict_admin", "sys_admin")
+                if _SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT
+                else ("dict_admin",)
+            )
+            action = _ACTION_FUNCTIONAL_ROLE
+        else:
+            allowed, action = (), "未知角色的设置"
     try:
         guards.require_role(me, allowed=allowed, action=action)
     except PermissionError as e:
@@ -288,7 +309,14 @@ def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
             "被提权硬闸门拒绝（guards.require_role）"
         )
         return
-    if set_role(uid, role):
+    # R1-1 直调面：数据层传 actor=当前会话用户（页面闸门之上再兜一道；
+    # PermissionError 转译 st.error，不静默）
+    try:
+        ok = set_role(uid, role, actor=me)
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
+    if ok:
         st.success(f"已将用户 id={uid} 的角色改为「{ROLE_LABELS.get(role, role)}」。")
         logger.info(f"admin {me.get('username')} 将用户 id={uid} 角色改为 {role}")
         st.rerun()
@@ -297,7 +325,14 @@ def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
 
 
 def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) -> None:
-    """停用/启用表单。当前登录管理员不在名单里（不能停用自己）。"""
+    """停用/启用表单。当前登录管理员不在名单里（不能停用自己）。
+
+    R1-7 管理闸门（批次 12）：目标用户实时兼有管理角色（dict_admin/sys_admin，
+    list_roles 读库判定）时，操作人须 dict_admin（_gate_error manage_action
+    口径）—— 防止纯平台管理员停用/启用词典管理员账号；普通账号两类管理员
+    皆可。数据层 set_active 另传 actor=当前会话用户（R1-1 直调面，纵深防御
+    第二层；PermissionError 转译 st.error）。
+    """
     st.markdown(f"<h3 style='{HEADER_H3}'>⏸️ 停用 / 启用</h3>", unsafe_allow_html=True)
     options = _user_options(users, exclude_id=int(me.get("id") or 0))
     if not options:
@@ -311,7 +346,22 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
         return
     uid = options[label]
     target_active = action.startswith("启用")
-    if set_active(uid, target_active):
+    # R1-7 管理闸门：目标兼有管理角色 → 操作人须 dict_admin（先判后调数据层）
+    gate_error = _gate_error(me, "", target_uid=uid,
+                             manage_action="停用/启用管理角色账号")
+    if gate_error:
+        st.error(gate_error)
+        logger.error(
+            f"用户 {me.get('username')} 尝试{'启用' if target_active else '停用'} "
+            f"id={uid}，被管理闸门拒绝（guards.require_role，R1-7）"
+        )
+        return
+    try:
+        ok = set_active(uid, target_active, actor=me)
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
+    if ok:
         st.success(f"已{'启用' if target_active else '停用'}用户 id={uid}。")
         logger.info(f"admin {me.get('username')} 将用户 id={uid} active 设为 {target_active}")
         st.rerun()
@@ -351,7 +401,19 @@ def _render_create_user_form(me: Dict[str, Any]) -> None:
             f"{role} 基线，被提权硬闸门拒绝（guards.require_role）"
         )
         return
-    new_id = create_user(username.strip(), password, display_name.strip(), role)
+    # 建号留痕（R3-5）：created_by = 当前会话用户 id（me 为登录会话 dict，
+    # 残缺注入按 None 处理 —— 数据层对非法 created_by 有一致拒绝口径）；
+    # R1-1 直调面：actor=当前会话用户（低权会话快照滞后时数据层兜底拒绝）
+    try:
+        new_id = create_user(
+            username.strip(), password, display_name.strip(), role,
+            created_by=(me.get("id") if isinstance(me, dict) and isinstance(
+                me.get("id"), int) else None),
+            actor=me,
+        )
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
     # 密码用完即焚：不留在 st.session_state（表单 clear_on_submit 之外兜底；
     # 键名与上方 text_input 的 key 一致）
     st.session_state.pop("users_admin_create_password", None)
@@ -449,17 +511,25 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 f"用户 {granter_name} 授予用户 id={target_uid} 六角色 {grant_role_sel} "
                 "被提权硬闸门拒绝"
             )
-        elif grant_role(target_uid, grant_role_sel, granted_by=granter_id):
-            st.success(
-                f"已授予用户 id={target_uid} 角色「{ROLE_LABELS.get(grant_role_sel, grant_role_sel)}」"
-                f"（granted_by={granter_id}）。"
-            )
-            logger.info(
-                f"admin {granter_name} 授予用户 id={target_uid} 六角色 {grant_role_sel}"
-            )
-            st.rerun()
         else:
-            st.error("授予未生效：该用户已持有该角色、用户不存在或数据库错误。")
+            # R1-1 直调面：数据层传 actor=当前会话用户（会话快照滞后的兜底拒绝）
+            try:
+                granted = grant_role(target_uid, grant_role_sel,
+                                     granted_by=granter_id, actor=me)
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
+            if granted:
+                st.success(
+                    f"已授予用户 id={target_uid} 角色「{ROLE_LABELS.get(grant_role_sel, grant_role_sel)}」"
+                    f"（granted_by={granter_id}）。"
+                )
+                logger.info(
+                    f"admin {granter_name} 授予用户 id={target_uid} 六角色 {grant_role_sel}"
+                )
+                st.rerun()
+            else:
+                st.error("授予未生效：该用户已持有该角色、用户不存在或数据库错误。")
     if revoke_submitted and revoke_role_sel:
         # 提权硬闸门：先判定，被拒则不调数据层（批次 4-N 立，6-T 收口到 guards）
         gate_error = _gate_error(me, revoke_role_sel)
@@ -469,16 +539,21 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 f"用户 {granter_name} 撤销用户 id={target_uid} 六角色 {revoke_role_sel} "
                 "被提权硬闸门拒绝"
             )
-        elif revoke_role(target_uid, revoke_role_sel):
-            st.success(
-                f"已撤销用户 id={target_uid} 角色「{ROLE_LABELS.get(revoke_role_sel, revoke_role_sel)}」。"
-            )
-            logger.info(
-                f"admin {granter_name} 撤销用户 id={target_uid} 六角色 {revoke_role_sel}"
-            )
-            st.rerun()
         else:
-            st.error("撤销未生效：该用户未持有该角色、用户不存在或数据库错误。")
+            try:
+                revoked = revoke_role(target_uid, revoke_role_sel, actor=me)
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
+            if revoked:
+                revoked_label = ROLE_LABELS.get(revoke_role_sel, revoke_role_sel)
+                st.success(f"已撤销用户 id={target_uid} 角色「{revoked_label}」。")
+                logger.info(
+                    f"admin {granter_name} 撤销用户 id={target_uid} 六角色 {revoke_role_sel}"
+                )
+                st.rerun()
+            else:
+                st.error("撤销未生效：该用户未持有该角色、用户不存在或数据库错误。")
 
 
 def render_users_admin_page() -> None:

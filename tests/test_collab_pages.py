@@ -15,7 +15,8 @@
     web_word_collab_test 后改 TEST_DB 一行即可）。
 
 覆盖面（阶段1施工规范 §5 对 Agent H 的要求）：
-  GUIDE 契约（四段式、steps≥3、label 口径）/ 角色门 _is_admin_like 三态 /
+  GUIDE 契约（四段式、steps≥3、label 口径）/ 角色门 _is_admin_like 六角色
+  口径（批次 12 R1-2 升级）＋ _can_adjudicate 裁决权（R1-5）/
   空理由拒绝逻辑 _validate_decision 四态 / 收件箱排序（uncertainty DESC、
   缺失最后、id ASC）/ 分派写读回路（INSERT assignments ↔ 我的任务查询，
   status≠closed 过滤）/ 动词搜索（参数化 LIKE）/ 工序枚举与表就绪探测。
@@ -45,6 +46,7 @@ from src.collab_pages import (  # noqa: E402
     KEY_PREFIX,
     LEGACY_ASSIGNEE_ROLES,
     _assignments_table_ready,
+    _can_adjudicate,
     _clean_reason,
     _candidate_assignees,
     _fmt_rate,
@@ -104,21 +106,85 @@ class TestGuideContract:
 
 
 class TestRoleGate:
-    """角色门 _is_admin_like 三态（过渡期判定 role == 'admin'）。"""
+    """角色门 _is_admin_like / _can_adjudicate（批次 12 R1-2/R1-5 六角色口径）。
+
+    _is_admin_like 升级为有效六角色集判定（users_db.effective_six_roles 单一
+    实现）：legacy role=='admin' 经映射两位一体自然通过（升级前后对存量账号
+    逐字节一致）；授予式 dict_admin/sys_admin（legacy 列 viewer/annotator 但
+    user_roles 已授予）自此放行 —— R1 家族「授予式用户不再被 legacy 判定
+    拦在门外」。reviewer/editor/annotator/viewer 一律 False。
+    """
 
     def test_admin_role_passes(self):
-        """态一：role=='admin' 视为兼有 dict_admin+sys_admin → True。"""
+        """legacy role=='admin' 经映射兼判 dict_admin+sys_admin → True。"""
         assert _is_admin_like({"id": 1, "username": "admin", "role": "admin"})
 
-    def test_other_roles_fail(self):
-        """态二：dict 键齐全但角色非 admin（含六角色值）→ False。"""
-        for role in ("reviewer", "annotator", "viewer", "dict_admin", "sys_admin"):
-            assert not _is_admin_like({"id": 2, "role": role}), role
+    def test_six_role_admin_snapshot_passes(self):
+        """R1-2 升级：六角色 roles 快照（dict_admin / sys_admin）→ True。
+
+        注：legacy users.role 列值域恒为旧四枚举，六角色只经会话 roles 快照
+        携带（verify_login_full），故直接 role='dict_admin' 不是真实会话形态
+        （effective fail-closed 空）—— 判定面是 roles 快照。
+        """
+        assert _is_admin_like({"id": 2, "role": "viewer",
+                               "roles": ["dict_admin", "viewer"]})
+        assert _is_admin_like({"id": 2, "role": "viewer",
+                               "roles": ["sys_admin"]})
+
+    def test_granted_admin_roles_pass(self):
+        """授予式管理角色（roles 快照）→ True（授予式用户不再被拦）。"""
+        assert _is_admin_like({"id": 3, "role": "viewer",
+                               "roles": ["dict_admin", "viewer"]})
+        assert _is_admin_like({"id": 4, "role": "annotator",
+                               "roles": ["sys_admin"]})
+
+    def test_non_admin_roles_fail(self):
+        """reviewer/editor/annotator/viewer（含授予式）→ False。"""
+        for user in (
+            {"id": 2, "role": "reviewer"},
+            {"id": 2, "role": "annotator"},
+            {"id": 2, "role": "viewer"},
+            {"id": 2, "role": "viewer", "roles": ["annotator", "viewer"]},
+            {"id": 2, "role": "viewer", "roles": ["reviewer"]},
+            {"id": 2, "role": "viewer", "roles": ["editor"]},
+        ):
+            assert not _is_admin_like(user), user
 
     def test_not_a_session_user_fails(self):
-        """态三：未登录/非 dict/缺 role 键 → False（fail-closed）。"""
+        """未登录/非 dict/缺角色键 → False（fail-closed）。"""
         for bad in (None, "admin", 123, [], {}, {"id": 3, "username": "x"}):
             assert not _is_admin_like(bad), repr(bad)
+
+
+class TestCanAdjudicate:
+    """收件箱裁决权 _can_adjudicate（R1-5：dict_admin/reviewer 两角色）。"""
+
+    def test_dict_admin_and_reviewer_pass(self):
+        """有效集含 dict_admin 或 reviewer → True（legacy admin 映射兼判）。"""
+        assert _can_adjudicate({"id": 1, "role": "admin"})
+        assert _can_adjudicate({"id": 3, "role": "reviewer"})
+        assert _can_adjudicate({"id": 2, "role": "viewer",
+                                "roles": ["dict_admin", "viewer"]})
+        assert _can_adjudicate({"id": 4, "role": "viewer",
+                                "roles": ["reviewer", "viewer"]})
+        assert _can_adjudicate({"id": 5, "role": "annotator",
+                                "roles": ["dict_admin"]})
+
+    def test_other_roles_fail(self):
+        """sys_admin/editor/annotator/viewer 单角色 → False（fail-closed）。"""
+        for user in (
+            {"id": 6, "role": "sys_admin"},
+            {"id": 7, "role": "viewer", "roles": ["editor"]},
+            {"id": 8, "role": "viewer", "roles": ["annotator", "viewer"]},
+            {"id": 9, "role": "viewer", "roles": ["sys_admin"]},
+            {"id": 10, "role": "viewer"},
+        ):
+            assert not _can_adjudicate(user), user
+
+    def test_not_a_session_user_fails(self):
+        """未登录/非 dict/缺角色键 → False（fail-closed）。"""
+        for bad in (None, "reviewer", 42, [], {}):
+            assert not _can_adjudicate(bad), repr(bad)
 
 
 class TestValidateDecision:

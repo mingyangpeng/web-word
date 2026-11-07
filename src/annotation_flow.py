@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Optional
 import pymysql
 
 from src.mysql_db import get_db_cursor
+from src.users_db import effective_six_roles
 
 logger = logging.getLogger(__name__)
 
@@ -609,6 +610,8 @@ def save_adjudication(
     gold_payload: dict,
     submission_ids: list,
     note: Optional[str],
+    *,
+    actor: Any = None,
 ) -> bool:
     """写入（或覆盖）一条仲裁定稿 gold，并把参与的提交置为 'adjudicated'。
 
@@ -621,16 +624,44 @@ def save_adjudication(
     * 两条语句在同一事务（get_db_cursor(autocommit=False)）：定稿落库与状态
       翻转要么都成功要么都不发生。
 
+    **数据层直调面口径（R1-1 第一批，施工规范 §14）**：keyword ``actor=None``
+    ——None = 系统作业（仲裁数据迁移等）；页面调用点**必须**传
+    ``actor=当前会话用户``。actor 为 dict 时其有效六角色须含 reviewer 及以上
+    仲裁面（dict_admin / sys_admin / reviewer —— 与 app 仲裁面板入口同一
+    允许集，判定单一实现 users_db.effective_six_roles），不足抛 PermissionError
+    （低权直调伪造 gold 定稿＝污染金标，与 R1-1 提权家族同源收口）；其余
+    类型 fail-closed 同抛。抛出发生在函数入口（try 之前），不落入 False 口径。
+
     Args:
         sense_id: 义位 id；task_type: 任务类型
         adjudicator_id: 仲裁人 id（页面层须已做 reviewer/admin role gate）
         gold_payload: 定稿判定（结构同 submit_annotation 的 payload，先校验）
         submission_ids: 参与仲裁的提交 id 列表（允许空列表 = 无历史提交直接定稿）
         note: 仲裁说明（可为 None）
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
 
     Returns:
         bool: 成功 True；参数非法或数据库错误 False
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（R1-1 直调面）。
     """
+    if actor is None:
+        pass  # 系统作业（docstring 口径：页面调用点必须传 actor）
+    elif isinstance(actor, dict):
+        effective = effective_six_roles(actor)
+        if not (effective & {"dict_admin", "sys_admin", "reviewer"}):
+            raise PermissionError(
+                f"保存仲裁定稿被拒绝：当前用户（{actor.get('username', '?')}）"
+                "有效角色集不含 reviewer/dict_admin —— 仲裁仅审校侧可执行"
+                "（数据层直调面口径：页面调用点必须传 actor=当前会话用户；"
+                "None=系统作业）。"
+            )
+    else:
+        raise PermissionError(
+            "保存仲裁定稿被拒绝：actor 须为会话用户 dict 或 None（系统作业）"
+            "——数据层直调面口径：页面调用点必须传 actor=当前会话用户。"
+        )
     if task_type not in TASK_TYPES:
         logger.error(f"save_adjudication 拒绝非法 task_type: {task_type!r}")
         return False

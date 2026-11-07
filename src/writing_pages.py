@@ -25,7 +25,10 @@ reviewed→revised→approved→final→published。编纂协作与标注协作�
               expander → 终裁通过（final 直达）/终裁否决（rejected＋理由必填）
               → writing_db.adjudicate_final（两级终审的例外通道收口）；
   📚 版本历史 版本链表（版本/状态/作者/based_on_version/体例版本）＋ 逐版
-              成文、意见线与 AI 快照，收口（resolve_comment）只标记不删行。
+              成文、意见线与 AI 快照，收口（resolve_comment）只标记不删行；
+              R1-10 脱敏：viewer/annotator 视角作者/意见人折算「编纂员 A/B」
+              （按出现序稳定编号），draft 态内容显示「🔒 撰写中」——
+              reviewer/dict_admin（含 editor）实名全链不变。
 
 权限（角色纯函数，**不 import app**）：_can_write（有效六角色 ∩ {editor,
 dict_admin}）/ _can_review（∩ {reviewer, dict_admin}）/ _can_adjudicate
@@ -200,6 +203,15 @@ _WRITE_ROLES = {"editor", "dict_admin"}
 _REVIEW_ROLES = {"reviewer", "dict_admin"}
 _ADJUDICATE_ROLES = {"dict_admin"}
 
+# 版本历史实名口径（R1-10，施工规范 §14 批次 12）：editor/reviewer/dict_admin
+# 实名全链不变（编纂协作与审校的署名权与追责链）；viewer/annotator（编纂圈外
+# 只读/盲标角色）视角作者/意见人折算「编纂员 A/B」。sys_admin 单角色（管理侧
+# 非编纂圈，且账号生命周期职能不涉成文内容）按折算处理 —— fail-closed 取窄。
+_HISTORY_REALNAME_ROLES = {"editor", "reviewer", "dict_admin"}
+
+# draft 态内容对折算视角的展示文案（R1-10：在途草稿不外露）
+_DRAFT_HIDDEN_TEXT = "🔒 撰写中（草稿内容仅作者与审校侧可见）"
+
 
 # ============================================
 # 角色纯函数（不 import app；判定复用 users_db 单一实现）
@@ -241,6 +253,45 @@ def _can_adjudicate(user: Any) -> bool:
     if not isinstance(user, dict):
         return False
     return bool(users_db.effective_six_roles(user) & _ADJUDICATE_ROLES)
+
+
+def _history_realname(user: Any) -> bool:
+    """版本历史是否实名（纯函数，fail-closed；R1-10 脱敏口径）。
+
+    有效六角色集与 _HISTORY_REALNAME_ROLES（editor/reviewer/dict_admin）
+    有交集即实名；viewer/annotator/未登录按折算处理 —— 作者/意见人显示
+    「编纂员 A/B」（按出现序稳定编号，见 _render_history_tab）。判定复用
+    users_db.effective_six_roles 单一实现（legacy admin 经映射兼判）。
+    """
+    if not isinstance(user, dict):
+        return False
+    return bool(users_db.effective_six_roles(user) & _HISTORY_REALNAME_ROLES)
+
+
+def _pseudonym_factory():
+    """「编纂员 A/B/…」稳定编号生成器（纯函数；R1-10 折算口径）。
+
+    按首次出现顺序编号：A、B、…、Z，超过 26 人后 A2、B2、…（同一 user id
+    恒得同一代号，不同 version 间可复现 —— 顺序敏感度仅限「谁先出现」，
+    与版本链升序一致）。返回 (lookup_fn, alias_map)：lookup_fn(None) 返回
+    「系统登记」。
+    """
+    alias_map: Dict[int, str] = {}
+
+    def _letter(idx: int) -> str:
+        if idx < 26:
+            return chr(ord("A") + idx)
+        return f"{chr(ord('A') + idx % 26)}{idx // 26 + 1}"
+
+    def _who(uid_any: Any) -> str:
+        uid = _safe_int(uid_any)
+        if uid is None:
+            return "（系统登记）"
+        if uid not in alias_map:
+            alias_map[uid] = f"编纂员 {_letter(len(alias_map))}"
+        return alias_map[uid]
+
+    return _who, alias_map
 
 
 def _current_user() -> Optional[Dict[str, Any]]:
@@ -664,7 +715,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         cluster_note = "⚠️ 未入簇（无聚类归属 —— 如实标注）"
     st.caption(f"版本锚 sense_ref = {ref} · 簇状态：{cluster_note}")
 
-    latest = writing_db.get_latest_version(ref)
+    latest = writing_db.get_latest_version(ref, viewer_id=me.get("id"))
     target = _resolve_edit_target(latest, me.get("id"))
     if target.get("notice"):
         st.info(target["notice"])
@@ -720,6 +771,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                 ok = writing_db.update_draft(
                     int(target["target_id"]), int(target["expect_version"]),
                     content, style_version or None, ai_snapshot,
+                    author_id=me.get("id"),
                 )
                 if ok:
                     st.success(
@@ -1000,7 +1052,14 @@ def _render_adjudication_view(me: Dict[str, Any]) -> None:
 
 
 def _render_history_tab(me: Dict[str, Any]) -> None:
-    """📚 版本历史：版本链表 ＋ 逐版成文 / AI 快照 / 意见线（全角色可读）。"""
+    """📚 版本历史：版本链表 ＋ 逐版成文 / AI 快照 / 意见线（全角色可读）。
+
+    **R1-10 脱敏口径（施工规范 §14 批次 12）**：viewer/annotator 视角
+    （_history_realname=False）作者/意见人折算「编纂员 A/B」（按出现序
+    稳定编号，_pseudonym_factory），draft 态内容与字数列显示
+    「🔒 撰写中」（在途草稿不外露）；reviewer/dict_admin（含 editor——
+    编纂圈署名权）实名全链不变。收口（标记意见已处理）仍按原角色口径。
+    """
     st.caption(
         "版本链按 sense_ref 升序：每版记作者 / based_on_version / 体例版本 —— "
         "三版本脊柱第三条（谁标的 → α → 簇 → 模板 → 释义版本）。"
@@ -1045,17 +1104,29 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     if not versions:
         st.info("该义位还没有任何释义版本：去「✍️ 撰写台」开第一版。")
         return
+
+    realname = _history_realname(me)
     names = _user_display_map()
+    who, alias_map = _pseudonym_factory()
+
+    def _who(uid_any: Any) -> str:
+        """实名 → 显示名；折算 → 「编纂员 A/B」（按出现序稳定编号）。"""
+        if realname:
+            return names.get(_safe_int(uid_any), f"#{uid_any}")
+        return who(uid_any)
+
     table_rows = []
     for v in versions:
-        author = names.get(_safe_int(v.get("author_id")), f"#{v.get('author_id')}")
+        is_hidden_draft = (
+            not realname and str(v.get("status") or "") == "draft"
+        )
         table_rows.append({
             "版本": f"v{v.get('version')}",
             "状态": STATUS_LABELS.get(str(v.get("status")), str(v.get("status"))),
-            "作者": author,
+            "作者": _who(v.get("author_id")),
             "基于": f"v{v.get('based_on_version')}" if v.get("based_on_version") else "—",
             "体例版本": str(v.get("style_version") or "—"),
-            "字数": len(str(v.get("content") or "")),
+            "字数": _DRAFT_HIDDEN_TEXT if is_hidden_draft else len(str(v.get("content") or "")),
             "创建时间": _format_dt(v.get("created_at")),
             "更新时间": _format_dt(v.get("updated_at")),
         })
@@ -1065,11 +1136,18 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     can_resolve_base = _can_review(me)
     my_id = _safe_int(me.get("id"))
     for v in versions:
-        author = names.get(_safe_int(v.get("author_id")), f"#{v.get('author_id')}")
         status = STATUS_LABELS.get(str(v.get("status")), str(v.get("status")))
         base = f"v{v.get('based_on_version')}" if v.get("based_on_version") else "—"
-        with st.expander(f"v{v.get('version')} · {status} · 作者：{author} · 基于：{base}"):
-            st.markdown(str(v.get("content") or ""))
+        with st.expander(
+            f"v{v.get('version')} · {status} · 作者：{_who(v.get('author_id'))} · 基于：{base}"
+        ):
+            is_hidden_draft = (
+                not realname and str(v.get("status") or "") == "draft"
+            )
+            if is_hidden_draft:
+                st.markdown(_DRAFT_HIDDEN_TEXT)
+            else:
+                st.markdown(str(v.get("content") or ""))
             ai = v.get("ai_draft")
             if ai:
                 with st.expander("🤖 AI/模板草稿快照"):
@@ -1078,11 +1156,10 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
             if comments:
                 st.markdown(f"**💬 意见线（{len(comments)} 条）**")
                 for c in comments:
-                    who = names.get(_safe_int(c.get("reviewer_id")),
-                                    f"#{c.get('reviewer_id')}")
                     flag = "✅ 已处理" if c.get("resolved") else "🔔 未处理"
                     st.markdown(
-                        f"- {flag} · {who} · {_format_dt(c.get('created_at'))}："
+                        f"- {flag} · {_who(c.get('reviewer_id'))} · "
+                        f"{_format_dt(c.get('created_at'))}："
                         f"{c.get('body')}"
                     )
                 open_comments = [c for c in comments if not c.get("resolved")]
@@ -1098,6 +1175,9 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
                         st.success(f"已标记 {done} 条意见为已处理（收口只标记，不删行）。")
             else:
                 st.caption("暂无意见。")
+    if not realname:
+        st.caption("🔒 视角提示：你的角色（viewer/annotator）对作者/意见人做匿名化"
+                   "折算（编纂员 A/B），草稿内容不外露 —— 实名链仅编纂与审校侧可见。")
 
 
 # ============================================

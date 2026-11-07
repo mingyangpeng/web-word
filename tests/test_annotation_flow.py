@@ -751,6 +751,53 @@ class TestSaveAdjudication:
         _patch_boom(monkeypatch)
         assert save_adjudication(101, "admission", 2, {"admission": "Y"}, [11], None) is False
 
+    # --- R1-1 直调面：actor 足色闸门（施工规范 §14 批次 12） ---
+
+    def test_actor_none_is_system_job(self, monkeypatch):
+        """actor=None（缺省）= 系统作业：现状不变（既有调用零破坏）。"""
+        cursor = _patch_cursor(monkeypatch)
+        assert save_adjudication(
+            101, "admission", 2, {"admission": "Y"}, [11], None) is True
+        assert len(cursor.executed) == 2          # INSERT gold + UPDATE 状态翻转
+
+    def test_actor_reviewer_and_above_pass(self, monkeypatch):
+        """reviewer/dict_admin/sys_admin（含 legacy admin 映射）→ 放行。"""
+        cursor = _patch_cursor(monkeypatch)
+        gold = {"admission": "Y"}
+        assert save_adjudication(101, "admission", 2, gold, [], None,
+                                 actor={"id": 3, "role": "viewer",
+                                        "roles": ["reviewer"]}) is True
+        assert save_adjudication(101, "admission", 2, gold, [], None,
+                                 actor={"id": 1, "role": "admin"}) is True
+        assert save_adjudication(101, "admission", 2, gold, [], None,
+                                 actor={"id": 5, "role": "viewer",
+                                        "roles": ["dict_admin"]}) is True
+        assert len(cursor.executed) == 3
+
+    def test_actor_low_privilege_raises_permission_error(self, monkeypatch):
+        """低权 actor（editor/annotator/viewer/空集）抛 PermissionError，不触库。"""
+        cursor = _patch_cursor(monkeypatch)
+        gold = {"admission": "Y"}
+        for actor in (
+            {"id": 7, "role": "viewer", "roles": ["annotator", "viewer"]},
+            {"id": 7, "role": "viewer", "roles": ["editor"]},
+            {"id": 7, "role": "viewer", "roles": ["viewer"]},
+            {"id": 7, "role": "annotator"},            # legacy 无六角色映射
+            {"id": 7, "role": "viewer"},               # 无 roles 键
+        ):
+            with pytest.raises(PermissionError, match="仲裁"):
+                save_adjudication(101, "admission", 2, gold, [11], None,
+                                  actor=actor)
+        assert cursor.executed == []                # 异常在触库前抛出
+
+    def test_actor_garbage_raises_permission_error(self, monkeypatch):
+        """非 dict 垃圾 actor（str/int/list）fail-closed 抛 PermissionError。"""
+        _patch_cursor(monkeypatch)
+        for actor in ("admin", 42, ["reviewer"], True):
+            with pytest.raises(PermissionError):
+                save_adjudication(101, "admission", 2, {"admission": "Y"},
+                                  [11], None, actor=actor)
+
 
 # ============================================
 # assign_task（补充函数）与 get_assignment_stats

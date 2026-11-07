@@ -58,7 +58,7 @@ PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
 本模块私有参数化辅助（media_db 契约未含的查询/流转，docstring 注明；写路径
 仅绑定状态单步流转一处，乐观并发守卫 WHERE status=当前态）：
   _find_asset_by_sha256 / _list_media_assets / _list_media_bindings /
-  _advance_binding_status
+  _advance_binding_status（R3-4a：流转时写入审定留痕 reviewed_by/reviewed_at）
 批次 8 上传通道（落盘后复用 register_asset 登记链，license/sha256 口径不变）：
   纯函数 _validate_upload（扩展名/MIME 白名单 + ≤50MB）与
   _upload_target_path（内容寻址落盘路径，tests 直接测）；
@@ -67,7 +67,8 @@ PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
   _g6_backup_summary（三卡摘要，DB/文件系统探测以可注入函数为默认实现，
   tests 直接测）＋ _g6_gate_blockers / _g6_gate_open / _g6_license_passed
   （闸门判定）＋ _advance_export_status（快照状态单步流转，export_center
-  契约未含的私有辅助，乐观并发守卫）；页面 _render_publication_tab；
+  契约未含的私有辅助，乐观并发守卫；R3-4b：published 流转写入出版留痕
+  published_by/published_at）；页面 _render_publication_tab；
   widget key 前缀 'pub_'（本 tab 内）。
 批次 11 AV2（G6 小尾巴收口：灰注转硬检）：体例终检升级为「style.yaml 在场
   ＋含 style_version 字段」硬检（纯函数 _g6_style_version，展示体例版本，
@@ -773,7 +774,6 @@ def _render_cockpit_tab() -> None:
     # 口径（架构 §8）：项目壳由平台管理员建壳并指定首位 chief；词典管理员亦可为
     # 自己的课题建壳（本区门已含 dict_admin）。chief 候选=有效六角色含 dict_admin
     # 的在用账号（首位词典管理员须能履行词典管理员职能）。
-    me = _current_user() or {}
     candidates = []
     for u in users_db.list_users():
         if not u.get("active", True):
@@ -885,6 +885,13 @@ def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
     if not submitted:
         return
     uid = user_options[user_label]
+    # R1-8（施工规范 §14 批次 12）：入册/改授是项目内授权写路径 —— 与同页
+    # 媒体/快照调用点对齐，API 级中央闸门再兜一道（页面 tab 门之上纵深防御）
+    try:
+        guards.require_dict_admin()
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
     try:
         ok = org_db.add_member(project_id, uid, role, granted_by=int(me.get("id") or 0))
     except Exception as e:  # org_db 理论上不抛，防御性转译（规范 §5 通用约定）
@@ -924,6 +931,12 @@ def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
     if not submitted:
         return
     uid = member_options[member_label]
+    # R1-8：移出项目是成员管理写路径 —— 中央闸门兜底（同 add_member 口径）
+    try:
+        guards.require_dict_admin()
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
     try:
         ok = org_db.remove_member(project_id, uid)
     except Exception as e:  # 防御性转译：org_db 拒绝/异常都进 warning，不静默
@@ -1010,6 +1023,12 @@ def _render_define_field_form(project_id: int, me: Dict[str, Any]) -> None:
         st.error("enum 字段需要至少 1 个枚举值（逗号分隔白名单）。")
         return
     payload_enum: Optional[List[str]] = enum_values if value_type == "enum" else None
+    # R1-8：定义字段是定制属性写路径 —— 中央闸门兜底（同页媒体/快照口径）
+    try:
+        guards.require_dict_admin()
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
     try:
         new_id = dict_admin_db.define_field(
             project_id, clean_code, clean_name, applies_to, value_type,
@@ -1073,6 +1092,12 @@ def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
     if not submitted:
         return
     fid = field_options[field_label]
+    # R1-8：弃用字段是定制属性写路径 —— 中央闸门兜底（同页媒体/快照口径）
+    try:
+        guards.require_dict_admin()
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
     try:
         ok = dict_admin_db.deprecate_field(fid)
     except Exception as e:  # 防御性转 st.error
@@ -1191,6 +1216,12 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
             st.error("数值字段的值必须是有限数字。")
         else:
             st.error("值不能为空。")
+        return
+    try:
+        # R1-8：为锚写值是定制属性写路径 —— 中央闸门兜底（同页媒体/快照口径）
+        guards.require_dict_admin()
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
         return
     try:
         ok = dict_admin_db.set_value(
@@ -1324,25 +1355,44 @@ def _list_media_bindings(limit: int = MEDIA_LIST_LIMIT) -> List[Dict[str, Any]]:
 
 
 def _advance_binding_status(binding_id: int, from_status: str,
-                            to_status: str) -> bool:
+                            to_status: str,
+                            reviewed_by: Optional[str] = None) -> bool:
     """绑定审定流转一步（**本模块唯一写路径**）：候选→审定→发布。
 
     参数化 UPDATE + 乐观并发守卫（WHERE status = from_status）：两人同时
     流转同一条时只有一人生效；rowcount=1 即成功。非法状态对（不在
     MEDIA_STATUS_NEXT 链上）直接拒绝 —— 逐级单步、不可跳级。
+
+    审定留痕（R3-4a）：reviewed_by 非空时随流转写入 media_bindings 的
+    reviewed_by（操作人，当前会话用户 username）与 reviewed_at（NOW()）——
+    每一步流转都刷新（列语义 = 把绑定推到当前态的人与时间）；未传（既有
+    调用方/测试缺省）维持旧 UPDATE 形态不碰这两列。列由 media_db
+    .ensure_media_tables 幂等迁移（媒体页入口已先调）。
+
+    Returns:
+        bool: 流转生效 True；id 非法 / 流转表外 / 状态已变 / 库不可用 False。
     """
     if _next_media_status(from_status) != to_status:
         logger.error(
             f"媒体绑定流转拒绝非单步对：{from_status!r} → {to_status!r}"
         )
         return False
+    actor = str(reviewed_by).strip() if reviewed_by is not None else ""
     try:
         with get_db_cursor() as cursor:
-            cursor.execute(
-                "UPDATE media_bindings SET status = %s "
-                "WHERE id = %s AND status = %s",
-                (to_status, int(binding_id), from_status),
-            )
+            if actor:
+                cursor.execute(
+                    "UPDATE media_bindings SET status = %s, "
+                    "reviewed_by = %s, reviewed_at = NOW() "
+                    "WHERE id = %s AND status = %s",
+                    (to_status, actor, int(binding_id), from_status),
+                )
+            else:
+                cursor.execute(
+                    "UPDATE media_bindings SET status = %s "
+                    "WHERE id = %s AND status = %s",
+                    (to_status, int(binding_id), from_status),
+                )
             return cursor.rowcount == 1
     except Exception as e:
         logger.error(f"媒体绑定流转失败（binding={binding_id}）: {e}")
@@ -1671,7 +1721,8 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
             return
         if _advance_binding_status(int(binding.get("id") or 0),
                                    str(binding.get("binding_status")),
-                                   next_status):
+                                   next_status,
+                                   reviewed_by=str((actor or {}).get("username") or "")):
             st.success(f"绑定 #{binding.get('id')} 已流转到「{next_status}」"
                        f"（审定人：{_esc(str((actor or {}).get('username') or '未知'))}）。"
                        "词条装配多模态区只取「发布」态绑定。")
@@ -2040,7 +2091,8 @@ def _g6_license_passed(checks: List[Dict[str, str]]) -> bool:
     return False
 
 
-def _advance_export_status(batch_id: int, from_status: str, to_status: str) -> bool:
+def _advance_export_status(batch_id: int, from_status: str, to_status: str,
+                           published_by: Optional[str] = None) -> bool:
     """快照状态单步流转（export_center 契约未含的页面私有辅助，docstring 留痕）。
 
     流转表（单向，无回退）：ready→published（G6 三项全过才放行 —— 闸门在
@@ -2049,6 +2101,12 @@ def _advance_export_status(batch_id: int, from_status: str, to_status: str) -> b
     revoked→ready 回退，防「撤销又复活」造成审计断链；published 亦为终态）。
     乐观并发守卫：UPDATE ... WHERE id=%s AND status=当前态 —— 两人同时流转
     只有一人生效（与 _advance_binding_status 同款）。
+
+    出版留痕（R3-4b）：流转到 published 且 published_by 非空时，随流转写入
+    export_batches 的 published_by（操作人，当前会话用户 username）与
+    published_at（NOW()）—— 列语义即出版人，revoked 流转不写（撤销留痕走
+    服务端日志）。列由 export_center.ensure_export_tables 幂等迁移（出版
+    页入口已先调）；未传（既有调用方/测试缺省）维持旧 UPDATE 形态不碰这两列。
 
     Returns:
         bool: 流转生效 True；id 非法 / 流转表外 / 状态已变 / 库不可用 False。
@@ -2065,13 +2123,22 @@ def _advance_export_status(batch_id: int, from_status: str, to_status: str) -> b
             f"非法快照流转被拒：{from_status!r} → {to_status!r}（单向流转表外）"
         )
         return False
+    actor = str(published_by).strip() if published_by is not None else ""
     try:
         with get_db_cursor() as cursor:
-            cursor.execute(
-                "UPDATE export_batches SET status = %s "
-                "WHERE id = %s AND status = %s",
-                (str(to_status), bid, str(from_status)),
-            )
+            if actor and str(to_status) == "published":
+                cursor.execute(
+                    "UPDATE export_batches SET status = %s, "
+                    "published_by = %s, published_at = NOW() "
+                    "WHERE id = %s AND status = %s",
+                    (str(to_status), actor, bid, str(from_status)),
+                )
+            else:
+                cursor.execute(
+                    "UPDATE export_batches SET status = %s "
+                    "WHERE id = %s AND status = %s",
+                    (str(to_status), bid, str(from_status)),
+                )
             return cursor.rowcount > 0
     except Exception as e:  # noqa: BLE001
         logger.error(f"快照状态流转失败（id={bid}）: {e}")
@@ -2203,14 +2270,18 @@ def _render_exports_flow(
         if st.button(
             "📤 标记 published（出版交付）", key="pub_publish_btn",
             type="primary", disabled=not gate_open,
-            help="G6 三项全过才可出版；published 为终态。",
+            help="G6 三项全过才可出版；published 为终态；出版人/时间随流转留痕"
+                 "（export_batches.published_by / published_at）。",
         ):
             try:
-                guards.require_dict_admin()
+                pub_actor = guards.require_dict_admin()
             except PermissionError as e:
                 st.error(f"⛔ {e}")
                 return
-            if _advance_export_status(int(row.get("id") or 0), "ready", "published"):
+            if _advance_export_status(
+                int(row.get("id") or 0), "ready", "published",
+                published_by=str((pub_actor or {}).get("username") or ""),
+            ):
                 st.success(
                     f"快照 #{row.get('id')} 已标记 published（出版交付，G6 已放行）。"
                 )

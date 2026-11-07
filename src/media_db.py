@@ -26,6 +26,11 @@
 
 接口（契约 §3-E）：
   ensure_media_tables / register_asset / bind_asset / list_assets_for_anchor
+  批次 R3 修复追加（非契约辅助，仿 persist_revert_log 先例）：
+  unbind_for_anchor(anchor_type, anchor_id) -> int（摘除一个锚上的**全部**
+  绑定，返回删除数 —— lexical_db.remove_example 删除例证前先调，孤儿绑定
+  不再依赖页面手工摘除）；media_bindings 另补 reviewed_by/reviewed_at
+  审计列（R3-4a，审定流转留痕，ensure 幂等迁移）。
 
 降级：
   数据库不可用时 ensure 只记日志不抛异常（页面可继续渲染），
@@ -126,6 +131,16 @@ MEDIA_BINDINGS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS media_bindings (
     REFERENCES media_assets(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
+# R3-4a 存量迁移：media_bindings 补审定留痕两列（谁把绑定流转到了当前态、
+# 何时）。建表 SQL 保持契约 §3-E 原样（存量库走 ALTER 幂等迁移，见
+# ensure_media_tables 内 _migrate_media_columns；新库「先建旧形 → ALTER 补列」，
+# 迁移路径与新库路径合二为一，仿 users_db.must_change_password 先例）。
+# 每项为 (列名, ALTER 语句) 对 —— 列名单列出来供 information_schema 探测。
+MEDIA_BINDINGS_AUDIT_COLUMNS = (
+    ("reviewed_by", "ALTER TABLE media_bindings ADD COLUMN reviewed_by VARCHAR(64) NULL"),
+    ("reviewed_at", "ALTER TABLE media_bindings ADD COLUMN reviewed_at DATETIME NULL"),
+)
+
 
 # ============================================
 # 建表
@@ -134,16 +149,37 @@ def ensure_media_tables() -> None:
     """幂等创建 media_assets / media_bindings 两表（契约 §3-E 表设计原样）。
 
     两表自含（锚是多态引用，不外键到任何词条表），可独立先行建表；
-    被数据库拒绝（无权限等）只记 error 日志不抛异常。
+    随后幂等迁移 media_bindings 的审定留痕两列（R3-4a，information_schema
+    探测、已有则跳过）。被数据库拒绝（无权限等）只记 error 日志不抛异常。
     """
     try:
         with get_db_cursor() as cursor:
             cursor.execute(MEDIA_ASSETS_TABLE_SQL)
             cursor.execute(MEDIA_BINDINGS_TABLE_SQL)
+            _migrate_media_columns(cursor)
     except pymysql.Error as e:
         logger.error(f"media 两表初始化失败（MySQL）: {e}")
     except Exception as e:
         logger.error(f"media 两表初始化意外错误: {e}")
+
+
+def _column_exists(cursor, table: str, column: str) -> bool:
+    """表上是否已有该列（让 ALTER 幂等；仿 users_db._column_exists）。"""
+    cursor.execute(
+        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
+             AND COLUMN_NAME = %s""",
+        (table, column),
+    )
+    return int(cursor.fetchone()["n"] or 0) > 0
+
+
+def _migrate_media_columns(cursor) -> None:
+    """media_bindings 存量结构迁移：补 reviewed_by / reviewed_at（幂等，R3-4a）。"""
+    for column, sql in MEDIA_BINDINGS_AUDIT_COLUMNS:
+        if not _column_exists(cursor, "media_bindings", column):
+            cursor.execute(sql)
+            logger.info(f"media_bindings.{column} 列已补齐（R3-4a 审定留痕迁移）")
 
 
 # ============================================
@@ -388,6 +424,63 @@ def bind_asset(
 
 
 # ============================================
+# 摘除（R3-3：锚级解绑 —— remove_example 删除例证前的清理通道）
+# ============================================
+def unbind_for_anchor(anchor_type: str, anchor_id: int) -> int:
+    """摘除一个锚上的**全部**媒体绑定（物理 DELETE），返回删除的绑定数。
+
+    为什么存在（R3-3）：media_bindings 无外键指向各锚表（多态引用），锚行
+    被删后绑定就成了孤儿行 —— 之前唯一的口径是「页面提示先去媒体库手工
+    摘除」，页面并没有这个按钮，孤儿绑定实际无人清理。现 lexical_db
+    .remove_example 删除例证前先调本函数（同事务/顺序执行均可），删除例证
+    与摘除绑定原子完成。
+
+    参数校验与 bind_asset 同口径（锚类型白名单 + anchor_id 正整数）；锚上
+    无绑定返回 0（如实，不算错误）；数据库错误返回 0（只记日志不抛异常，
+    与本模块容错口径一致）。
+
+    Args:
+        anchor_type: 锚类型 ∈ ANCHOR_TYPES（'word'/'sense'/'example'/'schema'）
+        anchor_id: 锚行 id（>0）
+
+    Returns:
+        int: 实际删除的绑定行数；参数非法 / 数据库错误返回 0。
+    """
+    if anchor_type not in ANCHOR_TYPES:
+        logger.error(
+            f"unbind_for_anchor 拒绝非法 anchor_type: {anchor_type!r}"
+            f"（须 ∈ {ANCHOR_TYPES}）"
+        )
+        return 0
+    tid = _as_int(anchor_id)
+    if tid is None or tid <= 0:
+        logger.error(f"unbind_for_anchor 拒绝非法 anchor_id: {anchor_id!r}")
+        return 0
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM media_bindings "
+                "WHERE anchor_type = %s AND anchor_id = %s",
+                (anchor_type, tid),
+            )
+            deleted = int(cursor.rowcount)
+            if deleted:
+                logger.info(
+                    f"unbind_for_anchor 已摘除锚 ({anchor_type}, {tid}) 上的 "
+                    f"{deleted} 条媒体绑定"
+                )
+            return deleted
+    except pymysql.Error as e:
+        logger.error(
+            f"摘除锚绑定失败（anchor_type={anchor_type!r}, anchor_id={tid}）: {e}"
+        )
+        return 0
+    except Exception as e:
+        logger.error(f"摘除锚绑定意外错误: {e}")
+        return 0
+
+
+# ============================================
 # 查询（词条装配多模态区的取数入口）
 # ============================================
 def list_assets_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, Any]]:
@@ -400,7 +493,9 @@ def list_assets_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, A
     Returns:
         list[dict]: 绑定+资产联查行，按展示顺序排序；键含两组状态——
         ``binding_status``（绑定的审定态）与 ``asset_status``（资产本身的
-        审定态）。批次 2 渲染多模态区时应只取 binding_status='发布'（或
+        审定态），以及审定留痕两列 ``reviewed_by`` / ``reviewed_at``
+        （R3-4a：绑定流转到当前态的操作人与时间，未流转过为 None）。
+        批次 2 渲染多模态区时应只取 binding_status='发布'（或
         按产品口径过滤候选）；anchor_type 非法 / anchor_id 非法 /
         数据库不可用返回 []。
     """
@@ -420,6 +515,7 @@ def list_assets_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, A
                 """SELECT b.id AS binding_id, b.asset_id, b.anchor_type,
                           b.anchor_id, b.purpose, b.caption, b.sort_order,
                           b.status AS binding_status,
+                          b.reviewed_by, b.reviewed_at,
                           a.kind, a.file_path, a.mime, a.sha256, a.source,
                           a.license, a.size_bytes, a.status AS asset_status,
                           a.created_at

@@ -827,8 +827,8 @@ def test_exports_flow_publish_enabled_and_calls_advance(monkeypatch):
     monkeypatch.setattr(dp.guards, "require_dict_admin", lambda: _ME)
     calls = []
 
-    def _advance(batch_id, frm, to):
-        calls.append((batch_id, frm, to))
+    def _advance(batch_id, frm, to, published_by=None):
+        calls.append((batch_id, frm, to, published_by))
         return True
 
     monkeypatch.setattr(dp, "_advance_export_status", _advance)
@@ -837,7 +837,8 @@ def test_exports_flow_publish_enabled_and_calls_advance(monkeypatch):
     _render_exports_flow(exports, gate_open=True, blockers=[])
     pub = next(kw for label, kw in stub.buttons if "published" in label)
     assert pub["disabled"] is False
-    assert calls == [(3, "ready", "published")]
+    # R3-4b：published 流转随带当前会话用户 username（出版留痕）
+    assert calls == [(3, "ready", "published", _ME["username"])]
     assert any(kind == "rerun" for kind, _ in stub.messages)
 
 

@@ -44,12 +44,22 @@ required 语义（重要，见 custom_fields.required 列注释）：
 
 回滚口径（rollback_batch 的 MVP 约定，docstring 详见函数注释）：
   * revert_log 两类动作：{action:'insert', table, row_id} → **软作废**
-    （表有 status 列且枚举含 'deprecated' 才执行；否则仅留痕不作废 ——
-    MVP 不物理 DELETE，被作废行仍可审计追溯）；{action:'update', table,
-    row_id, old_values} → 按 old_values **恢复旧值**；
+    （表有 status 列且枚举含 'deprecated' 才执行；表有 import_voided 列则
+    置 import_voided=1 作废 —— R3-9c，definitions 词目层走此通道；两样都
+    没有的表仅留痕不动行，MVP 不物理 DELETE，被作废行仍可审计追溯）；
+    {action:'update', table, row_id, old_values} → 按 old_values **恢复旧值**
+    （old_values 含 updated_at 时随逐列恢复一并 SET —— R3-9a，导入引擎
+    落旧值，显式赋值优先于 ON UPDATE CURRENT_TIMESTAMP，回滚后行的时间戳
+    回到导入前时点）；
   * revert_log 先整体校验、任一条非法整体拒绝（防半套回滚）；
   * revert_log 来源两态（批次 6-T）：显式传参 = 旧口径原样（向后兼容）；
     传 None = 从伴生表 import_revert_log 按批次读回（无记录如实拒绝）；
+  * **混用仲裁（R3-1）**：伴生表已有该批次持久化事件时，显式传参不再原样
+    放行 —— 显式空清单拒（与持久化日志矛盾）；显式非空但与持久化集不同
+    拒（防架空持久化日志）；仅逐事件一致时放行。无持久化记录 → 显式传参
+    现状不变；
+  * persist_revert_log 批次状态守卫（R3-2）：running/finished 才可补写
+    日志，rolled_back 拒（已回滚批次不可补写日志）；
   * 回滚动作写批次状态：成功后 status='rolled_back'（状态机见 rollback_batch）。
 
 接口（契约 §3-C）：
@@ -1018,6 +1028,10 @@ def persist_revert_log(batch_id: int, events: Any) -> bool:
       * seq 批内从 1 递增（UNIQUE(batch_id, seq)）；**同一批次只允许持久化
         一次**（已有记录时整体拒绝，防两次执行的事件混序拼接 —— 重新导入
         应登记新批次）；
+      * **批次状态守卫（R3-2）**：仅 running / finished 批次可补写日志 ——
+        rolled_back 批次拒绝（已回滚批次不可补写日志：回滚已完成却再落一份
+        事件集，会让台账与库内实态互相矛盾）；批次不存在同样拒绝（FK 报错
+        前先给可读日志）；
       * **空清单合法**（零行变更的批次无事可记，返回 True、零插入）；
       * 逐事件参数化插入，单事务（autocommit=False）：任一条失败整体回滚，
         不留半套日志；
@@ -1031,7 +1045,7 @@ def persist_revert_log(batch_id: int, events: Any) -> bool:
 
     Returns:
         bool: 持久化完成 True（含空清单）；参数非法 / 批次不存在 /
-        已持久化过 / 数据库错误为 False。
+        批次已回滚（rolled_back，R3-2 守卫）/ 已持久化过 / 数据库错误为 False。
     """
     bid = _as_int(batch_id)
     if bid is None or bid <= 0:
@@ -1060,9 +1074,25 @@ def persist_revert_log(batch_id: int, events: Any) -> bool:
             return False
         serialized.append(event_json)
     try:
-        # autocommit=False：已有日志检查＋逐条插入同处一个事务，任何一步失败
-        # 整体回滚（不留半套持久化日志）
+        # autocommit=False：状态守卫＋已有日志检查＋逐条插入同处一个事务，
+        # 任何一步失败整体回滚（不留半套持久化日志）
         with get_db_cursor(autocommit=False) as cursor:
+            # --- 批次状态守卫（R3-2）：running/finished 才可补写日志 ---
+            cursor.execute(
+                "SELECT status FROM import_batches WHERE id = %s",
+                (bid,),
+            )
+            batch = cursor.fetchone()
+            if batch is None:
+                logger.error(f"persist_revert_log 批次不存在: batch_id={bid}")
+                return False
+            batch_status = str(batch.get("status"))
+            if batch_status not in ("running", "finished"):
+                logger.error(
+                    f"persist_revert_log 拒绝补写: batch_id={bid}（status="
+                    f"{batch_status!r}）—— 已回滚批次不可补写日志"
+                )
+                return False
             cursor.execute(
                 "SELECT COUNT(*) AS n FROM import_revert_log WHERE batch_id = %s",
                 (bid,),
@@ -1118,6 +1148,23 @@ def _load_persisted_revert_log(cursor, batch_id: int) -> Optional[List[Dict[str,
     return events
 
 
+def _same_revert_events(
+    persisted: List[Dict[str, Any]], explicit: Any,
+) -> bool:
+    """显式 revert_log 与持久化事件集是否**逐事件一致**（rollback_batch 混用仲裁用）。
+
+    一致 = 条数相同且按序逐条相等（dict 相等不敏感键序 —— 与 JSON 落库读回的
+    结构对齐）。注意持久化事件是 JSON 往返产物：显式清单里若混入 JSON 不可
+    表示的类型（datetime/tuple），比较会判不一致 —— 这正是想要的结果（不一致
+    的传参不放行，调用方以持久化清单为准或显式传 None）。
+    """
+    if not isinstance(explicit, (list, tuple)):
+        return False
+    if len(persisted) != len(explicit):
+        return False
+    return all(p == e for p, e in zip(persisted, explicit))
+
+
 def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = None) -> bool:
     """按 revert_log 回滚一个已完成的导入批次（status: finished → rolled_back）。
 
@@ -1132,16 +1179,30 @@ def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = N
         「无持久化回滚日志」—— 零行变更批次本就无事可回滚，历史批次的
         回滚须以持久化日志或显式传参为凭。
 
+    显式传参 × 持久化日志的**混用仲裁（R3-1）**：伴生表已有该批次的持久化
+    事件时，显式传参不再原样放行 ——
+      * 显式传**空清单** → 拒（日志注明「持久化回滚日志存在，显式空清单与
+        之矛盾」—— 持久化事件集在手却按零变更翻状态，审计线断链）；
+      * 显式传**非空但与持久化集不同** → 拒（防架空：绕开持久化日志传入
+        另一套事件，回滚结果与台账脱钩）；
+      * 仅显式传参与持久化事件集**逐事件一致**时放行（幂等重放同一份清单
+        的既有调用点不受影响）。
+    伴生表无持久化记录（或记录损坏读不回）→ 显式传参维持旧口径原样。
+
     revert_log 两类动作（由导入执行方在灌库时逐行收集后传入）：
       * ``{'action': 'insert', 'table': <表名>, 'row_id': <id>}`` —— 导入新增
         的行：**软作废**（MVP 口径）。软作废 = ``UPDATE <table> SET
         status='deprecated' WHERE id=<row_id>``；**仅当目标表有 status 列且
-        （ENUM 时）枚举含 'deprecated'** 才执行 —— 其余表（无 status 列）
-        只留痕不动行：MVP 不物理 DELETE，作废行仍可审计追溯；真物理清理
-        或无 status 表的作废方案留给后续版本（docstring 即口径声明）。
+        （ENUM 时）枚举含 'deprecated'** 才执行；目标表有 **import_voided**
+        列（R3-9c，definitions 词目层的导入作废标记）则置
+        ``import_voided=1``（装配/导出读侧按 0 过滤，行仍留库可审计）；
+        两样都没有的表只留痕不动行：MVP 不物理 DELETE，作废行仍可审计追溯。
       * ``{'action': 'update', 'table': <表名>, 'row_id': <id>,
         'old_values': {列: 旧值, ...}}`` —— 导入覆盖过的行：按 old_values
-        **恢复旧值**（逐列 UPDATE 回写）。
+        **恢复旧值**（逐列 UPDATE 回写）；old_values 含 **updated_at** 键时
+        随逐列恢复一并 SET（R3-9a：import_engine 落导入前旧值 —— MySQL 显式
+        赋值优先于 ON UPDATE CURRENT_TIMESTAMP，回滚后行的时间戳回到导入前
+        时点，不被回滚动作本身再次顶掉）。
 
     安全规则（本文件唯一两处动态表/列名的地方，双闸校验）：
       * 表名/列名必须过本模块常量正则 ^[A-Za-z0-9_]{1,64}$，且表/列必须
@@ -1173,7 +1234,10 @@ def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = N
         logger.error(f"rollback_batch 拒绝非法 batch_id: {batch_id!r}")
         return False
     if revert_log is not None and not isinstance(revert_log, (list, tuple)):
-        logger.error(f"rollback_batch 拒绝非法 revert_log: 须为 list 或 None（得 {type(revert_log).__name__}）")
+        logger.error(
+            f"rollback_batch 拒绝非法 revert_log: "
+            f"须为 list 或 None（得 {type(revert_log).__name__}）"
+        )
         return False
 
     try:
@@ -1195,9 +1259,10 @@ def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = N
                 )
                 return False
 
-            # --- revert_log=None：从伴生表读回持久化事件（跨会话回滚）---
+            # --- revert_log 来源判定（None = 读伴生表；显式传参遇持久化
+            #     记录走混用仲裁，R3-1：防架空持久化日志）---
+            persisted = _load_persisted_revert_log(cursor, bid)
             if revert_log is None:
-                persisted = _load_persisted_revert_log(cursor, bid)
                 if persisted is None:
                     logger.error(
                         f"rollback_batch 拒绝回滚: batch_id={bid}"
@@ -1206,6 +1271,21 @@ def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = N
                     )
                     return False
                 revert_log = persisted
+            elif persisted is not None:
+                if len(revert_log) == 0:
+                    logger.error(
+                        f"rollback_batch 拒绝回滚: batch_id={bid}"
+                        "（持久化回滚日志存在，显式空清单与之矛盾 —— "
+                        "零变更须以持久化日志为准或显式传一致清单）"
+                    )
+                    return False
+                if not _same_revert_events(persisted, revert_log):
+                    logger.error(
+                        f"rollback_batch 拒绝回滚: batch_id={bid}"
+                        "（显式 revert_log 与持久化回滚日志不一致 —— "
+                        "防架空：按持久化日志回滚请显式传 None）"
+                    )
+                    return False
 
             # --- 第一道闸：整体预校验 revert_log（先验后动，防半套回滚） ---
             validated: List[Tuple[str, str, int, Optional[Dict[str, Any]]]] = []
@@ -1257,6 +1337,7 @@ def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = N
             # --- 执行（单事务：任何失败整体回滚，批次状态保持 finished） ---
             for i, (action, table, row_id, old_values) in enumerate(validated):
                 if action == REVERT_INSERT:
+                    columns = _columns_of(cursor, table)
                     if _soft_invalidate_supported(cursor, table):
                         cursor.execute(
                             f"UPDATE `{table}` SET status = %s WHERE id = %s",
@@ -1267,14 +1348,29 @@ def rollback_batch(batch_id: int, revert_log: Optional[List[Dict[str, Any]]] = N
                                 f"rollback_batch 软作废未命中行: {table}.id={row_id}"
                                 "（不存在或已作废，容忍幂等重放）"
                             )
-                    else:
-                        # MVP 口径：无 status 列（或枚举不含 deprecated）的表
+                    if "import_voided" in columns:
+                        # R3-9c：导入作废标记（definitions 无 status 列 —— 走本列
+                        # 作废；读侧 entry_assembly / export_center 按 0 过滤）
+                        cursor.execute(
+                            f"UPDATE `{table}` SET import_voided = 1 WHERE id = %s",
+                            (row_id,),
+                        )
+                        if cursor.rowcount <= 0:
+                            logger.info(
+                                f"rollback_batch 作废标记未命中行: {table}.id={row_id}"
+                                "（不存在或已作废，容忍幂等重放）"
+                            )
+                    if (not _soft_invalidate_supported(cursor, table)
+                            and "import_voided" not in columns):
+                        # MVP 口径：无 status 列也无 import_voided 列的表
                         # 只留痕不动行，不物理 DELETE
                         logger.info(
                             f"rollback_batch 软作废跳过（MVP 口径）: 表 {table} 无可写 "
                             f"status 列，行 {table}.id={row_id} 仅留痕未作废"
                         )
                 else:
+                    # old_values 含 updated_at 时随逐列一并恢复（R3-9a：显式
+                    # 赋值优先于 ON UPDATE CURRENT_TIMESTAMP，见 docstring）
                     assignments = ", ".join(f"`{col}` = %s" for col in old_values)
                     cursor.execute(
                         f"UPDATE `{table}` SET {assignments} WHERE id = %s",
