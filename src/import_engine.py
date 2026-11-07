@@ -325,8 +325,12 @@ def plan_import(rows: Any, mapping: Any) -> Dict[str, Any]:
         空释义是垃圾数据，入口拒）；
       * phonetic：≤{MAX_PHONETIC_LEN} 字符；**空值合法** —— 执行时跳过写入
         保留现值（见模块 docstring「phonetic 空值跳过」）；
-      * 同一文件内 verb 重复：仅首行有效，后续重复行拒绝（确定性口径，不玩
-        「后者覆盖前者」的隐式语义）。
+      * 同一文件内 verb 重复（R2-4 口径对齐实测行为）：去重坑只在**通过全部
+        校验的合法行**上登记 —— 被拒行（空键/超长/释义为空等）的 verb
+        不占去重坑，同名后续合法行仍可被接受；同名两行都合法时仍仅首行
+        有效、后续重复行拒绝（确定性口径，不玩「后者覆盖前者」的隐式语义）。
+        规划层不保证 verb 全库唯一，最终以 definitions 的 DB UNIQUE(verb)
+        兜底（run_import 执行期同名命中既有行走 UPDATE 路径）。
 
     Args:
         rows: 行清单（list[dict]，键 = 列名；Excel/CSV 解析产物，值可为

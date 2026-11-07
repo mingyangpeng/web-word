@@ -317,6 +317,49 @@ class TestConstantsContract:
 
 
 # ============================================
+# R2-5：动词搜索 LIKE 转义（与 data_pages._escape_like 同口径，CI 必跑）
+# ============================================
+
+class _CaptureCursor:
+    """假 cursor：捕获 SQL 文本与参数（_search_verbs 转义守约用，不碰库）。"""
+
+    def __init__(self, store):
+        self._store = store
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def execute(self, sql, params=None):
+        self._store["sql"] = sql
+        self._store["params"] = params
+
+    def fetchall(self):
+        return []
+
+
+def test_search_verbs_escapes_wildcards_and_sets_escape_clause(monkeypatch):
+    """R2-5：搜索词经 data_pages._escape_like 转义（!/%/_ → 字面），SQL 两侧
+    LIKE 带 ``ESCAPE '!'`` —— 通配符按字面处理，与词条搜索口径一致。"""
+    import src.collab_pages as collab_mod
+    from src.data_pages import _escape_like
+
+    store = {}
+    monkeypatch.setattr(collab_mod, "get_db_cursor", lambda: _CaptureCursor(store))
+    assert collab_mod._search_verbs("run_100%") == []
+    assert store["sql"].count("ESCAPE '!'") == 2  # verb 与 headword 两个 LIKE
+    like = store["params"][0]
+    # 与 data_pages 单一实现逐字符一致（函数级复用，不复制第二份转义逻辑）
+    assert like == f"%{_escape_like('run_100%')}%"
+    assert like == "%run!_100!%%"
+    # 空白关键词早退（不触库）：捕获器未被二次调用
+    assert collab_mod._search_verbs("   ") == []
+    assert store["params"][0] == "%run!_100!%%"  # 仍是第一次（唯一一次）调用
+
+
+# ============================================
 # 集成测试：真实 MySQL（无环境则整类 skip）
 # ============================================
 
@@ -585,6 +628,37 @@ class TestCollabDbHelpers:
         assert _search_verbs("") == []
         assert _search_verbs("   ") == []
         assert _search_verbs("zzz_no_such_verb") == []
+
+    def test_search_verbs_wildcards_are_literal(self, collab_db):
+        """R2-5：搜索词中的 %/_ 按字面匹配（ESCAPE '!'），不展开成通配符 ——
+        未转义时 walk_100 会连 walkz100 一起命中，转义后只命中原词目。"""
+        self._create_base_tables()
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO definitions (verb, sense_count) VALUES (%s, %s)",
+                ("walk_100", 1),
+            )
+            d1 = int(cursor.lastrowid)
+            cursor.execute(
+                "INSERT INTO definitions (verb, sense_count) VALUES (%s, %s)",
+                ("walkz100", 1),
+            )
+            d2 = int(cursor.lastrowid)
+            cursor.execute(
+                "INSERT INTO definitions (verb, sense_count) VALUES (%s, %s)",
+                ("run100%", 1),
+            )
+            d3 = int(cursor.lastrowid)
+            for def_id in (d1, d2, d3):
+                cursor.execute(
+                    "INSERT INTO oald_senses (definition_id, headword) "
+                    "VALUES (%s, %s)",
+                    (def_id, "h"),
+                )
+        rows = _search_verbs("walk_100")
+        assert [r["verb"] for r in rows] == ["walk_100"]
+        rows = _search_verbs("run100%")
+        assert [r["verb"] for r in rows] == ["run100%"]
 
     # --- 分派对象过滤（users_db.list_users 过滤 role + 六角色并集） ---
 
