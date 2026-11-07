@@ -900,7 +900,7 @@ function renderEdgeCard() {
   }
 
   h += sec('来源');
-  h += plainRow('关系来源', 'docs/Levin移动动词候选词筛选表.xlsx 的次类归并，脚本据此生成完全图');
+  h += plainRow('关系来源', 'docs/research/tables/Levin移动动词候选词筛选表.xlsx 的次类归并，脚本据此生成完全图');
   h += plainRow('所属次类', a._subCat);
   h += plainRow('所属主范畴', a._mainCat);
 

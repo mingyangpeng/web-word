@@ -1,6 +1,6 @@
 """范畴包（Category Pack）机制：跨词类通用框架的配置加载与自检（Agent D）。
 
-职责（唯一事实源 docs/p1/多人标注系统设计规范.md §3-§4 / docs/p1/跨词类通用框架.md §1-§2）：
+职责（唯一事实源 docs/spec/多人标注系统设计规范.md §3-§4 / docs/spec/跨词类通用框架.md §1-§2）：
 
   * ``CATEGORIES()``               扫描 configs/ 下的范畴包目录（含 pack.yaml 的非下划线目录）
   * ``load_pack(category)``        加载六件套 →

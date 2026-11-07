@@ -1,16 +1,21 @@
 """范畴深挖页面组 —— 跑范畴英汉对比研究的五个视图（Streamlit）。
 
 数据来自 data/d1/ 两个 xlsx（scripts/load_category_study.py 灌入
-categories / cs_* 8 表，见 src/category_study.py）。页面结构：
+categories / cs_* 8 表，见 src/category_study.py）。五个视图函数：
 
-  视图1 双语聚类对比面板  英 5 簇 vs 汉 5 簇卡片对照，成员可展开
-  视图2 编码矩阵热图      32×18 / 19×18 特征矩阵着色网格（plotly）
-  视图3 跨语言对齐        英簇↔汉簇二部图（连线按 Gower 距离着色）+ 雷达叠加
-  视图4 图式对齐          双层对齐机制 + 四类图式中英对照 + 特征均值对比
-                          + 《现汉7》词典证据链
-  视图5 范畴总览与甄别清单 统计卡 + 英汉双清单对照表
+  render_cluster_compare_view  英 5 簇 vs 汉 5 簇卡片对照，成员可展开
+  render_matrix_view           32×18 / 19×18 特征矩阵着色网格（plotly）
+  render_alignment_view        英簇↔汉簇二部图（连线按 Gower 距离着色）+ 雷达叠加
+  render_schema_view           双层对齐机制 + 四类图式中英对照 + 特征均值对比
+                               + 《现汉7》词典证据链
+  render_overview_view         范畴总览与甄别清单：统计卡 + 英汉双清单对照表
 
-由 app.py 的 render_category_study_page() 分派（session_state["cs_view"]）。
+批次 8 语义分析页合并（施工规范 §11）：五视图不再经本模块
+render_category_study_page 的 radio 分派（session_state["cs_view"]），
+而是由 src/cluster_analysis.render_semantic_analysis_page 以 st.tabs
+后五 tab 直接委托（取数逻辑与视图函数原样复用）。本模块保留
+render_category_study_page 为兼容薄包装（→ 合并页）；
+_load_category 缓存装载器被合并页复用。
 """
 
 import logging
@@ -20,16 +25,14 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 import streamlit as st
 
-from src.page_guides import render_page_usage_guide
 from src.category_study import (
-    FEATURE_COLUMNS, CLUSTERING_FEATURES, VERDICT_ORDER, SCHEMA_ORDER,
-    derive_image_schema, compute_schema_alignment,
+    FEATURE_COLUMNS, CLUSTERING_FEATURES, VERDICT_ORDER,
+    compute_schema_alignment,
     category_study_ready, get_categories, get_senses_with_features,
     get_cluster_runs, get_clusters_with_members, get_alignments,
     get_cluster_profiles, get_screening_stats,
 )
-from src.mysql_db import cache_scope_key
-from src.design_system import HEADER_H1, HEADER_H3
+from src.design_system import HEADER_H3
 
 logger = logging.getLogger(__name__)
 
@@ -862,61 +865,17 @@ def _render_en_dict_evidence(data: Dict[str, Any]) -> None:
 
 
 # ============================================
-# 页面入口
+# 页面入口（批次 8 起为兼容薄包装）
 # ============================================
 
 def render_category_study_page() -> None:
-    """🏃‍♀️ 范畴深挖页面：范畴选择 + 五视图 tab。"""
-    st.markdown(f"<h1 style='{HEADER_H1}'>🏃‍♀️ 范畴深挖</h1>",
-                unsafe_allow_html=True)
-    render_page_usage_guide("category")
+    """兼容薄包装（批次 8）：旧「🏃‍♀️ 范畴深挖」页入口 → 语义分析合并页。
 
-    if not category_study_ready():
-        st.info(
-            "范畴深挖数据尚未灌入。运行 "
-            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py` "
-            "从 data/d1/ 跑范畴两个 xlsx 加载。"
-        )
-        return
+    五视图（双语聚类对比/编码矩阵热图/跨语言对齐/图式对齐/总览甄别）已并入
+    src/cluster_analysis.render_semantic_analysis_page（key=cluster，label
+    📊 语义分析）的后五 tab；旧 "category" 键在 app.main() 顶部重定向一次。
+    函数内延迟导入（本模块被 cluster_analysis 顶层导入，模块级反向导入会成环）。
+    """
+    from src.cluster_analysis import render_semantic_analysis_page
 
-    categories = get_categories()
-    if not categories:
-        st.warning("categories 为空。")
-        return
-    if len(categories) == 1:
-        code = categories[0]["code"]
-        cat = categories[0]
-    else:
-        code = st.selectbox(
-            "范畴", options=[c["code"] for c in categories],
-            format_func=lambda c: f"{next(x['name_cn'] for x in categories if x['code'] == c)}"
-            f"（{c}）", key="cs_category")
-        cat = next(c for c in categories if c["code"] == code)
-
-    data = _load_category(cache_scope_key(), code)
-    if data is None:
-        st.warning(f"范畴 {code} 数据加载失败。")
-        return
-
-    st.caption(
-        f"范畴：{cat['name_cn']}（{cat['name_en']}）· 状态：{cat['status']} · "
-        f"英语 {cat['en_lexemes']} 词 {cat['en_senses']} 义位 / "
-        f"汉语 {cat['zh_lexemes']} 词条 {cat['zh_senses']} 义位条目"
-    )
-
-    view = st.radio(
-        "视图", options=VIEWS, format_func=lambda v: VIEW_LABELS[v],
-        key="cs_view", horizontal=True,
-    )
-    st.divider()
-
-    if view == "cluster":
-        render_cluster_compare_view(data)
-    elif view == "matrix":
-        render_matrix_view(data)
-    elif view == "align":
-        render_alignment_view(data)
-    elif view == "schema":
-        render_schema_view(data)
-    else:
-        render_overview_view(data)
+    render_semantic_analysis_page()
