@@ -59,7 +59,9 @@ insert 回滚的**如实限制**（先读 dict_admin_db.rollback_batch 实现后
   * UPDATE 前必读旧值（revert_log.old_values 的唯一来源，先读后写）；
   * SQL 全参数化；唯一动态片段是 SET 列名，取值限定 TARGET_FIELDS 白名单。
 
-**不支持 oald_senses 追加写入**（如实声明，留批次 6 评审）：本引擎只写
+**不支持 oald_senses 追加写入**（管理决策 2026-11-07 定稿：不开放——权威词典真值
+的写入源仅限权威拆分流程，编辑期新增义位走「人工补充义位」受控通道
+scripts/load_supplemented_senses.py）：本引擎只写
 definitions 词目层（词目的中文释义/音标投影）；把导入行灌成 oald_senses 义项
 行（义位锚、sense_index 体系）涉及义位准入语义，本批次不做 —— 映射目标出现
 oald_senses 相关字段一律按白名单拒绝，不假装支持。
