@@ -314,7 +314,7 @@ class TestSensesSection:
         monkeypatch.setattr(entry_assembly, "_fetch_oald_senses",
                             lambda v: [_sense(1), _sense(2)])
         sec = _assembly_sections("run")[1]
-        assert "未灌入范畴深挖库" in sec.body
+        assert "未灌入语义分析库" in sec.body
         assert sec.body.count("沿用 OALD") >= 2
 
     def test_mapped_sense_still_yan_yong_when_category_missing(self, monkeypatch):

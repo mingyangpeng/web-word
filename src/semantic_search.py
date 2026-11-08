@@ -35,7 +35,7 @@
       matched_features, ...}]，距离升序（平局按 sense_id 稳定）。
 
 范畴名解析：``category`` 参数接受范畴包目录名（configs/<category>/，如
-motion）或范畴深挖 categories.code（如 RUN）——包名 → 研究代号复用
+motion）或语义分析 categories.code（如 RUN）——包名 → 研究代号复用
 cluster_analysis.PACK_TO_STUDY_CODE（d1 试点：motion 包的研究登记名是
 RUN 跑范畴）。
 
@@ -60,7 +60,10 @@ from src.cluster_analysis import (
     gower_distance,
     load_feature_types,
 )
-from src.design_system import HEADER_H1, HEADER_H3, INFO_COLOR, SUCCESS_COLOR, WARNING_COLOR
+from src.design_system import (
+    HEADER_H1, HEADER_H3, INFO_COLOR, SUCCESS_COLOR, WARNING_COLOR,
+    pick_readable_text_color,
+)
 from src.mysql_db import cache_scope_key, get_db_cursor
 from src.security import InputValidator
 
@@ -486,9 +489,14 @@ _GROUP_COLORS = {"P": INFO_COLOR, "M": SUCCESS_COLOR, "C": WARNING_COLOR}
 
 
 def _chip(text: str, color: str) -> str:
-    """特征 chip（HTML span；文本先经 _html_escape，样式沿用 design_system 色板）。"""
+    """特征 chip（HTML span；文本先经 _html_escape，样式沿用 design_system 色板）。
+
+    RV1-2：文字颜色按底色自动选深/浅（旧版写死白字；换任何浅色底都
+    不会退回 WCAG AA 之下）。
+    """
     return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
+        f'<span style="display:inline-block;background:{color};'
+        f'color:{pick_readable_text_color(color)};'
         f'padding:2px 10px;border-radius:12px;font-size:0.82em;'
         f'margin:2px 6px 2px 0;">{text}</span>'
     )
@@ -602,7 +610,7 @@ def render_semantic_search_page() -> None:
     if index is None or not index.get("rows"):
         st.info(
             f"范畴 {category}（{LANGUAGE_LABELS.get(language, language)}侧）"
-            "暂无义位数据。请先运行 scripts/load_category_study.py 灌入范畴深挖数据。")
+            "暂无义位数据。请先运行 scripts/load_category_study.py 灌入语义分析数据。")
         return
     results = search_similar_senses(vector, category, language,
                                     top_k=DEFAULT_TOP_K, index=index)
@@ -624,6 +632,10 @@ def render_semantic_search_page() -> None:
         f"共 {len(results)} 条（top_k={DEFAULT_TOP_K}）；距离 = 查询向量与义位"
         "编码向量的 Gower 相异度（只比对双方都编码的特征，按实际比对数归一；"
         "平局按义位 id 稳定排序）。点击下方行展开词典释义。")
+    # 平局提示（RV5-11，与帮助文档 1.2 口径一致）：有并列距离时结果区注明供参照
+    if any(results[i]["distance"] == results[i + 1]["distance"]
+           for i in range(len(results) - 1)):
+        st.caption("⚠️ 以下结果距离相同，供参照（并列距离按义位 id 稳定排序）。")
 
     for i, r in enumerate(results, start=1):
         title = (f"{i}. {_html_escape(r['verb'])}"

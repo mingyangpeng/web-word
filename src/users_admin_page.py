@@ -42,7 +42,8 @@ import streamlit as st
 
 from src.design_system import (
     HEADER_H1, HEADER_H2, HEADER_H3,
-    get_card_style, get_table_header_style, get_table_row_style,
+    get_badge_html, get_card_style, get_table_header_style,
+    get_table_row_style,
 )
 from src import guards
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
@@ -74,19 +75,23 @@ ROLE_LABELS = {
     "editor": "撰写员",
 }
 
-# 角色徽章配色（与 category_study_page._badge 的圆角徽章同一视觉语言）
+# 角色徽章配色（与 category_study_page._badge 的圆角徽章同一视觉语言）。
+# RV1-2：白字对比全 ≥4.5:1 —— 旧 annotator #4299e1 3.05:1 / viewer
+# #718096 4.02:1 / editor #dd6b20 3.39:1 不达 AA，分别换深档
+# #2b6cb0（5.42:1）/ #4a5568（7.53:1）/ #9c4221（6.53:1）。
 ROLE_BADGE_COLORS = {
     "admin": "#2b6cb0",
     "reviewer": "#2f855a",
-    "annotator": "#4299e1",
-    "viewer": "#718096",
+    "annotator": "#2b6cb0",
+    "viewer": "#4a5568",
     "dict_admin": "#553c9a",
     "sys_admin": "#2c5282",
-    "editor": "#dd6b20",
+    "editor": "#9c4221",
 }
 
 _ACTIVE_GREEN = "#2f855a"
-_INACTIVE_RED = "#e53e3e"
+# RV1-2：停用红取深档（白字 5.47:1；旧 #e53e3e 4.13:1 不达 AA）。
+_INACTIVE_RED = "#c53030"
 
 # ============================================
 # 提权硬闸门（批次 4-N 立，批次 6-T 收口到中央闸门 guards.require_role）
@@ -194,12 +199,13 @@ def _gate_error(me: Dict[str, Any], target_role: str,
 
 
 def _badge(text: str, color: str) -> str:
-    """小圆角徽章（HTML span）。text 由调用方保证已转义。"""
-    return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
-        f'padding:1px 10px;border-radius:10px;font-size:0.78em;'
-        f'margin-right:4px;">{text}</span>'
-    )
+    """小圆角徽章（HTML span）。text 由调用方保证已转义。
+
+    RV1-2（_badge 收敛）：实现单份进 design_system.get_badge_html ——
+    文字颜色按底色自动选深/浅（旧版写死白字，浅底不达 WCAG AA）；
+    转义契约不变。
+    """
+    return get_badge_html(text, color)
 
 
 def _metrics_row(users: List[Dict[str, Any]]) -> None:
@@ -217,7 +223,8 @@ def _metrics_row(users: List[Dict[str, Any]]) -> None:
         with col:
             st.markdown(
                 f"<div style='{get_card_style()}'>"
-                f"<div style='font-size:0.85em;color:#718096;'>{_html_escape(label)}</div>"
+                # RV1-7：卡内灰字深档 #4a5568（白/浅底 7.53:1；旧 #718096 4.02:1）
+                f"<div style='font-size:0.85em;color:#4a5568;'>{_html_escape(label)}</div>"
                 f"<div style='font-size:1.8em;font-weight:bold;color:#2d3748;'>"
                 f"{_html_escape(value)}</div>"
                 f"</div>",
@@ -236,7 +243,7 @@ def _users_table(users: List[Dict[str, Any]]) -> None:
         role = u.get("role") or "viewer"
         role_badge = _badge(
             _html_escape(ROLE_LABELS.get(role, str(role))),
-            ROLE_BADGE_COLORS.get(role, "#718096"),
+            ROLE_BADGE_COLORS.get(role, "#4a5568"),
         )
         if int(u.get("active") or 0):
             status = _badge("启用", _ACTIVE_GREEN)
@@ -466,7 +473,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
         badges = "".join(
             _badge(
                 _html_escape(f"{ROLE_LABELS.get(r, r)}（{r}）"),
-                ROLE_BADGE_COLORS.get(r, "#718096"),
+                ROLE_BADGE_COLORS.get(r, "#4a5568"),
             )
             for r in current_roles
         )

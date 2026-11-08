@@ -8,7 +8,7 @@ annotation_submissions → cs_cluster_runs → definition_versions）与 §9 U
 是什么（七段，每段独立取数、独立降级，绝不编数）：
   ① 义项信息    oald_senses（sense_index/definition/grammar/examples）——
                 本模块私有参数化只读查询（顺带联 definitions 取 verb，
-                供 ④⑤ 做范畴深挖库的义位映射）；
+                供 ④⑤ 做语义分析库的义位映射）；
   ② 标注留痕    annotation_flow.get_submissions_for_sense（三类任务逐类取，
                 coder 显示名经 users 表 LEFT JOIN 随行返回）＋payload 摘要；
   ③ 信度        reliability_runs 该范畴每类任务的最近一次运行
@@ -16,7 +16,7 @@ annotation_submissions → cs_cluster_runs → definition_versions）与 §9 U
                 **α 为范畴×任务级口径，非单义位**（段头固定注明）；
   ④ 簇归属      cs_cluster_members → cs_clusters 最近运行（簇名/成员数）＋
                 典型性 tier（cluster_analysis.compute_medoid_ranking 的
-                medoid 距离三分位）；簇数据挂在 cs_senses（范畴深挖研究层），
+                medoid 距离三分位）；簇数据挂在 cs_senses（语义分析研究层），
                 与义位锚 oald_senses.id 不同库位 —— 先经 ⑤同款映射解析
                 cs_senses.id，解析不到即「未在建模覆盖内」；
   ⑤ 模板预览    template_engine.instantiate_template（确定性引擎，不调 LLM）
@@ -26,7 +26,7 @@ annotation_submissions → cs_cluster_runs → definition_versions）与 §9 U
   ⑦ 定制属性    dict_admin_db.get_values_for_anchor('sense', id)。
 
 数据链（全部只读调用批次 1/3 数据层；本模块不建表、不写任何业务表）：
-  义位唯一锚 = oald_senses.id（架构规范 §6）；范畴深挖研究层经
+  义位唯一锚 = oald_senses.id（架构规范 §6）；语义分析研究层经
   definitions.verb + oald_senses.sense_index ↔ cs_lexemes.lemma +
   cs_senses.sense_no 映射（范畴代号解析复用 cluster_analysis 的
   PACK_TO_STUDY_CODE 对应关系：包名 motion ↔ 研究代号 RUN）。
@@ -236,7 +236,7 @@ def _merged_target_suffix(status: Any, merged_into: Any) -> Optional[str]:
 
 
 def _study_code_for(category: Any, available_codes: List[str]) -> Optional[str]:
-    """范畴参数 → 范畴深挖 categories.code（纯函数；与 cluster_analysis
+    """范畴参数 → 语义分析 categories.code（纯函数；与 cluster_analysis
     _resolve_study_code 同口径，此处独立实现以便无库单测）。
 
     先按 categories.code 大小写不敏感直配（兼容 RUN 与 run），再按
@@ -320,7 +320,7 @@ def _fetch_latest_reliability(category: str) -> List[Dict[str, Any]]:
 
 
 def _fetch_category_codes() -> List[str]:
-    """④⑤ 映射辅助（**只读**）：categories.code 清单（范畴深挖 8 表未灌
+    """④⑤ 映射辅助（**只读**）：categories.code 清单（语义分析 8 表未灌
     返回 []）。"""
     try:
         with get_db_cursor() as cursor:
@@ -456,7 +456,7 @@ def _fetch_custom_values(sense_id: int) -> List[Dict[str, Any]]:
 def _resolve_cs_sense(sense_id: int, category: str, language: str,
                       sense_row: Optional[Dict[str, Any]],
                       ) -> Tuple[Optional[int], Optional[str], Optional[str]]:
-    """义位锚 → 范畴深挖研究层映射（④⑤ 共用）。
+    """义位锚 → 语义分析研究层映射（④⑤ 共用）。
 
     Returns:
         (cs_sense_id, study_code, reason)：映射成功 → (id, code, None)；
@@ -464,11 +464,11 @@ def _resolve_cs_sense(sense_id: int, category: str, language: str,
         绝不把库故障谎报成未覆盖）。
     """
     if not sense_row or not sense_row.get("verb"):
-        return None, None, "义项行不可用（oald_senses 无该义位，无法映射范畴深挖库）"
+        return None, None, "义项行不可用（oald_senses 无该义位，无法映射语义分析库）"
     study_code = _study_code_for(category, _fetch_category_codes())
     if study_code is None:
         return None, None, (
-            f"范畴 {category} 未灌入范畴深挖库（categories 无对应研究代号）"
+            f"范畴 {category} 未灌入语义分析库（categories 无对应研究代号）"
         )
     sense_no = str(sense_row.get("sense_index") or "").strip()
     verb = str(sense_row.get("verb") or "").strip()
@@ -796,7 +796,7 @@ def _spine_sections(sense_id: int, category: str = "motion",
         cs = _resolve_cs_sense(sid, category, language, sense_row)
     except Exception as e:  # noqa: BLE001
         logger.error(f"sense_spine: cs_senses 映射意外失败（id={sid}）: {e}")
-        cs = (None, None, f"范畴深挖库映射异常：{e}")
+        cs = (None, None, f"语义分析库映射异常：{e}")
     # 批次 6 merged 消费：cs_senses 映射成功才查分立落地现状（status/
     # merged_into）；映射失败或取数失败按普通义位渲染（不猜 merged）。
     merged: Optional[str] = None

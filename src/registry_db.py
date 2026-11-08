@@ -136,7 +136,11 @@ def register_resource(
         coverage: 覆盖说明（非空，≤255 字符，如 '996 全义项'）
         license: 许可说明（非空，≤120 字符，如 'CC BY 4.0'）
         registered_by: 登记人（≤64 字符；页面传 users.username 留痕，
-            空串允许——数据层不强加角色判定）
+            空串允许——数据层不强加角色判定）。RV3-3 跨类型注：操作人参数
+            在 int 家族（*_by 存 users.id FK）之外，本参数取 **username
+            字符串** —— resource_registry.registered_by 列是 VARCHAR(64)
+            （无 FK），页面层把会话用户名直接入列留痕免二次查库；口径表
+            见 src/lexical_db.py 模块 docstring「操作人参数口径」。
 
     Returns:
         int: 资源 id（新登记或去重命中的已有 id）；任一必填项非法 /

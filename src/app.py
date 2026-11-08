@@ -78,7 +78,7 @@ from src.design_system import (
     BACKGROUND_COLOR,
     SPACE_SM, SPACE_LG,
     get_card_style,
-    get_section_spacing, get_badge_style, hex_to_rgba
+    get_section_spacing, SECTION_SPACING_STYLE, get_badge_style, hex_to_rgba
 )
 
 # ============================================
@@ -408,12 +408,24 @@ st.markdown(f"""
 /* 外观：容器本身（不支持 :has() 的浏览器也能看到样式，只是不吸顶） */
 .st-key-search_bar {{
     background: {hex_to_rgba(BACKGROUND_COLOR, 0.98)};
+    /* RV1-3/RV1-11：搜索栏是常亮浅色面（近白 0.98），暗色主题下容器内的
+       输入文字会继承主题白字（浅底白字 ≈1:1 不可读）。容器整体钉死深字，
+       输入框/占位符单独立规则，两种主题都可读。 */
+    color: #1a202c;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     padding: {SPACE_SM}px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(226, 232, 240, 0.5);
+}}
+.st-key-search_bar input, .st-key-search_bar textarea {{
+    color: #1a202c;
+    -webkit-text-fill-color: #1a202c;
+}}
+.st-key-search_bar input::placeholder {{
+    color: #4a5568;
+    opacity: 1;
 }}
 
 /* 定位：容器的 wrapper 一直贴在 Streamlit 顶栏下方，方便随时切换搜索的单词 */
@@ -434,18 +446,21 @@ st.markdown(f"""
 # 按钮 label 形如 "🧬|原型与位移事件分析|▼"，本样式只做外观，不改行为。
 st.markdown("""
 <style>
+/* RV1-12（P3）：折叠按钮渐变旧值 #667eea（白字实测 3.66:1）不达 AA——
+   两个渐变端点换深档紫：常态 #553c9a（白字 8.40:1）→ #6b46c1（白字 6.42:1），
+   悬停再加深一档（9.31:1 / 8.23:1），全部 ≥4.5:1。 */
 [class*="st-key-card_toggle_"] button {
     width: 100%;
     justify-content: flex-start;
     padding: 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #553c9a 0%, #6b46c1 100%);
     color: #ffffff;
     border: none;
     border-radius: 8px 8px 0 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 [class*="st-key-card_toggle_"] button:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4194 100%);
+    background: linear-gradient(135deg, #4c3a86 0%, #5b3d96 100%);
     color: #ffffff;
     border: none;
 }
@@ -461,9 +476,12 @@ st.markdown("""
    「background-color: #f7fafc; padding: 24px; ...」的原始文字（实测可见），
    而且那对 <div>/</div> 也没有真的包住任何东西 —— Streamlit 把每次
    st.markdown 渲染成独立兄弟节点，HTML 无法跨调用闭合。
-   与搜索栏（.st-key-search_bar）是同一个模式，见文件顶部说明。 */
+   与搜索栏（.st-key-search_bar）是同一个模式，见文件顶部说明。
+   RV1-3：卡底是常亮浅色面（#f7fafc），暗色主题下未显式声明颜色的正文
+   会继承主题白字（浅底白字 ≈1:1 不可读）—— 容器统一钉死深字。 */
 [class*="st-key-card_body_"] {
     background-color: #f7fafc;
+    color: #1a202c;
     padding: 0;
     border: 1px solid #e2e8f0;
     border-top: none;
@@ -509,7 +527,7 @@ def _record_query(verb: str) -> None:
 
     这是「查询次数」与「热门动词」两个统计口径的唯一数据来源 ——
     修正前 log_usage() 虽然早已实现，但应用从未调用过，导致侧边栏的
-    「总查询次数」实为已收录词条数、「热门查询动词」实为 definitions 表
+    「总查询次数」实为已收录词目数、「热门查询动词」实为 definitions 表
     的物理顺序。现在每次用户提交搜索都记一笔。
 
     只应在「用户主动提交查询」处调用（搜索框回车 / 点击热门词 / 点击示例词），
@@ -625,8 +643,10 @@ def render_semantic_table(semantic_data):
         HTML 格式的语义表
     """
     if not semantic_data:
-        return "<p style='color: #a0aec0;'>暂无语义分解数据</p>"
+        # RV1-6：占位文本旧用 #a0aec0（白底实测 2.26:1 不达 AA），换深档灰。
+        return "<p style='color: #4a5568;'>暂无语义分解数据</p>"
 
+    # RV1-9：td 统一补 overflow-wrap:anywhere，长释义/长串窄屏不再撑爆表格。
     html = '<table style="border-collapse: collapse; width: 100%; margin: 16px 0;">'
 
     # 表头
@@ -649,9 +669,9 @@ def render_semantic_table(semantic_data):
         stype, sdesc = _html_escape(str(semantic_type)), _html_escape(str(description))
         html += f'''
         <tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 12px; color: {color}; font-weight: 500;">{stype}</td>
+            <td style="padding: 12px; color: {color}; font-weight: 500; overflow-wrap: anywhere;">{stype}</td>
             <td style="padding: 12px; font-size: 1.2em;">{emoji}</td>
-            <td style="padding: 12px; color: #2d3748;">{sdesc}</td>
+            <td style="padding: 12px; color: #2d3748; overflow-wrap: anywhere;">{sdesc}</td>
         </tr>'''
 
     html += '</tbody></table>'
@@ -696,9 +716,9 @@ def _mock_source_badge_html(verb: str) -> str:
     """R4-6（P3）：MOCK 兜底来源徽章（复用释义来源分级徽章样式）。
 
     当前释义解析自 MOCK_DEFINITIONS（离线兜底）时返回「内置示例（非词典数据）」
-    徽章 HTML；DB/LLM 路径返回空串（不渲染）。颜色取来源分级的中间档琥珀色
-    （#dd6b20，与「二手转写」同级警示），样式与 render_card_annotation 的
-    释义来源徽章一致。
+    徽章 HTML；DB/LLM 路径返回空串（不渲染）。颜色取来源分级的中间档琥珀深档
+    （#9c4221，与「二手转写」同级警示；RV1-2 白字对比 6.53:1 达 AA，旧
+    #dd6b20 仅 3.39:1），样式与 render_card_annotation 的释义来源徽章一致。
     """
     try:
         display = get_display_definition(verb)
@@ -706,7 +726,7 @@ def _mock_source_badge_html(verb: str) -> str:
         return ""
     if display.get("source") != "内置示例":
         return ""
-    badge = ('background-color: #dd6b20; color: white; padding: 2px 10px; '
+    badge = ('background-color: #9c4221; color: white; padding: 2px 10px; '
              'border-radius: 10px; font-size: 0.85em;')
     return ('<p style="color: #2d3748; margin: 0 0 12px 0;"><strong>释义来源：</strong>'
             f'<span style="{badge}">内置示例（非词典数据）</span></p>')
@@ -724,9 +744,11 @@ def render_card_prototype(verb):
     """
     semantic_table = get_semantic_table_for_verb(verb)
 
+    # RV1-7：卡片正文彩字全部换 AA 深档（旧 #667eea/#9f7aea/#48bb78/#ed8936
+    # 在 #f7fafc 卡底实测 3.49/3.11/2.31/2.43:1 不达 4.5:1）。
     html = '''
     <div style="padding: 20px;">
-        <h4 style="color: #667eea; font-weight: 600; margin: 0 0 16px 0;">🧬 原型与位移事件分析</h4>
+        <h4 style="color: #553c9a; font-weight: 600; margin: 0 0 16px 0;">🧬 原型与位移事件分析</h4>
     '''
     html += _mock_source_badge_html(verb)
 
@@ -737,7 +759,7 @@ def render_card_prototype(verb):
         html += '<p style="color: #2d3748;"><strong>语义要素分解:</strong></p>'
         html += render_semantic_table(semantic_table)
     else:
-        html += '<p style="color: #718096;">暂无详细的位移事件分析数据</p>'
+        html += '<p style="color: #4a5568;">暂无详细的位移事件分析数据</p>'
 
     html += '</div>'
     return html
@@ -763,11 +785,11 @@ def render_card_annotation(verb):
 
     html = '''
     <div style="padding: 20px;">
-        <h4 style="color: #9f7aea; font-weight: 600; margin: 0 0 16px 0;">🏷️ 义位标注</h4>
+        <h4 style="color: #553c9a; font-weight: 600; margin: 0 0 16px 0;">🏷️ 义位标注</h4>
     '''
 
     if not definition:
-        return html + '<p style="color: #718096;">暂无标注数据（数据库不可用或该词未收录）</p></div>'
+        return html + '<p style="color: #4a5568;">暂无标注数据（数据库不可用或该词未收录）</p></div>'
 
     def field(label, value, color="#2d3748"):
         if not value:
@@ -779,8 +801,8 @@ def render_card_annotation(verb):
     html += field("词目主导义", definition.get("sense_brief"))
     html += field("Levin 来源子类", definition.get("levin_source"))
     html += field("原型层级", definition.get("prototype_level"), "#805ad5")
-    html += field("意象图式", definition.get("image_schema"), "#3182ce")
-    html += field("英汉对齐等级", definition.get("alignment"), "#dd6b20")
+    html += field("意象图式", definition.get("image_schema"), "#2b6cb0")
+    html += field("英汉对齐等级", definition.get("alignment"), "#9c4221")
     html += field("汉语句法特征", definition.get("cn_syntax"))
     html += field("译义转化策略", definition.get("translation_strategy"))
     html += field("判定依据", definition.get("judge_reason"))
@@ -795,7 +817,10 @@ def render_card_annotation(verb):
         "oxford-en": "仅英文释义，中文待补",
         "pending": "暂无释义",
     }.get(source, source)
-    badge_color = "#38a169" if rank == 1 else ("#dd6b20" if rank and rank <= 2 else "#e53e3e")
+    # RV1-2：来源分级徽章底色换 AA 深档（旧 #38a169/#dd6b20/#e53e3e 白字
+    # 实测 3.25/3.39/4.13:1 均不达 4.5:1）。
+    badge_color = ("#276749" if rank == 1
+                   else ("#9c4221" if rank and rank <= 2 else "#c53030"))
     html += (f'<p style="color: #2d3748; margin-bottom: 8px;"><strong>释义来源：</strong>'
              f'<span style="background-color: {badge_color}; color: white; padding: 2px 10px; '
              f'border-radius: 10px; font-size: 0.85em;">{source_label}</span></p>')
@@ -818,13 +843,13 @@ def render_card_annotation(verb):
         for i, sense in enumerate(senses):
             bg = "#f7fafc" if i % 2 == 0 else "#ffffff"
             level = sense.get("prototype_level") or "-"
-            level_color = "#805ad5" if level == "Y" else "#a0aec0"
+            level_color = "#805ad5" if level == "Y" else "#4a5568"
             ch = sense.get("ch_ndef") or sense.get("en_ndef") or "（空）"
             html += (f'<tr style="background-color: {bg}; border-bottom: 1px solid #e2e8f0;">'
-                     f'<td style="padding: 8px;">{sense.get("sense_index", i + 1)}</td>'
-                     f'<td style="padding: 8px; color: {level_color}; font-weight: 600;">{level}</td>'
-                     f'<td style="padding: 8px;">{ch[:160]}</td>'
-                     f'<td style="padding: 8px; color: #718096;">{sense.get("alignment") or "-"}</td></tr>')
+                     f'<td style="padding: 8px; color: #1a202c; overflow-wrap: anywhere;">{sense.get("sense_index", i + 1)}</td>'
+                     f'<td style="padding: 8px; color: {level_color}; font-weight: 600; overflow-wrap: anywhere;">{level}</td>'
+                     f'<td style="padding: 8px; color: #1a202c; overflow-wrap: anywhere;">{ch[:160]}</td>'
+                     f'<td style="padding: 8px; color: #4a5568; overflow-wrap: anywhere;">{sense.get("alignment") or "-"}</td></tr>')
         html += '</tbody></table>'
 
     html += '</div>'
@@ -846,7 +871,7 @@ def render_card_anchor(verb):
 
     html = '''
     <div style="padding: 20px;">
-        <h4 style="color: #48bb78; font-weight: 600; margin: 0 0 16px 0;">🎯 范畴锚定</h4>
+        <h4 style="color: #276749; font-weight: 600; margin: 0 0 16px 0;">🎯 范畴锚定</h4>
     '''
     html += _mock_source_badge_html(verb)
 
@@ -861,7 +886,7 @@ def render_card_anchor(verb):
             html += f'<span style="background-color: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;">{emoji} {semantic_type}</span>'
         html += '</div>'
     else:
-        html += '<p style="color: #718096;">暂无范畴锚定数据</p>'
+        html += '<p style="color: #4a5568;">暂无范畴锚定数据</p>'
 
     html += '</div>'
     return html
@@ -883,20 +908,23 @@ def render_card_core(verb):
 
     html = '''
     <div style="padding: 20px;">
-        <h4 style="color: #ed8936; font-weight: 600; margin: 0 0 16px 0;">📚 核心释义与多维辨异</h4>
+        <h4 style="color: #9c4221; font-weight: 600; margin: 0 0 16px 0;">📚 核心释义与多维辨异</h4>
     '''
     html += _mock_source_badge_html(verb)
 
     if traditional:
-        html += '<div style="background-color: #edf2f7; padding: 12px; border-radius: 8px; margin-bottom: 16px;">'
+        html += ('<div style="background-color: #edf2f7; color: #1a202c; '
+                 'padding: 12px; border-radius: 8px; margin-bottom: 16px;">')
         html += '<h5 style="color: #2d3748; margin: 0 0 8px 0;">📋 传统释义</h5>'
         html += '<p style="color: #4a5568; margin: 0;">' + _html_escape(str(traditional)) + '</p>'
         html += '</div>'
 
     if optimized:
-        html += '<div style="background-color: #c6f6d5; padding: 12px; border-radius: 8px;">'
+        html += ('<div style="background-color: #c6f6d5; color: #1a202c; '
+                 'padding: 12px; border-radius: 8px;">')
         html += '<h5 style="color: #22543d; margin: 0 0 8px 0;">✅ 优化释义 (语义分解)</h5>'
-        html += '<p style="color: #2f855a; margin: 0;">' + _html_escape(str(optimized)) + '</p>'
+        # RV1-7：正文彩字 #2f855a 在 #c6f6d5 浅绿底实测 3.79:1 不达，换 #22543d（7.30:1）。
+        html += '<p style="color: #22543d; margin: 0;">' + _html_escape(str(optimized)) + '</p>'
         html += '</div>'
 
     html += '</div>'
@@ -1515,9 +1543,11 @@ MOCK_DEFINITIONS = {
 # 语义颜色常量
 # ============================================
 SEMANTIC_COLORS = {
+    # RV1-6/RV1-7：色值既作表格文字色也作白字徽章底色，全部取 AA 深档
+    # （#48bb78 白字 2.43:1、#ed8936 2.55:1 旧值不达）。
     "方式": {"color": "#4a5568", "emoji": "🏃", "label": "方式"},
-    "路径": {"color": "#48bb78", "emoji": "🛤️", "label": "路径"},
-    "方向": {"color": "#ed8936", "emoji": "🎯", "label": "方向"},
+    "路径": {"color": "#2f855a", "emoji": "🛤️", "label": "路径"},
+    "方向": {"color": "#c05621", "emoji": "🎯", "label": "方向"},
     "体相": {"color": "#805ad5", "emoji": "💪", "label": "体相"}
 }
 
@@ -1783,14 +1813,14 @@ def render_sidebar():
     _dash = "—"
 
     # 口径说明：total_queries 来自 usage_logs（真实查询次数），
-    # total_definitions 是已收录词条数 —— 两者含义不同，分开展示。
+    # total_definitions 是已收录词目数 —— 两者含义不同，分开展示。
     st.sidebar.metric(
         "总查询次数",
         _dash if _off else stats["total_queries"],
         delta=f"+{stats['queries_today']} 今天"
               if (not _off and stats.get("queries_today")) else None,
     )
-    st.sidebar.metric("已收录词条", _dash if _off else stats.get("total_definitions", 0))
+    st.sidebar.metric("已收录词目", _dash if _off else stats.get("total_definitions", 0))
     # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
     st.sidebar.metric("词簇", _dash if _off else stats.get("total_clusters", 0))
     st.sidebar.metric("词间关系", _dash if _off else stats.get("total_relations", 0))
@@ -1955,7 +1985,7 @@ def render_main_area():
 
         # 词间关系：内嵌当前词所在词簇的交互图（vis-network 力导向布局，
         # 中心词高亮、悬停显名、默认只画中心连线，簇内两两连线页内展开 ——
-        # 避免旧版 SVG 完全图挤成毛球）。全库地图仍由「知识图谱」页承担。
+        # 避免旧版 SVG 完全图的连线视觉纠缠）。全库地图仍由「知识图谱」页承担。
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
         render_word_relation_section(verb)
 
@@ -2183,7 +2213,11 @@ def render_corpus_dataset_page() -> None:
 
     overview = get_corpus_overview()
     if not overview:
-        st.warning("corpus_word_stats 为空。")
+        st.warning(
+            "语料概览表（corpus_word_stats）为空：请重跑 "
+            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
+            "灌入语料包后刷新本页；刚灌完仍为空属页面缓存，稍候再刷一次。"
+        )
         return
 
     import pandas as pd
@@ -2192,14 +2226,14 @@ def render_corpus_dataset_page() -> None:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("动词", len(overview))
     c2.metric("搭配词型总数", f"{total_coll:,}")
-    c3.metric("图式得分行", len(overview) * 4)
+    c3.metric("重心得分行", len(overview) * 4)
     c4.metric("语料库", "enTenTen21")
 
     df = pd.DataFrame(overview)
     df = df.rename(columns={
         "verb": "动词", "lpos": "词性", "freq": "总频次", "relfreq": "每百万频次",
         "slot_count": "槽位数", "collocate_count": "搭配词型",
-        "candidate_schema": "候选凸显图式(AI初筛)", "max_score": "最高图式得分",
+        "candidate_schema": "候选凸显图式(AI初筛)", "max_score": "最高重心得分",
     })
 
     st.markdown(f"<h3 style='{HEADER_H3}'>总表（按频次降序）</h3>", unsafe_allow_html=True)
@@ -2212,7 +2246,7 @@ def render_corpus_dataset_page() -> None:
         column_config={
             "总频次": st.column_config.NumberColumn(format="%,d"),
             "每百万频次": st.column_config.NumberColumn(format="%.1f"),
-            "最高图式得分": st.column_config.NumberColumn(format="%.2f"),
+            "最高重心得分": st.column_config.NumberColumn(format="%.2f"),
         },
     )
     st.caption("候选凸显图式为 AI 初筛（未语义归类），最终图式标签以义位标注为准。")
@@ -2241,7 +2275,7 @@ def render_corpus_dataset_page() -> None:
         st.bar_chart(sc_df.set_index("意象图式")["重心得分S"], height=220)
         st.dataframe(sc_df, use_container_width=True, hide_index=True)
     else:
-        st.info(f"「{picked}」暂无图式得分数据。")
+        st.info(f"「{picked}」暂无重心得分数据。")
 
     st.markdown(f"<h3 style='{HEADER_H3}'>图式证据搭配（每图式 Top5）</h3>", unsafe_allow_html=True)
     evidence = get_corpus_schema_evidence(picked, top_n=5)
@@ -2308,7 +2342,7 @@ def render_corpus_dataset_page() -> None:
 
 
 def render_card_corpus(verb: str) -> str:
-    """结果页「语料库证据」卡片：词频概览 + 四图式得分 + 每图式 Top3 证据。"""
+    """结果页「语料库证据」卡片：词频概览 + 四图式重心得分 + 每图式 Top3 证据。"""
     if not DB_AVAILABLE:
         return ('<div style="padding: 20px;"><p style="color: #718096;">'
                 '数据库不可用，无法展示语料证据。</p></div>')
@@ -2495,7 +2529,11 @@ def render_domain_family_page() -> None:
 
     overview = get_domain_family_overview()
     if not overview:
-        st.warning("domain_family_senses 为空。")
+        st.warning(
+            "域系初判表（domain_family_senses）为空：请重跑 "
+            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
+            "灌入初判表后刷新本页；刚灌完仍为空属页面缓存，稍候再刷一次。"
+        )
         return
 
     total = sum(r["n_senses"] for r in overview)
@@ -2545,12 +2583,12 @@ def render_domain_family_page() -> None:
         "sense_annotation": "义位层标注（待人工）",
         "rule_tag": "规则", "rule_note": "规则理由",
         "source": "数据来源", "updated_at": "最后修改",
-        "freq": "语料频次", "schema_scores": "四图式得分",
+        "freq": "语料频次", "schema_scores": "四图式重心得分",
     })
     # 展示列序：词目 + 义项序号（组合键）在前，SenseID 生成列随后
     col_order = ["词目", "义项序号", "SenseID", "英文释义", "中文释义",
                  "词目层初判图式", "域", "系", "义位层标注（待人工）",
-                 "语料频次", "四图式得分", "规则", "规则理由", "数据来源", "最后修改"]
+                 "语料频次", "四图式重心得分", "规则", "规则理由", "数据来源", "最后修改"]
     sdf = sdf[[c for c in col_order if c in sdf.columns]]
     if "语料频次" in sdf.columns:
         sdf["语料频次"] = pd.to_numeric(sdf["语料频次"], errors="coerce")
@@ -2587,7 +2625,7 @@ def render_domain_family_page() -> None:
         if freq_v is not None and not pd.isna(freq_v):
             st.markdown(
                 f"**语料频次（enTenTen21）**：{int(freq_v):,}")
-            scores = row.get("四图式得分")
+            scores = row.get("四图式重心得分")
             if isinstance(scores, str):
                 try:
                     scores = json.loads(scores)
@@ -2600,7 +2638,7 @@ def render_domain_family_page() -> None:
                 st.markdown(f"**四图式重心得分（词目层初筛）**：{parts}")
                 st.caption(f"候选凸显图式：{best}（未语义归类的 AI 初筛，仅作参考）")
         else:
-            st.caption("该词目暂无语料证据（35 个路径/互动词待 Sketch Engine 检索）。")
+            st.caption("该词目暂无语料证据（初判表未覆盖该词，或语料包缺该词的检索 JSON）。")
         st.markdown(f"**英文释义**：{row['英文释义'] or '—'}")
         if row.get("中文释义"):
             st.markdown(f"**中文释义**：{row['中文释义']}")
@@ -2664,8 +2702,8 @@ def render_annotation_page() -> None:
     effective = effective_six_roles(user)
 
     if not (effective - {"viewer"}):
-        st.warning("⛔ 无权限：标注平台需要 annotator / reviewer / editor / admin "
-                   "角色（viewer 只读）。")
+        st.warning("⛔ 无权限：标注平台需要 annotator / editor / reviewer / "
+                   "dict_admin / sys_admin 任一角色（viewer 只读）。")
         return
 
     if "dict_admin" in effective:
@@ -2758,12 +2796,12 @@ def _render_annotation_admin_view() -> None:
     senses = get_oald_senses(picked_verb)
     if senses is None:
         st.warning(
-            f"数据不可用：「{picked_verb}」的 OALD 义位读取失败"
+            f"数据不可用：「{picked_verb}」的 OALD 义项读取失败"
             "（数据库查询出错或连接中断），勿重跑灌库脚本，稍后重试。"
         )
         return
     if not senses:
-        st.warning(f"「{picked_verb}」无 OALD 义位数据。"
+        st.warning(f"「{picked_verb}」无 OALD 义项数据。"
                    f"（研究词表 996 义位 = 992 OALD + 4 人工补充"
                    f" scutter/kayak/oar/dodder，均已在库。）")
         return
@@ -2934,8 +2972,8 @@ def render_submission_page() -> None:
 
     effective = effective_six_roles(_current_user())
     if not (effective - {"viewer"}):
-        st.warning("⛔ 无权限：标注提交需要 annotator / reviewer / editor / admin "
-                   "角色（viewer 只读）。")
+        st.warning("⛔ 无权限：标注提交需要 annotator / editor / reviewer / "
+                   "dict_admin / sys_admin 任一角色（viewer 只读）。")
         return
 
     render_submission_flow()
@@ -2984,12 +3022,12 @@ def render_submission_flow() -> None:
     senses = get_oald_senses(picked_verb)
     if senses is None:
         st.warning(
-            f"数据不可用：「{picked_verb}」的 OALD 义位读取失败"
+            f"数据不可用：「{picked_verb}」的 OALD 义项读取失败"
             "（数据库查询出错或连接中断），勿重跑灌库脚本，稍后重试。"
         )
         return
     if not senses:
-        st.warning(f"「{picked_verb}」无 OALD 义位数据。")
+        st.warning(f"「{picked_verb}」无 OALD 义项数据。")
         return
 
     sense_opts = [
@@ -3159,7 +3197,7 @@ def render_submission_flow() -> None:
 
 
 def render_reviewer_panel() -> None:
-    """⚖️ 仲裁面板（reviewer/admin）：分歧清单（各编码人取值对照）→ gold 定稿。
+    """⚖️ 仲裁面板（reviewer/admin）：分歧清单（各编码人取值对照）→ 金标定稿。
 
     权限判定在函数入口（规范 §6-4），R1-2 收口为有效六角色集（与信度页
     同一允许集 dict_admin/sys_admin/reviewer）：annotator/viewer 一律拦截 ——
@@ -3181,7 +3219,7 @@ def render_reviewer_panel() -> None:
 
     adjudicator_id = int(user.get("id") or 0)
     st.markdown(f"<h2 style='{HEADER_H2}'>⚖️ 分歧清单与仲裁</h2>", unsafe_allow_html=True)
-    st.caption("同一义位被多人提交且取值不一的字段在此对照；定稿 gold 后"
+    st.caption("同一义位被多人提交且取值不一的字段在此对照；定稿金标后"
                "参与的提交置为 adjudicated 并退出信度/分歧口径。")
 
     # 定稿成功提示跨 rerun 展示（定稿后该义位退出分歧清单，列表会整体刷新）
@@ -3229,19 +3267,19 @@ def render_reviewer_panel() -> None:
                 with st.form(f"adjudicate_form_{d['sense_id']}"):
                     g1, g2 = st.columns(2)
                     g_adm = g1.radio(
-                        "gold 准入", options=SUBMIT_ADMIT_OPTIONS,
+                        "金标准入", options=SUBMIT_ADMIT_OPTIONS,
                         index=0,
                         format_func=lambda v: SUBMIT_ADMIT_LABELS.get(v, v),
                         horizontal=True,
                     )
-                    g_schema = g2.selectbox("gold 意象图式", options=SCHEMA_OPTIONS, index=0)
-                    g_align = st.selectbox("gold 英汉对齐", options=ALIGNMENT_OPTIONS, index=0)
+                    g_schema = g2.selectbox("金标意象图式", options=SCHEMA_OPTIONS, index=0)
+                    g_align = st.selectbox("金标英汉对齐", options=ALIGNMENT_OPTIONS, index=0)
                     g_doubt = st.checkbox("定稿后仍存疑（保留在复核清单）", value=False)
                     g_note = st.text_input("仲裁说明（note）", placeholder="定稿理由 / 依据条款")
-                    ok_btn = st.form_submit_button("💾 保存仲裁定稿（gold）", type="primary")
+                    ok_btn = st.form_submit_button("💾 保存仲裁定稿（金标）", type="primary")
                 if ok_btn:
                     if not g_adm:
-                        st.error("请先选择 gold 准入标签（Y / EXT / N）。")
+                        st.error("请先选择金标准入标签（Y / EXT / N）。")
                     else:
                         gold: Dict[str, Any] = {"admission": g_adm, "needs_review": bool(g_doubt)}
                         if g_schema:

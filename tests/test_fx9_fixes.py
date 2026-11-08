@@ -198,7 +198,7 @@ class TestR41DeepFamilyProbe:
         self._patch_ranking_empty(monkeypatch)
         data = ca._load_page_data("scope", "motion", "en")
         assert data["load_error"], "缺表应归因 load_error，而非误报未灌入"
-        assert "范畴深挖数据读取失败" in data["load_error"]
+        assert "语义分析数据读取失败" in data["load_error"]
         assert data["dendro"] == {"load_error": data["load_error"]}
         assert data["ranking"] == []
 
@@ -212,7 +212,7 @@ class TestR41DeepFamilyProbe:
                             lambda autocommit=True: _FakeCtx(cursor))
         self._patch_ranking_empty(monkeypatch)
         data = ca._load_page_data("scope", "motion", "en")
-        assert data["load_error"] and "范畴深挖数据读取失败" in data["load_error"]
+        assert data["load_error"] and "语义分析数据读取失败" in data["load_error"]
         assert len(cursor.executed) == 1
 
     def test_deep_probe_covers_matrix_read_surface(self, monkeypatch):
@@ -240,7 +240,7 @@ class TestR41DeepFamilyProbe:
         monkeypatch.setattr(ca, "get_db_cursor",
                             lambda autocommit=True: _FakeCtx(bad))
         err = ca._cluster_family_reachable_error()
-        assert err and "范畴深挖数据读取失败" in err
+        assert err and "语义分析数据读取失败" in err
 
 
 # ============================================

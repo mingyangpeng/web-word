@@ -52,6 +52,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pymysql
 
+from src.db_utils import as_int as _as_int  # RV3-5/R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -215,7 +216,7 @@ def _is_chief(cursor, project_id: int, user_id: int) -> bool:
 # 项目壳 CRUD
 # ============================================
 
-def create_project(name: str, chief_id: int, categories,
+def create_project(name: str, chief_id: int, categories: Any,
                    description: str = "") -> Optional[int]:
     """
     创建词典项目并册封首位主编（chief），返回项目 id。
@@ -225,10 +226,17 @@ def create_project(name: str, chief_id: int, categories,
     保证任何存活的 projects 行都满足「≥1 名 chief」自检约束。
     chief_id 必须是已存在用户（FK 校验）；项目名重复（UNIQUE）返回 None。
 
+    chief_id 入参清洗走 db_utils.as_int（RV3-5）：bool 是 int 子类，
+    ``isinstance(chief_id, int)`` 会把 True 放行成 chief_id=1（越权册封
+    风险），as_int 先拦 bool；int-str/整数值 float 同口径宽松可转，与其余
+    id 类入参清洗一致（口径表见 src/lexical_db.py 模块 docstring）。
+
     Args:
         name: 项目名（非空，≤120 字符）
-        chief_id: 首位主编的用户 id
-        categories: 覆盖的语义范畴清单（list/tuple/str，可空）
+        chief_id: 首位主编的用户 id（>0；bool/None/非整值一律拒绝）
+        categories: 覆盖的语义范畴清单（list/tuple/str，可空 —— None=未划
+            范畴；str 可为单个范畴名或 JSON 串；规整规则见
+            _normalize_categories，故注解为 Any）
         description: 项目描述（可空）
 
     Returns:
@@ -238,7 +246,8 @@ def create_project(name: str, chief_id: int, categories,
     if not isinstance(name, str) or not name.strip():
         logger.error("create_project 需要非空项目名")
         return None
-    if not isinstance(chief_id, int) or chief_id <= 0:
+    cid = _as_int(chief_id)
+    if cid is None or cid <= 0:
         logger.error(f"create_project 需要合法 chief_id: {chief_id!r}")
         return None
     try:
@@ -248,13 +257,13 @@ def create_project(name: str, chief_id: int, categories,
                 "(name, description, categories, status, created_by) "
                 "VALUES (%s, %s, %s, 'active', %s)",
                 (name.strip(), description or "", _normalize_categories(categories),
-                 chief_id),
+                 cid),
             )
             project_id = int(cursor.lastrowid)
             cursor.execute(
                 "INSERT INTO project_members (project_id, user_id, project_role, "
                 "granted_by) VALUES (%s, %s, %s, %s)",
-                (project_id, chief_id, CHIEF_ROLE, chief_id),
+                (project_id, cid, CHIEF_ROLE, cid),
             )
         return project_id
     except pymysql.Error as e:

@@ -319,7 +319,7 @@ class TestR3FixesIntegration:
         return int(row["n"] or 0) > 0
 
     def _finished_batch(self, domain="custom_values"):
-        bid = start_batch(1, "f.xlsx", "ab" * 32, domain, {}, operator=1)
+        bid = start_batch(1, "f.xlsx", "ab" * 32, domain, {}, started_by=1)
         assert bid > 0
         assert finish_batch(bid, 2, 2, 0) is True
         return bid
@@ -431,7 +431,7 @@ class TestR3FixesIntegration:
     def test_r3_2_running_and_finished_batches_accept_persist(self, r3db):
         """running / finished 批次可补写（守卫只拦 rolled_back）；不存在批次拒。"""
         fid = self._text_field("guard2")
-        running = start_batch(1, "r.xlsx", "cd" * 32, "custom_values", {}, operator=1)
+        running = start_batch(1, "r.xlsx", "cd" * 32, "custom_values", {}, started_by=1)
         assert persist_revert_log(running, [
             {"action": "insert", "table": "custom_fields", "row_id": fid},
         ]) is True
@@ -452,7 +452,7 @@ class TestR3FixesIntegration:
 
     def _open_batch(self, domain="custom_values"):
         """登记一个 running 批次（行数留给调用方按实际结果 finish）。"""
-        bid = start_batch(1, "f.xlsx", "ab" * 32, domain, {}, operator=1)
+        bid = start_batch(1, "f.xlsx", "ab" * 32, domain, {}, started_by=1)
         assert bid > 0
         return bid
 

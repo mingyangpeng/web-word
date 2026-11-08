@@ -314,7 +314,7 @@ class TestSidebarOfflineStats:
         at.run()
         assert not at.exception
         metrics = {m.label: m.value for m in at.sidebar.metric}
-        for label in ("总查询次数", "已收录词条", "词簇", "词间关系",
+        for label in ("总查询次数", "已收录词目", "词簇", "词间关系",
                       "平均评分", "总反馈数"):
             assert label in metrics, f"离线侧边栏缺 metric {label}"
             assert metrics[label] == "—", \
@@ -488,7 +488,7 @@ class TestSemanticPageThreeWay:
         infos = [str(i.value) for i in at.info]
         assert any("暂无聚类运行数据" in t for t in infos), \
             f"未灌入分支应保留灌库指引: {infos}"
-        assert any("范畴深挖数据尚未灌入" in t for t in infos), \
+        assert any("语义分析数据尚未灌入" in t for t in infos), \
             "categories 真空（探针可达）应保留原 info 哨兵"
         assert not any("数据不可用" in w for w in
                        [str(w.value) for w in at.warning])
@@ -531,7 +531,7 @@ class TestSemanticPageThreeWay:
         warnings = [str(w.value) for w in at.warning]
         assert any("categories 表读取失败" in w and "勿重跑灌库" in w
                    for w in warnings), f"探针失败应归因: {warnings}"
-        assert not any("范畴深挖数据尚未灌入" in w for w in warnings)
+        assert not any("语义分析数据尚未灌入" in w for w in warnings)
 
     def test_data_ok_no_warnings(self, monkeypatch):
         """有数（ranking + 英汉对比侧就绪）→ 无「数据不可用」/「未灌入」提示。"""

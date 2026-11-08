@@ -99,7 +99,7 @@ GUIDE: Dict[str, Any] = {
         "in_review/approved 版本终裁通过（→ final 直达收口）或终裁否决（→ "
         "rejected，理由必填），数据层 adjudicate_final 以同源 effective 口径"
         "再校验角色与回避制；published 仅词典管理员可执行，G6 许可/体例/备份"
-        "硬闸门由词典管理区「📤 出版导出」tab 接管。",
+        "硬闸门由词典管理区「📤 出版导出」标签页接管。",
         "乐观锁防互踩：改稿带 expect_version（表单装载时看到的版本号），草稿被"
         "流转或目标行已易主时保存被拒 —— 双开标签页/先存后提的竞态在数据层挡住。",
     ],
@@ -126,7 +126,7 @@ GUIDE: Dict[str, Any] = {
         "点「💾 保存草稿」落库（首版自动建 v1；在途自有草稿走乐观锁更新；打回"
         "重提自动 version+1 并挂 based_on_version）；再选审校人（回避制：列表已"
         "滤掉自己）点「📨 提交初审」—— draft → in_review，任务进入对方审校台。",
-        "切「⚖️ 审校台」看待我审校列表（词典管理员可勾选总览全部）：expander 里"
+        "切「⚖️ 审校台」查看待我审校列表（词典管理员可勾选总览全部）：expander 里"
         "对照释义内容与 AI/模板草稿快照，先「💬 挂意见」逐条留痕，再裁决 —— "
         "「⛔ 要求修订」给理由打回（in_review → rejected），「✅ 通过」即终审定稿"
         "（in_review → final）。",
@@ -671,7 +671,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
 
     categories = _list_categories_dicts()
     if not categories:
-        st.info("范畴清单不可用：数据库未灌范畴深挖数据（cs_* 表）或库不可用。")
+        st.info("范畴清单不可用：数据库未灌语义分析数据（cs_* 表）或库不可用。")
         return
     cat_options = [c["code"] for c in categories]
     cat_code = st.selectbox(
@@ -769,7 +769,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         st.markdown("**💾 保存草稿**")
         if st.button("保存草稿（版本自动递增）", key="writing_save_draft"):
             if not content.strip():
-                st.warning("释义成文为空：先写点什么再保存。")
+                st.warning("释义成文为空：请先撰写内容再保存。")
             elif target["mode"] == "update":
                 ok = writing_db.update_draft(
                     int(target["target_id"]), int(target["expect_version"]),
@@ -1069,7 +1069,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     )
     categories = _list_categories_dicts()
     if not categories:
-        st.info("范畴清单不可用：数据库未灌范畴深挖数据（cs_* 表）或库不可用。")
+        st.info("范畴清单不可用：数据库未灌语义分析数据（cs_* 表）或库不可用。")
         return
     cat_options = [c["code"] for c in categories]
     cat_code = st.selectbox(

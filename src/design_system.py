@@ -18,39 +18,47 @@ Date: 2026/05/26
 # ============================================================================
 # Color System
 # ============================================================================
-# Color palette based on blue-gray theme with semantic colors
-# All colors meet WCAG AA contrast requirements (>= 4.5:1)
+# Color palette based on blue-gray theme with semantic colors.
+#
+# RV1-1/RV1-2（WCAG AA 系统性修复）：文本/徽章全部取「深档」色值 —— 每个色值
+# 与白色文字的对比度均 ≥4.5:1（比值由下方 check_contrast 的标准 sRGB 线性化
+# 公式实算，见 tests/test_rv1_fixes.py 全表断言）。旧浅档（#48bb78/#ed8936/
+# #4299e1/#ecc94b/#a0aec0/#dd6b20/#718096/#e53e3e/#38a169/#667eea）白字
+# 对比 1.61~4.13:1 全不达 AA，已整体退役。
 
-# Primary colors (adjusted for WCAG AA compliance)
-# Dark backgrounds with white text (>= 4.5:1)
-PRIMARY_COLOR = "#4a5568"      # Gray 700 - Main action buttons, active states (7.2:1)
-SECONDARY_COLOR = "#63b3ed"    # Blue 400 - Secondary actions, highlights (3.7:1)
-SUCCESS_COLOR = "#48bb78"      # Green 500 - Success messages, positive feedback (4.5:1)
-ERROR_COLOR = "#e53e3e"        # Red 600 - Error messages, negative feedback (4.2:1)
-WARNING_COLOR = "#ed8936"      # Orange 500 - Warning messages, attention (3.8:1) - UI component
+# Primary colors (all pass WCAG AA with white text, >= 4.5:1)
+PRIMARY_COLOR = "#4a5568"      # Gray 700 - Main action buttons, active states (白字 7.53:1)
+SECONDARY_COLOR = "#2c5282"    # Blue 900 - Secondary actions, highlights (白字 7.97:1；旧 #63b3ed 白字仅 2.13:1)
+SUCCESS_COLOR = "#2f855a"      # Green 700 - Success messages, positive feedback (白字 4.54:1；旧 #48bb78 2.43:1)
+ERROR_COLOR = "#c53030"        # Red 700 - Error messages, negative feedback (白字 5.47:1；旧 #e53e3e 4.13:1)
+WARNING_COLOR = "#c05621"      # Orange 700 - Warning messages, attention (白字 4.57:1；旧 #ed8936 2.55:1)
 
 # Semantic colors
 BACKGROUND_COLOR = "#ffffff"   # White - Main page background
 CARD_COLOR = "#f7fafc"         # Gray 100 - Card backgrounds, containers
 TEXT_COLOR = "#1a202c"         # Gray 900 - Main text, headings
 TEXT_SECONDARY = "#4a5568"     # Gray 700 - Secondary text, descriptions
+# Disabled text/placeholder（WCAG 1.4.3 对禁用态文本豁免，不参与 AA 断言）。
+# 徽章/状态底色一律不得再用本值 —— 用 TEXT_SECONDARY（#4a5568，白字 7.53:1）。
 TEXT_DISABLED = "#a0aec0"      # Gray 400 - Disabled text, placeholders
 BORDER_COLOR = "#e2e8f0"       # Gray 200 - Borders, dividers
 
 # Special purpose colors
-DANGER_COLOR = "#e53e3e"       # Red 600 - Critical errors
-INFO_COLOR = "#4299e1"         # Blue 500 - Informational messages
-HIGHLIGHT_COLOR = "#ecc94b"    # Yellow 400 - Highlights, badges
+DANGER_COLOR = "#c53030"       # Red 700 - Critical errors
+INFO_COLOR = "#2b6cb0"         # Blue 700 - Informational messages (白字 5.42:1；旧 #4299e1 3.05:1)
+HIGHLIGHT_COLOR = "#975a16"    # Yellow 700 (深档) - Highlights, badges (白字 5.54:1；旧 #ecc94b 1.61:1)
 
 # 审定三态徽章配色（R6-5 单份事实源）：候选灰 / 审定蓝 / 发布绿。
 # 媒体绑定（词典管理区媒体库）与例证（编纂成文区）共用同一条审定链
 # （候选→审定→发布），徽章配色此前在 dict_admin_pages / lexical_pages
 # 各留一份且「审定」蓝值漂移（#4299e1 白字对比不足 WCAG AA）—— 统一取
 # lexical_pages 的深蓝 #2b6cb0（白字对比 ≥4.5:1）。
+# RV1-2：「候选」灰 #718096 白字实测 4.02:1 不达 AA，深档换 #4a5568
+# （白字 7.53:1）；发布绿同步取 AA 档 #2f855a（白字 4.54:1）。
 REVIEW_STATUS_COLORS = {
-    "候选": "#718096",   # Gray 500 - candidate（灰）
-    "审定": "#2b6cb0",   # Blue 700 - reviewed（白字 5.9:1）
-    "发布": "#2f855a",   # Green 700 - published（白字 4.9:1）
+    "候选": "#4a5568",   # Gray 700 - candidate（白字 7.53:1）
+    "审定": "#2b6cb0",   # Blue 700 - reviewed（白字 5.42:1）
+    "发布": "#2f855a",   # Green 700 - published（白字 4.54:1）
 }
 
 # ============================================================================
@@ -75,16 +83,20 @@ FONT_FAMILY_BASE = ("system-ui, -apple-system, BlinkMacSystemFont, "
 FONT_FAMILY_MONO = ("ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, "
                     "'Liberation Mono', monospace")
 
-# Header sizes (h1-h4)
-HEADER_H1 = "bold 2.5rem/1.2 system-ui"
-HEADER_H2 = "bold 2rem/1.3 system-ui"
-HEADER_H3 = "bold 1.5rem/1.4 system-ui"
-HEADER_H4 = "bold 1.25rem/1.5 system-ui"
+# Header sizes (h1-h4).
+# RV1-4（P2）：旧值是 CSS font 简写（"bold 2.5rem/1.2 system-ui"），调用点一律
+# 以 `style='{HEADER_H1}'` 插值 —— 简写值放进 style 属性不是合法声明序列，
+# 浏览器整条丢弃，字号层级 120 处调用全部失效。现改为独立属性声明插值，
+# 值本身即合法 CSS，所有调用点无需改动即恢复生效。
+HEADER_H1 = "font-size: 2.5rem; font-weight: 700; line-height: 1.2;"
+HEADER_H2 = "font-size: 2rem; font-weight: 700; line-height: 1.3;"
+HEADER_H3 = "font-size: 1.5rem; font-weight: 700; line-height: 1.4;"
+HEADER_H4 = "font-size: 1.25rem; font-weight: 700; line-height: 1.5;"
 
-# Body text sizes
-BODY_SM = "400 0.875rem/1.5 system-ui"     # Small text: 14px
-BODY_BASE = "400 1rem/1.5 system-ui"       # Base text: 16px
-BODY_LG = "400 1.125rem/1.6 system-ui"     # Large text: 18px
+# Body text sizes（同为独立属性声明，见上 RV1-4 说明）
+BODY_SM = "font-size: 0.875rem; font-weight: 400; line-height: 1.5;"   # Small text: 14px
+BODY_BASE = "font-size: 1rem; font-weight: 400; line-height: 1.5;"     # Base text: 16px
+BODY_LG = "font-size: 1.125rem; font-weight: 400; line-height: 1.6;"   # Large text: 18px
 
 # Line height constants
 LINE_HEIGHT_TIGHT = 1.2
@@ -117,7 +129,7 @@ def get_button_primary_style() -> str:
     border-radius: 8px;
     border: none;
     font-family: {FONT_FAMILY_BASE};
-    font-size: {BODY_BASE};
+    font-size: 1rem;
     font-weight: 600;
     line-height: {LINE_HEIGHT_NORMAL};
     transition: all 0.2s ease;
@@ -146,7 +158,7 @@ def get_button_secondary_style() -> str:
     border-radius: 8px;
     border: none;
     font-family: {FONT_FAMILY_BASE};
-    font-size: {BODY_BASE};
+    font-size: 1rem;
     font-weight: 500;
     line-height: {LINE_HEIGHT_NORMAL};
     transition: all 0.2s ease;
@@ -175,7 +187,7 @@ def get_button_outline_style() -> str:
     border-radius: 8px;
     border: 2px solid {PRIMARY_COLOR};
     font-family: {FONT_FAMILY_BASE};
-    font-size: {BODY_BASE};
+    font-size: 1rem;
     font-weight: 500;
     line-height: {LINE_HEIGHT_NORMAL};
     transition: all 0.2s ease;
@@ -203,7 +215,7 @@ def get_button_warning_style() -> str:
     border-radius: 8px;
     border: none;
     font-family: {FONT_FAMILY_BASE};
-    font-size: {BODY_BASE};
+    font-size: 1rem;
     font-weight: 500;
     line-height: {LINE_HEIGHT_NORMAL};
     transition: all 0.2s ease;
@@ -218,8 +230,14 @@ def get_card_style() -> str:
     Cards are used for sections, containers, and content grouping.
     They have a subtle background and rounded corners.
 
+    RV1-3（暗色主题）：卡底是常亮的浅色面（#f7fafc），暗色主题下容器内未显式
+    声明颜色的文本会继承主题白字（实测 1.10:1 不可读）。这里统一补
+    ``color: #1a202c``，浅底容器内文本两种主题都可读；内部元素仍可用自己的
+    颜色声明覆盖。
+
     Returns:
-        CSS style string with background, padding, border-radius, and shadow
+        CSS style string with background, text color, padding, border-radius,
+        and shadow
 
     Example:
         >>> style = get_card_style()
@@ -227,6 +245,7 @@ def get_card_style() -> str:
     """
     return f"""
     background-color: {CARD_COLOR};
+    color: {TEXT_COLOR};
     padding: {SPACE_MD}px;
     border-radius: 12px;
     border: 1px solid {BORDER_COLOR};
@@ -277,7 +296,7 @@ def get_input_field_style() -> str:
     border-radius: 8px;
     padding: {SPACE_SM}px;
     font-family: {FONT_FAMILY_BASE};
-    font-size: {BODY_BASE};
+    font-size: 1rem;
     background-color: #ffffff;
     transition: border-color 0.2s ease;
     """
@@ -356,6 +375,10 @@ def get_table_row_style() -> str:
     Table rows alternate between white and slightly darker backgrounds.
     They use the BORDER_COLOR for row separators.
 
+    RV1-9（移动端）：全库内联 CSS 原先无 overflow-wrap —— 长英文释义/URL/
+    无空格长串在窄屏把表格撑出横向滚动。本样式实际被各页拼进 ``<td>``
+    使用，故在此补 ``overflow-wrap: anywhere``，全部表格单元格一并生效。
+
     Returns:
         CSS style string for table rows
 
@@ -365,6 +388,7 @@ def get_table_row_style() -> str:
     """
     return f"""
     border-bottom: 1px solid {BORDER_COLOR};
+    overflow-wrap: anywhere;
     transition: background-color 0.2s ease;
     """
 
@@ -386,7 +410,8 @@ def get_table_cell_style() -> str:
     return f"""
     padding: {SPACE_SM}px;
     color: {TEXT_COLOR};
-    font-size: {BODY_BASE};
+    font-size: 1rem;
+    overflow-wrap: anywhere;
     """
 
 
@@ -402,10 +427,46 @@ def get_section_spacing() -> str:
         之前返回裸 CSS 文本，st.markdown 会把它当正文渲染成可见的一行
         "margin-top: 32px; ..."。
 
+        需要把间距写进**已有元素**的 style 属性时，不要把本函数的返回值
+        （完整 ``<div>``）塞进 style —— 那是 RV1-10 的原始缺陷（间距从未
+        生效）；应改用 :data:`SECTION_SPACING_STYLE` 裸声明串。
+
     Example:
         >>> st.markdown(get_section_spacing(), unsafe_allow_html=True)
     """
     return f'<div style="margin-top: {SPACE_LG}px; margin-bottom: {SPACE_LG}px;"></div>'
+
+
+# RV1-10：与 get_section_spacing() 同一数值的**裸 CSS 声明串**（无标签包装），
+# 供 `style='{SECTION_SPACING_STYLE}'` 形式的内联插值使用。
+SECTION_SPACING_STYLE = (
+    f"margin-top: {SPACE_LG}px; margin-bottom: {SPACE_LG}px;"
+)
+
+
+def pick_readable_text_color(background: str) -> str:
+    """
+    Pick white or dark text, whichever contrasts better on ``background``.
+
+    RV1-1/RV1-2：徽章底色由调用方传入，白字并非永远可读（旧 #ecc94b 黄底
+    白字实测 1.61:1）。按 WCAG sRGB 亮度实算两种候选的前景对比度，取更高者：
+    深色底（如 #4a5568）选白字，浅色底（如 #ecc94b）选深字 #1a202c。
+
+    Args:
+        background: Hex background color string (e.g. "#ecc94b").
+
+    Returns:
+        "#ffffff" 或 "#1a202c"。
+
+    Example:
+        >>> pick_readable_text_color("#4a5568")
+        '#ffffff'
+        >>> pick_readable_text_color("#ecc94b")
+        '#1a202c'
+    """
+    white = check_contrast("#ffffff", background)[1]
+    dark = check_contrast("#1a202c", background)[1]
+    return "#ffffff" if white >= dark else "#1a202c"
 
 
 def get_badge_style(color: str = PRIMARY_COLOR) -> str:
@@ -415,6 +476,9 @@ def get_badge_style(color: str = PRIMARY_COLOR) -> str:
     Badges are used for labels, tags, or status indicators.
     They use the specified color with rounded corners and small padding.
 
+    RV1-1/RV1-2：文字颜色按底色自动选深/浅（不再写死白字）—— 黄底等浅色
+    面自动配深字 #1a202c，深色底配白字，任意底色都取两者中对比度更高者。
+
     Args:
         color: Background color for the badge (default: PRIMARY_COLOR)
 
@@ -423,18 +487,57 @@ def get_badge_style(color: str = PRIMARY_COLOR) -> str:
 
     Example:
         >>> style = get_badge_style(SUCCESS_COLOR)
-        >>> st.markdown("✅ Verified", unsafe_allow_html=True)
+        >>> st.markdown(f"<span style='{style}'>✅ Verified</span>",
+        ...             unsafe_allow_html=True)
     """
     return f"""
     display: inline-block;
     background-color: {color};
-    color: #ffffff;
+    color: {pick_readable_text_color(color)};
     padding: 4px {SPACE_SM}px;
     border-radius: 12px;
-    font-size: {BODY_SM};
+    font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.4;
     """
+
+
+# RV1-2（_badge 收敛）：此前 lexical_pages / users_admin_page / cluster_analysis /
+# category_study_page（以及 dict_admin_pages、model_settings_pages）各存一份
+# 逐字雷同的 ``_badge``，白字写死、对比度修一处漏四处。现收敛为本模块单一
+# 实现：同款小圆角视觉语言 + 按底色自动选深/浅字；调用方传入的 text 必须已
+# 经 HTML 转义（原 _badge 契约不变）。
+BADGE_HTML_TEMPLATE = (
+    '<span style="display:inline-block;background:{color};color:{text_color};'
+    'padding:1px 10px;border-radius:10px;font-size:0.78em;'
+    'margin-right:4px;">{text}</span>'
+)
+
+
+def get_badge_html(text: str, color: str = PRIMARY_COLOR) -> str:
+    """
+    Render the small rounded status badge (the former per-page ``_badge``).
+
+    单一实现供各页 ``_badge`` 收敛引用（RV1-2）；视觉语言与旧实现一致
+    （inline-block 小圆角徽章），文字颜色按底色自动选深/浅。
+
+    Args:
+        text: 已经过 HTML 转义的徽章文本（调用方契约，与旧 ``_badge`` 相同；
+            本函数不再转义，避免双重转义）。
+        color: 徽章底色（hex）；深色底自动配白字、浅色底自动配深字。
+
+    Returns:
+        HTML ``<span>`` 字符串，配合 ``unsafe_allow_html=True`` 使用。
+
+    Example:
+        >>> get_badge_html("发布", SUCCESS_COLOR)
+        '<span style="display:inline-block;background:#2f855a;color:#ffffff;...'
+    """
+    return BADGE_HTML_TEMPLATE.format(
+        color=color,
+        text_color=pick_readable_text_color(color),
+        text=text,
+    )
 
 
 # ============================================================================
@@ -479,6 +582,46 @@ def hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
 # Accessibility Utilities
 # ============================================================================
 
+def relative_luminance(hex_color: str) -> float:
+    """
+    Compute WCAG relative luminance of a hex color (standard sRGB linearization).
+
+    WCAG 2.x 规范公式：先把 0-255 的 sRGB 通道值归一化到 0-1，再做伽马
+    线性化（<= 0.04045 除以 12.92，否则 ``((v+0.055)/1.055)^2.4``），最后按
+    ``0.2126 R + 0.7152 G + 0.0722 B`` 加权求和。
+
+    RV1-5：旧实现把 0-255 原始通道值直接按系数加权（未线性化），得到的
+    "luminance" 不是规范量，全部比值错误、校验表整体误报 FAIL。
+
+    Args:
+        hex_color: Hex color string, with or without a leading '#'.
+
+    Returns:
+        Relative luminance in [0.0, 1.0].
+
+    Example:
+        >>> round(relative_luminance("#ffffff"), 4)
+        1.0
+        >>> round(relative_luminance("#000000"), 4)
+        0.0
+    """
+    value = hex_color.lstrip("#")
+    if len(value) == 3:
+        value = "".join(ch * 2 for ch in value)
+    if len(value) != 6:
+        raise ValueError(f"Unsupported hex color: {hex_color!r}")
+
+    def linearize(channel: int) -> float:
+        """sRGB 0-255 通道值 → 线性化 0-1（WCAG 2.x 公式）。"""
+        v = channel / 255.0
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (int(value[i:i + 2], 16) for i in (0, 2, 4))
+    return (0.2126 * linearize(r)
+            + 0.7152 * linearize(g)
+            + 0.0722 * linearize(b))
+
+
 def check_contrast(
     foreground: str, background: str, ui_component: bool = False,
 ) -> tuple[bool, float]:
@@ -486,11 +629,12 @@ def check_contrast(
     Check if color contrast meets WCAG AA standards.
 
     WCAG AA requires:
-    - Normal text (16px+): contrast >= 4.5:1
-    - Large text (18px+ or 14px bold): contrast >= 3:1
-    - UI components: contrast >= 3:1
+    - Normal text (< 18pt or < 14pt bold): contrast >= 4.5:1
+    - Large text (>= 18pt or >= 14pt bold): contrast >= 3:1
+    - UI components / graphical objects: contrast >= 3:1
 
-    This function uses the standard luminance formula and returns the contrast ratio.
+    亮度按 WCAG 2.x 标准 sRGB 线性化公式计算（:func:`relative_luminance`，
+    RV1-5 修正旧实现未线性化导致的全表误报）。
 
     Args:
         foreground: Hex color string (e.g., "#ffffff", "#1a202c")
@@ -500,42 +644,21 @@ def check_contrast(
     Returns:
         Tuple of (is_compliant, contrast_ratio)
         - is_compliant: True if meets WCAG AA standards
-        - contrast_ratio: Contrast ratio (e.g., 7.2:1)
+        - contrast_ratio: Contrast ratio (e.g., 7.53 for #4a5568 on white)
 
     Example:
         >>> ok, ratio = check_contrast("#4a5568", "#ffffff")
         >>> print(f"Contrast ratio: {ratio:.2f}:1")
         >>> print(f"Meets WCAG AA: {ok}")
         >>> # For UI components, use the ui_component parameter:
-        >>> ok, ratio = check_contrast("#ed8936", "#ffffff", ui_component=True)
+        >>> ok, ratio = check_contrast("#2b6cb0", "#edf2f7", ui_component=True)
     """
-    # Convert hex to RGB
-    def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-        """'#rrggbb' → (r, g, b) 三元组（R6-11 补一行式 docstring）。"""
-        hex_color = hex_color.lstrip('#')
-        return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+    fg_lum = relative_luminance(foreground)
+    bg_lum = relative_luminance(background)
 
-    fg_rgb = hex_to_rgb(foreground)
-    bg_rgb = hex_to_rgb(background)
-
-    # Convert RGB to grayscale values (W3C luminance formula)
-    def get_luma(rgb: tuple[int, int, int]) -> float:
-        """RGB 三元组 → W3C 亮度（0-255 加权灰度值）。"""
-        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
-
-    fg_luma = get_luma(fg_rgb)
-    bg_luma = get_luma(bg_rgb)
-
-    # Calculate luminance difference
-    # Ensure foreground is the lighter color for correct contrast calculation
-    if fg_luma < bg_luma:
-        fg_luma, bg_luma = bg_luma, fg_luma
-
-    # Calculate contrast ratio
-    if bg_luma == 0:
-        contrast_ratio = 21.0
-    else:
-        contrast_ratio = (fg_luma + 0.05) / (bg_luma + 0.05)
+    # Ensure the lighter color is in the numerator (ratio is symmetric).
+    lighter, darker = max(fg_lum, bg_lum), min(fg_lum, bg_lum)
+    contrast_ratio = (lighter + 0.05) / (darker + 0.05)
 
     # Determine WCAG AA compliance based on type
     # WCAG AA: 4.5:1 for normal text, 3:1 for UI components
@@ -551,13 +674,17 @@ def verify_all_contrasts() -> dict[str, tuple[bool, float]]:
     """
     Verify contrast ratios for all color combinations against white background.
 
+    文本色（深档调色板）与徽章底色（白字对底色）全部参与断言；
+    TEXT_DISABLED 按 WCAG 1.4.3 禁用态豁免，单独标注不计入 PASS/FAIL
+    （键仍保留，便于观察）。
+
     Returns:
         Dictionary mapping color name to (is_compliant, contrast_ratio)
     """
     results = {}
 
-    # Test foreground colors against white background
-    test_colors = {
+    # Foreground (text) colors against the white page background
+    text_colors = {
         "PRIMARY_COLOR": PRIMARY_COLOR,
         "SECONDARY_COLOR": SECONDARY_COLOR,
         "SUCCESS_COLOR": SUCCESS_COLOR,
@@ -565,11 +692,31 @@ def verify_all_contrasts() -> dict[str, tuple[bool, float]]:
         "WARNING_COLOR": WARNING_COLOR,
         "TEXT_COLOR": TEXT_COLOR,
         "TEXT_SECONDARY": TEXT_SECONDARY,
-        "TEXT_DISABLED": TEXT_DISABLED,
     }
 
-    for name, color in test_colors.items():
+    # Badge / status backgrounds: white text on the color itself
+    badge_backgrounds = {
+        "PRIMARY_COLOR_bg": PRIMARY_COLOR,
+        "SECONDARY_COLOR_bg": SECONDARY_COLOR,
+        "SUCCESS_COLOR_bg": SUCCESS_COLOR,
+        "ERROR_COLOR_bg": ERROR_COLOR,
+        "WARNING_COLOR_bg": WARNING_COLOR,
+        "DANGER_COLOR_bg": DANGER_COLOR,
+        "INFO_COLOR_bg": INFO_COLOR,
+        "HIGHLIGHT_COLOR_bg": HIGHLIGHT_COLOR,
+        "REVIEW_STATUS_候选_bg": REVIEW_STATUS_COLORS["候选"],
+        "REVIEW_STATUS_审定_bg": REVIEW_STATUS_COLORS["审定"],
+        "REVIEW_STATUS_发布_bg": REVIEW_STATUS_COLORS["发布"],
+    }
+
+    for name, color in text_colors.items():
         results[name] = check_contrast(color, BACKGROUND_COLOR)
+    for name, color in badge_backgrounds.items():
+        results[name] = check_contrast("#ffffff", color)
+
+    # WCAG 1.4.3 exempts disabled text — record for observability only.
+    results["TEXT_DISABLED(exempt)"] = check_contrast(
+        TEXT_DISABLED, BACKGROUND_COLOR)
 
     return results
 
@@ -578,8 +725,8 @@ def verify_all_contrasts() -> dict[str, tuple[bool, float]]:
 # Version and Metadata
 # ============================================================================
 
-DESIGN_SYSTEM_VERSION = "1.0.0"
-DESIGN_SYSTEM_DATE = "2026/05/26"
+DESIGN_SYSTEM_VERSION = "1.1.0"
+DESIGN_SYSTEM_DATE = "2026/11/08"
 DESIGN_SYSTEM_AUTHOR = "Claude Code"
 
 # ============================================================================
@@ -613,7 +760,10 @@ def initialize_design_system() -> None:
                   "get_input_field_style", "get_input_field_focused_style",
                   "get_table_style", "get_table_header_style",
                   "get_table_row_style", "get_table_cell_style",
-                  "get_section_spacing", "get_badge_style", "check_contrast",
+                  "get_section_spacing", "SECTION_SPACING_STYLE",
+                  "get_badge_style", "get_badge_html",
+                  "pick_readable_text_color", "relative_luminance",
+                  "check_contrast",
                   "verify_all_contrasts", "initialize_design_system")
     print(f"Colors: {len(colors)}")
     print(f"Spacing: {len(spacing)}")

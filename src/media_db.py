@@ -201,16 +201,22 @@ def _migrate_media_columns(cursor) -> None:
 # _as_int / _column_exists 收敛至 src/db_utils.py（R6-4 单一实现点），
 # 本模块以别名导入，调用点不变。
 
-def _sha256_of_file(path: str) -> Any:
-    """流式计算文件 sha256（64KB 分块，媒体文件可能很大）；读不动返回 None。"""
+def _sha256_of_file(path: str) -> Optional[str]:
+    """流式计算文件 sha256（64KB 分块，媒体文件可能很大）；读不动返回 None。
+
+    Returns:
+        Optional[str]: 64 位十六进制摘要；文件读不开（不存在/无权限等
+        OSError）或路径含 NUL byte（open 对嵌入空字节抛 ValueError，
+        RV4-2：不再穿透为 traceback）返回 None。
+    """
     try:
         digest = hashlib.sha256()
         with open(path, "rb") as f:
             for chunk in iter(lambda: f.read(65536), b""):
                 digest.update(chunk)
         return digest.hexdigest()
-    except OSError as e:
-        logger.error(f"读取资产文件失败: {path} ({e})")
+    except (OSError, ValueError) as e:
+        logger.error(f"读取资产文件失败: {path!r} ({e})")
         return None
 
 
@@ -222,7 +228,7 @@ def register_asset(
     kind: str,
     source: str,
     license: str,
-    mime: str = None,
+    mime: Optional[str] = None,
 ) -> int:
     """登记一个媒体资产，返回资产 id（media_assets.id）。
 
@@ -574,23 +580,31 @@ def advance_binding_status(
     调用方/测试缺省）维持旧 UPDATE 形态不碰这两列。列由
     ensure_media_tables 幂等迁移（媒体页入口已先调）。
 
+    参数校验顺序与 lexical_db.advance_example_status 同口径（RV3-8）：先 id
+    后状态对 —— id 非法与状态对非法同时存在时，拒绝文案先报 id。
+
     Args:
         binding_id: media_bindings.id（>0）
         from_status: 当前审定态（须在 MEDIA_STATUS_NEXT 链上且为行实际状态）
         to_status: 目标态（须等于 next_binding_status(from_status)）
-        reviewed_by: 操作人 username（None/空 = 不写留痕两列）
+        reviewed_by: 操作人 username（None/空 = 不写留痕两列）。RV3-3 跨类型
+            注：操作人参数在 int 家族（created_by/granted_by/…，存 users.id
+            FK）之外，本函数取 **username 字符串** —— media_bindings.
+            reviewed_by 列是 VARCHAR(64)（R3-4a 迁移列，无 FK），页面层把
+            会话用户 username 直接入列留痕，免二次查库换 id；口径表见
+            src/lexical_db.py 模块 docstring「操作人参数口径」。
 
     Returns:
         bool: 流转生效 True；id 非法 / 流转表外 / 状态已变 / 库不可用 False。
     """
+    bid = _as_int(binding_id)
+    if bid is None or bid <= 0:
+        logger.error(f"advance_binding_status 拒绝非法 binding_id: {binding_id!r}")
+        return False
     if next_binding_status(from_status) != to_status:
         logger.error(
             f"媒体绑定流转拒绝非单步对：{from_status!r} → {to_status!r}"
         )
-        return False
-    bid = _as_int(binding_id)
-    if bid is None or bid <= 0:
-        logger.error(f"advance_binding_status 拒绝非法 binding_id: {binding_id!r}")
         return False
     actor = str(reviewed_by).strip() if reviewed_by is not None else ""
     try:
