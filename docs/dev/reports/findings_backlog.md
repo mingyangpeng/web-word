@@ -83,3 +83,14 @@
 - [ ] RV1-11 P3 暗色主题写死浅色面（搜索栏/卡片）——半透明或主题分支
 - [ ] RV1-12 P3 折叠按钮白字 on 渐变 3.66:1——渐变加深或字号提
 - [ ] RV1-13 P3 画像进度条填充 2.71:1<3:1——填充改 #2b6cb0
+
+## RV-4 安全深化（8 findings：P1×1 P2×2 P3×5）
+
+- [ ] RV4-1 P1 🔴 .env 真实 API key/MySQL 口令入库并推 GitHub——**轮换凭据＋.env 改占位**（今天）
+- [ ] RV4-2 P2 _sha256_file 只捕 OSError 不捕 ValueError（NUL byte 崩页出 traceback）——扩为 (OSError, ValueError)
+- [ ] RV4-3 P2 媒体路径登记无 base 目录限定——resolve 后前缀校验限 data/media＋拒 symlink
+- [ ] RV4-4 P3 showErrorDetails=true 生产改 false（配合日志）
+- [ ] RV4-5 P3 grant/revoke TOCTOU 亚 rerun 窗口——实时回库或文档明示
+- [ ] RV4-6 P3 st.warning 插值 {e} 可能含 DB 信息——受控分支极窄（P3）
+- [ ] RV4-7 P3 static 目录图谱 HTML 绕登录门——数据敏感度低，公网部署时处理
+- [ ] RV4-8 P3 requirements 无锁文件＋requests>=2.31 下限——CI 加 pip-audit＋requests>=2.32.4
