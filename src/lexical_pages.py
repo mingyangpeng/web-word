@@ -43,10 +43,13 @@ from typing import Any, Dict, List, Optional, Tuple
 import streamlit as st
 
 from src import media_db
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
+from src.db_utils import current_user as _current_user
 from src.design_system import (
     HEADER_H1,
     HEADER_H2,
     HEADER_H3,
+    REVIEW_STATUS_COLORS,
     get_card_style,
     get_table_header_style,
     get_table_row_style,
@@ -60,9 +63,6 @@ from src.lexical_db import (
     STATE_FULL,
     STATE_NONE,
     STATE_PARTIAL,
-    STATUS_CANDIDATE,
-    STATUS_PUBLISHED,
-    STATUS_REVIEWED,
     TRANSLATION_STATES,
     add_example,
     advance_example_status,
@@ -70,6 +70,7 @@ from src.lexical_db import (
     ensure_lexical_tables,
     get_translation,
     list_examples,
+    _next_example_status,  # R6-5：审定单步链单一实现（lexical_db 内部链）
     remove_example,
     set_translation,
     update_example,
@@ -194,11 +195,9 @@ STATE_LABELS = {
 }
 
 # 审定态徽章配色（与媒体库同链同语义：候选灰/审定蓝/发布绿）。
-STATUS_BADGE_COLORS = {
-    STATUS_CANDIDATE: "#718096",
-    STATUS_REVIEWED: "#2b6cb0",
-    STATUS_PUBLISHED: "#2f855a",
-}
+# R6-5：配色单份事实源进 design_system.REVIEW_STATUS_COLORS（媒体库绑定
+# 徽章同源），本名字保留为别名供既有调用点/测试使用。
+STATUS_BADGE_COLORS = REVIEW_STATUS_COLORS
 
 # 对译三态徽章配色（完全对应绿/部分对应橙/无对应灰）。
 STATE_BADGE_COLORS = {
@@ -213,10 +212,6 @@ MERGED_BADGE_COLOR = "#e53e3e"
 # merged 拒选口径：cs_senses.status 分立落地取值（与
 # cluster_analysis.MERGED_STATUS 同值；本地常量避免拖入 numpy/scipy 依赖）。
 MERGED_STATUS = "merged"
-
-# 例证审定单步链（与 lexical_db.advance_example_status 内部链一致）。
-NEXT_EXAMPLE_STATUS = {STATUS_CANDIDATE: STATUS_REVIEWED,
-                       STATUS_REVIEWED: STATUS_PUBLISHED}
 
 # 编纂职能允许角色（任务×角色矩阵：撰写/例证/对译→editor+；审校侧 reviewer
 # 需要读改口径，词典管理员兜底；判定实现复用 effective_six_roles）。
@@ -234,16 +229,6 @@ def _esc(value: Any) -> str:
     selectbox/radio 等纯文本控件由 Streamlit 自带转义，调用方不要再转。
     """
     return _html_escape(str(value), quote=True)
-
-
-def _as_int(value: Any) -> Optional[int]:
-    """宽松转 int（int/int-str/float 整数可转；bool/None/其余返回 None）。"""
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def _can_edit(user: Any) -> bool:
@@ -346,12 +331,6 @@ def _translation_missing(
     if state == STATE_NONE and not pp:
         return "无对应必须给出释义翻译。"
     return None
-
-
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（规范 §6-5：会话只存 st.session_state['user']）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
 
 
 # ============================================
@@ -589,7 +568,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                             st.error(f"更新失败：文本为空/超长（≤{MAX_CONTENT_LEN} "
                                      "字符）/参数非法/数据库不可用。")
                 cur_status = str(row.get("status") or "")
-                nxt_status = NEXT_EXAMPLE_STATUS.get(cur_status)
+                nxt_status = _next_example_status(cur_status)
                 if nxt_status:
                     if st.button(
                         f"审定流转：{cur_status} → {nxt_status}",

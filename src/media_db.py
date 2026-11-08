@@ -31,6 +31,12 @@
   绑定，返回删除数 —— lexical_db.remove_example 删除例证前先调，孤儿绑定
   不再依赖页面手工摘除）；media_bindings 另补 reviewed_by/reviewed_at
   审计列（R3-4a，审定流转留痕，ensure 幂等迁移）。
+  批次 R6-12 追加（媒体状态机自 dict_admin_pages 下沉数据层）：
+  next_binding_status(status) -> str|None（审定单步链查表）、
+  advance_binding_status(binding_id, from_status, to_status, reviewed_by)
+  -> bool（参数化 UPDATE + 乐观并发守卫的绑定审定流转，原页面私有
+  _advance_binding_status 的单一实现）与 list_assets(status, limit)
+  （资产档案列表，原页面私有 _list_media_assets 下沉）。
 
 降级：
   数据库不可用时 ensure 只记日志不抛异常（页面可继续渲染），
@@ -49,10 +55,12 @@ import hashlib
 import logging
 import mimetypes
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pymysql
 
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
+from src.db_utils import column_exists as _column_exists
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -67,11 +75,14 @@ KIND_VIDEO = "video"
 KINDS = (KIND_IMAGE, KIND_AUDIO, KIND_VIDEO)
 
 # anchor_type：四锚（平台架构设计规范 §6 D⑦「四锚：词目/义位/例证/图式」）。
+# R6-7：元组常量加域前缀 MEDIA_ANCHOR_TYPES —— 与 dict_admin_db.APPLIES_TO
+# （custom_fields 三锚）同名枚举撞名消歧；四锚单值常量本就有 ANCHOR_ 前缀，
+# 语义自明，维持原名。
 ANCHOR_WORD = "word"
 ANCHOR_SENSE = "sense"
 ANCHOR_EXAMPLE = "example"
 ANCHOR_SCHEMA = "schema"
-ANCHOR_TYPES = (ANCHOR_WORD, ANCHOR_SENSE, ANCHOR_EXAMPLE, ANCHOR_SCHEMA)
+MEDIA_ANCHOR_TYPES = (ANCHOR_WORD, ANCHOR_SENSE, ANCHOR_EXAMPLE, ANCHOR_SCHEMA)
 
 # purpose：绑定用途（词条内容模型多模态区四类位）。
 PURPOSE_PRONUNCIATION = "pronunciation"
@@ -86,10 +97,23 @@ PURPOSES = (
 )
 
 # status：资产与绑定的审定三态（候选 → 审定 → 发布）。
-STATUS_CANDIDATE = "候选"
-STATUS_REVIEWED = "审定"
-STATUS_PUBLISHED = "发布"
-STATUSES = (STATUS_CANDIDATE, STATUS_REVIEWED, STATUS_PUBLISHED)
+# R6-6：中文状态常量加域前缀 MEDIA_STATUS_*（lexical_db.EXAMPLE_STATUS_*
+# 同批口径）—— 裸 STATUS_CANDIDATE 等在跨模块 import 处分不清是媒体绑定
+# 还是例证审定链；值不改（DDL ENUM('候选','审定','发布') 不动）。
+MEDIA_STATUS_CANDIDATE = "候选"
+MEDIA_STATUS_REVIEWED = "审定"
+MEDIA_STATUS_PUBLISHED = "发布"
+MEDIA_STATUSES = (
+    MEDIA_STATUS_CANDIDATE, MEDIA_STATUS_REVIEWED, MEDIA_STATUS_PUBLISHED,
+)
+
+# 审定单步流转表（候选→审定→发布；发布为终点，逐级不可跳）。R6-12 自
+# dict_admin_pages.MEDIA_STATUS_NEXT 下沉 —— 状态机的单一事实源归数据层，
+# 页面层（绑定流转按钮的「下一态」文案）与 advance_binding_status 共用。
+MEDIA_STATUS_NEXT = {
+    MEDIA_STATUS_CANDIDATE: MEDIA_STATUS_REVIEWED,
+    MEDIA_STATUS_REVIEWED: MEDIA_STATUS_PUBLISHED,
+}
 
 # 字段长度上限（与 DDL 一致，应用层先拒超长值）。
 MAX_LICENSE_LEN = 120     # license VARCHAR(120) NOT NULL
@@ -163,17 +187,6 @@ def ensure_media_tables() -> None:
         logger.error(f"media 两表初始化意外错误: {e}")
 
 
-def _column_exists(cursor, table: str, column: str) -> bool:
-    """表上是否已有该列（让 ALTER 幂等；仿 users_db._column_exists）。"""
-    cursor.execute(
-        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
-             AND COLUMN_NAME = %s""",
-        (table, column),
-    )
-    return int(cursor.fetchone()["n"] or 0) > 0
-
-
 def _migrate_media_columns(cursor) -> None:
     """media_bindings 存量结构迁移：补 reviewed_by / reviewed_at（幂等，R3-4a）。"""
     for column, sql in MEDIA_BINDINGS_AUDIT_COLUMNS:
@@ -185,15 +198,8 @@ def _migrate_media_columns(cursor) -> None:
 # ============================================
 # 入参规整（应用层先拒，非法值不进数据库）
 # ============================================
-def _as_int(value: Any) -> Any:
-    """宽松转 int（int/int-str/float 整数可转；bool/其余返回 None）。"""
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
+# _as_int / _column_exists 收敛至 src/db_utils.py（R6-4 单一实现点），
+# 本模块以别名导入，调用点不变。
 
 def _sha256_of_file(path: str) -> Any:
     """流式计算文件 sha256（64KB 分块，媒体文件可能很大）；读不动返回 None。"""
@@ -325,7 +331,7 @@ def bind_asset(
     purpose: str,
     caption: str = "",
     sort_order: int = 0,
-    status: str = STATUS_CANDIDATE,
+    status: str = MEDIA_STATUS_CANDIDATE,
 ) -> bool:
     """把资产绑到一个锚上，返回是否成功。
 
@@ -336,7 +342,7 @@ def bind_asset(
 
     Args:
         asset_id: 资产 id（media_assets.id，须已存在）
-        anchor_type: 锚类型 ∈ ANCHOR_TYPES（'word'/'sense'/'example'/'schema'）
+        anchor_type: 锚类型 ∈ MEDIA_ANCHOR_TYPES（'word'/'sense'/'example'/'schema'）
         anchor_id: 锚行 id（>0；word 锚 = 现汉词条 zh_dict_entries.id
             或 definitions.id，数据层不做存在性校验 —— 锚表是多态的，
             校验归加载脚本与批次 2 页面层）
@@ -344,7 +350,7 @@ def bind_asset(
             'example_media'/'schema_diagram'）
         caption: 图注（≤255 字符，默认 ''）
         sort_order: 展示顺序（默认 0，小在前）
-        status: 绑定状态 ∈ STATUSES（默认 '候选'）
+        status: 绑定状态 ∈ MEDIA_STATUSES（默认 '候选'）
 
     Returns:
         bool: 绑定成功（含幂等命中）True；参数非法 / 资产不存在 /
@@ -354,9 +360,9 @@ def bind_asset(
     if aid is None or aid <= 0:
         logger.error(f"bind_asset 拒绝非法 asset_id: {asset_id!r}")
         return False
-    if anchor_type not in ANCHOR_TYPES:
+    if anchor_type not in MEDIA_ANCHOR_TYPES:
         logger.error(
-            f"bind_asset 拒绝非法 anchor_type: {anchor_type!r}（须 ∈ {ANCHOR_TYPES}）"
+            f"bind_asset 拒绝非法 anchor_type: {anchor_type!r}（须 ∈ {MEDIA_ANCHOR_TYPES}）"
         )
         return False
     tid = _as_int(anchor_id)
@@ -377,8 +383,8 @@ def bind_asset(
     if order is None:
         logger.error(f"bind_asset 拒绝非法 sort_order: {sort_order!r}")
         return False
-    if status not in STATUSES:
-        logger.error(f"bind_asset 拒绝非法 status: {status!r}（须 ∈ {STATUSES}）")
+    if status not in MEDIA_STATUSES:
+        logger.error(f"bind_asset 拒绝非法 status: {status!r}（须 ∈ {MEDIA_STATUSES}）")
         return False
 
     try:
@@ -440,16 +446,16 @@ def unbind_for_anchor(anchor_type: str, anchor_id: int) -> int:
     与本模块容错口径一致）。
 
     Args:
-        anchor_type: 锚类型 ∈ ANCHOR_TYPES（'word'/'sense'/'example'/'schema'）
+        anchor_type: 锚类型 ∈ MEDIA_ANCHOR_TYPES（'word'/'sense'/'example'/'schema'）
         anchor_id: 锚行 id（>0）
 
     Returns:
         int: 实际删除的绑定行数；参数非法 / 数据库错误返回 0。
     """
-    if anchor_type not in ANCHOR_TYPES:
+    if anchor_type not in MEDIA_ANCHOR_TYPES:
         logger.error(
             f"unbind_for_anchor 拒绝非法 anchor_type: {anchor_type!r}"
-            f"（须 ∈ {ANCHOR_TYPES}）"
+            f"（须 ∈ {MEDIA_ANCHOR_TYPES}）"
         )
         return 0
     tid = _as_int(anchor_id)
@@ -487,7 +493,7 @@ def list_assets_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, A
     """列出一个锚上的全部资产绑定（装配确定性：按 sort_order, id 稳定排序）。
 
     Args:
-        anchor_type: 锚类型 ∈ ANCHOR_TYPES
+        anchor_type: 锚类型 ∈ MEDIA_ANCHOR_TYPES
         anchor_id: 锚行 id
 
     Returns:
@@ -499,10 +505,10 @@ def list_assets_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, A
         按产品口径过滤候选）；anchor_type 非法 / anchor_id 非法 /
         数据库不可用返回 []。
     """
-    if anchor_type not in ANCHOR_TYPES:
+    if anchor_type not in MEDIA_ANCHOR_TYPES:
         logger.error(
             f"list_assets_for_anchor 拒绝非法 anchor_type: {anchor_type!r}"
-            f"（须 ∈ {ANCHOR_TYPES}）"
+            f"（须 ∈ {MEDIA_ANCHOR_TYPES}）"
         )
         return []
     tid = _as_int(anchor_id)
@@ -533,4 +539,121 @@ def list_assets_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, A
         return []
     except Exception as e:
         logger.error(f"查询锚绑定意外错误: {e}")
+        return []
+
+
+# ============================================
+# 媒体状态机（R6-12 自 dict_admin_pages 下沉：单一实现归数据层）
+# ============================================
+def next_binding_status(status: Any) -> Optional[str]:
+    """审定流转的下一状态（纯函数）：候选→审定→发布；发布/未知态返回 None。
+
+    MEDIA_STATUS_NEXT 单一事实源的查表入口 —— 页面层（流转按钮的
+    「下一态」文案与禁用判定）与 advance_binding_status 的单步校验共用，
+    不再各留一份流转表。
+    """
+    return MEDIA_STATUS_NEXT.get(str(status or ""))
+
+
+def advance_binding_status(
+    binding_id: int,
+    from_status: str,
+    to_status: str,
+    reviewed_by: Optional[str] = None,
+) -> bool:
+    """绑定审定流转一步（R6-12 自 dict_admin_pages._advance_binding_status
+    下沉）：候选→审定→发布，参数化 UPDATE + 乐观并发守卫。
+
+    逐级单步纪律（MEDIA_STATUS_NEXT 链上才放行，不可跳级、不可回退）；
+    乐观并发守卫（WHERE status = from_status）：两人同时流转同一条时只有
+    一人生效；rowcount=1 即成功。
+
+    审定留痕（R3-4a）：reviewed_by 非空时随流转写入 media_bindings 的
+    reviewed_by（操作人，当前会话用户 username）与 reviewed_at（NOW()）——
+    每一步流转都刷新（列语义 = 把绑定推到当前态的人与时间）；未传（既有
+    调用方/测试缺省）维持旧 UPDATE 形态不碰这两列。列由
+    ensure_media_tables 幂等迁移（媒体页入口已先调）。
+
+    Args:
+        binding_id: media_bindings.id（>0）
+        from_status: 当前审定态（须在 MEDIA_STATUS_NEXT 链上且为行实际状态）
+        to_status: 目标态（须等于 next_binding_status(from_status)）
+        reviewed_by: 操作人 username（None/空 = 不写留痕两列）
+
+    Returns:
+        bool: 流转生效 True；id 非法 / 流转表外 / 状态已变 / 库不可用 False。
+    """
+    if next_binding_status(from_status) != to_status:
+        logger.error(
+            f"媒体绑定流转拒绝非单步对：{from_status!r} → {to_status!r}"
+        )
+        return False
+    bid = _as_int(binding_id)
+    if bid is None or bid <= 0:
+        logger.error(f"advance_binding_status 拒绝非法 binding_id: {binding_id!r}")
+        return False
+    actor = str(reviewed_by).strip() if reviewed_by is not None else ""
+    try:
+        with get_db_cursor() as cursor:
+            if actor:
+                cursor.execute(
+                    "UPDATE media_bindings SET status = %s, "
+                    "reviewed_by = %s, reviewed_at = NOW() "
+                    "WHERE id = %s AND status = %s",
+                    (to_status, actor, bid, from_status),
+                )
+            else:
+                cursor.execute(
+                    "UPDATE media_bindings SET status = %s "
+                    "WHERE id = %s AND status = %s",
+                    (to_status, bid, from_status),
+                )
+            return cursor.rowcount == 1
+    except pymysql.Error as e:
+        logger.error(f"媒体绑定流转失败（binding={bid}）: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"媒体绑定流转意外错误（binding={bid}）: {e}")
+        return False
+
+
+def list_assets(
+    status: Optional[str] = None,
+    limit: int = 50,
+) -> List[Dict[str, Any]]:
+    """资产档案列表（**只读**；R6-12 自 dict_admin_pages._list_media_assets
+    下沉）：按审定态筛选（None=全部），id 降序。
+
+    Args:
+        status: 审定态筛选 ∈ MEDIA_STATUSES（None/空串 = 全部；调用方
+            传非法值时按无命中处理 —— WHERE 过滤不命中，不抛错）
+        limit: 返回条数上限（<1 按 1 处理，防一次性拖全表）
+
+    Returns:
+        list[dict]: media_assets 行 {id, kind, file_path, mime, sha256,
+        source, license, size_bytes, status, created_at}；数据库不可用
+        返回 []（只记日志不抛异常，与本模块容错口径一致）。
+    """
+    lim = _as_int(limit)
+    if lim is None or lim < 1:
+        lim = 1
+    sql = (
+        "SELECT id, kind, file_path, mime, sha256, source, license, "
+        "size_bytes, status, created_at FROM media_assets"
+    )
+    params: List[Any] = []
+    if status:
+        sql += " WHERE status = %s"
+        params.append(status)
+    sql += " ORDER BY id DESC LIMIT %s"
+    params.append(lim)
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, tuple(params))
+            return [dict(r) for r in cursor.fetchall()]
+    except pymysql.Error as e:
+        logger.warning(f"读取媒体资产列表失败（按空列表处理）: {e}")
+        return []
+    except Exception as e:
+        logger.warning(f"读取媒体资产列表意外错误（按空列表处理）: {e}")
         return []

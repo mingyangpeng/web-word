@@ -35,6 +35,7 @@ from typing import Any, Dict, List, Optional
 
 import pymysql
 
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
 from src.users_db import effective_six_roles
 
@@ -44,6 +45,15 @@ logger = logging.getLogger(__name__)
 # 常量（规范 §1/§2/§3）
 # ============================================
 TASK_TYPES = ("admission", "feature_coding", "alignment")
+
+# task_type 展示名（R6-8 单一导出：sense_spine / collab_pages 的两份同名
+# 映射收敛于此；存库一律用英文枚举值，中文只做展示。admission 取工序名
+# 「义位准入」——sense_spine 原值，collab_pages 的「准入标注」自此统一）。
+TASK_TYPE_LABELS = {
+    "admission": "义位准入",
+    "feature_coding": "特征编码",
+    "alignment": "英汉对齐",
+}
 
 # submission status 仅两态（规范 §2 ENUM('submitted','adjudicated')）
 STATUS_SUBMITTED = "submitted"
@@ -190,16 +200,8 @@ def validate_payload(task_type: str, payload: Any) -> bool:
     return True
 
 
-def _as_int(value: Any) -> Optional[int]:
-    """宽容转 int（UI 层可能传来 str）；转不动返回 None。"""
-    if isinstance(value, bool):  # bool 是 int 子类，但 id 不会是 bool
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
+# _as_int 收敛至 src/db_utils.as_int（R6-4 单一实现点；原「宽容转 int，
+# bool/None/转不动 → None」语义与公共件逐字节一致，别名导入调用点不变）。
 def parse_payload(raw: Any) -> dict:
     """annotation_submissions.payload → dict（PyMySQL 对 JSON 列可能给 str 或 dict）。
 

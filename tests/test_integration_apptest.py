@@ -594,7 +594,8 @@ class TestPrivilegeEscalationGate:
 
     @staticmethod
     def _select_grant_target(at, target_label: str) -> None:
-        sels = [s for s in at.selectbox if s.key == "role_grant_user"]
+        sels = [s for s in at.selectbox
+                if s.key == "users_admin_role_grant_user"]  # R6-9 前缀收敛
         assert sels, "角色授予面板的「选择用户」未找到"
         sels[0].set_value(target_label)
         at.run()

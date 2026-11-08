@@ -10,7 +10,7 @@
         reliability.py 信度页）改 effective_six_roles 判定 —— AppTest
         权限矩阵八会话：授予式用户（legacy 列与 roles 快照不一致）放行、
         viewer/未登录照旧拦截；
-  R1-5  collab_pages 收件箱裁决按钮区过 _can_adjudicate（dict_admin/
+  R1-5  collab_pages 收件箱裁决按钮区过 _can_adjudicate_inbox（dict_admin/
         reviewer）—— 其余角色只读灰注；
   R1-6  app._logout 会话全清＋启动白名单：业务键（verb_result 等）登出即
         清、user 清除、页面回搜索、退出提示在场；
@@ -122,9 +122,9 @@ class TestR1SignaturesAndSources:
         assert "停用/启用管理角色账号" in src
 
     def test_collab_inbox_adjudicate_gate_in_source(self):
-        """R1-5：收件箱按钮区按 _can_adjudicate 收口（其余角色灰注）。"""
+        """R1-5：收件箱按钮区按 _can_adjudicate_inbox 收口（其余角色灰注）。"""
         src = inspect.getsource(collab_pages._render_pending_inbox)
-        assert "_can_adjudicate(me)" in src
+        assert "_can_adjudicate_inbox(me)" in src  # R6-4 改名
         assert "裁决权归词典管理员/审校" in src
 
     def test_logout_whitelist_constants(self):
@@ -456,7 +456,7 @@ class TestR1LogoutFullClear:
 
 
 class TestR1CollabInboxGating:
-    """R1-5：收件箱裁决按钮区按 _can_adjudicate 收口（AppTest）。"""
+    """R1-5：收件箱裁决按钮区按 _can_adjudicate_inbox 收口（AppTest）。"""
 
     def test_granted_annotator_sees_readonly_gray_note(self, r1_env):
         """授予式 annotator：条目可见（知情），按钮替换为灰注，无裁决按钮。"""

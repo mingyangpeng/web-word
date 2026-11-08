@@ -21,6 +21,11 @@
 降级：
     范畴未灌数据 / 无运行 → compute_medoid_ranking 返回 []（原函数口径）；
     数据库不可用时是否吞异常以原函数实现为准，本包装不加逻辑。
+
+阶段口径（R6-2 明示）：**阶段 1 仅契约与自检** —— 本模块只验证
+    ToolSpec 契约可注册、params_schema 可合并默认值、run() 可委托
+    （自检可跑通）；页面接线（ui_surface 对应页面调 run）归
+    **阶段 2**，本模块不 import streamlit、不改页面模块。
 """
 
 from __future__ import annotations

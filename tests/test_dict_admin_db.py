@@ -34,7 +34,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
 from src.dict_admin_db import (  # noqa: E402
-    ANCHOR_TYPES,
     APPLIES_TO,
     BATCH_STATUSES,
     FIELD_STATUSES,
@@ -72,7 +71,10 @@ class TestConstants:
     def test_enum_constants(self):
         """applies_to/锚类型/值类型/状态枚举与契约表设计一致。"""
         assert APPLIES_TO == ("word", "sense", "example")
-        assert ANCHOR_TYPES == APPLIES_TO
+        # R6-7：ANCHOR_TYPES 别名已删 —— 模块导出里再无该名字（误用即 ImportError）
+        import src.dict_admin_db as _dadb  # noqa: E402
+
+        assert not hasattr(_dadb, "ANCHOR_TYPES")
         assert VALUE_TYPES == ("text", "number", "enum", "date", "bool")
         assert FIELD_STATUSES == ("active", "deprecated")
         assert BATCH_STATUSES == ("running", "finished", "rolled_back")

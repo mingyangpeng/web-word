@@ -95,6 +95,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pymysql
 
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
+from src.db_utils import table_exists as _table_exists
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -104,8 +106,9 @@ logger = logging.getLogger(__name__)
 # ============================================
 # applies_to：字段挂哪类锚（词目/义位/例证）。也是 custom_values.anchor_type
 # 的合法集 —— 一个字段的值只能写在与 applies_to 同类的锚上（见 set_value）。
+# R6-7：删 ANCHOR_TYPES 别名 —— 枚举只留 APPLIES_TO 一个名字（锚即
+# applies_to；media_db 侧四锚枚举已改 MEDIA_ANCHOR_TYPES，调用点已同步）。
 APPLIES_TO = ("word", "sense", "example")
-ANCHOR_TYPES = APPLIES_TO  # 同一枚举两用（别名，语义上 custom_values 侧叫锚）
 
 # value_type：值类型五枚举。number → value_num，其余 → value_text（bool 规整 '1'/'0'）。
 VALUE_TYPES = ("text", "number", "enum", "date", "bool")
@@ -247,16 +250,6 @@ def ensure_dict_admin_tables() -> None:
 _INVALID = object()  # 字符串校验失败的哨兵（None 是合法值，不能复用；仿 ai_ledger）
 
 
-def _as_int(value: Any) -> Optional[int]:
-    """宽松转 int（int/float/int-str 可转；bool/None/其余 None）—— 防脏参数。"""
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
 def _clean_str(value: Any, max_len: int) -> Any:
     """必填字符串规整：非 str/纯空白/超长 → _INVALID；否则去首尾空白。"""
     if not isinstance(value, str):
@@ -267,7 +260,7 @@ def _clean_str(value: Any, max_len: int) -> Any:
     return cleaned
 
 
-def _dump_json(value: Any) -> Optional[str]:
+def _dump_json_strict(value: Any) -> Optional[str]:
     """dict/list → JSON 串；标量/不可序列化/NaN/Inf 返回 None（MySQL JSON 列必炸的先在入口拒）。"""
     if not isinstance(value, (dict, list)):
         return None
@@ -405,16 +398,6 @@ def _value_matches_column(value_type: str) -> str:
 # ============================================
 # 库内元数据探测（rollback_batch 动态表名的第二道闸）
 # ============================================
-
-def _table_exists(cursor, table: str) -> bool:
-    """当前库中是否存在该表（information_schema 探测，仿 users_db._column_exists）。"""
-    cursor.execute(
-        """SELECT COUNT(*) AS n FROM information_schema.TABLES
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s""",
-        (table,),
-    )
-    return int(cursor.fetchone()["n"] or 0) > 0
-
 
 def _columns_of(cursor, table: str) -> Dict[str, str]:
     """表的 {列名: COLUMN_TYPE} 映射（rollback_batch 校验 old_values 列名用）。"""
@@ -606,7 +589,7 @@ def set_value(field_id: int, anchor_type: str, anchor_id: int, value: Any,
     校验口径（应用层先拒）：
       * 字段必须存在且 **status='active'** —— 弃用字段拒绝一切新写值
         （deprecate_field 的语义）；字段不存在 / 已弃用返回 False；
-      * anchor_type ∈ ANCHOR_TYPES 且 **必须等于字段的 applies_to**
+      * anchor_type ∈ APPLIES_TO 且 **必须等于字段的 applies_to**
         （word 字段不能挂到 sense 锚上 —— 定义错位在入口拦下）；
       * value 按字段 value_type 规整（见 _normalize_value）：number 必须是
         有限数值；enum 必须在字段 enum_values 白名单内；date 必须是
@@ -625,8 +608,8 @@ def set_value(field_id: int, anchor_type: str, anchor_id: int, value: Any,
     if fid is None or fid <= 0:
         logger.error(f"set_value 拒绝非法 field_id: {field_id!r}")
         return False
-    if anchor_type not in ANCHOR_TYPES:
-        logger.error(f"set_value 拒绝非法 anchor_type: {anchor_type!r}（须 ∈ {ANCHOR_TYPES}）")
+    if anchor_type not in APPLIES_TO:
+        logger.error(f"set_value 拒绝非法 anchor_type: {anchor_type!r}（须 ∈ {APPLIES_TO}）")
         return False
     aid = _as_int(anchor_id)
     if aid is None or aid <= 0:
@@ -698,7 +681,7 @@ def get_values_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, An
     自行决定展示/灰显口径 —— 数据层保持「存什么给什么」）。
 
     Args:
-        anchor_type: 锚类型 ∈ ANCHOR_TYPES
+        anchor_type: 锚类型 ∈ APPLIES_TO
         anchor_id: 锚行 id
 
     Returns:
@@ -707,7 +690,7 @@ def get_values_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, An
         enum_values(已解析 list)/required/field_status），按 field_id 升序；
         参数非法 / 无值 / 数据库不可用返回 []。
     """
-    if anchor_type not in ANCHOR_TYPES:
+    if anchor_type not in APPLIES_TO:
         logger.error(f"get_values_for_anchor 拒绝非法 anchor_type: {anchor_type!r}")
         return []
     aid = _as_int(anchor_id)
@@ -936,7 +919,7 @@ def start_batch(project_id: int, file_name: str, file_sha256: str,
         )
         return 0
     mapping = _parse_json(mapping_json) if isinstance(mapping_json, str) else mapping_json
-    mapping_json_str = _dump_json(mapping)
+    mapping_json_str = _dump_json_strict(mapping)
     if mapping_json_str is None:
         logger.error(
             f"start_batch 拒绝非法 mapping_json: {mapping_json!r}（dict/list 或可解析 JSON 串）"
@@ -1068,7 +1051,7 @@ def persist_revert_log(batch_id: int, events: Any) -> bool:
                 f"（须 ∈ {REVERT_ACTIONS}）"
             )
             return False
-        event_json = _dump_json(event)
+        event_json = _dump_json_strict(event)
         if event_json is None:
             logger.error(f"persist_revert_log 拒绝不可 JSON 序列化的事件（#{i}）: {event!r}")
             return False

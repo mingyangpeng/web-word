@@ -7,6 +7,11 @@
     导入 src.tools.builtin 即完成注册。
 
 纯进程内注册表：不建表、不查库、零新依赖。
+
+阶段口径（R6-2 明示）：**阶段 1 仅契约与自检** —— 本包只提供 ToolSpec
+契约、注册表与依赖自检（selfcheck / register_dep_probe）；各工具的
+``run()`` 页面接线（按 stage / ui_surface 在页面层调 run）归**阶段 2**，
+本包不做任何页面调用接线。
 """
 
 from src.tools.registry import (

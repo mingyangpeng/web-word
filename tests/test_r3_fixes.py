@@ -117,10 +117,15 @@ class TestR3SignaturesAndConstants:
             or sig.parameters["created_by"].default is not inspect.Parameter.empty
 
     def test_advance_status_helpers_have_audit_keyword(self):
-        """R3-4a/4b：流转辅助带 reviewed_by / published_by keyword（缺省 None）。"""
-        import src.dict_admin_pages as dp
+        """R3-4a/4b：流转辅助带 reviewed_by / published_by keyword（缺省 None）。
 
-        assert inspect.signature(dp._advance_binding_status).parameters[
+        R6-12：绑定流转辅助下沉 media_db.advance_binding_status（页面私有
+        _advance_binding_status 删除），断言随迁；出版快照流转仍归页面。
+        """
+        import src.dict_admin_pages as dp
+        from src import media_db
+
+        assert inspect.signature(media_db.advance_binding_status).parameters[
             "reviewed_by"].default is None
         assert inspect.signature(dp._advance_export_status).parameters[
             "published_by"].default is None
@@ -500,15 +505,15 @@ class TestR3FixesIntegration:
     def test_r3_4a_advance_writes_reviewer_and_time(self, r3db, tmp_path):
         """流转写入 reviewed_by（操作人 username）/ reviewed_at（NOW()）；
         每步刷新；非法跳级拒；出参带两新列。"""
-        import src.dict_admin_pages as dp
+        from src import media_db
 
         aid = self._make_asset(tmp_path, "c.png")
         assert bind_asset(aid, "sense", 21, "illustration") is True
         bid = int(self._one(
             "SELECT id FROM media_bindings WHERE asset_id=%s", (aid,))["id"])
 
-        assert dp._advance_binding_status(bid, "候选", "审定",
-                                          reviewed_by="管理员甲") is True
+        assert media_db.advance_binding_status(bid, "候选", "审定",
+                                               reviewed_by="管理员甲") is True
         row = self._one("SELECT status, reviewed_by, reviewed_at "
                         "FROM media_bindings WHERE id=%s", (bid,))
         assert row["status"] == "审定"
@@ -516,20 +521,20 @@ class TestR3FixesIntegration:
         assert row["reviewed_at"] is not None
 
         # 下一步流转刷新留痕（列语义 = 把绑定推到当前态的人与时间）
-        assert dp._advance_binding_status(bid, "审定", "发布",
-                                          reviewed_by="管理员乙") is True
+        assert media_db.advance_binding_status(bid, "审定", "发布",
+                                               reviewed_by="管理员乙") is True
         row = self._one("SELECT status, reviewed_by FROM media_bindings "
                         "WHERE id=%s", (bid,))
         assert row["status"] == "发布"
         assert row["reviewed_by"] == "管理员乙"
 
         # 非单步对拒绝；不带 reviewed_by 的调用维持旧形态（不碰留痕列）
-        assert dp._advance_binding_status(bid, "候选", "发布") is False
+        assert media_db.advance_binding_status(bid, "候选", "发布") is False
         aid2 = self._make_asset(tmp_path, "d.png")
         assert bind_asset(aid2, "sense", 22, "illustration") is True
         bid2 = int(self._one(
             "SELECT id FROM media_bindings WHERE asset_id=%s", (aid2,))["id"])
-        assert dp._advance_binding_status(bid2, "候选", "审定") is True
+        assert media_db.advance_binding_status(bid2, "候选", "审定") is True
         row2 = self._one("SELECT reviewed_by FROM media_bindings WHERE id=%s",
                          (bid2,))
         assert row2["reviewed_by"] is None

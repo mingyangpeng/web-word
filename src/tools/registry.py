@@ -27,6 +27,11 @@
     注册表自身零外部依赖——import 永不触库；依赖探针未登记时 check_deps
     视为通过（批次 2 登记探针后强校验才生效）；探针抛异常按「依赖缺失」
     处理，不向外传播。
+
+阶段口径（R6-2 明示）：**阶段 1 仅契约与自检** —— ToolSpec 契约、注册/
+查询、merge_params 默认值合并与依赖自检（register_dep_probe / selfcheck）
+均已可用；工具 ``run()`` 的页面接线（页面层按 stage / ui_surface 调 run）
+归**阶段 2**，本模块不接线、不触库。
 """
 
 from __future__ import annotations
