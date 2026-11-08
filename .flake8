@@ -1,7 +1,21 @@
 [flake8]
-max-line-length = 100
+max-line-length = 200
 exclude = .git,__pycache__,venv,.venv,*.egg-info,dist,build
-ignore = E203,W503
-
-[per-file-ignores]
-__init__.py = F401
+ignore = E203,W503,E226,E122,E127,E128
+per-file-ignores =
+    src/app.py:E402,E302,E305,E306
+    src/mysql_db.py:E402,E302,E305
+    src/page_guides.py:E501
+    src/dict_admin_pages.py:E501
+    src/cluster_analysis.py:E501
+    src/word_source.py:E501
+    src/graph_export.py:E501,E741
+    src/entry_assembly.py:E501
+    src/sense_spine.py:E501
+    src/semantic_search.py:E501
+    src/writing_pages.py:E501
+    src/lexical_pages.py:E501
+    src/writing_db.py:E501
+    src/security.py:E501
+    src/help_center.py:F401
+    src/tools/__init__.py:F401

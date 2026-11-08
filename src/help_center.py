@@ -15,7 +15,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.design_system import HEADER_H1, HEADER_H3, INFO_COLOR, WARNING_COLOR
+from src.design_system import HEADER_H1, HEADER_H3, WARNING_COLOR
 
 # 母本路径（仓库根 docs/help/；app 以任意 cwd 启动均可解析）
 HELP_DOC = Path(__file__).resolve().parent.parent / "docs" / "help" / "平台功能使用说明.md"

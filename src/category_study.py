@@ -35,7 +35,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from src.mysql_db import get_db_cursor, _table_exists
+from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
 
