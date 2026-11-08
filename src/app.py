@@ -477,24 +477,25 @@ st.markdown("""
 THEORY_DESCRIPTION = """
 ### 📚 理论背景
 
-**运动事件类型学 (Talmy, 1985)**
+**运动事件类型学（Talmy, 1985）**
 运动事件可分为两类：
-1. **波浪型 (Wave-like)**: 强调方式
-2. **矢量型 (Vector-like)**: 强调路径+方向
+1. **波浪型（Wave-like）**：强调方式
+2. **矢量型（Vector-like）**：强调路径+方向
 
 **词典释义优化**
-传统释义往往以"路径+方向"为核心，而实际使用中更强调**运动方式**和**身体姿态**。
-通过显式分解【方式】【路径】【方向】【体相】四个语义要素，可以：
+传统释义往往以「路径+方向」为核心，而实际使用中更强调**运动方式**和**身体姿态**。
+通过显式分解【方式】【路径】【方向】【体相】【范围】五个语义要素，可以：
 - 更准确地捕捉运动语义
 - 提供更丰富的表达层次
 - 支持更精细的语义搜索
 
 ---
 
-**【方式】** - 运动采用的姿势/手段
-**【路径】** - 运动经过的空间轨迹
-**【方向】** - 运动朝向的终点/目标
-**【体相】** - 运动时身体的姿态/状态
+**【方式】**：运动采用的姿势/手段
+**【路径】**：运动经过的空间轨迹
+**【方向】**：运动朝向的终点/目标
+**【体相】**：运动时身体的姿态/状态
+**【范围】**：运动的范围/程度
 """
 
 # ============================================
@@ -745,7 +746,7 @@ def render_card_annotation(verb):
 
     字段与取值全部来自 `docs/research/protocols/义项判定标准.docx`：
 
-      * 原型层级 —— Y 原型物理位移义 / 拓展 隐喻引申义 / N 剔除
+      * 原型层级 —— Y（核心）/EXT（拓展）/N（剔除）
       * 意象图式 —— 源点脱离 / 终点抵达 / 方式伴随 / 互动位移（四类，不可自增）
       * 英汉对齐 —— 完全对齐 / 部分对齐 / 零对齐
       * 汉语句法特征、译义转化策略 —— 配套字段
@@ -1789,7 +1790,7 @@ def render_sidebar():
     )
     st.sidebar.metric("已收录词条", _dash if _off else stats.get("total_definitions", 0))
     # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
-    st.sidebar.metric("词义簇", _dash if _off else stats.get("total_clusters", 0))
+    st.sidebar.metric("词簇", _dash if _off else stats.get("total_clusters", 0))
     st.sidebar.metric("词间关系", _dash if _off else stats.get("total_relations", 0))
     st.sidebar.metric("平均评分", _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
     st.sidebar.metric("总反馈数", _dash if _off else stats["total_feedbacks"])
@@ -2099,7 +2100,7 @@ def render_interactive_graph_page() -> None:
     c1, c2, c3 = st.columns(3)
     c1.metric("动词节点", stats["node_count"])
     c2.metric("近义关系", stats["edge_count"])
-    c3.metric("语义簇", stats["cluster_count"])
+    c3.metric("词簇", stats["cluster_count"])
 
     url = ensure_graph_html(graph)
     if not url:
@@ -2108,7 +2109,7 @@ def render_interactive_graph_page() -> None:
 
     st.caption(
         "左侧力导向图可直接缩放拖拽；右侧栏可搜索动词、查看节点邻居、"
-        "按语义簇勾选过滤。每个节点的连线数等于它所在词簇的大小减一"
+        "按词簇勾选过滤。每个节点的连线数等于它所在词簇的大小减一"
         "（同一簇内两两互为近义，即完全图）。"
     )
 
@@ -2622,9 +2623,15 @@ def render_domain_family_page() -> None:
 # ============================================
 # MOVECAT 标注平台（义位准入 + 图式五维标注 + 进度/导出）
 # ============================================
+# 准入三分 UI 统一口径（RV5-1）：Y（核心）/EXT（拓展）/N（剔除），
+# 首现全称 Y=核心物理位移义、EXT=隐喻拓展义、N=非位移剔除。
+# 注意分层：权威层 prototype_level / llm_tag 的存储值仍含中文「拓展」
+# （word_source.PROTOTYPE_METAPHOR="拓展"，存量数据不动），
+# 显示层经 LEVEL_LABELS / _status 等映射统一按 EXT 展示；提交层
+# （annotation_submissions payload）本就用 Y/EXT/N。
 LEVEL_OPTIONS = ["", "Y", "拓展", "N"]
-LEVEL_LABELS = {"": "（未标注）", "Y": "Y · 原型物理位移义",
-                "拓展": "拓展 · 隐喻引申义", "N": "N · 非位移剔除"}
+LEVEL_LABELS = {"": "（未标注）", "Y": "Y · 核心物理位移义",
+                "拓展": "EXT · 隐喻拓展义", "N": "N · 非位移剔除"}
 SCHEMA_OPTIONS = ["", "源点脱离图式", "终点抵达图式", "方式伴随图式", "互动位移图式"]
 ALIGNMENT_OPTIONS = ["", "完全对齐", "部分对齐", "零对齐"]
 
@@ -2632,7 +2639,7 @@ ALIGNMENT_OPTIONS = ["", "完全对齐", "部分对齐", "零对齐"]
 SUBMIT_ADMIT_OPTIONS = ["", "Y", "EXT", "N"]
 SUBMIT_ADMIT_LABELS = {"": "（未选择）", "Y": "Y · 核心物理位移义",
                        "EXT": "EXT · 隐喻拓展义", "N": "N · 非位移剔除"}
-# LLM 草稿列（llm_tag 用权威层口径 Y/拓展/N）→ 提交口径（Y/EXT/N）
+# LLM 草稿列（llm_tag 权威层存储值，键含「拓展」）→ 提交口径（Y/EXT/N）
 _LLM_TAG_TO_ADMIT = {"Y": "Y", "拓展": "EXT", "N": "N"}
 
 
@@ -2681,7 +2688,7 @@ def _render_annotation_admin_view() -> None:
     🏷️ 标注平台 · 管理员快速通道视图（原单人流，逻辑不变）。
 
     对应标注手册（docs/research/protocols/义项判定标准修改稿.docx）的义位级操作：
-      标准1 准入标签（Y/拓展/N）→ 标准2 意象图式（四选一）→
+      标准1 准入标签（Y/EXT/N）→ 标准2 意象图式（四选一）→
       标准4 英汉对齐（三选一）→ 汉语句法特征 / 译义转化策略；
       边界争议打存疑标记进仲裁清单。判定依据 = OALD 释义 + 例句，
       页面同屏提供语料证据（候选图式 + 重心得分）辅助判断。
@@ -2777,7 +2784,8 @@ def _render_annotation_admin_view() -> None:
     def _status(s):
         if s.get("needs_review"):
             return "❓存疑"
-        return {"Y": "✅Y", "拓展": "✅拓展", "N": "✅N"}.get(
+        # 权威层存储值「拓展」统一显示为 EXT（RV5-1，口径见 LEVEL_LABELS 注释）
+        return {"Y": "✅Y", "拓展": "✅EXT", "N": "✅N"}.get(
             (s.get("prototype_level") or "").strip(), "⬜未标")
 
     sense_opts = [
@@ -2802,7 +2810,7 @@ def _render_annotation_admin_view() -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>义位 {sense_id_label}</h3>", unsafe_allow_html=True)
     idiom = bool(sense.get("is_idiom"))
     if idiom:
-        st.warning("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或拓展")
+        st.warning("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或 EXT")
     # 义项来源徽章：研究词表 996 = 992 OALD10 + 4 人工补充 —— 来源在 UI 可见，
     # 人工撰写条（无词典原文背书）复核时应加倍留意
     _src = str(sense.get("source") or "OALD10")
@@ -2906,7 +2914,8 @@ def _submission_sense_status(s: dict) -> str:
     """义位当前状态徽标文字（与标注平台状态口径一致的简化版）。"""
     if s.get("needs_review"):
         return "❓存疑"
-    return {"Y": "✅Y", "拓展": "✅拓展", "N": "✅N"}.get(
+    # 权威层存储值「拓展」统一显示为 EXT（RV5-1，口径见 LEVEL_LABELS 注释）
+    return {"Y": "✅Y", "拓展": "✅EXT", "N": "✅N"}.get(
         (s.get("prototype_level") or "").strip(), "⬜未标")
 
 

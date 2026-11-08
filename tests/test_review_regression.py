@@ -809,7 +809,7 @@ class TestR4OfflineAttribution:
         at.run()
         assert not at.exception
         metrics = {m.label: m.value for m in at.sidebar.metric}
-        for label in ("总查询次数", "已收录词条", "词义簇", "词间关系",
+        for label in ("总查询次数", "已收录词条", "词簇", "词间关系",
                       "平均评分", "总反馈数"):
             assert label in metrics, f"离线侧边栏缺 metric {label}"
             assert metrics[label] == "—", f"离线时 {label} 应为 —，实际 {metrics[label]!r}"
