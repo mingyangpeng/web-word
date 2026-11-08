@@ -6,8 +6,9 @@
 # 即词典管理区「出版导出」tab 的 G6 闸门内容域快照）。
 #
 # 做什么（一次运行 = 一批）：
-#   1. mysqldump 全库（连接参数读仓库根 .env；--single-transaction 一致性
-#      快照，InnoDB 不锁表）→ gzip → data/backups/db/YYYYMMDD-HHMM.sql.gz；
+#   1. mysqldump 全库（连接参数读 .env.local（优先）→ .env，与 lib_deploy.sh
+#      load_env 口径一致；--single-transaction 一致性快照，InnoDB 不锁表）
+#      → gzip → data/backups/db/YYYYMMDD-HHMM.sql.gz；
 #   2. data/media 媒体资产目录 → tar.gz 同批归档 →
 #      data/backups/media/YYYYMMDD-HHMM-media.tar.gz（media 缺位则跳过并注明）；
 #   3. 保留策略：每类目录只留最新 KEEP 份（默认 14），超出删最旧；
@@ -21,7 +22,7 @@
 #
 # 定时调度（crontab 一行示例；launchd 用户把同命令写进 plist 的
 # ProgramArguments 即可）：
-#   15 2 * * * cd /Users/jhon/pmy/web-word && bash scripts/backup_db.sh --keep 14 >> data/logs/backup_db.log 2>&1
+#   15 2 * * * cd /path/to/web-word && bash scripts/backup_db.sh --keep 14 >> data/logs/backup_db.log 2>&1
 #
 # 依赖：mysqldump / gzip / tar 在 PATH 中（本机 Homebrew MySQL 8 自带）。
 
@@ -29,6 +30,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_ROOT/.env"
+ENV_LOCAL="$REPO_ROOT/.env.local"
 
 usage() {
   sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -57,20 +59,29 @@ case "$KEEP" in
 esac
 [ "$KEEP" -ge 1 ] || { echo "错误：--keep 至少为 1" >&2; exit 2; }
 
-# ---------- 读 .env 连接参数（KEY=VALUE 逐行提取，不 source） ----------
-if [ ! -f "$ENV_FILE" ]; then
-  echo "错误：找不到 ${ENV_FILE}（mysqldump 连接参数从这里读取）" >&2
+# ---------- 读环境文件连接参数（KEY=VALUE 逐行提取，不 source） ----------
+if [ ! -f "$ENV_FILE" ] && [ ! -f "$ENV_LOCAL" ]; then
+  echo "错误：找不到 ${ENV_FILE} 或 ${ENV_LOCAL}（mysqldump 连接参数从这里读取）" >&2
   exit 1
 fi
 
 env_value() {
-  # 取 KEY=VALUE 的 VALUE：去行内注释、首尾空白与成对引号；无值输出空串
-  local line
-  line="$(grep -E "^$1=" "$ENV_FILE" | tail -n 1 | cut -d= -f2- || true)"
-  line="${line%%#*}"
-  line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
-    -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")"
-  printf '%s' "$line"
+  # 取 KEY=VALUE 的 VALUE：依次查 .env.local → .env（.env.local 优先覆盖，
+  # 与 lib_deploy.sh load_env「.env 先载、.env.local 后载覆盖」的顺序一致）；
+  # 去行内注释、首尾空白与成对引号；两处都没有则输出空串
+  local f line
+  for f in "$ENV_LOCAL" "$ENV_FILE"; do
+    [ -f "$f" ] || continue
+    line="$(grep -E "^$1=" "$f" | tail -n 1 | cut -d= -f2- || true)"
+    line="${line%%#*}"
+    line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+      -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")"
+    if [ -n "$line" ]; then
+      printf '%s' "$line"
+      return 0
+    fi
+  done
+  printf ''
 }
 
 MYSQL_HOST_VAL="$(env_value MYSQL_HOST)"
@@ -82,7 +93,7 @@ MYSQL_PASSWORD_VAL="$(env_value MYSQL_PASSWORD)"
 MYSQL_HOST_VAL="${MYSQL_HOST_VAL:-127.0.0.1}"
 MYSQL_PORT_VAL="${MYSQL_PORT_VAL:-3306}"
 if [ -z "$MYSQL_DATABASE_VAL" ] || [ -z "$MYSQL_USER_VAL" ]; then
-  echo "错误：.env 缺 MYSQL_DATABASE 或 MYSQL_USER，无法备份" >&2
+  echo "错误：环境文件（.env.local / .env）缺 MYSQL_DATABASE 或 MYSQL_USER，无法备份" >&2
   exit 1
 fi
 

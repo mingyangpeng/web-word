@@ -31,8 +31,16 @@ services:
     ports:
       - "8501:8501"
     env_file:
-      # .env 已随仓库分发：AI key / 模型 / LLM_PROVIDER 从这里进容器
-      - .env
+      # .env 已随仓库分发：AI key / 模型 / LLM_PROVIDER 从这里进容器；
+      # .env.local（gitignored，DEPLOYMENT.md 约定的真实凭据落点）后加载、
+      # 覆盖 .env 同名占位值 —— 与 lib_deploy.sh load_env 的顺序一致（RV11 P2-1）。
+      # required: false 是 Compose v2.24+（2024-02，Docker Desktop 4.27 起）语法：
+      # 部署包只带 .env、不带 .env.local，缺后者时跳过不报错；更旧的 compose
+      # 会拒绝解析该对象形式，需升级到 v2.24+。
+      - path: .env
+        required: true
+      - path: .env.local
+        required: false
     environment:
       # 应用读的是 ZHIPUAI_API_KEY（见 src/llm_api.py）。env_file 已带 key/
       # ZHIPUAI_BASE_URL/ZHIPUAI_MODEL；这里强制 MYSQL_HOST=mysql（容器网络名），
@@ -49,6 +57,12 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - app_data:/app/data
+      # 宿主机 cron 跑 scripts/backup_db.sh 把备份写到宿主 ./data/backups；
+      # 这里以子路径 bind 挂进容器（声明在 app_data 之后，子路径 bind 覆盖
+      # named volume 同名子目录），容器内 G6「备份新鲜」卡才能扫到宿主备份
+      # （RV11 P2-2）。Linux 宿主机首次 up 前先 mkdir -p data/backups，
+      # 避免 Docker 代建 root 属主目录导致宿主 cron 写不进。
+      - ./data/backups:/app/data/backups
     depends_on:
       mysql:
         condition: service_healthy

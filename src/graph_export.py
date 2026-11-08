@@ -275,10 +275,18 @@ def ensure_graph_html(graph: Dict[str, Any], force: bool = False) -> str:
 
 
 def _prune_old_graphs(keep: str) -> None:
-    """删掉旧指纹的图谱文件，避免 static/ 越积越多。"""
+    """删掉旧指纹的图谱文件，避免 static/ 越积越多。
+
+    RV12-5：匹配放宽 —— 词簇图（cluster_graph_）与 .tmp 中间文件一并回收。
+    写图谱是「先写 path + '.tmp' 再 os.replace 原子替换」，进程在写入中途
+    被打断时残缺 .tmp 永远不会被 replace，旧口径只清 *.html 会让它永久滞留。
+    keep 例外逻辑不变（当前指纹的 .html 不动；.tmp 不会等于 keep）。
+    """
     try:
         for name in os.listdir(STATIC_DIR):
-            if name.startswith("word_graph_") and name.endswith(".html") and name != keep:
+            if (name.startswith(("word_graph_", "cluster_graph_"))
+                    and (name.endswith(".html") or name.endswith(".tmp"))
+                    and name != keep):
                 os.remove(os.path.join(STATIC_DIR, name))
     except OSError as e:
         logger.warning(f"清理旧图谱文件失败: {e}")
@@ -1871,10 +1879,15 @@ def ensure_cluster_html(graph: Dict[str, Any]) -> str:
 
 
 def _prune_cluster_graphs(keep: str) -> None:
-    """清理旧指纹的词簇图文件，避免 static/ 越积越多。"""
+    """清理旧指纹的词簇图文件，避免 static/ 越积越多。
+
+    RV12-5：与 _prune_old_graphs 同口径放宽 —— 全库图谱 + 词簇图两类文件
+    （含写中断残留的 .tmp 中间件）都清，keep 例外逻辑不变。
+    """
     try:
         for name in os.listdir(STATIC_DIR):
-            if (name.startswith("cluster_graph_") and name.endswith(".html")
+            if (name.startswith(("word_graph_", "cluster_graph_"))
+                    and (name.endswith(".html") or name.endswith(".tmp"))
                     and name != keep):
                 os.remove(os.path.join(STATIC_DIR, name))
     except OSError as e:

@@ -1025,6 +1025,17 @@ def render_template_page() -> None:
         st.session_state["template_export"] = collect_cluster_templates(
             cat_code, language, cl.get("cluster_no"))
     payload = st.session_state.get("template_export")
+    # RV12-3 陈旧载荷守卫：切簇/语言/范畴后旧导出不得继续显示。载荷在写入
+    # 时已自带作用域三元组（collect_cluster_templates 返回的 category /
+    # language / cluster.cluster_no），读取处与当前选择比对，不一致即视为
+    # 无载荷 —— 不渲染计数/下载按钮，也不误报「当前簇没有可导出的模板」。
+    if payload and (
+        str(payload.get("category") or "") != str(cat_code)
+        or str(payload.get("language") or "") != str(language)
+        or (payload.get("cluster") or {}).get("cluster_no")
+        != cl.get("cluster_no")
+    ):
+        payload = None
     if payload and payload.get("templates"):
         n = len(payload["templates"])
         st.caption(f"已生成 {n} 条模板（簇{payload['cluster'].get('cluster_no')}）。")

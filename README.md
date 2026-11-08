@@ -675,17 +675,17 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 ```bash
 pip install -r requirements.txt
 
-# 常规运行（pytest.ini 默认带覆盖率：--cov=src --cov-report=html）
+# 常规运行（默认不带覆盖率：pytest.ini 无 --cov）
 pytest
 
-# 不看覆盖率、跑得快一些
-python -m pytest -q -p no:cacheprovider --no-cov
+# 查看覆盖率（可选：pytest-cov 已在 requirements.txt，--cov 手动开启）
+pytest --cov=src --cov-report=html
 
 # 只跑某个文件
 pytest tests/test_security.py
 ```
 
-覆盖率 HTML 报告输出到 `htmlcov/index.html`。绝大多数测试用 `monkeypatch` 隔离外部依赖，
+开启 `--cov` 后，覆盖率 HTML 报告输出到 `htmlcov/index.html`。绝大多数测试用 `monkeypatch` 隔离外部依赖，
 不会真实调用智谱 API 或 MySQL。
 
 例外是 `tests/test_migration_integration.py`：它必须在**真 MySQL** 上跑，因为它要验证的

@@ -41,3 +41,13 @@ scripts/get-stats*
 .DS_Store
 temp/
 browser_screenshot.png
+
+# 运行时产出与敏感缓存不进构建上下文（RV11 P1/P3-8）：
+# 备份/导出/日志/缓存目录由应用或 cron 运行时写入；.mysql_root_pw 是
+# lib_deploy.sh 探测到的 MySQL root 口令缓存（chmod 600，绝不外发）
+data/backups/
+data/exports/
+data/logs/
+data/cache/
+data/.mysql_root_pw
+.gsd/

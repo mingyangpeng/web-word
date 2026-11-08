@@ -20,6 +20,7 @@ rsync -a \
   --exclude='.env' \
   --exclude='.env.local' \
   --exclude='data/mysql/' \
+  --exclude='data/.mysql_root_pw' \
   --exclude='data/backups/' \
   --exclude='data/exports/' \
   --exclude='data/logs/' \
@@ -120,12 +121,13 @@ pip install -r requirements.txt
 # 2. 安装并启动 MySQL
 brew install mysql@8.0 && brew services start mysql@8.0
 
-# 3. 建库授权
+# 3. 建库授权（应用口令 webword123；等价写法：mysql -u root -p < scripts/grant_local_mysql.sql）
 mysql -u root -e "CREATE DATABASE web_word_db CHARACTER SET utf8mb4;
 CREATE USER 'web_word_user'@'localhost' IDENTIFIED BY 'webword123';
 GRANT ALL ON web_word_db.* TO 'web_word_user'@'localhost';"
 
-# 4. 配置环境
+# 4. 配置环境（⚠ MYSQL_PASSWORD 必须与第 3 步 CREATE USER 的口令一致，
+#    默认即 webword123；若第 3 步用了自定义口令，这里必须填同一个值）
 cp .env.example .env
 # 编辑 .env 设置密码
 
@@ -143,12 +145,13 @@ pip install -r requirements.txt
 sudo apt install mysql-server
 sudo systemctl start mysql
 
-# 3. 建库授权
+# 3. 建库授权（口令 webword123，须与第 4 步 .env 的 MYSQL_PASSWORD 一致；
+#    等价写法：sudo mysql < scripts/grant_local_mysql.sql）
 sudo mysql -e "CREATE DATABASE web_word_db CHARACTER SET utf8mb4;
 CREATE USER 'web_word_user'@'localhost' IDENTIFIED BY 'webword123';
 GRANT ALL ON web_word_db.* TO 'web_word_user'@'localhost';"
 
-# 4-5. 同 macOS（配置 .env → ./start）
+# 4-5. 同 macOS（配置 .env：MYSQL_PASSWORD 与第 3 步口令一致 → ./start）
 ```
 
 ### Windows

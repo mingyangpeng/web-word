@@ -1,4 +1,4 @@
-# Findings 修复台账（10 轮 review，滚动更新）
+# Findings 修复台账（17 轮 review，滚动更新）
 
 > 已修：R3-1～R3-9（FX，批次 12 前置，1520 绿）。进行中：FX2（R1-1～R1-10）。
 > 本台账记录待修队列；每笔修复后勾销并标提交号。
@@ -97,7 +97,7 @@
 
 ## RV-8 环境变量完整性（6 findings：P1×1 P2×2 P3×3）
 
-- [ ] RV8-1 P1 🔴 DEPLOYMENT.md 指示写 .env.local 但全仓库无代码读取 .env.local——load_env 只 source .env；compose env_file 也只挂 .env。按清单操作=空操作。修：load_env 追加 .env.local 或改文档
+- [x] RV8-1 P1 ~~.env.local 断链~~ ✅ 三段全通（4262adf bash load_env ＋ FX-11 compose env_file `.env`/`.env.local` required:false ＋ backup_db.sh 依次读 .env.local→.env）
 - [ ] RV8-2 P2 .env.example 缺 9 个变量（LLM_PROVIDER/OPENAI_*/DEEPSEEK_*/LLM_CONNECT_TIMEOUT/LLM_DB_PROVIDER_TTL/MYSQL_TIME_ZONE/RELIABILITY_FORCE_PURE）
 - [ ] RV8-3 P2 lib_deploy.sh load_env 声称「已 export 优先」与 bash 语义相反（set -a; source 无条件覆盖）
 - [ ] RV8-4 P3 start_streamlit 硬编码 MYSQL_HOST=127.0.0.1 静默覆盖 .env——远程库用户备份对象与应用写入对象不一致
@@ -115,3 +115,37 @@
 - [ ] RV9-12 P2 web 容器无 healthcheck——僵死不退出永不重启；_stcore/health 语义错配潜伏
 - [ ] RV9-14 P2 MySQL binlog 未关——7.3G/7.7G datadir 纯属浪费＋每日 1G churn
 - [ ] RV9-4~5,7,8,10,13,15~19 P3（进程管理/磁盘/脚本容错/env_doctor 文案等 13 项）
+
+# 第 17 轮（2026-11-08 · 三新镜头：测试质量/依赖配置/会话态）
+
+> 33 findings（P1×5 P2×10 P3×18），三路修复 agent（FX-10 测试侧/CI 侧、FX-11 部署链侧、FX-12 会话态侧）并行交付，
+> 全量回归 **1948 passed / 0 failed**。无误报；reviewer 全部 finding 复现。
+
+## RV-10 测试套件质量（11 findings：P1×4 P2×3 P3×4）— 全修 ✅
+
+- [x] P1 无库环境下 12 红点清零：test_users_db fixture connect 入 try＋TestR1ActorGate 类级 skipif；test_pages 模块探针（4 数据依赖用例 skip，11 纯渲染保留）；test_export_center import 探针→真连接探针（死端口实测 196 passed/59 skipped/0 error）
+- [x] P2-1 CI 加 `services: mysql:8`＋test env（root 覆盖 fixture 自建库）＋cryptography 依赖——CI 494 skip（25.4%）从根上解
+- [x] P2-2 help_center 唯一零行为覆盖模块——tests/test_rv12_fixes.py 补 AppTest（章节导航对齐母本/全文/关键词过滤）
+- [x] P2-3 plotly 降级用例零断言——_PlotlyProbeSt 三断言（不抛/warning 含降级/plotly_chart 调用数 0）
+- [x] P1-4/P3-1 两处 `or True` 恒真断言删除（test_schema:519 图谱库文件存活守卫复原、test_semantic_search:494）
+- [x] P3-4 僵尸用例复活：monkeypatch llm_providers_db=None 真跑 4 条 fail-closed
+- [x] P3-2/P3-3 源码文本断言 44 处/e2e 顺序耦合：留档不改（负向耦合断言属合理契约；重构噪音监控）
+- [ ] 观察项（FX-12 报出，本轮范围外）：category_study_page.py:316 等 3 处「簇」列混 `"—"` 与 int，真实数据下 dataframe ArrowInvalid（不崩页）；阶段 2 灌数前统一列类型
+
+## RV-11 依赖/配置/打包（15 findings：P1×1 P2×5 P3×9）— 全修 ✅
+
+- [x] P1 🔴 package_deploy.rsync 追加排除 `data/.mysql_root_pw`（root 密码缓存文件不再随 tar.gz 外发；真打包验证 NOT_IN_TARBALL_OK）＋.dockerignore 同款
+- [x] P2 compose env_file 挂 `.env`＋`.env.local`（required:false，Compose v2.24+ 注明）；`./data/backups` bind mount 落位（G6 备份新鲜卡可见宿主 cron 产物）；backup_db.sh 依次读 .env.local→.env；Dockerfile 非 root（useradd -u 1000 app＋chown＋USER app，真 build 容器 whoami=app）；种子 COPY→/app/seed/data＋entrypoint 缺才拷幂等补种（升级镜像种子不再被 named volume 钉死）
+- [x] P3 九项：showWelcomeEmail 无效键删／numpy>=1.24 补声明＋streamlit>=1.41（RV12-6）／docx 注释订正／README+TESTING.md 覆盖率口径改实（pytest-cov 转可选手动 `--cov`）／mypy 补 openpyxl 段／screenshots/ git rm --cached（7 文件索引移除，规则生效）／QUICK_START 口令矛盾修／.dockerignore 五目录＋.gsd／基础镜像三处 FROM digest 固定（sha256:07d48240…，台账注日期）
+- 风险台账：存量 root 属主卷需一次性 chown 1000:1000（DEPLOYMENT.md 已给）；Linux 首启 mkdir -p data/backups（compose 注释已给）
+
+## RV-12 Streamlit 会话态/rerun（7 findings：P2×2 P3×5）— 全修 ✅
+
+- [x] P2 RV12-1 collab_pages:934 正文直写 widget 键 `page`（点击「去分立复核」必抛 StreamlitAPIException）→ on_click 回调改法；FX-10 加 grep 哨兵防回潮；AppTest 真点流验证旧崩点
+- [x] P2 RV12-2 23 处 `st.success+st.rerun` 成功提示被 rerun 整体作废（写成功零反馈，users_admin 角色授予/媒体出版流转最易重复提交）→ 新建 **src/ui_kit.py**（flash/pop_and_render_flash 队列），app.py main() 每轮消费；三页模块 23/23 逐处替换、文案逐字保留、collab_pages 薄封装签名不变；grep 证 success+rerun 组合 0 残留
+- [x] P3 RV12-3 template_export 载荷作用域三元组校验（切簇/语言/范畴不再误显上一簇模板）
+- [x] P3 RV12-4 _LOGOUT_KEEP_KEYS 补 `_init_db_done`/`_db_available`（登出不再旁路 R5-1 DDL 守卫）；test_r1_fixes 哨兵同步五键
+- [x] P3 RV12-5 图谱 prune 放宽回收 `.tmp` 中间文件（word/cluster 双族）
+- [x] P3 RV12-6 streamlit>=1.41（options 收缩回落行为；requirements 侧 FX-11 落）
+- [x] P3 RV12-7 main() docstring「十六页」→「十七页（16 显式分支 + search 兜底）」
+- 口径定版：PAGE_KEYS=17（test_page_guides 锁死）；使用说明书「17 页」正确，验收报告「14 键」为批次 9 前旧口径（留档不改）

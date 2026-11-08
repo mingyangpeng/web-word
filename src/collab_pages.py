@@ -82,6 +82,7 @@ from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
 from src.mysql_db import get_db_cursor
 from src.org_db import get_projects_for_user
 from src import guards
+from src import ui_kit  # RV12-2：一次性提示（flash）统一收口到公共件
 from src.users_db import effective_six_roles, list_roles, list_users
 
 logger = logging.getLogger(__name__)
@@ -93,9 +94,9 @@ logger = logging.getLogger(__name__)
 # widget key 统一前缀（施工规范 §5：widget key 统一前缀）
 KEY_PREFIX = "collab_"
 
-# 会话内一次性提示（裁决成功 → st.success 并刷新：先存提示再 rerun，
-# 重跑后在新一轮渲染顶部弹出，避免 success 一闪而过）
-_FLASH_KEY = KEY_PREFIX + "flash"
+# 会话内一次性提示：RV12-2 起 flash 机制统一收口到 src/ui_kit.py（本模块
+# 原私有 _FLASH_KEY/_flash/_pop_flash 实现 已迁出，改为 ui_kit 薄封装，
+# 调用点签名不变）；弹出入口在 app.main() 每轮渲染的 pop_and_render_flash。
 
 # 收件箱取数通道：只收草稿/质检两通道 —— probe 探针不进收件箱
 # （ai_ledger.list_pending docstring 的取数约定；探针仅管理员全量视图追溯）
@@ -376,19 +377,22 @@ def _check_recusal(task_type: str, assignee_id: int, assigned_by: int) -> Option
 
 
 def _flash(level: str, text: str) -> None:
-    """把一次性提示写进会话（配合 st.rerun，重跑后由 _pop_flash 弹出）。"""
-    st.session_state[_FLASH_KEY] = {"level": level, "text": text}
+    """把一次性提示写进会话（配合 st.rerun，重跑后由 _pop_flash 弹出）。
+
+    RV12-2：实现统一收口到 src/ui_kit.flash 队列（message 在前、level 在后
+    —— 与本模块旧私有实现的 (level, text) 参数序相反，薄封装里翻转），
+    本模块调用点签名不变。
+    """
+    ui_kit.flash(text, level=level)
 
 
 def _pop_flash() -> None:
-    """弹出 _flash 存的一次性提示（成功/失败各一种样式）。"""
-    msg = st.session_state.pop(_FLASH_KEY, None)
-    if not isinstance(msg, dict) or not msg.get("text"):
-        return
-    if msg.get("level") == "success":
-        st.success(str(msg["text"]))
-    else:
-        st.error(str(msg["text"]))
+    """弹出 _flash 存的一次性提示（成功/失败各一种样式）。
+
+    RV12-2：统一走 src/ui_kit.pop_and_render_flash（app.main() 每轮渲染
+    已调用一次；此处保留调用点以防页面单独渲染时漏提示，队列消费幂等）。
+    """
+    ui_kit.pop_and_render_flash()
 
 
 def _fmt_rate(rate: Optional[float]) -> str:
@@ -931,9 +935,13 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
     if division:
         st.info(f"义项分立复核有 {division[0]} 条待裁决——裁决动作在"
                 "「📊 语义分析 · 🧬 分立复核」标签页完成（证据与落地在同一处）。")
-        if st.button("去分立复核", key="collab_adj_goto_cluster"):
-            st.session_state["page"] = "cluster"
-            st.rerun()
+        # RV12-1：切页必须在 on_click 回调里改 session_state —— 本按钮渲染
+        # 时机晚于侧栏 radio(key="page")，正文期直接赋值在 Streamlit 1.57
+        # 抛 StreamlitAPIException（「去分立复核」必崩页）。照抄 app.py
+        # goto_graph_page 的既有正确模式；_render_adjudication_section 内
+        # 已无其他同型直写（grep 确认）。
+        st.button("去分立复核", key="collab_adj_goto_cluster",
+                  on_click=lambda: st.session_state.update(page="cluster"))
 
 
 def _render_inbox_tab(me: Dict[str, Any]) -> None:

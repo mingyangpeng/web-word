@@ -428,21 +428,64 @@ class TestMockSourceBadge:
 # ============================================
 # R4-7 cluster_analysis plotly 降级
 # ============================================
+class _PlotlyProbeSt:
+    """st 代理（仿 _RecordingSt）：记录 warning 文本与 plotly_chart 调用次数，
+    其余属性透传真 streamlit（markdown 等在 bare 模式下可安全直调）。"""
+
+    def __init__(self, real):
+        self._real = real
+        self.warnings = []
+        self.plotly_chart_calls = 0
+
+    @property
+    def session_state(self):
+        return self._real.session_state
+
+    def warning(self, *args, **kwargs):
+        self.warnings.append(str(args[0]) if args else "")
+
+    def plotly_chart(self, *args, **kwargs):
+        self.plotly_chart_calls += 1
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
 class TestPlotlyDegradation:
     def test_has_plotly_flag_exists(self):
         assert isinstance(ca.HAS_PLOTLY, bool)
 
     def test_dendrogram_warns_and_returns_without_plotly(self, monkeypatch):
-        """缺 plotly：_render_dendrogram 入口 warning＋return，不抛 ImportError。"""
+        """缺 plotly：入口 warning＋return，不抛 ImportError、不走真渲染路径。
+
+        三断言（RV-10 P2-3）：1) 不抛异常（执行到末尾即证）；2) warning 含
+        plotly 降级提示；3) st.plotly_chart 零调用 —— 真渲染路径未进入。
+        """
         monkeypatch.setattr(ca, "HAS_PLOTLY", False)
+        import streamlit as _real_st
+
+        probe = _PlotlyProbeSt(_real_st)
+        monkeypatch.setattr(ca, "st", probe)
         dendro = {"linkage": [[0, 1, 0.5, 2]], "labels": ["a", "b"],
                   "distance_matrix": [[0, 1], [1, 0]]}
-        # bare 模式下 st.warning 可调；不抛异常即通过
-        ca._render_dendrogram(dendro)
+        ca._render_dendrogram(dendro)  # 抛 ImportError/KeyError 会直接 fail
+        assert any("plotly 未安装" in t for t in probe.warnings), \
+            f"降级提示缺失: {probe.warnings}"
+        assert probe.plotly_chart_calls == 0, \
+            "HAS_PLOTLY=False 时不得调用 st.plotly_chart 真渲染"
 
     def test_sense_graph_tab_warns_without_plotly(self, monkeypatch):
+        """义位图谱 tab 同口径：降级提示在场、真渲染零调用、不抛异常。"""
         monkeypatch.setattr(ca, "HAS_PLOTLY", False)
+        import streamlit as _real_st
+
+        probe = _PlotlyProbeSt(_real_st)
+        monkeypatch.setattr(ca, "st", probe)
         ca._render_sense_graph_tab({"linkage": [[0, 1, 0.5, 2]]})
+        assert any("plotly 未安装" in t for t in probe.warnings), \
+            f"降级提示缺失: {probe.warnings}"
+        assert probe.plotly_chart_calls == 0, \
+            "HAS_PLOTLY=False 时不得调用 st.plotly_chart 真渲染"
 
 
 # ============================================

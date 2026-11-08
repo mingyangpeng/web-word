@@ -63,12 +63,26 @@ class TestExportGate:
 # 集成层：真 MySQL 快照往返
 # ============================================
 
-try:
-    import pymysql  # noqa: F401
+def _mysql_reachable() -> bool:
+    """连通探针（RV-10 P1-3）：只 `import pymysql` 恒为 True 探不出连通性，
+    改为真建连接，口径对齐 test_fx3_perf._db_available / test_users_db._mysql_reachable。"""
+    try:
+        import pymysql
 
-    HAS_MYSQL = True
-except Exception:  # noqa: BLE001
-    HAS_MYSQL = False
+        import src.mysql_db as db
+
+        conn = pymysql.connect(
+            host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
+            password=db.MYSQL_PASSWORD, charset=db.MYSQL_CHARSET,
+            connect_timeout=3,
+        )
+        conn.close()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+HAS_MYSQL = _mysql_reachable()
 
 
 @pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过导出中心集成测试")

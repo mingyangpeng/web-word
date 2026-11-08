@@ -46,6 +46,7 @@ from src.design_system import (
     get_table_row_style,
 )
 from src import guards
+from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.users_db import (
     NEW_ROLES,
@@ -319,7 +320,7 @@ def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
         st.error(f"⛔ {e}")
         return
     if ok:
-        st.success(f"已将用户 id={uid} 的角色改为「{ROLE_LABELS.get(role, role)}」。")
+        ui_kit.flash(f"已将用户 id={uid} 的角色改为「{ROLE_LABELS.get(role, role)}」。")
         logger.info(f"admin {me.get('username')} 将用户 id={uid} 角色改为 {role}")
         st.rerun()
     else:
@@ -364,7 +365,7 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
         st.error(f"⛔ {e}")
         return
     if ok:
-        st.success(f"已{'启用' if target_active else '停用'}用户 id={uid}。")
+        ui_kit.flash(f"已{'启用' if target_active else '停用'}用户 id={uid}。")
         logger.info(f"admin {me.get('username')} 将用户 id={uid} active 设为 {target_active}")
         st.rerun()
     else:
@@ -420,7 +421,7 @@ def _render_create_user_form(me: Dict[str, Any]) -> None:
     # 键名与上方 text_input 的 key 一致）
     st.session_state.pop("users_admin_create_password", None)
     if new_id is not None:
-        st.success(f"已创建用户「{username.strip()}」（id={new_id}，角色：{ROLE_LABELS.get(role, role)}）。")
+        ui_kit.flash(f"已创建用户「{username.strip()}」（id={new_id}，角色：{ROLE_LABELS.get(role, role)}）。")
         logger.info(f"admin 创建用户 '{username.strip()}'（id={new_id}，role={role}）")
         st.rerun()
     else:
@@ -524,7 +525,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 st.error(f"⛔ {e}")
                 return
             if granted:
-                st.success(
+                ui_kit.flash(
                     f"已授予用户 id={target_uid} 角色「{ROLE_LABELS.get(grant_role_sel, grant_role_sel)}」"
                     f"（granted_by={granter_id}）。"
                 )
@@ -551,7 +552,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 return
             if revoked:
                 revoked_label = ROLE_LABELS.get(revoke_role_sel, revoke_role_sel)
-                st.success(f"已撤销用户 id={target_uid} 角色「{revoked_label}」。")
+                ui_kit.flash(f"已撤销用户 id={target_uid} 角色「{revoked_label}」。")
                 logger.info(
                     f"admin {granter_name} 撤销用户 id={target_uid} 六角色 {revoke_role_sel}"
                 )

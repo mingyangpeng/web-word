@@ -156,25 +156,29 @@ def users_db(monkeypatch):
     """
     import pymysql
 
-    conn = pymysql.connect(
-        host=db.MYSQL_HOST,
-        port=db.MYSQL_PORT,
-        user=db.MYSQL_USER,
-        password=db.MYSQL_PASSWORD,
-        charset=db.MYSQL_CHARSET,
-        cursorclass=pymysql.cursors.DictCursor,
-        connect_timeout=3,
-    )
-    cur = conn.cursor()
+    conn = None
     try:
+        conn = pymysql.connect(
+            host=db.MYSQL_HOST,
+            port=db.MYSQL_PORT,
+            user=db.MYSQL_USER,
+            password=db.MYSQL_PASSWORD,
+            charset=db.MYSQL_CHARSET,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=3,
+        )
+        cur = conn.cursor()
         cur.execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
         cur.execute(
             f"CREATE DATABASE {TEST_DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         )
     except pymysql.err.OperationalError as e:
-        conn.close()
-        pytest.skip(f"当前 MySQL 账号无建库权限，跳过 users 集成测试: {e}")
-    conn.close()
+        # connect 失败（无库环境）与建库被拒（无权限）同口径 skip —— 与
+        # test_r1_fixes.r1_env / test_integration_apptest.r3_env 一致
+        pytest.skip(f"MySQL 不可用或账号无建库权限，跳过 users 集成测试: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
 
     monkeypatch.setattr(db, "MYSQL_DATABASE", TEST_DB)
     yield
@@ -571,6 +575,7 @@ class TestMultiRoles:
             assert int(cursor.fetchone()["n"] or 0) == 0
 
 
+@pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过 actor 权限闸门集成测试")
 class TestR1ActorGate:
     """R1-1 直调面（批次 12）：六敏感写函数 actor=None 缺省不变；低权 actor
     dict 抛 PermissionError（足色 = dict_admin/sys_admin；change_password
