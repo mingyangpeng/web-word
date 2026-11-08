@@ -435,6 +435,38 @@ def _categories_table_reachable() -> bool:
         return False
 
 
+def _cluster_family_reachable_error() -> Optional[str]:
+    """簇谱系表族可达性深探针（R4-1 尾部：缺表 vs 真数据不足二分）。
+
+    底层 category_study.get_clusters_with_members / get_cluster_runs 对异常
+    静默折叠成 []（我方不可改其契约），故 cs_cluster_runs 主探针可达但
+    cs_clusters / cs_cluster_members / cs_senses / cs_lexemes /
+    cs_sense_features 任一缺表或连接中断时，_load_cluster_matrix 会把失败
+    折叠成 None → ranking=[]，被误报成「未灌入」（误导用户重跑灌库脚本）。
+    这里用一条覆盖 _load_cluster_matrix 全部读面的 LEFT JOIN 探针归因：
+    成功返回 None（真未灌入）；异常返回失败原因（服务端异常，勿重跑灌库）。
+    仅在主探针可达而 ranking 为空的分支调用（正常路径零开销）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            # 覆盖 _load_cluster_matrix 读面：runs→clusters→members→senses/
+            # lexemes（get_clusters_with_members 的 JOIN 链）＋ sense_features
+            # (in_clustering 特征查询)。全部 LEFT JOIN，只验证表可达性。
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM cs_cluster_runs r "
+                "LEFT JOIN cs_clusters c ON c.run_id = r.id "
+                "LEFT JOIN cs_cluster_members m ON m.cluster_id = c.id "
+                "LEFT JOIN cs_senses s ON s.id = m.sense_id "
+                "LEFT JOIN cs_lexemes l ON l.id = s.lexeme_id "
+                "LEFT JOIN cs_sense_features f ON f.sense_id = s.id"
+            )
+            cursor.fetchone()
+        return None
+    except Exception as e:
+        logger.warning(f"簇谱系表族深探针失败（按数据不可用归因）: {e}")
+        return f"范畴深挖数据读取失败：{e}"
+
+
 def _resolve_run(category_id: int, language: str,
                  run_id: Optional[int]) -> Optional[Dict[str, Any]]:
     """选定聚类运行：显式 run_id（须属于该范畴+语言），否则取最新（id 最大）。"""
@@ -1851,9 +1883,17 @@ def _load_page_data(cache_scope: str, category: str, language: str) -> Dict[str,
     S3 合跑复现：换库必须换缓存槽位，跨库隔离）。
 
     R4-1 fail-closed 归因：返回值新增 ``load_error`` 键（None=数据层可达，
-    str=cs_cluster_runs 探针查询失败的原因）。取数失败时 ranking 归 []、
+    str=取数探针查询失败的原因）。取数失败时 ranking 归 []、
     dendro 归 {"load_error": 原因}，页面据此分流「数据不可用（勿重跑灌库）」
-    与「未灌入」（键只加不改，既有消费方不受影响）。"""
+    与「未灌入」（键只加不改，既有消费方不受影响）。
+
+    归因两层（R4-1 尾部「缺表 vs 真数据不足」二分）：主探针只验
+    cs_cluster_runs；主探针可达但 ranking 仍空时，底层 get_clusters_with_members
+    等可能把深层缺表（cs_clusters/cs_cluster_members/cs_senses/cs_lexemes/
+    cs_sense_features）静默折叠成 [] —— 此时以 _cluster_family_reachable_error
+    深探针（覆盖 _load_cluster_matrix 全部读面）二次归因，失败同样归
+    load_error（页面与谱系/分立/图谱三 tab 均走「数据不可用」，不再误报
+    「数据不足/未灌入」）。深探针仅空态分支调用，正常路径零开销。"""
     load_error: Optional[str] = None
     try:
         # 数据层可达性探针：底层 category_study.get_cluster_runs 对异常静默
@@ -1870,6 +1910,14 @@ def _load_page_data(cache_scope: str, category: str, language: str) -> Dict[str,
         dendro = {"load_error": load_error}
     else:
         ranking = compute_medoid_ranking(category, language)
+        if not ranking:
+            # R4-1/R4-5 尾部二分：主探针可达但 ranking 空 —— 深探针区分
+            # 「真未灌入」与「表族缺表/读取失败被底层静默折叠成 []」；
+            # 后者归 load_error，防止误导重跑灌库与「数据不足」误报。
+            deep_error = _cluster_family_reachable_error()
+            if deep_error:
+                load_error = deep_error
+                dendro = {"load_error": load_error}
     scipy_missing = False
     if ranking:
         try:
