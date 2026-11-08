@@ -368,7 +368,7 @@ def _render_create_user_form(me: Dict[str, Any]) -> None:
     """新建用户表单。密码框不回显，提交读取后立即从会话清除。"""
     st.markdown(f"<h3 style='{HEADER_H3}'>➕ 新建用户</h3>", unsafe_allow_html=True)
     st.caption(
-        "新号默认 viewer（只读）——三级最小权限链第一级；初始口令须首次登录修改"
+        "新号默认 viewer（只读）——三级最小权限链第一级；初始密码须首次登录修改"
         "（登录后出现强制改密提示），六角色叠加授权见上方「角色授予」面板。"
     )
     with st.form("users_admin_create_form", clear_on_submit=True):
@@ -603,7 +603,7 @@ def render_users_admin_page() -> None:
         f"<div style='{get_card_style()}'>"
         f"<strong>安全提示</strong>"
         f"<p style='margin:6px 0 0 0;color:#4a5568;'>内置默认管理员 "
-        f"admin 的初始口令为公开的 bootstrap 凭据，<strong>首次登录后必须立即修改</strong>；"
+        f"admin 的初始密码为公开的 bootstrap 凭据，<strong>首次登录后必须立即修改</strong>；"
         f"停用用户只是禁止登录，其历史提交记录保留。</p>"
         f"</div>",
         unsafe_allow_html=True,

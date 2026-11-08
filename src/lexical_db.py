@@ -538,6 +538,9 @@ def bind_example_media(example_id: int, asset_id: int, caption: str = "") -> boo
     Returns:
         bool: 绑定成功（含 media_db 幂等命中）True；参数非法 / 例证不存在 /
         media_db 拒绝（资产不存在等）/ 数据库错误 False。
+        幂等重绑：回写前先读 media_asset_id 现值，已等于目标 asset_id 时
+        直接 True（跳过回写——同值 UPDATE 在 MySQL rowcount=0，不得据此
+        判失败）；不同值则回写后 True（行存在性已在入校与回写前两查确认）。
     """
     eid = _as_int(example_id)
     if eid is None or eid <= 0:
@@ -566,10 +569,25 @@ def bind_example_media(example_id: int, asset_id: int, caption: str = "") -> boo
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
+                "SELECT media_asset_id FROM sense_examples WHERE id = %s",
+                (eid,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                logger.error(
+                    f"bind_example_media 回写前例证已不存在 example_id={eid}"
+                )
+                return False
+            if row["media_asset_id"] == aid:
+                # 幂等重绑：media_asset_id 已是目标值，同值 UPDATE 的
+                # rowcount=0 不代表失败——直接判成功、跳过回写。
+                return True
+            cursor.execute(
                 "UPDATE sense_examples SET media_asset_id = %s WHERE id = %s",
                 (aid, eid),
             )
-            return cursor.rowcount == 1
+            # 行存在性已由上方 SELECT 现值确认，UPDATE 后不再依赖 rowcount。
+            return True
     except pymysql.Error as e:
         logger.error(f"媒体例证回写 media_asset_id 失败（example_id={eid}）: {e}")
         return False

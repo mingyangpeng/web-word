@@ -484,6 +484,33 @@ class TestLexicalIntegration:
         row = list_examples("s")[0]
         assert row["media_asset_id"] == 33
 
+    def test_bind_media_idempotent_rebind_returns_true(
+        self, lexical_env, monkeypatch,
+    ):
+        """RV3-1 幂等重绑：media_asset_id 已等于目标 asset_id 时返回 True
+        （同值 UPDATE 在 MySQL rowcount=0，不得据此判失败），media_asset_id
+        保持不变；换绑不同资产仍 True 且回写新值。"""
+        ensure_lexical_tables()
+        eid = add_example("s", "例句")
+        bind_calls = []
+
+        def fake_bind(asset_id, anchor_type, anchor_id, purpose,
+                      caption="", sort_order=0, status="候选"):
+            bind_calls.append(asset_id)
+            return True
+
+        from src import media_db
+
+        monkeypatch.setattr(media_db, "bind_asset", fake_bind)
+        assert bind_example_media(eid, 33, "首次绑定") is True
+        # 同值重绑：此前 rowcount=0 会误报 False
+        assert bind_example_media(eid, 33, "同值重绑") is True
+        assert list_examples("s")[0]["media_asset_id"] == 33
+        # 换绑不同资产：回写新值
+        assert bind_example_media(eid, 44, "换绑") is True
+        assert list_examples("s")[0]["media_asset_id"] == 44
+        assert bind_calls == [33, 33, 44]
+
     def test_bind_media_media_db_false_propagates(self, lexical_env, monkeypatch):
         """media_db 拒绝（资产不存在等）→ 返回 False，media_asset_id 不回写。"""
         ensure_lexical_tables()
@@ -533,3 +560,24 @@ class TestLexicalIntegration:
         assert bindings[0]["anchor_type"] == "example"
         assert bindings[0]["purpose"] == "example_media"
         assert bindings[0]["caption"] == "配图：奔跑"
+
+    def test_bind_media_real_path_idempotent_rebind(self, lexical_env, tmp_path):
+        """真实链路幂等重绑（RV3-1）：同一资产同锚二次绑定——media_db
+        UNIQUE 幂等命中返回 True，media_asset_id 回写不误报 False。"""
+        ensure_lexical_tables()
+        from src.media_db import ensure_media_tables, register_asset
+
+        ensure_media_tables()
+        png = tmp_path / "pic.png"
+        png.write_bytes(
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+            b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+            b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4"
+            b"\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        asset_id = register_asset(str(png), "image", "测试来源", "CC BY 4.0")
+        assert asset_id > 0
+        eid = add_example("s", "例句")
+        assert bind_example_media(eid, asset_id, "配图：奔跑") is True
+        assert bind_example_media(eid, asset_id, "配图：奔跑") is True  # 幂等重绑
+        assert list_examples("s")[0]["media_asset_id"] == asset_id
