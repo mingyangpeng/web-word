@@ -40,3 +40,14 @@
 - [ ] R7-15/16/18/19/20/21 规范标注未落地项（随批次 12/13 工单）
 - [ ] R7-22/23/24 README/ARCHITECTURE 成片刷新（修复收敛后统一做）
 - [ ] R7-25 CHANGELOG 置顶＋补批次 11/12 条目；R7-26 env_doctor 计数；R7-27 簇列统一字符串
+
+## RV-3 签名×行为一致性（8 findings：P2×1 P3×7）
+
+- [ ] RV3-1 P2 bind_example_media 幂等重绑返 False（docstring 承诺 True）——回写删 `== 1` 判定＋补重绑测试
+- [ ] RV3-2 P3 create_assignment assigned_by=0 必败哨兵——改必填或 None＋显式拒绝文案
+- [ ] RV3-3 P3 「操作人」参数 15 名 10+ 型——统一 actor_id: int（批次 13 与 R1-1 剩余合并）
+- [ ] RV3-4 P3 media_db mime: str = None 注解谎报 → Optional[str]；_sha256_of_file → Optional[str]
+- [ ] RV3-5 P3 org_db isinstance(chief_id, int) 放行 bool——改 _as_int 统一
+- [ ] RV3-6 P3 update_draft 无变化=True vs update_example 无变化=False——docstring 互注或统一
+- [ ] RV3-7 P3 pipeline_status 六个 _format_* 无 docstring＋三个注解精度
+- [ ] RV3-8 P3 advance_binding/example_status 参数校验次序不一致（仅一致性）
