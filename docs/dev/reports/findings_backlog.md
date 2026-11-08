@@ -103,3 +103,15 @@
 - [ ] RV8-4 P3 start_streamlit 硬编码 MYSQL_HOST=127.0.0.1 静默覆盖 .env——远程库用户备份对象与应用写入对象不一致
 - [ ] RV8-5 P3 README 指向 .env.example 不存在的 LLM_MODEL/ZHIPU_API_KEY 行
 - [ ] RV8-6 P3 config/README 与 .env.example 漏 MYSQL_TIME_ZONE/MYSQL_CHARSET/MYSQL_COLLATION
+
+## RV-9 启动脚本与健康检查（19 findings：P2×6 P3×13）
+
+- [ ] RV9-1 P2 start.sh 不验「数据已灌」——初始化后中断即零数据上线；env_doctor 两处 hint 与实际不符
+- [ ] RV9-2 P2 db_up 无法区分本项目 mysqld 与外部 MySQL 实例——可能在外部实例上建库写数据
+- [ ] RV9-3 P2 stop→start 竞态——kill 不等退出＋wait_db 把垂死实例当成功
+- [ ] RV9-6 P2 reassemble_dictionary_db 失败被 || true 吞掉——损坏下载完成部署无人知
+- [ ] RV9-9 P2 repair --fix 只能重灌全空表——部分灌入的表非空→被跳过→修不了
+- [ ] RV9-11 P2 lib_deploy.sh 硬编码 127.0.0.1:3306+webword123——用户改 .env 后脚本管的是另一套
+- [ ] RV9-12 P2 web 容器无 healthcheck——僵死不退出永不重启；_stcore/health 语义错配潜伏
+- [ ] RV9-14 P2 MySQL binlog 未关——7.3G/7.7G datadir 纯属浪费＋每日 1G churn
+- [ ] RV9-4~5,7,8,10,13,15~19 P3（进程管理/磁盘/脚本容错/env_doctor 文案等 13 项）
