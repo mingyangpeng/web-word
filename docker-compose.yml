@@ -9,7 +9,7 @@ services:
       MYSQL_USER: web_word_user
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-webword123}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql

@@ -93,3 +93,6 @@ screenshots_final/
 src/static/word_graph_*.html
 docs/~$*.docx
 data/exports/
+
+data/backups/
+data/logs/

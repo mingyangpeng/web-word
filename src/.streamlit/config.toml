@@ -9,7 +9,7 @@ port = 8501
 enableStaticServing = true
 
 [client]
-showErrorDetails = true
+showErrorDetails = false  # 生产：false（配合服务端日志）；开发调试临时改 true
 
 [general]
 showWelcomeEmail = false
