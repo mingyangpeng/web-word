@@ -43,6 +43,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from src.db_utils import table_exists as _db_table_exists  # R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -102,15 +103,15 @@ def _segment(data: Optional[dict], reason: Optional[str] = None) -> dict:
 
 
 def _table_exists(table: str) -> bool:
-    """当前库中表是否存在（information_schema 只读探测；表名是模块常量）。"""
-    sql = (
-        "SELECT COUNT(*) AS n FROM information_schema.TABLES "
-        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s"
-    )
+    """当前库中表是否存在（information_schema 只读探测；表名是模块常量）。
+
+    本模块口径是「只传表名、自开游标」（各段逐表探测用），与
+    db_utils.table_exists(cursor, table) 的游标入参版签名不同 —— 实现已
+    收敛为对后者的薄包装（R6-4：探测逻辑单一实现点），同名入参版保留
+    供段内调用点与测试 monkeypatch 零改动。
+    """
     with get_db_cursor() as cursor:
-        cursor.execute(sql, (table,))
-        row = cursor.fetchone()
-        return bool(row) and int(row["n"] or 0) > 0
+        return _db_table_exists(cursor, table)
 
 
 # ============================================
@@ -449,6 +450,7 @@ def _fmt_alpha(alpha: Any) -> str:
 def _fmt_counts(by_what: Dict[str, Any], fmt_item) -> str:
     """分组计数 → 「k v · k v」串（按计数降序、同数按键名升序，确定性渲染）。"""
     def _sort_key(item):
+        """排序键：计数降序、同数按键名升序（脏计数按 -1 兜底，不抛）。"""
         key, value = item
         try:
             n = int(value)
@@ -460,6 +462,7 @@ def _fmt_counts(by_what: Dict[str, Any], fmt_item) -> str:
 
 
 def _format_admission(data: dict) -> str:
+    """工序4 段文本：义位总数＋按甄别状态分组的明细（降序渲染）。"""
     total = data.get("total")
     by_status = data.get("by_status") or {}
     detail = _fmt_counts(by_status, lambda k, v: f"{k} {v}")
@@ -467,6 +470,7 @@ def _format_admission(data: dict) -> str:
 
 
 def _format_coding(data: dict) -> str:
+    """工序5 段文本：提交总数＋按任务类型分组（含 submitted/adjudicated 细分）。"""
     total = data.get("total")
     by_task = data.get("by_task") or {}
     detail = _fmt_counts(
@@ -480,6 +484,7 @@ def _format_coding(data: dict) -> str:
 
 
 def _format_reliability(data: dict) -> str:
+    """工序6 段文本：最近一次信度运行（α／编码人数／单元数／计算时间）。"""
     alpha = _fmt_alpha(data.get("overall_alpha"))
     parts = [
         f"最近运行（{data.get('task_type') or '—'}）α={alpha}",
@@ -493,6 +498,7 @@ def _format_reliability(data: dict) -> str:
 
 
 def _format_clustering(data: dict) -> str:
+    """工序7 段文本：最新聚类运行的版本与簇数（附算法与累计运行次数）。"""
     return (
         f"{data.get('study_code') or '—'}·{data.get('language') or '—'}"
         f" 最新「{data.get('version') or '—'}」：{data.get('n_clusters', 0)} 簇"
@@ -501,12 +507,14 @@ def _format_clustering(data: dict) -> str:
 
 
 def _format_split_review(data: dict) -> str:
+    """工序8 段文本：merged/split 计数＋义位总数（G3 清单锁定口径）。"""
     merged = data.get("merged", 0)
     split = data.get("split", 0)
     return f"merged {merged} · split {split}（义位 {data.get('total_senses', 0)}）"
 
 
 def _format_authoring(data: dict) -> str:
+    """工序10–13 段文本：definition_versions 版本行计数。"""
     return f"definition_versions {data.get('n_versions', 0)} 条"
 
 
