@@ -970,13 +970,21 @@ def render_reliability_page() -> None:
         st.caption("没有检测到分歧（各编码人对所有共同标注单元的取值一致，或重叠样本不足）。")
 
     csv_bytes = _export_csv(result)
+    _export_disabled = not (per_feature or disagreements)
     st.download_button(
         "📥 导出信度报告 CSV（含分歧清单）",
         data=csv_bytes,
         file_name=f"reliability_{category}_{task_type}.csv",
         mime="text/csv",
-        disabled=not (per_feature or disagreements),
+        disabled=_export_disabled,
     )
+    # R7-14：灰置须注明原因（与其他导出口径一致）。权限闸在本页入口
+    # （reviewer/dict_admin/sys_admin 之外整页拒渲染），这里只补数据闸的原因。
+    if _export_disabled:
+        st.caption(
+            "导出已灰置：尚无可导出的明细（无逐特征结果，也无分歧条目）——"
+            "提交量增长后再导出。"
+        )
 
 
 def _badge_css() -> str:

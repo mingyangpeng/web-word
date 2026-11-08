@@ -1189,7 +1189,7 @@ class TestNodeAndEdgeCards:
     def test_card_fields_stay_wired(self):
         """卡片字段清单直接对应需求，掉了就是功能缺失。"""
         html = self._html()
-        for token in ("音标", "词性", "语义簇", "释义", "意象与标注", "原型层级",
+        for token in ("音标", "词性", "词簇", "释义", "意象与标注", "原型层级",
                       "英汉对齐", "五元语义分解", "中英对照义位", "OALD10 义项",
                       "关联节点", "来源与复核", "备注 / 收藏"):
             assert token in html, f"词条卡片缺少字段：{token}"

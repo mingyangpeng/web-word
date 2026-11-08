@@ -73,7 +73,7 @@ def _esc_js(text: Any) -> str:
 # 但数据没变」时 URL 不变 —— 浏览器和 Streamlit 都认为文件没换，页面继续跑旧渲染
 # 逻辑，改了前端却看不到任何变化，而且重启进程也不一定有用（磁盘上还是旧文件）。
 # 把版本号并进指纹后，改模板即产生新 URL，旧文件被自动清理。
-TEMPLATE_VERSION = 22
+TEMPLATE_VERSION = 23  # RV5-5 定名：语义簇→词簇（文案改动必须 bump 版本换指纹，见 data_fingerprint）
 
 
 def data_fingerprint(graph: Dict[str, Any]) -> str:
@@ -457,7 +457,7 @@ _TEMPLATE = """<!DOCTYPE html>
   </div>
 
   <div id="legend-wrap">
-    <h3>语义簇（可勾选过滤）</h3>
+    <h3>词簇（可勾选过滤）</h3>
     <div id="legend-controls">
       <label><input type="checkbox" id="select-all-cb" checked/> 全选</label>
       <label><input type="checkbox" id="focus-cb" checked/> 高亮邻居</label>
@@ -559,7 +559,7 @@ function updateStats() {
   RAW_EDGES.forEach(e => { if (shownIds.has(e.from) && shownIds.has(e.to)) se++; });
   document.getElementById('stats').innerHTML =
     '节点 ' + sn + ' / ' + TOTAL_NODES + ' · 关系 ' + se + ' / ' + TOTAL_EDGES
-    + '<br/>语义簇 ' + enabled.size + ' / ' + TOTAL_CLUSTERS;
+    + '<br/>词簇 ' + enabled.size + ' / ' + TOTAL_CLUSTERS;
 }
 
 document.addEventListener('click', e => {
@@ -736,7 +736,7 @@ function nodeDetailHTML(n, compact) {
        + '<span class="v fc-miss">未收录</span></div>';
   }
   h += plainRow('词性', d.pos === 'v' ? 'v. 动词' : (d.pos || ''));
-  h += plainRow('语义簇', n._clusterLabel + '（次范畴：' + n._subCat + '）');
+  h += plainRow('词簇', n._clusterLabel + '（次范畴：' + n._subCat + '）');
   h += plainRow('主范畴', n._mainCat);
 
   h += sec('释义');

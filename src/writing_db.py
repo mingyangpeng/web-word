@@ -43,7 +43,9 @@ CRUD 契约（施工规范 §10）：
   （→rejected）/ approve（→final 的 MVP）/ publish（仅 dict_admin 口径，
   G6 硬闸门批次 8 接管）/ list_versions / list_pending_reviews。
   另有非契约只读/收口辅助 get_version / get_latest_version / list_comments /
-  resolve_comment（供页面与测试，仿 ai_ledger.get_proposal 先例）。
+  list_comments_for_versions（R5-6 版本历史 N+1 批量读：一次 IN 按版本分组，
+  与逐版本 list_comments 逐字段一致）/ resolve_comment（供页面与测试，
+  仿 ai_ledger.get_proposal 先例）。
 
 角色与回避制口径（§8「回避制无豁免，含词典管理员」）：
   * 数据层硬校验：审校动作（submit_for_review 指派、add_comment、
@@ -1319,6 +1321,59 @@ def list_comments(version_id: int, only_open: bool = False) -> List[Dict[str, An
         return []
 
 
+def list_comments_for_versions(
+    version_ids: Any, only_open: bool = False
+) -> Optional[Dict[int, List[Dict[str, Any]]]]:
+    """多版本意见线批量读取（R5-6 版本历史 N+1 修复，只读）。
+
+    版本历史 / 审校台原先对每个版本循环调 list_comments（N 条同构查询）；
+    本函数一次 ``version_id IN`` 查询取回后按 version_id 分组，替代循环。
+    分组内行序（id 升序）、行字段、only_open 口径与逐版本 list_comments
+    **逐字段一致**；每个合法入参 id 都有键（无意见 = 空列表）。
+
+    Args:
+        version_ids: 版本行 id 清单（非法 / 重复项自动去重保序；单 id 亦接受）。
+        only_open: True 只取未处理（与 list_comments 同口径）。
+
+    Returns:
+        dict | None: {version_id: [意见行]}；清单为空 / 全非法 / 数据库
+        不可用返回 None（调用方回退逐版本 list_comments，行为兜底）。
+    """
+    candidates = (
+        list(version_ids) if isinstance(version_ids, (list, tuple, set))
+        else [version_ids]
+    )
+    ids: List[int] = []
+    for vid in candidates:
+        got = _as_positive_int(vid)
+        if got is not None and got not in ids:
+            ids.append(got)
+    if not ids:
+        return None
+    placeholders = ", ".join(["%s"] * len(ids))
+    sql = (
+        "SELECT id, version_id, reviewer_id, body, resolved, created_at "
+        f"FROM review_comments WHERE version_id IN ({placeholders})"
+    )
+    if only_open:
+        sql += " AND resolved = 0"
+    sql += " ORDER BY version_id ASC, id ASC"
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, tuple(ids))
+            rows = [dict(row) for row in cursor.fetchall()]
+    except pymysql.Error as e:
+        logger.error(f"list_comments_for_versions 查询失败（MySQL）: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"list_comments_for_versions 意外错误: {e}")
+        return None
+    grouped: Dict[int, List[Dict[str, Any]]] = {vid: [] for vid in ids}
+    for row in rows:
+        grouped.setdefault(int(row.get("version_id")), []).append(row)
+    return grouped
+
+
 def resolve_comment(comment_id: int, resolved: bool = True) -> bool:
     """标记意见处理状态（收口只是标记，不删行 —— D 域不删行纪律）。
 
@@ -1386,5 +1441,6 @@ __all__ = [
     "get_version",
     "get_latest_version",
     "list_comments",
+    "list_comments_for_versions",
     "resolve_comment",
 ]

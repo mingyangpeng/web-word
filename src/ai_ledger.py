@@ -51,6 +51,9 @@ from typing import Any, Dict, List, Optional
 
 import pymysql
 
+# R6-4：_as_int 单一实现点在 src/db_utils.py（别名导入，调用点零变化；
+# 行为与旧本地副本逐字节一致 —— bool/None 先拦，float NaN/Inf 落进 except）。
+from src.db_utils import as_int as _as_int
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -126,19 +129,6 @@ def ensure_ai_ledger_tables() -> None:
 # 入参规整（应用层先拒，非法值不进数据库）
 # ============================================
 _INVALID = object()  # 字符串校验失败的哨兵（None 是合法值，不能复用）
-
-
-def _as_int(value: Any) -> Optional[int]:
-    """宽松转 int（int/float/int-str 可转；bool/None/其余 None）—— 防脏参数。
-
-    float NaN/Inf 也拒：int(nan) 抛 ValueError，正好落进 except。
-    """
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def _clean_optional_str(value: Any, max_len: int) -> Any:

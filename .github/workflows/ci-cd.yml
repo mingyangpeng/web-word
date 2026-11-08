@@ -54,6 +54,16 @@ jobs:
       run: flake8 src/
     - name: Run mypy
       run: mypy src/
+    - name: Dependency audit (pip-audit, advisory)
+      # RV4-8：依赖漏洞扫描 —— 温和档：continue-on-error，只输出报告不挡 CI。
+      # 误伤风险说明：本仓库只有松散的 requirements.txt（无 lock 文件），
+      # pip-audit 按审计时的依赖解析结果比对漏洞库，可能报出「实际安装版本
+      # 不受影响 / 传递依赖只被间接引用」的告警（锁文件缺失误伤）；先观察
+      # 一段报告基线，再决定收窄依赖或转硬闸门。
+      continue-on-error: true
+      run: |
+        pip install pip-audit
+        pip-audit -f markdown
 
   # TODO(deploy): 该任务当前无法工作，暂时禁用。
   #   * 原写法 `HF_TOKEN: \${{ secrets.HF_TOKEN }}` 多了一个反斜杠，GitHub 不会

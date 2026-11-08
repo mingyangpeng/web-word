@@ -875,6 +875,13 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
         "无豁免。"
     )
     names = _user_display_map()
+    # R5-6（N+1 修复）：意见线一次批量取回按 version 分组（失败回退逐版本
+    # list_comments，展示口径不变）。
+    try:
+        comments_by_version = writing_db.list_comments_for_versions(
+            [int(row["version_id"]) for row in rows])
+    except Exception:  # noqa: BLE001 — 版本锚异常时逐行回退旧查询
+        comments_by_version = {}
     for row in rows:
         author = names.get(_safe_int(row.get("author_id")),
                            f"#{row.get('author_id')}")
@@ -902,7 +909,9 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                     st.json(payload)
                 else:
                     st.caption("本版无 AI/模板草稿快照（纯人工撰写）。")
-            comments = writing_db.list_comments(int(row["version_id"]))
+            comments = comments_by_version.get(int(row["version_id"]))
+            if comments is None:
+                comments = writing_db.list_comments(int(row["version_id"]))
             st.markdown(f"**💬 意见线（{len(comments)} 条）**")
             if comments:
                 for c in comments:
@@ -1062,6 +1071,9 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     稳定编号，_pseudonym_factory），draft 态内容与字数列显示
     「🔒 撰写中」（在途草稿不外露）；reviewer/dict_admin（含 editor——
     编纂圈署名权）实名全链不变。收口（标记意见已处理）仍按原角色口径。
+
+    **R5-6 N+1 修复**：全部版本的意见线经 list_comments_for_versions 一次
+    批量取回按版本分组（失败回退逐版本 list_comments，展示口径不变）。
     """
     st.caption(
         "版本链按 sense_ref 升序：每版记作者 / based_on_version / 体例版本 —— "
@@ -1138,6 +1150,13 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     st.markdown("#### 版本链详情")
     can_resolve_base = _can_review(me)
     my_id = _safe_int(me.get("id"))
+    # R5-6（N+1 修复）：全部版本的意见线一次批量取回按 version 分组，
+    # 替代逐版本 list_comments 循环查询（失败回退逐版本，展示口径不变）。
+    try:
+        comments_by_version = writing_db.list_comments_for_versions(
+            [int(v["id"]) for v in versions])
+    except Exception:  # noqa: BLE001 — 版本锚异常时逐版回退旧查询
+        comments_by_version = {}
     for v in versions:
         status = STATUS_LABELS.get(str(v.get("status")), str(v.get("status")))
         base = f"v{v.get('based_on_version')}" if v.get("based_on_version") else "—"
@@ -1155,7 +1174,9 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
             if ai:
                 with st.expander("🤖 AI/模板草稿快照"):
                     st.json(ai)
-            comments = writing_db.list_comments(int(v["id"]))
+            comments = comments_by_version.get(int(v["id"]))
+            if comments is None:
+                comments = writing_db.list_comments(int(v["id"]))
             if comments:
                 st.markdown(f"**💬 意见线（{len(comments)} 条）**")
                 for c in comments:

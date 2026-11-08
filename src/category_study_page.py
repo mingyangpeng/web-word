@@ -59,6 +59,17 @@ STATUS_COLORS = {
 }
 
 
+def _cluster_no_cell(s: Dict[str, Any]) -> str:
+    """义位行的「簇」列单元格：簇号统一转 str，无簇归属保持「—」。
+
+    R7-27（=RV-12 观察项）：列值混 int 簇号与 "—" 字符串时，st.dataframe 的
+    pyarrow 序列化抛 ArrowInvalid（列渲染失败、不崩页）。列值统一 str 后
+    显示语义不变（簇号本身按文本阅读）。
+    """
+    no = (s.get("cluster") or {}).get("cluster_no")
+    return str(no) if no is not None else "—"
+
+
 @st.cache_data(ttl=600, show_spinner=False)
 def _load_category(cache_scope: str, code: str) -> Optional[Dict[str, Any]]:
     """加载一个范畴的全部展示数据（页面级缓存，10 分钟）。
@@ -313,7 +324,7 @@ def render_matrix_view(data: Dict[str, Any]) -> None:
     with st.expander("查看义位 → 簇归属对照"):
         rows2 = [{
             "义位": label,
-            "簇": s["cluster"]["cluster_no"] if s.get("cluster") else "—",
+            "簇": _cluster_no_cell(s),
             "判定": s["status"],
             "主体": s.get("subject_type") or "",
             "语体": s.get("register") or "",
@@ -736,7 +747,7 @@ def render_overview_view(data: Dict[str, Any]) -> None:
             "主体": s.get("subject_type") or "",
             "语体": s.get("register") or "",
             "标注": s.get("tag") or "",
-            "簇": s["cluster"]["cluster_no"] if s.get("cluster") else "—",
+            "簇": _cluster_no_cell(s),
         } for s in data["senses"] if s["language"] == "en"]
         st.dataframe(pd.DataFrame(rows), use_container_width=True,
                      hide_index=True)
@@ -751,7 +762,7 @@ def render_overview_view(data: Dict[str, Any]) -> None:
             "主体": s.get("subject_type") or "",
             "语体": s.get("register") or "",
             "标注": s.get("tag") or "",
-            "簇": s["cluster"]["cluster_no"] if s.get("cluster") else "—",
+            "簇": _cluster_no_cell(s),
             "备注": (s.get("remark") or "")[:80],
         } for s in data["senses"] if s["language"] == "zh"]
         st.dataframe(pd.DataFrame(rows), use_container_width=True,

@@ -84,7 +84,7 @@ docker compose down -v         # 连数据卷一起删除（会清空数据库�
 
 ```bash
 ./start                 # 一键 = develop.sh（部署环境+数据）→ start.sh（启动网页）
-./start doctor          # 部署前/后体检：七类 23 项环境检查（Python/依赖/MySQL/.env/
+./start doctor          # 部署前/后体检：七类 23 项环境检查（Python 与依赖/MySQL/.env/
                         # AI 接入/种子数据/数据库基线/端口磁盘），每项带修复指引
 ```
 
@@ -134,7 +134,7 @@ MYSQL_HOST=127.0.0.1 python3 scripts/load_llm_screening.py     # LLM 初筛草�
 MYSQL_HOST=127.0.0.1 python3 scripts/parse_modern_chinese_dict.py  # 现汉7 mdx 解析
 MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py           # 现汉7 词典入库
 
-# 4. 体检（确认 25 张表达到验收基线）
+# 4. 体检（确认 22 张核心内容表达到验收基线）
 ./start doctor
 
 # 5. 启动应用（.env 已由 ./start 场景导出；手动场景先 set -a; source .env; set +a）
@@ -146,7 +146,8 @@ streamlit run src/app.py
 ```
 web-word/
 ├── src/                        # 应用源码
-│   ├── app.py                  # Streamlit 主应用（十六页：基础六页 + 协作/分析/编纂/管理各工作区， + 谱系与典型性/释义模板/语义检索，按角色过滤）
+│   ├── app.py                  # Streamlit 主应用（十七页：查阅/建模/分析/编纂/AI 协作/
+│   │                           #   词典管理/系统管理，按角色过滤；PAGE_KEYS=17 单一事实源在 page_guides.py）
 │   ├── cluster_analysis.py     # 谱系树（Gower+average）与 medoid 典型性三级排序
 │   ├── template_engine.py      # 释义模板引擎（母图式提炼 + 槽位实例化 + 批量导出）
 │   ├── semantic_search.py      # 以句搜义（自然语言 → 特征向量 → Gower 最近邻）
@@ -157,7 +158,8 @@ web-word/
 │   ├── reliability.py          # Krippendorff's α 信度引擎与报告页
 │   ├── category_pack.py        # 范畴包加载器（configs/motion/ 六件套 YAML）
 │   ├── mysql_db.py             # MySQL 8.0 数据访问层（连接、建表、迁移、CRUD、统计）
-│   ├── llm_api.py              # 智谱 AI 封装（调用、解析、MySQL 缓存、兜底释义）
+│   ├── llm_api.py              # 多供应商 LLM 封装（zhipu/openai/deepseek 路由、调用、解析、MySQL 缓存、兜底释义）
+│   ├── llm_providers_db.py     # 供应商注册表数据层（🤖 模型供应商页：Base URL/API 格式/密钥/模型列表）
 │   ├── design_system.py        # 设计系统常量与样式生成
 │   ├── security.py             # 输入校验（SQL 注入 / XSS）与密钥掩码
 │   ├── word_source.py / oald_senses.py  # 词表与 OALD10 义项数据源
@@ -294,7 +296,7 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 | 层 | 内容 |
 |----|------|
 | 词目（`definitions`） | 171 词，含主范畴/次类、原型主导义、判断理由、意象图式、原型层级、英汉对齐等级 |
-| 中英对照义位（`word_senses`） | 64 条（4 词），逐义位含中英文释义、搭配框架、例句、近义反义词 |
+| 中英对照义位（`word_senses`） | 246 条（17 词），逐义位含中英文释义、搭配框架、例句、近义反义词 |
 | **OALD10 义项（`oald_senses`）** | **996 条（171 词＋4 人工补充）**，逐义项含英文释义、语法码、语义分组标签、例句与句法模式、习语标记 |
 | 词间关系（`word_relations`） | 1935 条，同一次类内两两相连（完全图） |
 
@@ -305,7 +307,7 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 | | `word_senses`（dictionary.db） | `oald_senses`（OALD10） |
 |--|-------------------------------|------------------------|
 | 内容 | 中英对照义位 | 英文义项 + 语法码 + 语义分组 |
-| 覆盖 | 64 条 / 4 词 | 665 条 / 132 词 |
+| 覆盖 | 246 条 / 17 词 | 996 条 / 171 词（992 条 OALD＋4 条人工补充） |
 | 序号含义 | 该词第几个义位 | 该词第几个义项 |
 
 两者无法一一对应，**合并成一张表会让 `sense_index` 失去意义**（`charge` 的 10 条中英义位后面接着 12 条 OALD 义项），
@@ -326,6 +328,9 @@ graphify path "abandon" "leave" --graph data/word_graph.json
 习语义项（173 条）也保留、只标记 —— 是否排除是研究判断，程序替研究者决定等于隐藏数据。
 
 **释义来源分级**（`definition_source` / `source_rank` 字段如实落库）：
+
+> 口径注：下表词数与下方「词典原文率 2.9%（4/136）」为 v1（136 词）时期的审计值，
+> v2 恢复 171 词后未逐项复算——以页面实际渲染的来源标注为准。
 
 | Rank | 来源 | 词数 | 说明 |
 |------|------|------|------|
@@ -382,7 +387,7 @@ python scripts/generate_word_doc.py     # → docs/research/protocols/英语自�
 一阶阻尼系统 `v ← (v + a) × DAMPING`，稳态速度 `v_eq ≈ a · DAMPING/(1-DAMPING)`。
 
 **这里没有粒子数量上限。** 每个可见节点都有一颗粒子，所以粒子数恒等于可见节点数
-（默认 136）。早先的「200 上限 + 选中簇优先的预算分配」在改成「节点即粒子」后失去
+（默认全库 171 词全部可见）。早先的「200 上限 + 选中簇优先的预算分配」在改成「节点即粒子」后失去
 意义 —— 不设上限时每个节点都拿得到粒子，也就无所谓谁先谁后、谁优先。那套分配代码
 已整体删除，不保留开关。
 
@@ -514,14 +519,21 @@ graphify god-nodes --top 10                # 架构枢纽节点
 
 ## 🗄️ 数据库表结构
 
-MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权威是
-`src/mysql_db.py` 的 `CREATE_TABLES_SQL`（`init_db.sql` **不再复制建表语句**，只建库与授权，
-避免两份会漂移的 DDL）。
+MySQL 8.0。全部表结构的权威是各数据层模块的 DDL（`src/mysql_db.py` 的
+`CREATE_TABLES_SQL` 与 users_db / annotation_flow / reliability / category_study /
+zh_dict / media_db / writing_db / lexical_db / llm_providers_db / registry_db 等
+协作与编纂域模块各自的建表语句），共 **49 张表**（`CREATE TABLE` 语句去重口径，含
+`schema_migrations` 版本表）＋ 1 个对照视图（`init_db.sql` **不再复制建表语句**，
+只建库与授权，避免两份会漂移的 DDL）。`./start doctor` 对其中 **22 张核心内容表**
+执行行数验收基线（12 项种子数据在位性另行核对）。
+
+核心词库域（词间关系与释义的第一性数据）如下；协作/编纂/媒体/供应商等域的表
+见对应数据层模块与 `docs/dev/ARCHITECTURE.md`。
 
 | 表 / 视图 | 作用 | 关键约束 |
 |-----------|------|----------|
 | `word_clusters` | **词义簇**。来自词库的 (main_cat, sub_cat)，是「词与词关系」的第一性数据 | `uq_word_clusters_cats (main_cat, sub_cat)` |
-| `definitions` | 动词释义：中文释义、五元语义表、例句、**音标**（`phonetic`，来自 `data/dictionary.db`，覆盖 9/136）、所属簇 | `uq_definitions_verb`、`fk_definitions_cluster` |
+| `definitions` | 动词释义：中文释义、五元语义表、例句、**音标**（`phonetic`，来自 `data/dictionary.db`）、所属簇 | `uq_definitions_verb`、`fk_definitions_cluster` |
 | `word_relations` | **词间关系边表**，物化的是簇内**完全图** | `uq_word_relations_pair` 保证幂等、`CHECK(verb_a_id < verb_b_id)` 保证无向边只存一份、两个端点均有外键 |
 | `feedbacks` | 用户评分与文字反馈 | `CHECK(rating BETWEEN 1 AND 5)` |
 | `usage_logs` | 查询日志，「热门动词」与「总查询次数」的唯一数据来源 | `idx_usage_logs_verb`、`idx_usage_logs_query_time` |
@@ -563,7 +575,8 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 
 ### 数据来源
 
-- `users` 表：账号、角色（管理员/审核员/标注员）、启用状态；首次启动自动创建内置
+- `users` 表：账号、角色（六角色口径：词典管理员/平台管理员/审校/编纂/标注/只读，
+  legacy 列经 `LEGACY_ROLE_TO_NEW_ROLES` 映射）、启用状态；首次启动自动创建内置
   管理员 `admin`（默认密码 `admin123`，**上线前必须改密**）。
 - `annotation_submissions` 表：逐条提交（coder_id × SenseID × 特征 × 值 + 时间戳）。
 - `src/reliability.py`：α 计算与报告页渲染；`src/annotation_flow.py`：提交/我的提交/
@@ -572,7 +585,7 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 
 ### 操作
 
-1. **登录**：启动后侧边栏顶部输入用户名/密码；未登录仅见基础六页（只读）。
+1. **登录**：启动后侧边栏顶部输入用户名/密码；未登录仅见查阅展示区（只读）。
 2. **管理员**：`👥 用户管理` 页创建标注员/审核员账号、分配角色、启停账号。
 3. **标注员**：`📥 标注提交` 页选择动词→义位，核对英文释义、语法码与真实例句（判定证据），
    参考 LLM 初筛草稿完成判定并提交；`🏷️ 标注平台` 页可继续既有单标注工作流。
@@ -599,7 +612,9 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 > 设计规范：`docs/spec/多人标注系统设计规范.md`（唯一事实源）。端到端验收脚本：
 > `tests/test_e2e_workflow.py`（真实 MySQL 七步协作工作流，无库自动跳过，可重复执行）。
 
-- **四角色**：`admin` 一切权限（用户管理 / 任务分配 / 仲裁 / 直写权威层快速通道）；
+- **四角色**（legacy 列名口径，已映射进六角色：`admin`→词典管理员＋平台管理员、
+  其余同名直通，见 `src/users_db.py: LEGACY_ROLE_TO_NEW_ROLES`）：
+  `admin` 一切权限（用户管理 / 任务分配 / 仲裁 / 直写权威层快速通道）；
   `reviewer` 看全部提交与分歧清单、执行仲裁定稿；`annotator` 只看分配给自己的任务与
   AI 草稿、提交/修改**自己的**标注（标注员互相不可见，保证独立性）；`viewer` 只读统计与导出。
 - **GitHub 式流程**：管理员 `assign_task` 分配 → 标注员 `submit_annotation` 提交
@@ -664,7 +679,7 @@ MySQL 8.0，五个业务表 + 一个视图 + 一个版本记录表。结构权�
 ### 注意事项
 
 - 三页均按角色过滤：未登录/`viewer` 可见只读视图，`annotator` 起可见完整功能
-  （与十二页权限矩阵一致，见 `src/app.py` `_PAGE_ACCESS`）。
+  （与十七页权限矩阵一致，见 `src/app.py` `_PAGE_ACCESS`）。
 - 母图式提炼只对**已编码**义位生效：编码矩阵为空时页面提示先完成标注/灌库。
 - 以句搜义的结果是**最近邻候选而非权威判定**——义位准入仍以论文 §3 的判定链为准；
   「AI 增强」开关开启后查询会调用 LLM（消耗配额），失败自动回退规则层。
@@ -688,6 +703,10 @@ pytest tests/test_security.py
 开启 `--cov` 后，覆盖率 HTML 报告输出到 `htmlcov/index.html`。绝大多数测试用 `monkeypatch` 隔离外部依赖，
 不会真实调用智谱 API 或 MySQL。
 
+套件规模（2026-11-09 口径）：**59 个测试模块、1997 项**（`pytest --collect-only`）。
+真库集成用例（如 `test_migration_integration.py`、e2e 工作流）在无库环境**自动 skip**
+（不是 fail）；CI 已加 MySQL 8 服务承载真库用例。
+
 例外是 `tests/test_migration_integration.py`：它必须在**真 MySQL** 上跑，因为它要验证的
 正是「迁移之后业务数据还在不在」。连不上库、或账号没有建库权限时，该模块整体 `skip`
 （不是 fail）—— 这是环境能力问题，不是代码缺陷。本地要跑它，先授权：
@@ -701,9 +720,7 @@ MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
 > 是**单字符通配符**（与 LIKE 同规则），不转义的话授予的是「web_任意字符_word_任意字符_db」
 > 这个模式，同机上 `webXwordYdb` 之类无关库会被一并授权。这一点已实测确认过。
 
-无数据库时：`60 passed, 12 skipped`；有数据库时：`72 passed`。
-
-测试文件与覆盖内容：
+测试文件与覆盖内容（代表性模块；完整清单见 `tests/` 目录与 `docs/dev/TESTING.md`）：
 
 | 文件 | 内容 |
 |------|------|
@@ -717,6 +734,7 @@ MYSQL_HOST=127.0.0.1 pytest tests/test_migration_integration.py
 | `tests/test_annotation_flow.py` | 提交/覆盖更新/分歧检测/仲裁/任务统计 |
 | `tests/test_reliability.py` | Krippendorff's α：计算、缺失值容忍、不可算显示 |
 | `tests/test_category_pack.py` | 范畴包六件套加载与校验 |
+| `tests/test_fx13_fixes.py` | 批次 13 性能修复回归：N+1 收敛后的查询数契约（3→1 / 4→1 / 9→3） |
 
 ## ❓ 常见问题
 
@@ -754,13 +772,16 @@ export ZHIPUAI_API_KEY=你的key
 streamlit run src/app.py
 ```
 
-或写进 `.env`（已随仓库入库，`./start` 第 0.1 步自动加载）后 `set -a; source .env; set +a`。可选调优变量见
-`.env.example`：`LLM_MODEL`（默认 `glm-4`）、`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、
-`LLM_TIMEOUT`、`CACHE_TTL_HOURS`。
+或写进 `.env`（已随仓库入库，`./start` 自动加载）后 `set -a; source .env; set +a`。
+模型名用 `ZHIPUAI_MODEL`（或 `LLM_MODEL`，默认 `glm-4`）；可选调优变量
+`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、`LLM_TIMEOUT`、`CACHE_TTL_HOURS`；
+多供应商接入变量（`LLM_PROVIDER`、`OPENAI_API_KEY`/`OPENAI_BASE_URL`、
+`DEEPSEEK_API_KEY`/`DEEPSEEK_BASE_URL`、`LLM_CONNECT_TIMEOUT` 等）以
+`.env.example` 与 [`config/README.md`](config/README.md) 为准。
 
-> `.env.example` 里另有旧名 `ZHIPU_API_KEY`，应用主流程不读它（历史上是给已删除的
-> `src/api.py` 用的，`src/security.py` 的 `KeyManager` 仍接受它）—— 填错名字只会静默
-> 走到离线释义。**认准 `ZHIPUAI_API_KEY`。**
+> 历史旧名 `ZHIPU_API_KEY`（`.env.example` 中并无此行）只被 `src/llm_api.py` 与
+> `src/security.py` 的 `KeyManager` 作为回退接受——填错名字仍会静默走到离线释义。
+> **认准 `ZHIPUAI_API_KEY`。**
 
 **为什么没有 API key 也能跑？**
 
@@ -796,6 +817,12 @@ docker compose down            # 停止
   `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ 八步幂等灌库（与 `./develop.sh` 的
   `run_all_loaders` 同源同序：词库 / 人工补充义位 / 语料 / 跑范畴 / 域系初判 /
   域系增强 / LLM 初筛 / 《现汉7》）→ `streamlit run src/app.py`。
+- **镜像安全与自愈（RV-11/RV-9）**：Dockerfile 以非 root 运行（`USER app`，uid 1000；
+  存量 root 属主卷需一次性 chown，见 `docs/DEPLOYMENT.md`）；基础镜像三处
+  `FROM python:3.11-slim@sha256:07d48240…` 按 digest 固定（2026-11-08 实取）；
+  web 与 mysql 服务均带 healthcheck（web 用 python urllib 探 `_stcore/health`，
+  mysql 用 `mysqladmin ping`），僵死容器可被 compose 识别；MySQL 以
+  `--skip-log-bin` 启动——binlog 关闭，datadir 不再日增约 1G。
 - `--if-empty` 是幂等的：`definitions` 表已有数据就跳过，不会覆盖运营中新增或修改的词条。
   因此 `docker compose up` 起来即有完整词库，无需手工执行任何灌库命令。
 - 探活超时或灌库失败都不会失败退出，而是以 **离线模式** 启动应用。

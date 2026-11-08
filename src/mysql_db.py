@@ -11,6 +11,12 @@ import logging
 from contextlib import contextmanager
 from typing import Optional, Dict, List, Any
 
+# R6-4：_table_exists 单一实现点在 src/db_utils.py（别名导入保持模块内名字
+# 与调用点不变；结构迁移区留有与旧本地副本的口径说明）。_column_exists 留
+# 本模块（查询形态被 tests/test_schema 迁移契约桩钉死，豁免说明见迁移区）。
+# 依赖方向无环：db_utils 零 src 内部依赖（见其模块 docstring）。
+from src.db_utils import table_exists as _table_exists
+
 # st.cache_data 页面级缓存（R5-2/R5-9）：重查询包缓存的范式与
 # cluster_analysis._load_page_data 一致 —— 首参 cache_scope_key()，
 # 换库即换缓存槽位（业务库/测试库互不污染）。
@@ -132,6 +138,38 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 视图 v_cluster_complete_graph 则提供「从簇推导」的对照实现，两者应一致。
 
 SCHEMA_VERSION = 11
+
+# 「留痕列 NULL 口径」（RV2-3 定名，跨模块 schema 注释的单一出处）：
+# 同是「谁操作的 / 哪来的」这类留痕/来源列，本仓库有三种 NULL 语义，各自
+# 适用的场景固定如下 —— 新增留痕列时按此选型，不得再发明第四种：
+#   1. INT NULL（操作人 = users.id）：NULL = 系统作业/无人（bootstrap 内置
+#      admin、自动登记、存量回填），不允许用 NOT NULL DEFAULT 0 之类的伪 id
+#      冒充「无人」。FK 版本配 ON DELETE SET NULL（账号删除留痕不阻删），
+#      软引用版本（无 FK，如 ai_proposals.created_by / users.created_by）
+#      语义相同：删号后列值置 NULL 由应用层负责或保持历史值。
+#   2. VARCHAR NULL（操作人 = username 字符串，无 FK）：NULL = **动作尚未
+#      发生**（如 media_bindings.reviewed_by / export_batches.published_by
+#      —— 绑定还没流转到该态、快照还没出版）；非空 = 最近一次把行推到
+#      当前态的操作人。列语义是「动作是否发生过」时必须用 NULL，不能用 ''。
+#   3. VARCHAR NOT NULL DEFAULT ''（来源/图注等描述文本）：'' = 应用层显式
+#      给出的「无内容」，是合法值而非未知（如 media_assets.source /
+#      media_bindings.caption）。这类列语义是描述，不承载「动作发生过否」
+#      —— 需要表达发生过与否时改用第 2 类，不要拿 '' 当 NULL 用。
+#
+# 「ALTER-only 列清单」（RV2-4 维护注释）：下列列**只存在于 ALTER 幂等迁移**，
+# 不在任何 CREATE TABLE 文本里 —— 新库路径是「先建旧形 → ensure_* 迁移补列」，
+# 建表后必须跑对应模块的 ensure/迁移，缺一列即页面 SQL 报错。改表结构时
+# 同步维护本清单（grep `ALTER TABLE .* ADD COLUMN` 汇总核对）：
+#   * oald_senses.human_reviewed          —— 本模块 _migrate_schema（v7）
+#   * domain_family_senses.llm_tag / llm_schema / llm_align / llm_reason /
+#     llm_doubt / freq / schema_scores    —— 本模块 _migrate_schema（v11）
+#   * definitions.import_voided           —— src/import_engine.py
+#   * media_bindings.reviewed_by / reviewed_at —— src/media_db.py（R3-4a）
+#   * export_batches.published_by / published_at —— src/export_center.py（R3-4b）
+#   * reliability_runs.created_by         —— src/reliability.py（R5 遗留 2）
+#   * users.must_change_password / users.created_by —— src/users_db.py
+#   * cs_clusters.locked / cs_clusters.merged_into —— src/cluster_analysis.py
+#     （G3 复核定稿位 / 簇合并软键，页面入口幂等演进）
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -457,22 +495,30 @@ def _register_zh_dict_tables() -> None:
 # ============================================
 # 结构迁移
 # ============================================
+# _table_exists 收敛至 src/db_utils.py（R6-4 单一实现点，别名导入见文件头），
+# 调用点零变化。口径说明：db_utils 版探测 TABLE_SCHEMA = DATABASE()（连接
+# 所在库），旧本地副本用模块全局 MYSQL_DATABASE —— 本模块所有游标都经
+# get_db_cursor/_new_connection（database=MYSQL_DATABASE）取得，两者恒等；
+# 测试 monkeypatch MYSQL_DATABASE 指向测试库时新建连接同样落在该库，
+# DATABASE() 反而更如实（db_utils 版以连接事实为准）。
+#
+# _column_exists 刻意**不收敛**（R6-4 豁免项）：语义与 db_utils.column_exists
+# 同（information_schema 探测、让 ALTER 幂等），但本模块版本是
+# ``(MYSQL_DATABASE, table, column)`` 三参绑定 ＋ TABLE_SCHEMA = %s 的查询
+# 形态 —— tests/test_schema.py 的迁移契约桩（V2Cursor.fetchone 读
+# params[1]/params[2]）钉死了该形态，db_utils 版（两参绑定 ＋
+# TABLE_SCHEMA = DATABASE()，被 tests/test_fxb_fixes.py 钉死）无法直接
+# 替换。豁免原因是**查询形态被既有契约测试钉死**，非依赖环（db_utils
+# 零 src 内部依赖已验证）。两实现语义等价，改此处时同步看 db_utils。
+
+
 def _column_exists(cursor, table: str, column: str) -> bool:
-    """表上是否已有该列（用于让 ALTER 幂等）。"""
+    """表上是否已有该列（用于让 ALTER 幂等；与 db_utils.column_exists 同义，
+    查询形态豁免收敛的原因见上方 R6-4 说明块）。"""
     cursor.execute(
         """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s""",
         (MYSQL_DATABASE, table, column),
-    )
-    return int(cursor.fetchone()["n"] or 0) > 0
-
-
-def _table_exists(cursor, table: str) -> bool:
-    """表是否存在。"""
-    cursor.execute(
-        """SELECT COUNT(*) AS n FROM information_schema.TABLES
-           WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s""",
-        (MYSQL_DATABASE, table),
     )
     return int(cursor.fetchone()["n"] or 0) > 0
 
@@ -1554,7 +1600,36 @@ def prune_empty_clusters() -> int:
         return 0
 
 
-def clear_all_word_data() -> Dict[str, int]:
+# 会以 FK（fk_sub_sense / fk_adj_sense → oald_senses.id）挡住清词表的标注流
+# 两表（assignments 只引用 users，不在此列）。RV2-1 前置探测的对象。
+_ANNOTATION_BLOCKING_TABLES = ("annotation_submissions", "adjudications")
+
+
+def _annotation_rows_blocking(cursor) -> List[Any]:
+    """RV2-1：探测会以 FK 1451 挡住清词表的标注流数据（表名, 行数）列表。
+
+    探测只对真实 DB-API 游标生效：哑游标（单测桩，无 description 属性）或
+    探测查询本身失败（flow 表未建、权限不足等）一律**跳过前置闸**返回空 ——
+    此时不拦，放行到删除路径；若标注行真的在，DELETE 会撞 MySQL 1451，
+    由 clear_all_word_data 的后置闸显式报错（绝不退化为假成功）。
+    """
+    blocked: List[Any] = []
+    try:
+        if not hasattr(cursor, "description"):
+            # 单测哑游标等无元数据能力的游标：前置闸跳过（后置 1451 闸兜底）
+            return blocked
+        for table in _ANNOTATION_BLOCKING_TABLES:
+            cursor.execute(f"SELECT COUNT(*) AS n FROM {table}")
+            row = cursor.fetchone() or {}
+            n = int(row.get("n") or 0)
+            if n:
+                blocked.append((table, n))
+    except Exception as e:  # noqa: BLE001  探测失败不拦清库，只留调试日志
+        logger.debug(f"clear_all_word_data 标注行前置探测跳过: {e}")
+    return blocked
+
+
+def clear_all_word_data(force: bool = False) -> Dict[str, int]:
     """
     清空词表相关数据（定义 / 义位 / 关系 / 簇），**保留 feedbacks 与 usage_logs**。
 
@@ -1565,13 +1640,43 @@ def clear_all_word_data() -> Dict[str, int]:
     为什么保留 feedbacks / usage_logs：它们是**用户产生的**，不是派生数据，
     而且以 verb 字符串而非外键关联，删词表不该连带删掉它们。
 
+    RV2-1 标注数据闸门（P2）：annotation_submissions / adjudications 的
+    sense_id 外键（fk_sub_sense / fk_adj_sense）指向 oald_senses(id) 且是
+    NO ACTION —— 标注行存在时 ``DELETE FROM oald_senses`` 必撞 MySQL 1451，
+    旧版在这里静默回滚却照常返回各表「已删行数」（虚假成功）。现分两层：
+
+      * 前置闸（删除前探测）：标注流两表有行且 ``force=False`` → 显式抛
+        RuntimeError，报错含各表行数，要求显式 ``force=True`` 放行；
+      * 后置闸（1451 兜底）：探测与删除之间窗口内新到的标注行、force=True
+        但标注行仍在、或哑游标跳过前置闸等情形，DELETE 撞 1451 时改为抛
+        RuntimeError（事务已整体回滚，未删除任何行）—— 不再吞掉回滚报假账。
+
+    Args:
+        force: 显式放行前置探测闸。注意 force 只越过探测，**不改物理约束**
+            —— 标注行仍在时删除仍会失败（后置闸如实报错）。无标注数据时
+            传不传 force 行为完全一致（默认路径行为不变）。
+
     Returns:
-        各表删除行数
+        各表删除行数；执行失败（回滚）时返回 {}（不再返回回滚前的假计数）。
+
+    Raises:
+        RuntimeError: 前置闸拒绝（标注数据存在且未 force），或删除撞
+            MySQL 1451（标注行仍在，事务已回滚）。
     """
     removed: Dict[str, int] = {}
     try:
         # 整体清库必须原子：多张表要么一起清掉，要么都不动
         with get_db_cursor(autocommit=False) as cursor:
+            blocked = _annotation_rows_blocking(cursor)
+            if blocked and not force:
+                detail = ", ".join(f"{table}={n} 行" for table, n in blocked)
+                raise RuntimeError(
+                    f"clear_all_word_data 拒绝执行：标注流数据存在（{detail}），"
+                    "其 sense_id 外键指向 oald_senses(id)（NO ACTION），"
+                    "直接清词表会撞 MySQL 1451 导致整体回滚。请先归档/清理标注"
+                    "数据；确认要放行时显式传 force=True（标注行仍在时删除仍会"
+                    "失败，force 只越过前置探测闸）。"
+                )
             for table in ("word_relations", "oald_senses", "word_senses"):
                 cursor.execute(f"SELECT COUNT(*) AS n FROM {table}")
                 removed[table] = int(cursor.fetchone()["n"] or 0)
@@ -1584,10 +1689,27 @@ def clear_all_word_data() -> Dict[str, int]:
             cursor.execute("SELECT COUNT(*) AS n FROM word_clusters")
             removed["word_clusters"] = int(cursor.fetchone()["n"] or 0)
             cursor.execute("DELETE FROM word_clusters")
+    except RuntimeError:
+        # RV2-1 闸门拒绝：原样上抛 —— 不得落进下面的吞错路径返回假成功
+        raise
     except pymysql.Error as e:
+        if e.args and e.args[0] == 1451:
+            # 后置闸：FK 拒删（典型：探测与删除窗口内新到的标注行 / force
+            # 放行但标注行仍在）。事务已回滚，一行都没删成 —— 显式报错
+            # 而不是旧版的「记日志 + 返回假计数」。
+            logger.error(f"clear_all_word_data 撞 FK 1451（已回滚）: {e}")
+            blocking = " / ".join(_ANNOTATION_BLOCKING_TABLES)
+            raise RuntimeError(
+                "clear_all_word_data 失败：MySQL 1451（外键约束阻止删除）——"
+                "标注流数据（annotation_submissions / adjudications 的 "
+                "sense_id → oald_senses.id）引用了待清空的义项表，事务已整体"
+                f"回滚，未删除任何行。请先清理标注表（{blocking}）后重试。"
+            ) from e
         logger.error(f"Failed to clear word data: {e}")
+        removed = {}  # 回滚后未删除任何行：不返回回滚前的假计数
     except Exception as e:
         logger.error(f"Unexpected error clearing word data: {e}")
+        removed = {}  # 同上：回滚后如实返回空
     return removed
 
 

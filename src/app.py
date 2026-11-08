@@ -57,6 +57,9 @@ from src.users_db import (
 )
 # 词形还原数据层（与上述导入同区，沿用本文件 sys.path 前置的既定导入模式）
 from src.wordforms_db import ensure_wordforms_tables, resolve_form  # noqa: E402
+# R6-4：_current_user 单一实现点在 src/db_utils.py（别名导入，调用点零变化；
+# 行为与旧本地副本逐字节一致 —— fail-closed，user 非 dict 即 None）。
+from src.db_utils import current_user as _current_user  # noqa: E402
 from src.annotation_flow import (
     ensure_flow_tables, submit_annotation, get_my_submissions,
     get_submissions_for_sense, detect_disagreements, save_adjudication,
@@ -128,7 +131,10 @@ else:
         else:
             st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
     except Exception as e:
-        st.warning(f"⚠️ 数据库初始化失败，使用离线模式：{e}")
+        # RV4-6：异常细节（可能含 MySQL 主机/账号/库名等 DB 信息）只进服务端
+        # 日志，页面向用户展示不含插值细节的通用文案。
+        logger.error(f"数据库初始化失败，转入离线模式: {e}")
+        st.warning("⚠️ 数据库初始化失败，已转入离线模式（详情见服务端日志）")
     st.session_state["_init_db_done"] = True
     st.session_state["_db_available"] = DB_AVAILABLE
 
@@ -155,10 +161,8 @@ if DB_AVAILABLE and not st.session_state.get("_wordforms_table_ready"):
 # ============================================
 # 登录态与页面权限（多人标注系统集成；规范 §1 角色语义 / §6-4 入口判定）
 # ============================================
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（规范 §6-5：会话只存 st.session_state["user"]）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
+# _current_user 已收敛至 src/db_utils.current_user（R6-4 单一实现点，
+# 文件头部别名导入）—— 本模块不再留本地副本。
 
 
 def require_login() -> Optional[Dict[str, Any]]:
@@ -358,7 +362,7 @@ def _visible_page_keys(user: Optional[Dict[str, Any]]) -> List[str]:
 
     批次 3 六角色口径：页面允许集读 _PAGE_ACCESS_SIX（值=六角色名），用户
     有效角色集见 _effective_six_roles（legacy role ∪ session roles），页面
-    允许集命中任一角色即可见。基础六页与帮助中心不在表中 → 所有人可见
+    允许集命中任一角色即可见。基础五页与帮助中心不在表中 → 所有人可见
     （未授权访问由各页渲染入口的 role gate 拦下）；未登录或角色不符的键
     不出现在侧边栏 radio 里。
     签名说明：旧版按 role 字符串过滤，本轮改为接收会话 user dict（roles
@@ -1767,7 +1771,7 @@ def render_sidebar():
     # ---- 登录区（侧边栏顶部、页面切换之前；规范 §5 UI 集成契约）----
     _render_login_section()
 
-    # 页面切换：基础六页 + 受保护页/区级页（按六角色可见性过滤，批次 3 ②）。
+    # 页面切换：基础五页 + 帮助中心 + 受保护页/区级页（按六角色可见性过滤，批次 3 ②）。
     # 选项仍来自 page_guides.PAGE_KEYS（页面 ↔ 使用说明一一对应的单一事实来源），
     # 只是按 _PAGE_ACCESS_SIX 过滤子集 —— 不硬编码页面清单。
     # 残留页（登出/换角色后当前页不在可见集合）回搜索页，避免 radio 的
@@ -1865,6 +1869,9 @@ def render_sidebar():
     # R5-3（P1）按需导出：此前每轮 rerun 都全表 SELECT * FROM feedbacks 只为
     # 填 download_button 的 data。现在默认只渲染「生成导出」按钮 + 行数 caption
     # （轻量 COUNT），点击后才真正取数并生成 CSV（导出功能保留，成本移到点击时）。
+    # R7-14 权限闸门：反馈数据（评分＋文字建议）属内部研究数据，未登录灰置
+    # 导出按钮并注明原因（与其他导出口径一致：权限不足灰置＋原因；数据闸门
+    # 保留离线/取数失败/空数据三支分流）。
     if not DB_AVAILABLE:
         st.sidebar.caption("数据库离线，反馈导出暂不可用。")
     else:
@@ -1873,8 +1880,10 @@ def render_sidebar():
             st.sidebar.caption("反馈行数读取失败（数据库异常），导出暂不可用。")
         else:
             st.sidebar.caption(f"当前反馈 {_fb_count} 条。")
+            _export_allowed = isinstance(st.session_state.get("user"), dict)
             if st.sidebar.button("生成并导出反馈 (CSV)",
                                  key="sidebar_feedback_export",
+                                 disabled=not _export_allowed,
                                  use_container_width=True):
                 try:
                     feedback_df = pd.DataFrame(get_feedback_data())
@@ -1898,6 +1907,10 @@ def render_sidebar():
                         key="sidebar_feedback_download",
                         use_container_width=True
                     )
+            if not _export_allowed:
+                st.sidebar.caption(
+                    "🔒 反馈数据导出需登录（内部研究数据）—— 请先在上方登录后使用。"
+                )
 
 # ============================================
 # 主区域组件

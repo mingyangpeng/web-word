@@ -13,7 +13,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    # RV9-14：单机原型无主从复制，binlog 没有消费者 —— 却占了 datadir 大头
+    # （7.3G/7.7G）且每日约 1G churn。--skip-log-bin 一行关掉，datadir 净重；
+    # 未来若引入主从/按时间点恢复，删掉这一行即可。
     command: >
+      --skip-log-bin
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
       --default-authentication-plugin=mysql_native_password
@@ -63,6 +67,15 @@ services:
       # （RV11 P2-2）。Linux 宿主机首次 up 前先 mkdir -p data/backups，
       # 避免 Docker 代建 root 属主目录导致宿主 cron 写不进。
       - ./data/backups:/app/data/backups
+    healthcheck:
+      # RV9-12：僵死但进程不退的实例永不触发 restart —— 用 Streamlit 官方
+      # 健康端点验明真身（200 = 存活）。镜像 python:3.11-slim 没有 curl，
+      # 用 python 标准库 urllib 实现，不引新依赖。
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s  # 首次启动要灌全量数据（约 2-3 分钟），别在灌库中途误杀
     depends_on:
       mysql:
         condition: service_healthy

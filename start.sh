@@ -35,7 +35,14 @@ if [ -z "$(ls -A "$DATADIR" 2>/dev/null)" ]; then
   exit 1
 fi
 
-reassemble_dictionary_db || true
+# RV9-6：分卷重组失败（sha256 不符/合并中断）= 词典数据不可信，不允许带病上线
+reassemble_dictionary_db || {
+  echo "  修复: git checkout HEAD -- 'data/dictionary.db.part*' 重取分卷后重跑"
+  exit 1
+}
 start_mysqld || { echo "  仍失败可运行 ./repair.sh --fix 诊断修复"; exit 1; }
 grant_if_needed || exit 1
+# RV9-1：数据已灌探测 —— 初始化后中断（系统表在、基线表全空）会让网页以
+# 零数据上线；这里拦下并给 env_doctor / repair 指引。
+check_data_loaded || exit 1
 start_streamlit

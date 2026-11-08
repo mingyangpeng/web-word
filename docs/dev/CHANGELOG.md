@@ -7,6 +7,47 @@
 > 早期版本（2026-05-30 之前）没有独立版本号，条目按实际完成时间归入 v1.0。
 
 
+## 2026-11-08 · 批次 13 系统性修复：性能 N+1／启动链加固／中文学术文案定名
+
+三路并行（FX-13 性能 / FX-14 启动链 / FX-15 文档定名）＋台账大核销与成片文档刷新（FX-16）。
+findings 台账（`docs/dev/reports/findings_backlog.md`）同步核销陈账并新增
+「规范×实现对账（FX-15 核对，批次 13）」一节。
+
+- **性能 N+1（FX-13）**：装配/义项脊柱/版本历史/模板逐义项四处 N+1 收敛为批量查询
+  （查询数 3→1 / 4→1 / 9→3，实测证据钉进新增的 `tests/test_fx13_fixes.py`）；核验
+  init_database 会话级单例守卫、get_full_word_graph/get_hot_verbs 缓存、侧边栏按需
+  导出、_list_sense_options 去 LIMIT、信度复合索引与降级六口径（R4-2~7）全部在码
+- **启动链（FX-14，RV-9 全 19 项）**：start.sh 零数据上线拦截、外部 MySQL 实例防误写
+  （`ALLOW_EXTERNAL_MYSQL`）、stop 有界等待、reassemble 失败显式报错、
+  `repair.sh --force-reload`、连接参数归一 `DB_*`、web 容器 healthcheck（python urllib
+  探 `_stcore/health`）、MySQL `--skip-log-bin`（binlog 关闭，datadir 不再日增约 1G）、
+  P3 十三项同型自查修复（env_doctor 自带 .env 加载、.env.local 叠加等）；顺带修
+  entrypoint.sh 全角括号变量 bug。`./start doctor` 现 21/23——2 红为真缺口如实上报
+  （zh_dict 部分灌入、.env 未配 AI key——AI 走「模型供应商」页的 DB 路由）
+- **文案定名与文档成片刷新（FX-15＋FX-16）**：page_guides 十七页/996 条口径、侧边栏
+  CSV 登录灰置闸＋原因 caption、reliability 导出原因 caption、范畴页簇列全字符串
+  （ArrowInvalid 修复）、GUIDE 对母本 collab 7 处＋dict_admin 5 处、「词簇/重心得分」
+  定名全库 0 残留；README/ARCHITECTURE/DEPLOYMENT/CHANGELOG 数字与功能声明以
+  当前实现为准核对刷新；母本 6.10 与 4.6 矛盾统一、spec §8/§9 资源登记归属对齐母本
+
+## 2026-11-08 · 批次 11/12 期评审修复（补记，概述）
+
+批次 11/12 期间并行推进的四块工作，此前未入账，补记如下（概述，不逐条）：
+
+- **多供应商 LLM**（3581db2 / 42fadd0）：`llm_providers_db` 数据层＋引擎改造
+  （DB 优先路由＋Anthropic 兼容客户端）＋「🤖 模型供应商」管理页面
+  （Base URL / API 格式 / API Key / 模型列表，两步激活）
+- **部署打包（RV-11，FX-11）**：打包脚本排除 root 密码缓存文件；Dockerfile 非 root
+  （uid 1000）＋基础镜像三处 FROM digest 固定（sha256:07d48240…）；compose env_file
+  挂 `.env`＋`.env.local`（Compose v2.24+）；种子改由镜像内幂等补种；备份目录
+  bind mount；备份脚本依次读 .env.local→.env
+- **FX-A/B/C 三路合并**（b421018；FX8 前置 f1e2c81）：RV-1 CSS/WCAG 13 项（对比度/
+  暗色主题/字号层级/移动端溢出）、RV-3 签名×行为一致性 8 项、RV-5 中文学术文案
+  定名 15 项（「词簇」「重心得分」等术语统一）
+- **RV-10/11/12 三镜头 33 findings 全修**（5c0c95f）：测试闸门＋CI 真 MySQL 服务、
+  部署链安全（打包泄露/凭据/属主）、会话态（`src/ui_kit.py` flash 队列替代
+  success+rerun 23 处、widget 键回调化防 StreamlitAPIException）
+
 ## 2026-11-08 · 批次 13：FX10——R6 质量收敛残留＋R7 文档一致性残留
 
 - R6-4 残留收敛：export_center._column_exists 直引 db_utils；export_center/
@@ -121,11 +162,11 @@
 
 ## 2026-09 — 图谱节点/关系详情：右侧信息面板、两张可拖动浮层卡片
 
-点节点或点边，现在能看到的不再只是一行「语义簇 + 近义边数」。
+点节点或点边，现在能看到的不再只是一行「词簇 + 近义边数」。
 
 **右侧面板 + 独立浮层卡片，两处同源**
 
-选中节点后右侧信息面板给出音标 / 词性 / 语义簇 / 释义 / 意象图式等概览，并有
+选中节点后右侧信息面板给出音标 / 词性 / 词簇 / 释义 / 意象图式等概览，并有
 「查看详情」入口弹出**独立的浮层小卡片**：可拖动、可关闭、可单独摆在一处慢慢看，
 内容与面板保持同步。卡片含词条名、音标、词性、释义、意象与标注、五元语义分解、
 义位明细（逐个义位的中英文释义 / 句式 / 例句 / 近义反义）、关联节点、来源与复核、
@@ -303,7 +344,7 @@ HTML 无法跨调用闭合）。这个缺陷从 2026-05 的 phase-02 就存在�
 [graphify](https://github.com/Graphify-Labs/graphify) 产出的 `graph.html`。
 
 - **新增图谱页**（侧边栏顶部切换）：全库 155 词 / 2143 边一张图。支持滚轮缩放、
-  拖拽平移、节点搜索、点击查看节点信息与全部近义词、按语义簇勾选过滤、高亮邻居、
+  拖拽平移、节点搜索、点击查看节点信息与全部近义词、按词簇勾选过滤、高亮邻居、
   实时统计当前可见节点/关系/簇数。
 - **新增 `src/graph_export.py`** + `get_full_word_graph()`：图谱数据同时具备
   「单簇」与「全库」两种粒度，前者给结果页的 SVG，后者给图谱页。
