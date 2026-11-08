@@ -86,7 +86,7 @@
 
 ## RV-4 安全深化（8 findings：P1×1 P2×2 P3×5）
 
-- [ ] RV4-1 P1 🔴 .env 真实 API key/MySQL 口令入库并推 GitHub——**轮换凭据＋.env 改占位**（今天）
+- [x] RV4-1 P1 ~~.env 真实 API key 入库~~ ✅ **用户已确认旧 key 早已在智谱后台作废**（2026-11-08）；.env 旧值已清空
 - [ ] RV4-2 P2 _sha256_file 只捕 OSError 不捕 ValueError（NUL byte 崩页出 traceback）——扩为 (OSError, ValueError)
 - [ ] RV4-3 P2 媒体路径登记无 base 目录限定——resolve 后前缀校验限 data/media＋拒 symlink
 - [ ] RV4-4 P3 showErrorDetails=true 生产改 false（配合日志）
