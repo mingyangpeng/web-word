@@ -94,3 +94,12 @@
 - [ ] RV4-6 P3 st.warning 插值 {e} 可能含 DB 信息——受控分支极窄（P3）
 - [ ] RV4-7 P3 static 目录图谱 HTML 绕登录门——数据敏感度低，公网部署时处理
 - [ ] RV4-8 P3 requirements 无锁文件＋requests>=2.31 下限——CI 加 pip-audit＋requests>=2.32.4
+
+## RV-8 环境变量完整性（6 findings：P1×1 P2×2 P3×3）
+
+- [ ] RV8-1 P1 🔴 DEPLOYMENT.md 指示写 .env.local 但全仓库无代码读取 .env.local——load_env 只 source .env；compose env_file 也只挂 .env。按清单操作=空操作。修：load_env 追加 .env.local 或改文档
+- [ ] RV8-2 P2 .env.example 缺 9 个变量（LLM_PROVIDER/OPENAI_*/DEEPSEEK_*/LLM_CONNECT_TIMEOUT/LLM_DB_PROVIDER_TTL/MYSQL_TIME_ZONE/RELIABILITY_FORCE_PURE）
+- [ ] RV8-3 P2 lib_deploy.sh load_env 声称「已 export 优先」与 bash 语义相反（set -a; source 无条件覆盖）
+- [ ] RV8-4 P3 start_streamlit 硬编码 MYSQL_HOST=127.0.0.1 静默覆盖 .env——远程库用户备份对象与应用写入对象不一致
+- [ ] RV8-5 P3 README 指向 .env.example 不存在的 LLM_MODEL/ZHIPU_API_KEY 行
+- [ ] RV8-6 P3 config/README 与 .env.example 漏 MYSQL_TIME_ZONE/MYSQL_CHARSET/MYSQL_COLLATION
