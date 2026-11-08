@@ -60,3 +60,10 @@
 - [ ] RV5-4 P2 users_admin/page_guides 口令→密码 统一
 - [ ] RV5-5 P2 词义簇/语义簇/词簇 三写法定名「词簇」
 - [ ] RV5-6~15 P3 义项/义位/词条/词目定则＋审稿死术语＋滑杆/滑块＋caption/图注＋UPGMA/MDS/medoid 首现中文全称＋图式得分四写定名「重心得分」＋审定/审核/审校/仲裁/裁决五概念速查表＋词类歧义＋裸表名空态补指引＋127/35 差额说明＋平局提示对齐＋母本「编撰」错字＋角色门文案补全＋四卡→六卡同步
+
+## RV-2 Schema 迁移完整性（4 findings：P2×1 P3×3）
+
+- [ ] RV2-1 P2 clear_all_word_data 标注存在时 FK 1451 静默回滚但上报虚假成功——先探测 flow 表行，有则显式报错/要求 --force
+- [ ] RV2-2 P3 users FK 删除纪律两种口径（CASCADE vs NO ACTION）——规范修订或入口前置探测
+- [ ] RV2-3 P3 留痕列 NULL 语义三种口径（INT NULL/VARCHAR NULL/VARCHAR NOT NULL ''）——定一条规范
+- [ ] RV2-4 P3 CREATE_TABLES_SQL 缺 12+ ALTER-only 列——CREATE 头部注释维护 ALTER-only 清单
