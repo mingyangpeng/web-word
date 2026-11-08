@@ -490,8 +490,9 @@ class TestRealData:
         assert ids_pack == ids_code
 
     def test_unknown_category_empty(self):
+        # 对照臂：未知类别返回空，已知类别必须非空（RV-10 P3-1 删恒真 `or True`）
         assert ss.search_similar_senses({"M1a": 1}, "nosuchcategory", "en") == []
-        assert ss.search_similar_senses({"M1a": 1}, "motion", "en") != [] or True
+        assert ss.search_similar_senses({"M1a": 1}, "motion", "en") != []
 
 
 # ============================================

@@ -21,6 +21,35 @@ if PROJECT_ROOT not in sys.path:
 # 环境变量优先级覆盖它，否则页面渲染会退化成"数据库不可用"分支。
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
+import pymysql  # noqa: E402
+
+import src.mysql_db as _db  # noqa: E402
+
+
+def _mysql_reachable() -> bool:
+    """连通探针（RV-10 P1-2）：只建连接不建库，对齐 test_fx3_perf._db_available。
+
+    页面渲染大多有「数据库离线」降级分支可无库跑；只有断言具体业务数据
+    （用户表单、分歧仲裁面板等需真实表结构/数据）的用例才需要真库。
+    """
+    try:
+        conn = pymysql.connect(
+            host=_db.MYSQL_HOST, port=_db.MYSQL_PORT, user=_db.MYSQL_USER,
+            password=_db.MYSQL_PASSWORD, charset=_db.MYSQL_CHARSET,
+            connect_timeout=3,
+        )
+        conn.close()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+HAS_MYSQL = _mysql_reachable()
+
+# 数据依赖型用例：断言的元素只在库可用时渲染（离线分支渲染的是降级提示）
+requires_mysql = pytest.mark.skipif(
+    not HAS_MYSQL, reason="MySQL 不可用，跳过依赖真实库数据的页面渲染用例")
+
 APP = os.path.join(PROJECT_ROOT, "src", "app.py")
 TIMEOUT = 60
 
@@ -59,6 +88,7 @@ def test_search_page_renders():
     assert "动词释义优化器" in texts
 
 
+@requires_mysql
 def test_corpus_page_renders_with_editor():
     """语料数据集页：总表 + 可编辑搭配明细（PS 口径回写入口）。"""
     at = _run_page("corpus")
@@ -69,6 +99,7 @@ def test_corpus_page_renders_with_editor():
     assert "PS 口径" in texts
 
 
+@requires_mysql
 def test_annotate_page_renders_with_form():
     """标注平台页（admin 快速通道）：进度指标 + 五维表单（直写权威层）。"""
     at = _run_page("annotate", user=_ADMIN_USER)
@@ -124,6 +155,7 @@ def test_annotate_page_annotator_gets_submission_flow():
     assert not any("图式五维标注" in str(m.value) for m in at.markdown)
 
 
+@requires_mysql
 def test_annotate_page_reviewer_gets_panel():
     """标注页按角色分派：reviewer 看到提交流 + 分歧清单与仲裁面板。"""
     at = _run_page("annotate", user=_REVIEWER_USER)
@@ -149,6 +181,7 @@ def test_submission_page_renders_for_annotator():
     assert "分歧清单与仲裁" not in texts
 
 
+@requires_mysql
 def test_submission_page_reviewer_gets_panel():
     """「标注提交」页（reviewer）：额外渲染分歧清单与仲裁面板。"""
     at = _run_page("submission", user=_REVIEWER_USER)

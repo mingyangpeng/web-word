@@ -381,10 +381,14 @@ def test_api_formats_sync_with_data_layer():
         assert mp.API_FORMATS == ("openai", "anthropic")
 
 
-def test_data_layer_missing_fail_closed():
-    """数据层未交付（None）时四个调用点一律 fail-closed，不抛不崩。"""
-    if mp.llm_providers_db is not None:
-        pytest.skip("MP-D 数据层已交付，缺层形态不适用")
+def test_data_layer_missing_fail_closed(monkeypatch):
+    """数据层缺位（None）时四个调用点一律 fail-closed，不抛不崩。
+
+    RV-10 P3-4：数据层已交付后原 skip 条件恒真成了僵尸用例 —— 现在
+    monkeypatch mp.llm_providers_db = None 强制注入缺层形态真跑断言
+    （四个调用点在 None 分支都于触网/触库之前 return，无需 stub request 层）。
+    """
+    monkeypatch.setattr(mp, "llm_providers_db", None)
     assert mp._list_providers() == []
     assert mp._save_provider(0, "x", "https://a", "openai", "k",
                              ["m"], True, False) == (

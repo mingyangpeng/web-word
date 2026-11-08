@@ -43,6 +43,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import streamlit as st
 
 from src import media_db
+from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
 from src.db_utils import current_user as _current_user
 from src.design_system import (
@@ -520,7 +521,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 sort_order=int(order), created_by=_as_int(me.get("id")),
             )
             if eid:
-                st.success(f"已新增例证 #{eid}（状态=候选）。")
+                ui_kit.flash(f"已新增例证 #{eid}（状态=候选）。")
                 st.rerun()
             else:
                 st.error(f"新增失败：例证文本为空/超长（≤{MAX_CONTENT_LEN} 字符）/"
@@ -569,7 +570,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                             eid, content=new_content, source=new_source,
                             caption=new_caption, sort_order=int(new_order),
                         ):
-                            st.success(f"例证 #{eid} 已更新。")
+                            ui_kit.flash(f"例证 #{eid} 已更新。")
                             st.rerun()
                         else:
                             st.error(f"更新失败：文本为空/超长（≤{MAX_CONTENT_LEN} "
@@ -584,7 +585,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                              "（乐观并发守卫）。",
                     ):
                         if advance_example_status(eid, cur_status, nxt_status):
-                            st.success(f"例证 #{eid} 已流转为「{nxt_status}」。")
+                            ui_kit.flash(f"例证 #{eid} 已流转为「{nxt_status}」。")
                             st.rerun()
                         else:
                             st.error("流转失败：状态已被他人先行流转/行不存在/"
@@ -598,7 +599,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                          "该例证的全部媒体绑定（unbind_for_anchor），不留孤儿绑定。",
                 ):
                     if remove_example(eid):
-                        st.success(f"例证 #{eid} 已删除。")
+                        ui_kit.flash(f"例证 #{eid} 已删除。")
                         st.rerun()
                     else:
                         st.error("删除失败：行不存在/数据库不可用。")
@@ -650,8 +651,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                     if bind_example_media(
                         eid, int(asset_id), media_caption,
                     ):
-                        st.success(f"资产 #{int(asset_id)} 已绑为例证 #{eid} 的"
-                                   "媒体例证（绑定状态=候选）。")
+                        ui_kit.flash(f"资产 #{int(asset_id)} 已绑为例证 #{eid} 的"
+                                     "媒体例证（绑定状态=候选）。")
                         st.rerun()
                     else:
                         st.error("绑定失败：例证不存在/资产不存在（须先在媒体库"
@@ -749,7 +750,7 @@ def _render_translations_tab(me: Dict[str, Any]) -> None:
         sense_ref, state, equivalent=equivalent, note=note,
         paraphrase=paraphrase, finalized_by=_as_int(me.get("id")),
     ):
-        st.success(f"义位 #{sense_id} 对译已定稿（{STATE_LABELS.get(state, state)}）。")
+        ui_kit.flash(f"义位 #{sense_id} 对译已定稿（{STATE_LABELS.get(state, state)}）。")
         st.rerun()
     else:
         st.error("定稿失败：参数非法/数据库不可用（lexical_db 已记日志）。")

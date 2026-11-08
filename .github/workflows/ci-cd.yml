@@ -9,6 +9,27 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # RV-10 P2-1：tests/ 集成用例此前在 CI 因无 MySQL 永不执行（按约定 skip）。
+    # 补 mysql:8 service 让它们真跑。
+    #
+    # 账号口径：各模块测试 fixture 需要自建/DROP 各自的 *_test 库
+    # （scripts/grant_local_mysql.sql 是按 web_word_user 逐库授权的本地脚本，
+    # CI 里不适用），这里直接用 root（MYSQL_ROOT_PASSWORD），全局权限天然覆盖。
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: web_word_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
@@ -18,7 +39,16 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
+        # MySQL 8 默认 caching_sha2_password 认证，PyMySQL 连接需要 cryptography
+        pip install cryptography
     - name: Run tests
+      env:
+        # 键名与 src/mysql_db.py _setting() 读取一致（环境变量优先于 config.yaml）
+        MYSQL_HOST: 127.0.0.1
+        MYSQL_PORT: 3306
+        MYSQL_DATABASE: web_word_db
+        MYSQL_USER: root
+        MYSQL_PASSWORD: root
       run: pytest -v
     - name: Run flake8
       run: flake8 src/

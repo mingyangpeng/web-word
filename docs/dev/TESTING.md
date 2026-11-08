@@ -11,25 +11,26 @@ pip install -r requirements.txt
 只装测试所需的最小集合：
 
 ```bash
-pip install pytest pytest-cov zhipuai pymysql pyyaml pandas streamlit
+pip install pytest zhipuai pymysql pyyaml pandas streamlit  # 看覆盖率再补装 pytest-cov
 ```
 
 > `streamlit` 是必需的：界面测试用 `streamlit.testing.v1.AppTest` 渲染真实应用。
 
 ## 运行测试
 
-`pytest.ini` 已配置 `testpaths = tests`，并且默认带上覆盖率参数
-（`--cov=src --cov-report=html --cov-report=term`），所以直接跑 `pytest` 即可。
+`pytest.ini` 已配置 `testpaths = tests`；覆盖率**默认关闭**
+（`pytest.ini` 的 `addopts` 只有 `-v`），需要时用 `pytest --cov=src`
+手动开启（pytest-cov 为可选依赖，已列在 requirements.txt）。
 
 ```bash
-# 全部测试（默认含覆盖率）
+# 全部测试
 pytest
 
 # 详细输出
 pytest -v
 
-# 跳过覆盖率，跑得更快（推荐日常迭代用）
-python -m pytest -q -p no:cacheprovider --no-cov
+# 查看覆盖率（手动开启，生成 htmlcov/）
+pytest --cov=src
 
 # 只跑某个文件 / 某个用例
 pytest tests/test_security.py
@@ -38,8 +39,8 @@ pytest tests/test_phase5.py -k degradation
 
 ## 覆盖率报告
 
-`pytest` 结束后会在终端打印覆盖率摘要，同时生成 HTML 报告：打开 `htmlcov/index.html`
-即可查看逐行覆盖情况。
+带 `--cov=src` 运行后，终端会打印覆盖率摘要，同时生成 HTML 报告：打开
+`htmlcov/index.html` 即可查看逐行覆盖情况。
 
 ## 测试隔离约定
 

@@ -513,10 +513,13 @@ class TestGraphExport:
         monkeypatch.setattr(ge, "STATIC_DIR", str(tmp_path))
         stale = tmp_path / "word_graph_deadbeef0000.html"
         stale.write_text("old", encoding="utf-8")
+        # vis-network 库文件是预先放好的一次性资产（ensure_graph_html 不负责拷贝），
+        # prune 只应清理旧指纹的 word_graph_*.html，不能波及它
+        (tmp_path / ge.VIS_LIB).write_text("// vis-network lib", encoding="utf-8")
 
         ge.ensure_graph_html(self.SAMPLE)
         assert not stale.exists(), "旧指纹文件应被清理，避免 static/ 越积越多"
-        assert ge.VIS_LIB in os.listdir(tmp_path) or True  # 库文件本身不应被误删
+        assert ge.VIS_LIB in os.listdir(tmp_path), "库文件本身不应被 prune 误删"
 
     def test_esc_js_handles_quotes_and_newlines(self):
         """graphify #1838 是节点名里的引号打穿属性导致的存储型 XSS。"""

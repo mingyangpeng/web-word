@@ -32,6 +32,7 @@ from src.writing_pages import render_writing_page
 from src.lexical_pages import render_lexical_page
 from src.model_settings_pages import render_model_settings_page
 from src.collab_pages import pending_inbox_count, render_collab_page
+from src import ui_kit  # RV12-2：一次性提示统一收口（main() 每轮渲染弹出）
 from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
 from src.llm_api import get_definition, get_fallback_definition
@@ -178,10 +179,13 @@ def require_login() -> Optional[Dict[str, Any]]:
 # 测试或工具直接注入 session_state["user"] 的会话无标记，行为与旧版一致。
 _USER_DB_BACKED_KEY = "_user_db_backed"
 
-# 登出白名单（R1-6）：退出登录时**保留**的会话键 —— 只留三类基建键：
+# 登出白名单（R1-6）：退出登录时**保留**的会话键 —— 只留四类基建键：
 #   * 幂等建表就绪旗标（_user_tables_ready / _wordforms_table_ready：
 #     每会话只跑一次的启动优化，与登录态无关，清了只是下轮重跑一次）；
-#   * 侧边栏折叠偏好（sidebar_collapsed：UI 偏好，非用户数据）。
+#   * 侧边栏折叠偏好（sidebar_collapsed：UI 偏好，非用户数据）；
+#   * 数据库初始化单例旗标（_init_db_done / _db_available：R5-1 会话级
+#     守卫，init_database() 是全量 DDL —— RV12-4 补入，此前漏了这两个键，
+#     每次登出都会把旗标清掉、下一轮重付一遍几十条 DDL 往返）。
 # 其余键全部 pop（遍历 keys() 快照）—— 业务键（verb_result / show_result /
 # card_expanded / _display_def_cache / page / hot_filter 等）与登录态键
 # （user / _user_db_backed）登出即清：上一用户的查询结果、卡片展开态、
@@ -190,6 +194,8 @@ _LOGOUT_KEEP_KEYS = frozenset({
     "_user_tables_ready",
     "_wordforms_table_ready",
     "sidebar_collapsed",
+    "_init_db_done",
+    "_db_available",
 })
 
 # 一次性登出提示旗标（R1-6 全清配套；_logout 落、main() pop 即消费）
@@ -3321,7 +3327,8 @@ def render_reviewer_panel() -> None:
 # 主函数
 # ============================================
 def main():
-    """主函数：按 session_state["page"] 分派到各页（十六页：十二功能页 +
+    """主函数：按 session_state["page"] 分派到各页（十七页（16 显式分支 +
+    search 兜底）：十二功能页 +
     词典管理/AI 协作/撰写审校/例证对译四工作区页 + 帮助中心；规范 §5 UI 集成契约；
     批次 8「🏃‍♀️ 范畴深挖」并入「📊 语义分析」后 15→14，批次 9 增 writing/lexical）。
 
@@ -3345,6 +3352,10 @@ def main():
     # 已清空须重新登录（与旧版「请先登录」提示同一用户可见语义）。
     if st.session_state.pop(_LOGOUT_FLASH_KEY, None):
         st.warning("已退出登录：会话数据已清空，请先登录后再访问受保护页面。")
+    # RV12-2：每轮渲染弹出一次性提示队列（各页写操作 success 后 st.rerun
+    # 丢弃提示的问题 —— 上一轮 ui_kit.flash 落的提示在这里消费转渲染，
+    # 置于页面分派之前，位于正文顶部；队列消费即清空不跨轮重复）。
+    ui_kit.pop_and_render_flash()
     if _page == "graph":
         render_interactive_graph_page()
     elif _page == "corpus":

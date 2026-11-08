@@ -128,11 +128,13 @@ class TestR1SignaturesAndSources:
         assert "裁决权归词典管理员/审校" in src
 
     def test_logout_whitelist_constants(self):
-        """R1-6：登出白名单恰三类基建键；flash 旗标常量在场。"""
+        """R1-6：登出白名单恰五类基建键（RV12-4 起 _init_db_done/_db_available
+        随基建键保留，避免登出重付 init_database 全量 DDL）；flash 旗标常量在场。"""
         import src.app as app
 
         assert app._LOGOUT_KEEP_KEYS == frozenset({
             "_user_tables_ready", "_wordforms_table_ready", "sidebar_collapsed",
+            "_init_db_done", "_db_available",
         })
         assert app._LOGOUT_FLASH_KEY == "_logout_flash"
 

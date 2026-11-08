@@ -98,6 +98,7 @@ import streamlit as st
 from src import ai_ledger, dict_admin_db, export_center, media_db, org_db
 from src import registry_db
 from src import pipeline_status, users_db
+from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.mysql_db import get_db_cursor
 from src import guards
@@ -921,9 +922,9 @@ def _render_cockpit_tab() -> None:
                             name, chief_opts[pchief], cats or ["motion"],
                             description=pdesc.strip())
                         if pid:
-                            st.success(f"项目 #{pid}「{name}」已建壳，"
-                                       "chief 已同事务入册——可在「👥 项目成员」与"
-                                       "「🏷️ 定制属性」继续配置。")
+                            ui_kit.flash(f"项目 #{pid}「{name}」已建壳，"
+                                         "chief 已同事务入册——可在「👥 项目成员」与"
+                                         "「🏷️ 定制属性」继续配置。")
                             st.rerun()
                         else:
                             st.error("建壳失败（名称重复或数据库异常），详见服务端日志。")
@@ -1014,8 +1015,8 @@ def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
         st.warning("入册未生效：数据层返回异常（详见服务端日志），请稍后重试。")
         return
     if ok:
-        st.success(f"已入册用户 id={uid} 为「{PROJECT_ROLE_LABELS.get(role, role)}」；"
-                   "若其已在册则为改授职能。")
+        ui_kit.flash(f"已入册用户 id={uid} 为「{PROJECT_ROLE_LABELS.get(role, role)}」；"
+                     "若其已在册则为改授职能。")
         logger.info(f"dict_admin {me.get('username')} 把用户 id={uid} "
                     f"入册项目 {project_id} 为 {role}")
         st.rerun()
@@ -1059,7 +1060,7 @@ def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
         st.warning("移除未生效：数据层返回异常（详见服务端日志），请稍后重试。")
         return
     if ok:
-        st.success(f"已把用户 id={uid} 移出项目。")
+        ui_kit.flash(f"已把用户 id={uid} 移出项目。")
         logger.info(f"dict_admin {me.get('username')} 把用户 id={uid} 移出项目 {project_id}")
         st.rerun()
     else:
@@ -1154,7 +1155,7 @@ def _render_define_field_form(project_id: int, me: Dict[str, Any]) -> None:
         st.error("定义字段失败：数据层返回异常（详见服务端日志），请稍后重试。")
         return
     if new_id > 0:
-        st.success(f"已定义字段「{clean_code}」（id={new_id}）。")
+        ui_kit.flash(f"已定义字段「{clean_code}」（id={new_id}）。")
         logger.info(f"dict_admin {me.get('username')} 在项目 {project_id} "
                     f"定义字段 {clean_code}（id={new_id}）")
         st.rerun()
@@ -1220,7 +1221,7 @@ def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
         st.error("弃用失败：数据层返回异常（详见服务端日志），请稍后重试。")
         return
     if ok:
-        st.success(f"已弃用字段 id={fid}：拒新写值，存量值保留只读。")
+        ui_kit.flash(f"已弃用字段 id={fid}：拒新写值，存量值保留只读。")
         st.rerun()
     else:
         st.error("弃用失败：字段不存在或已弃用（未变更不重复计）。")
@@ -1370,8 +1371,8 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
         st.error("写入失败：数据层返回异常（详见服务端日志），请稍后重试。")
         return
     if ok:
-        st.success(f"已为锚 {anchor_type}:{int(anchor_id)} 写入字段"
-                   f"「{_esc(field_name)}」的值。")
+        ui_kit.flash(f"已为锚 {anchor_type}:{int(anchor_id)} 写入字段"
+                     f"「{_esc(field_name)}」的值。")
         st.rerun()
     else:
         st.error("写入失败：字段可能已弃用、锚类型与字段 applies_to 不符、"
@@ -1515,7 +1516,7 @@ def _render_media_register_form(me: Dict[str, Any]) -> None:
         str(license_text).strip(),
     )
     if asset_id:
-        st.success(f"已登记资产 #{asset_id}（状态=候选）。sha256 前 12 位：{sha[:12]}…")
+        ui_kit.flash(f"已登记资产 #{asset_id}（状态=候选）。sha256 前 12 位：{sha[:12]}…")
         logger.info(f"dict_admin {me.get('username')} 登记媒体资产 #{asset_id} "
                     f"（kind={kind}, path={file_path}）")
         st.rerun()
@@ -1629,8 +1630,8 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
         str(license_text or "").strip(), mime=mime,
     )
     if asset_id:
-        st.success(f"已上传落盘 {rel_path} 并登记资产 #{asset_id}（状态=候选）。"
-                   f"sha256 前 12 位：{sha[:12]}…")
+        ui_kit.flash(f"已上传落盘 {rel_path} 并登记资产 #{asset_id}（状态=候选）。"
+                     f"sha256 前 12 位：{sha[:12]}…")
         logger.info(f"dict_admin {me.get('username')} 上传媒体资产 #{asset_id} "
                     f"（kind={kind}, path={rel_path}, {size} 字节）")
         st.rerun()
@@ -1723,8 +1724,8 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
         st.error("绑定失败：数据层返回异常（详见服务端日志），请稍后重试。")
         return
     if ok:
-        st.success(f"已把资产 #{asset_id} 绑到 {anchor_type}:{int(anchor_id)}"
-                   f"（用途 {purpose}，状态=候选；同键重复绑定幂等保留首次值）。")
+        ui_kit.flash(f"已把资产 #{asset_id} 绑到 {anchor_type}:{int(anchor_id)}"
+                     f"（用途 {purpose}，状态=候选；同键重复绑定幂等保留首次值）。")
         st.rerun()
     else:
         st.error("绑定失败：资产不存在、锚 id 非法（须为正整数）或数据库不可用"
@@ -1795,9 +1796,9 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
                 str(binding.get("binding_status")),
                 next_status,
                 reviewed_by=str((actor or {}).get("username") or "")):
-            st.success(f"绑定 #{binding.get('id')} 已流转到「{next_status}」"
-                       f"（审定人：{_esc(str((actor or {}).get('username') or '未知'))}）。"
-                       "词条装配多模态区只取「发布」态绑定。")
+            ui_kit.flash(f"绑定 #{binding.get('id')} 已流转到「{next_status}」"
+                         f"（审定人：{_esc(str((actor or {}).get('username') or '未知'))}）。"
+                         "词条装配多模态区只取「发布」态绑定。")
             st.rerun()
         else:
             st.warning("流转未生效：绑定状态已被他人变更（乐观并发守卫）或数据库不可用。")
@@ -2356,7 +2357,7 @@ def _render_exports_flow(
                 int(row.get("id") or 0), "ready", "published",
                 published_by=str((pub_actor or {}).get("username") or ""),
             ):
-                st.success(
+                ui_kit.flash(
                     f"快照 #{row.get('id')} 已标记 published（出版交付，G6 已放行）。"
                 )
                 st.rerun()
@@ -2375,7 +2376,7 @@ def _render_exports_flow(
                 st.error(f"⛔ {e}")
                 return
             if _advance_export_status(int(row.get("id") or 0), "ready", "revoked"):
-                st.success(
+                ui_kit.flash(
                     f"快照 #{row.get('id')} 已撤销（ready→revoked，单向；"
                     "如需再出版请重新生成快照）。"
                 )

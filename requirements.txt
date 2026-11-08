@@ -6,16 +6,20 @@
 # 经 src/llm_api.py 使用 zhipuai；
 # src/cluster_analysis.py 使用 scipy（谱系树 squareform+average 联接；
 # Gower 相异度为本模块自实现）—— 缺它谱系树 tab 降级告警，medoid 排序不受影响；
+# src/cluster_analysis.py 与 src/reliability.py 顶层 import numpy（RV11 P3-2
+# 显式声明：此前靠 pandas/scipy 传递带入，独立 import 会崩）；
 # 全部灌库脚本（load_word_library / load_corpus_dataset / load_domain_family /
 # load_category_study / parse_modern_chinese_dict / load_zh_dict）使用 openpyxl
 # 读 xlsx 种子数据 —— 缺它 ./start 的灌库步骤全部失败。
-streamlit>=1.28.0
+# streamlit 下限 1.41（RV12-6）：新版「选项收缩回落」行为依赖；本机实测 1.57。
+streamlit>=1.41.0
 pymysql>=1.1.0
 pyyaml>=6.0
 pandas>=2.0.0
 plotly>=5.18.0
 openpyxl>=3.1.0
 scipy>=1.10.0
+numpy>=1.24
 
 # ============================================
 # LLM 客户端 —— 多提供商（三家都是 OpenAI 兼容接口，llm_api 按优先级自动选）
@@ -30,8 +34,9 @@ httpx>=0.27.0  # Anthropic 兼容客户端（llm_api._AnthropicCompatClient）
 # ============================================
 # 数据导入脚本依赖（不在应用运行时路径上）
 # ============================================
-# 仅 scripts/archive/ingest_motion_verbs.py 使用；src/ 下没有任何文件导入它们。
-# 该脚本解析 data/docs/*.docx 并联网抓取释义，故需要 docx + requests。
+# 仅 scripts/archive/ 下的 ingest_motion_verbs.py 与 generate_word_doc.py 使用
+# （前者解析 data/docs/*.docx 并联网抓取释义，后者生成编纂成文 Word 文档）；
+# src/ 下没有任何文件导入它们，故需要 docx + requests。
 python-docx>=1.1.0
 requests>=2.32.4  # CVE-2024-35195/47081（2.32.4 修复）
 
@@ -39,6 +44,8 @@ requests>=2.32.4  # CVE-2024-35195/47081（2.32.4 修复）
 # 测试依赖
 # ============================================
 pytest>=7.4.0
+# 可选：默认测试运行不带覆盖率（pytest.ini 的 addopts 只有 -v，无 --cov）；
+# 要看覆盖率时用 pytest --cov=src 手动开启（README / docs/dev/TESTING.md 同口径）
 pytest-cov>=4.1.0
 
 # ============================================

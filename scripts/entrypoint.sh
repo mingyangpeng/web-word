@@ -3,11 +3,28 @@
 # 等待 MySQL 就绪 → 幂等灌入全部数据（与 ./start 的八步一致）→ 启动 Streamlit
 #
 # 数据与 ./start 同源：词库/语料/范畴深挖/域系初判/域系增强/LLM 初筛草稿/
-# 现汉7 词典。种子文件由 Dockerfile COPY 进镜像；environment 列在
-# docker-compose.yml（.env 已入库，compose 的 environment 覆盖 env_file，
-# MYSQL_HOST=mysql 由 compose 强制指定）。
+# 现汉7 词典。种子文件由 Dockerfile COPY 进镜像的 /app/seed/data（/app/data
+# 是 named volume 挂载点，COPY 进去的内容会被盖住，故镜像侧只放种子暂存区）；
+# environment 列在 docker-compose.yml（.env 已入库，compose 的 environment
+# 覆盖 env_file，MYSQL_HOST=mysql 由 compose 强制指定）。
 
 set -e
+
+# ---- 种子补入（先于一切灌库步骤，幂等）----
+# /app/data 由 named volume 承载：首次启动卷为空，把镜像内 /app/seed/data 的
+# 种子拷进去完成「首次灌入」；已有文件一律不覆盖 —— 保留「升级不强制覆盖」
+# 语义（升级镜像不会重置用户数据；确需刷新某个种子，删卷内对应文件重启即可）。
+SEED_ROOT="/app/seed/data"
+if [ -d "$SEED_ROOT" ]; then
+    while IFS= read -r -d '' rel; do
+        if [ ! -f "/app/data/$rel" ]; then
+            mkdir -p "/app/data/$(dirname "$rel")" \
+                && cp "$SEED_ROOT/$rel" "/app/data/$rel" \
+                && echo "🌱 seeded /app/data/$rel" \
+                || echo "⚠️  种子补入失败：$rel（非阻断，继续启动）"
+        fi
+    done < <(find "$SEED_ROOT" -type f -printf '%P\0')
+fi
 
 echo "⏳ Waiting for MySQL..."
 python scripts/wait_for_mysql.py

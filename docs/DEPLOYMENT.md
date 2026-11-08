@@ -51,6 +51,21 @@
 | 6 | 供应商配置 | 登录 admin → 词典管理 → 🤖 模型供应商 → 添加网关/直连供应商 |
 | 7 | 备份任务 | 宿主机 crontab 添加（见 §1.4 第 12 条） |
 
+> **首启与升级注意事项（RV11）**
+>
+> - **首次 `up` 前**先 `mkdir -p data/backups`：该目录 bind 挂进容器（G6 备份
+>   新鲜卡的取数路径）。Linux 宿主机上若由 Docker 代建，会归 root 属主，
+>   宿主机 cron 备份会写不进。
+> - **`.env.local` 依赖 Compose v2.24+**（2024-02，Docker Desktop 4.27+ 内置）：
+>   compose 的 `env_file` 以 `required: false` 挂载 `.env.local`，旧版 compose
+>   不认该语法，请先升级。
+> - **升级存量部署**：镜像已改为非 root（uid 1000）运行；历史 `web-word-app-data`
+>   卷若属主是 root，先执行一次
+>   `docker run --rm -v web-word-app-data:/d alpine chown -R 1000:1000 /d`
+>   再 `up -d`。种子文件改由 entrypoint 从镜像内 `/app/seed/data` 补入
+>   （缺才拷、已有不覆盖）——升级镜像不会重置数据；确需刷新某份种子，
+>   删卷内对应文件后重启即可。
+
 ## 三、部署后
 
 | # | 检查项 | 方法 |
