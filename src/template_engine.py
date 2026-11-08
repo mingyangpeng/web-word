@@ -446,6 +446,7 @@ def _is_on(value: Any) -> bool:
 
 
 def _strip_prefix(label: str, prefix: Any) -> str:
+    """去特征标签前缀（拼装节 strip_prefix 配置；空/None 前缀原样返回）。"""
     prefix = str(prefix or "")
     return label.replace(prefix, "") if prefix else label
 
@@ -724,6 +725,7 @@ def _pick_cluster_schema(
 # ============================================
 
 def _get_category(code: str) -> Optional[Dict[str, Any]]:
+    """按研究代号查 categories 行（只读；库不可用/无命中返回 None）。"""
     try:
         with get_db_cursor() as cursor:
             cursor.execute(

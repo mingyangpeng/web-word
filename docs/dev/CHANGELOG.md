@@ -7,6 +7,20 @@
 > 早期版本（2026-05-30 之前）没有独立版本号，条目按实际完成时间归入 v1.0。
 
 
+## 2026-11-08 · 批次 13：FX10——R6 质量收敛残留＋R7 文档一致性残留
+
+- R6-4 残留收敛：export_center._column_exists 直引 db_utils；export_center/
+  pipeline_status 的 `_table_exists`（只传表名、自开游标口径）改为
+  db_utils.table_exists 的薄包装——information_schema 探测逻辑全仓库
+  只剩 src/db_utils.py 一份，调用点与测试 monkeypatch 零改动
+- R6-6 残留：export_center 快照状态常量域前缀 EXPORT_STATUS_*
+  （ready/published/revoked，值不改；INSERT 不再内联裸字面量）
+- R6-11 残留：pipeline_status 六个 _format_*、template_engine
+  _strip_prefix/_get_category、export_center _table_exists 补 docstring
+- R7 文档残留：CHANGELOG 词典管理区 tab 数勘正为八（批次 8 出版导出并入后
+  的实际数）；功能使用说明 7.4 扩展项标【阶段 1 后续】＋结果卡片六卡口径；
+  README 过时数字修正（171 词/1935 边/12 次类簇）；ARCHITECTURE 五处硬错补修
+
 ## 2026-11-08 · 批次 12：R1 权限走查十项安全修复
 
 - 数据层六写函数 actor 化（账号接管/越权授权/冒名终裁/草稿劫持复现全部 PASS）
@@ -446,7 +460,8 @@ HTML 无法跨调用闭合）。这个缺陷从 2026-05 的 phase-02 就存在�
 
 - 数据层六模块：协作底座（多角色/项目成员）、工具注册表（ToolSpec 插件）、词典管理
   （定制属性/导入批次/回滚）、AI 台账（ai_proposals）、媒体资产、词形表（wordforms）
-- 页面层：词典管理区（七 tab：驾驶舱/成员/定制属性/导入/浏览器/任务分配/媒体库）、
+- 页面层：词典管理区（八 tab：驾驶舱/成员/定制属性/导入/浏览器/任务分配/
+  媒体库/出版导出）、
   AI 协作区（收件箱/协同度量）、帮助中心；搜索词形还原提示
 - 流程能力：交互式谱系切割（F2）、义项分立复核（G3 前置）、义位图谱（MDS）、
   流程漏斗（十五工序聚合）、任务分配三校验、提权硬闸门、个人改密、

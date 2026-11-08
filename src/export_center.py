@@ -29,6 +29,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src.db_utils import column_exists as _column_exists  # R6-4：公共小件单一实现点
+from src.db_utils import table_exists as _db_table_exists
 from src.import_engine import has_import_voided_column
 from src.mysql_db import get_db_cursor
 from src.users_db import effective_six_roles
@@ -70,16 +72,16 @@ EXPORT_BATCHES_AUDIT_COLUMNS = (
      "ALTER TABLE export_batches ADD COLUMN published_at DATETIME NULL"),
 )
 
-
-def _column_exists(cursor, table: str, column: str) -> bool:
-    """表上是否已有该列（让 ALTER 幂等；仿 users_db._column_exists）。"""
-    cursor.execute(
-        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
-             AND COLUMN_NAME = %s""",
-        (table, column),
-    )
-    return int(cursor.fetchone()["n"] or 0) > 0
+# R6-6：快照状态域前缀 EXPORT_STATUS_*（与 DDL ENUM('ready','published',
+# 'revoked') 一致，值不改）—— 裸 'ready' 等字面量此前散在 SQL 文本里，
+# 与 lexical_db.STATUS_*（中文审定链）/ writing_db.STATUS_*（英文撰审链）
+# 撞值易混；域前缀后跨模块 import 处一眼可辨归属。
+EXPORT_STATUS_READY = "ready"
+EXPORT_STATUS_PUBLISHED = "published"
+EXPORT_STATUS_REVOKED = "revoked"
+EXPORT_STATUSES = (
+    EXPORT_STATUS_READY, EXPORT_STATUS_PUBLISHED, EXPORT_STATUS_REVOKED,
+)
 
 
 def ensure_export_tables() -> None:
@@ -93,12 +95,16 @@ def ensure_export_tables() -> None:
 
 
 def _table_exists(table: str) -> bool:
-    sql = ("SELECT COUNT(*) AS n FROM information_schema.TABLES "
-           "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s")
+    """当前库中内容表是否存在（information_schema 只读探测；R6-4 收敛）。
+
+    本模块口径是「只传表名、自开游标」（快照逐表探测用），与
+    db_utils.table_exists(cursor, table) 的游标入参版签名不同 —— 实现已
+    收敛为对后者的薄包装：information_schema 探测逻辑只剩
+    src/db_utils.py 一份，本模块保留同名入参版供 build_content_snapshot
+    与测试 monkeypatch 调用点零改动。
+    """
     with get_db_cursor() as cursor:
-        cursor.execute(sql, (table,))
-        row = cursor.fetchone()
-        return bool(row) and int(row["n"] or 0) > 0
+        return _db_table_exists(cursor, table)
 
 
 def _dump_table_csv(table: str) -> tuple[str, int]:
@@ -181,11 +187,11 @@ def build_content_snapshot(actor: Optional[Dict[str, Any]] = None,
             cursor.execute(
                 "INSERT INTO export_batches (operator_id, scope, file_path, "
                 "rows_total, tables_included, tables_skipped, license_checked, status) "
-                "VALUES (%s, 'content_snapshot', %s, %s, %s, %s, %s, 'ready')",
+                "VALUES (%s, 'content_snapshot', %s, %s, %s, %s, %s, %s)",
                 (operator_id, str(zip_path.relative_to(
                     Path(__file__).resolve().parent.parent)), rows_total,
                  json.dumps(included), json.dumps(skipped),
-                 1 if license_checked else 0),
+                 1 if license_checked else 0, EXPORT_STATUS_READY),
             )
             batch_id = cursor.lastrowid
         return {"ok": True, "batch_id": batch_id, "zip_path": str(zip_path),

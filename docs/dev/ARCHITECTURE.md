@@ -15,7 +15,7 @@ Streamlit 单进程应用：界面层（`src/app.py`）在渲染过程中同步�
     │
     ▼
 Streamlit 界面       src/app.py
-    │                搜索栏（固定置顶）/ 四张结果卡片 / 示例库 / 反馈表单 / 侧边栏
+    │                搜索栏（固定置顶）/ 六张结果卡片 / 示例库 / 反馈表单 / 侧边栏
     │
     ▼
 释义适配层            src/app.py: get_display_definition()
@@ -43,7 +43,8 @@ Streamlit 界面       src/app.py
   「MySQL 数据库不可用，使用离线模式」，随后统计 / 导出 / 反馈写入全部走空数据分支。
 - 界面组成：
   - **固定置顶搜索栏**（`st.container(key="search_bar")` + CSS `position: sticky`）；
-  - **结果四卡片**：原型与位移事件分析 / 范畴锚定 / 核心释义与多维辨异 / 图式示例，各自可折叠；
+  - **结果六卡片**：原型与位移事件分析 / 范畴锚定 / 义位标注 / 核心释义与多维辨异 /
+    图式示例 / 语料库证据（enTenTen21），各自可折叠；
   - **示例库**：三个分类标签页（方式聚焦类 / 路径聚焦类 / 体相聚焦类），点击动词回调
     `select_example_verb()`；
   - **反馈表单**：1–5 星 `select_slider` + 文字 `text_area`，提交写入 `feedbacks` 表；
@@ -129,7 +130,7 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 ```
 
 **词间关系 = 簇内完全图**：同一次语义范畴内的两两动词都有一条边，物化进
-`word_relations`（136 词 / 8 次类簇 → 1780 条边），`definitions.cluster_id` 是它的推导依据。
+`word_relations`（171 词 / 12 次类簇 → 1935 条边），`definitions.cluster_id` 是它的推导依据。
 词目分类来自 `docs/Levin移动动词候选词筛选表.xlsx`；义位明细另存 `word_senses`，
 释义来源分级见 `docs/英语自移移动动词词表.docx`，
 视图 `v_cluster_complete_graph` 提供「从簇推导」的对照实现，两者边数必须相等。
@@ -148,7 +149,7 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 | 数据 | `get_cluster_graph(verb)` / `get_cluster_graph_by_id(id)` / `list_clusters()` | 返回 `{nodes, links}`（结构对齐 graphify 的 graph.json） |
 | 文件 | `data/word_graph.json`（`scripts/load_word_library.py` 生成） | 审阅、导出、喂给 graphify CLI |
 | 页面（单簇） | `app.py` + `src/graph_export.py`（vis-network HTML，vendored） | 跟随查询词的交互完全图，可切换簇 / 缩放 / 点击成员切词 |
-| 页面（全库） | `app.py: render_interactive_graph_page()` + `src/graph_export.py` | graphify 风格力导向图：136 词 / 1780 边，可搜索、点选、按簇过滤；静态 HTML + iframe，数据指纹命名 |
+| 页面（全库） | `app.py: render_interactive_graph_page()` + `src/graph_export.py` | graphify 风格力导向图：171 词 / 1935 边，可搜索、点选、按簇过滤；静态 HTML + iframe，数据指纹命名 |
 
 页面渲染刻意不用 vis-network + iframe（graphify 的 `graph.html` 是那套）：本项目已确立
 「零网络依赖」原则（灌库脚本、离线降级），CDN 脚本在内网会渲染成空白；且完全图是静态
@@ -176,7 +177,7 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 
 1. 用户在搜索栏输入动词（或点击示例库 / 热门动词）。
 2. `get_display_definition(verb)` 按上述优先级取数。
-3. `render_semantic_table()` 把 `semantic_table` 渲染为五元彩色表格，其余字段填入四张卡片。
+3. `render_semantic_table()` 把 `semantic_table` 渲染为五元彩色表格，其余字段填入六张卡片。
 4. 用户提交反馈 → `insert_feedback()` → `feedbacks` 表。
 5. 侧边栏调用 `get_stats()` / `get_hot_verbs()` 读取实时统计；导出按钮把 `get_feedback_data()`
    转成 UTF-8-BOM 的 CSV 供下载。
