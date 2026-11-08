@@ -67,3 +67,19 @@
 - [ ] RV2-2 P3 users FK 删除纪律两种口径（CASCADE vs NO ACTION）——规范修订或入口前置探测
 - [ ] RV2-3 P3 留痕列 NULL 语义三种口径（INT NULL/VARCHAR NULL/VARCHAR NOT NULL ''）——定一条规范
 - [ ] RV2-4 P3 CREATE_TABLES_SQL 缺 12+ ALTER-only 列——CREATE 头部注释维护 ALTER-only 清单
+
+## RV-1 CSS/布局/可访问性（13 findings：P2×7 P3×6）
+
+- [ ] RV1-1 P2 IAA 徽章白字对黄底 1.61:1（reliability 主路径比降级分支还差）
+- [ ] RV1-2 P2 13 个底色白字对比度不达 AA（系统性——五份 _badge＋色表）——深档替换＋_badge 收敛 design_system
+- [ ] RV1-3 P2 暗色主题浅底容器文字 1.00:1 不可读（156 处中至少 10 处命中）——补 color:#1a202c 或主题分支
+- [ ] RV1-4 P2 字号层级 120 处全失效（HEADER_*/BODY_* 是 font 简写值却当 font-size 插值，浏览器丢整条）——常量改带属性名或拆独立值
+- [ ] RV1-5 P2 design_system 内建对比度校验器公式错误（未线性化，全表误报 FAIL）——实现标准 sRGB luminance
+- [ ] RV1-6 P2 状态/警示文本彩字 2.43~4.13:1 不达——深档替换
+- [ ] RV1-7 P2 卡片正文彩字/徽章群 2.26~4.13:1 不达——正文彩字≥4.5 深档
+- [ ] RV1-8 P3 320px 移动端漏斗/图式对齐 flex 固定宽溢出——flex-wrap/百分比
+- [ ] RV1-9 P3 全库内联 CSS 无 overflow-wrap——td 加 anywhere
+- [ ] RV1-10 P3 get_section_spacing 返回完整 div 塞进 style 属性（间距从未生效）——独立渲染或直写 margin
+- [ ] RV1-11 P3 暗色主题写死浅色面（搜索栏/卡片）——半透明或主题分支
+- [ ] RV1-12 P3 折叠按钮白字 on 渐变 3.66:1——渐变加深或字号提
+- [ ] RV1-13 P3 画像进度条填充 2.71:1<3:1——填充改 #2b6cb0
