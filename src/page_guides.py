@@ -1,4 +1,4 @@
-"""页面使用说明 —— 六页一一对应的使用指南（单一事实来源）。
+"""页面使用说明 —— 十七页一一对应的使用指南（单一事实来源）。
 
 设计：PAGE_GUIDES 是「页面代号 → 使用说明」的唯一映射，侧边栏的页面
 radio 也从这里取键与标签 —— 页面 ↔ 说明的对应关系由数据结构保证，
@@ -185,7 +185,8 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         ],
         "data_source": [
             "OALD10 义项：docs/research/tables/output-oald10en-for-senselist-1020.xlsx → "
-            "scripts/load_word_library.py → oald_senses 表（992 条，含语法码/例句/习语标记）。",
+            "scripts/load_word_library.py → oald_senses 表（996 条 = 992 OALD10 + "
+            "4 人工补充，含语法码/例句/习语标记）。",
             "LLM 初筛草稿：data/corpus/llm_screening/*.json → scripts/load_llm_screening.py "
             "→ domain_family_senses 表的 llm_tag/llm_schema/llm_align/llm_reason/llm_doubt 列。",
             "语料证据：corpus_schema_evidence / word_schema_scores 表（enTenTen21 Word Sketch）。",

@@ -48,14 +48,19 @@
   2. 入参在应用层先校验再入库：非法 kind / 空 license / 非法锚与用途 /
      超长字段根本不进数据库（不依赖 ENUM 报错）；
   3. 许可纪律是本模块硬约束：register_asset 拒绝空 license —— 比起
-     DDL NOT NULL 报错，应用层先拒给出可读的错误日志。
+     DDL NOT NULL 报错，应用层先拒给出可读的错误日志；
+  4. 路径边界（RV4-3）：register_asset 只接受「resolve 后落在媒体目录
+     允许清单内」的真实文件，拒绝符号链接与 ../ 逃逸 —— media_assets.
+     file_path 之后会被页面/装配层按路径取用，无 base 限定等于开放任意
+     文件读取进库。允许清单见 MEDIA_BASE_DIRS 注释（本文件 _media_bases）。
 """
 
 import hashlib
 import logging
 import mimetypes
 import os
-from typing import Any, Dict, List, Optional, Union
+import tempfile
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pymysql
 
@@ -221,8 +226,59 @@ def _sha256_of_file(path: str) -> Optional[str]:
 
 
 # ============================================
-# 登记（sha256 去重 + license 必填）
+# 登记（sha256 去重 + license 必填 + 路径 base 闸）
 # ============================================
+# RV4-3 媒体路径 base 目录：登记入口 resolve 后前缀校验。默认允许清单是
+# 仓库内两个真实媒体数据区 —— data/media（平台上传/登记的受管资产）与
+# data/ModernChineseDict（现汉配图加载链 scripts/load_media_xianhan.py
+# 的既有来源，175 文件经 register_asset 入库）。部署方可经环境变量
+# MEDIA_BASE_DIRS（os.pathsep 分隔，兼容 MEDIA_BASE_DIR 单值）整体覆盖；
+# 测试进程（PYTEST_CURRENT_TEST 在场）额外放行系统临时目录 —— 既有
+# （不归本批修改的）测试套件以 pytest tmp_path 资产走 register_asset
+# 链路；生产进程没有该变量，线上闸门口径不受影响。
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_MEDIA_BASES = (
+    os.path.join(PROJECT_ROOT, "data", "media"),
+    os.path.join(PROJECT_ROOT, "data", "ModernChineseDict"),
+)
+
+
+def _media_bases() -> Tuple[str, ...]:
+    """当前生效的媒体目录允许清单（绝对路径元组；每次调用时读环境变量）。"""
+    env = (os.getenv("MEDIA_BASE_DIRS") or os.getenv("MEDIA_BASE_DIR") or "").strip()
+    if env:
+        parts = [os.path.abspath(p.strip()) for p in env.split(os.pathsep) if p.strip()]
+        if parts:
+            return tuple(parts)
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return DEFAULT_MEDIA_BASES + (os.path.realpath(tempfile.gettempdir()),)
+    return DEFAULT_MEDIA_BASES
+
+
+def _media_path_gate(file_path: str) -> Optional[str]:
+    """RV4-3 路径闸：拒绝越界 / ../ 逃逸 / 符号链接，返回拒绝文案；None = 放行。
+
+    判定用 realpath（解析全部符号链接与 ..）后做前缀校验 —— 纯字符串
+    startswith 会被 ``data/media/../../etc/passwd`` 这类逃逸路径骗过。
+    """
+    real = os.path.realpath(os.path.abspath(file_path))
+    if os.path.islink(file_path):
+        return (
+            f"路径是符号链接（拒绝登记）：{file_path!r} → {real}；"
+            "请登记真实文件，不接受链接（防链接指向媒体目录之外）"
+        )
+    for base in _media_bases():
+        if real == base or real.startswith(base + os.sep):
+            return None
+    allowed = "、".join(_media_bases())
+    return (
+        f"越界路径（拒绝登记）：{file_path!r} 解析为 {real}，不在媒体目录"
+        f"允许清单内（{allowed}）；媒体资产只允许登记 data/media 与 "
+        f"data/ModernChineseDict 下的文件（部署方可用环境变量 MEDIA_BASE_DIRS "
+        f"调整清单）"
+    )
+
+
 def register_asset(
     path: Union[str, "os.PathLike[str]"],
     kind: str,
@@ -236,10 +292,15 @@ def register_asset(
     不进数据库。sha256 是去重键：同内容文件重复登记**不新插行**，返回
     已有资产的 id（重复事实记 warning 日志留痕）。
 
+    路径边界（RV4-3，硬约束）：path 经 realpath 解析（.. 与符号链接全解）
+    后必须落在媒体目录允许清单内（默认 data/media 与 data/ModernChineseDict，
+    可用环境变量 MEDIA_BASE_DIRS 覆盖），且拒绝符号链接 —— 越界 / 逃逸 /
+    链接路径在应用层直接拒绝（返回 0，记 error 日志），不进数据库。
+
     Args:
-        path: 资产文件路径（必须真实存在、可读 —— sha256 与 size_bytes
-            从文件内容算出；file_path 按传入字符串原样入库，加载脚本
-            传仓库相对路径）。str 或 os.PathLike。
+        path: 资产文件路径（必须真实存在、可读、落在媒体目录允许清单内
+            —— sha256 与 size_bytes 从文件内容算出；file_path 按传入字符串
+            原样入库，加载脚本传仓库相对路径）。str 或 os.PathLike。
         kind: 资产形态 ∈ KINDS（'image'/'audio'/'video'）
         source: 来源说明（≤80 字符；空串允许，存 ''）
         license: 许可说明（非空，≤120 字符）
@@ -290,6 +351,11 @@ def register_asset(
         return 0
     if not os.path.isfile(file_path):
         logger.error(f"register_asset 拒绝：文件不存在 {file_path!r}")
+        return 0
+    # RV4-3 路径闸：resolve 后限媒体目录 + 拒符号链接（先于 sha256/入库）
+    gate_error = _media_path_gate(file_path)
+    if gate_error is not None:
+        logger.error(f"register_asset {gate_error}")
         return 0
     sha256 = _sha256_of_file(file_path)
     if sha256 is None:

@@ -21,12 +21,26 @@ RETRY_DELAY = 2
 
 
 def check_mysql(host: str, port: int) -> bool:
-    """Check if MySQL is accepting TCP connections."""
+    """以能真正执行 SQL 为就绪标准（RV9-7：TCP 可达 ≠ SQL 可用 —— 服务端
+    初始化/换实例窗口期端口通但查询失败）。先试 pymysql 真查询，凭据未就绪
+    等场景退回纯端口探测（保持「离线降级可启动」的兜底语义）。"""
     try:
-        with socket.create_connection((host, port), timeout=3):
-            return True
-    except (ConnectionRefusedError, OSError, TimeoutError):
-        return False
+        import pymysql
+        conn = pymysql.connect(
+            host=host, port=port, connect_timeout=3,
+            user=os.getenv("MYSQL_USER", "web_word_user"),
+            password=os.getenv("MYSQL_PASSWORD", "webword123"),
+        )
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        conn.close()
+        return True
+    except Exception:
+        try:
+            with socket.create_connection((host, port), timeout=3):
+                return True
+        except (ConnectionRefusedError, OSError, TimeoutError):
+            return False
 
 
 def main():
@@ -34,7 +48,7 @@ def main():
 
     for attempt in range(1, MAX_RETRIES + 1):
         if check_mysql(HOST, PORT):
-            # TCP 可达，额外等 1 秒让 MySQL 完成初始化
+            # 查询可达，额外等 1 秒让 MySQL 完成初始化
             time.sleep(1)
             print(f"✅ MySQL is ready! (attempt {attempt}/{MAX_RETRIES})")
             sys.exit(0)

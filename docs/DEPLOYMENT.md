@@ -65,17 +65,22 @@
 >   再 `up -d`。种子文件改由 entrypoint 从镜像内 `/app/seed/data` 补入
 >   （缺才拷、已有不覆盖）——升级镜像不会重置数据；确需刷新某份种子，
 >   删卷内对应文件后重启即可。
+> - **容器自愈与 binlog（RV-9）**：web 与 mysql 服务均带 healthcheck（web 用
+>   python urllib 探 `_stcore/health`，mysql 用 `mysqladmin ping`），僵死容器可被
+>   compose 识别重启；MySQL 以 `--skip-log-bin` 启动——binlog 关闭，datadir 不再
+>   日增约 1G（历史卷里已生成的 binlog 可在升级窗口手动 PURGE 后回收空间）。
 
 ## 三、部署后
 
 | # | 检查项 | 方法 |
 |---|--------|------|
-| 1 | 全页可用 | 侧边栏 16 页逐页点击（或用 test_review_regression.py 40 用例 AppTest 矩阵） |
-| 2 | AI 功能 | 搜索 run → 四卡片出全 → 以句搜义输入一句话 → 最近邻出结果 |
+| 1 | 全页可用 | 侧边栏 17 页逐页点击（或用 tests/test_review_regression.py AppTest 矩阵） |
+| 2 | AI 功能 | 搜索 run → 六卡片出全 → 以句搜义输入一句话 → 最近邻出结果 |
 | 3 | 撰写→审校→终裁→出版 | 走一遍编纂链（需 ≥2 账号：编纂员＋审校） |
 | 4 | 权限隔离 | viewer 账号登录确认不可见管理区 |
 | 5 | 备份验证 | 词典管理→出版导出→备份新鲜卡 ✅ |
 | 6 | 日志审计 | 服务端日志无 PermissionError/traceback 外泄 |
+| 7 | 环境体检 | `./start doctor` 七类 23 项——本开发机基线 21/23（2 红为真缺口如实上报：zh_dict 部分灌入＋.env 未配 AI key，AI 走「模型供应商」页 DB 路由）；新部署应核对至全过或如实记录 |
 
 ## 四、架构速览（部署视角）
 
@@ -99,3 +104,4 @@
 | `/app/static/*` 无鉴权 | P3 | 图谱数据敏感度低；如需收紧改路由 |
 | `.env` 历史含旧凭据 | P1 | 轮换后旧值失效即消解；filter-repo 可选 |
 | requests >=2.31 下限 | P3 | requirements 已提至 >=2.32.4；CI 加 pip-audit（待实施） |
+| 宿主机 3306 已被原生 MySQL 占用（双栈开发机） | P3 | 本地加 docker-compose.override.yml（gitignored）：services.mysql.ports: !reset []（Compose v2.24+），容器库仅内部网络可达，应用走 service name 不受影响 |

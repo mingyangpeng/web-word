@@ -21,7 +21,7 @@ if [ -d "$SEED_ROOT" ]; then
             mkdir -p "/app/data/$(dirname "$rel")" \
                 && cp "$SEED_ROOT/$rel" "/app/data/$rel" \
                 && echo "🌱 seeded /app/data/$rel" \
-                || echo "⚠️  种子补入失败：$rel（非阻断，继续启动）"
+                || echo "⚠️  种子补入失败：${rel}（非阻断，继续启动）"
         fi
     done < <(find "$SEED_ROOT" -type f -printf '%P\0')
 fi

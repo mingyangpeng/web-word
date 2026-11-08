@@ -42,6 +42,9 @@ from typing import Any, Dict, List, Optional
 
 import pymysql
 
+# R6-4：_column_exists 单一实现点在 src/db_utils.py（别名导入，调用点不变；
+# db_utils 版与旧本地副本同用 TABLE_SCHEMA = DATABASE()，逐字节同口径）。
+from src.db_utils import column_exists as _column_exists
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -71,9 +74,23 @@ MUST_CHANGE_PASSWORD_COLUMN_SQL = (
 # 管理页建号传当前会话用户 id（谁签发的账号可追溯）。
 CREATED_BY_COLUMN_SQL = "ALTER TABLE users ADD COLUMN created_by INT NULL"
 
+# 「users FK 删除纪律」（RV2-2 定名，跨模块规范——本处为单一出处）：
+# 引用 users(id) 的外键有两种删除口径，按「行的归属」划线，不得混用：
+#   1. 用户自有表（user_roles / project_members 等成员与授权行）：行本身
+#      是账号的附属数据，账号物理删除（测试清理/运维清理）时 **CASCADE**
+#      跟随消失，绝不阻断删除路径（e2e 清理只删 users，靠 CASCADE 自愈）；
+#      纯留痕列（granted_by 等可空操作人）用 **SET NULL**，留痕不阻删。
+#   2. 业务引用（annotation_flow 的 assignments / annotation_submissions /
+#      adjudications 等业务数据行）：行是研究数据不是账号附属，删除口径为
+#      **NO ACTION（裸 REFERENCES，默认拒删）＋入口前置探测** —— 删号前先
+#      探测业务表有无该用户在途行，有则页面先拒绝/要求改派，而不是让
+#      DELETE 撞 FK 或级联撕掉业务数据。**不做破坏性 ALTER**：存量库不
+#      迁移既有约束，两条口径各归各表、只约束新建表。
+#   互指：org_db.py 模块 docstring（成员/项目侧 CASCADE+SET NULL 落点）、
+#   src/annotation_flow.py 三表 DDL（NO ACTION 业务引用示例）。
 # user_roles 多角色表（平台架构设计规范 §8 六角色）。一人可叠加，UNIQUE 去重；
-# FK 对 users ON DELETE CASCADE：账号物理删除（测试清理/运维清理）时角色行
-# 跟随消失，绝不阻断删除路径（e2e 清理只删 users，靠本 CASCADE 自愈）。
+# FK 对 users ON DELETE CASCADE：口径见上第 1 条（账号物理删除时角色行
+# 跟随消失，绝不阻断删除路径）。
 USER_ROLES_TABLE_SQL = """CREATE TABLE IF NOT EXISTS user_roles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -310,17 +327,6 @@ def ensure_user_tables() -> None:
         logger.error(f"users 表初始化失败（MySQL）: {e}")
     except Exception as e:
         logger.error(f"users 表初始化意外错误: {e}")
-
-
-def _column_exists(cursor, table: str, column: str) -> bool:
-    """表上是否已有该列（让 ALTER 幂等；仿 mysql_db._migrate_schema 同名助手）。"""
-    cursor.execute(
-        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
-             AND COLUMN_NAME = %s""",
-        (table, column),
-    )
-    return int(cursor.fetchone()["n"] or 0) > 0
 
 
 def _migrate_users_columns(cursor) -> None:
@@ -871,6 +877,16 @@ def grant_role(user_id: int, role: str, granted_by: Optional[int] = None,
     实现提权）的数据层收口；其余类型 fail-closed 同抛。细粒度提权硬闸门
     （管理角色仅词典管理员可授/撤）由页面层 guards.require_role 先行判定。
 
+    TOCTOU 窗口（RV4-5，如实声明）：授权人在账号管理页看到的「当前角色」
+    来自页面渲染时的实时读库（users_admin_page.py 角色表单处的
+    ``current_roles = list_roles(target_uid)`` 实时复核），从那次读到本
+    INSERT 生效之间另一管理员可并发授/撤同一 (user_id, role) —— 受影响
+    窗口是**亚 rerun 级**（同一页面渲染周期内）。后果有界：UNIQUE
+    (user_id, role) + INSERT IGNORE 保证重复授予幂等（并发撞键按「已持有」
+    返回 False），不会插出双行；不会因并发把角色授给未预期的第三方。
+    数据层不做锁（MySQL 无此类行锁语义可用），页面提交后的下一次 rerun
+    会重新 list_roles 展示真值。
+
     Args:
         user_id: 用户 id
         role: 六角色之一（NEW_ROLES）
@@ -916,6 +932,13 @@ def revoke_role(user_id: int, role: str, *, actor: Any = None) -> bool:
     ``actor=None``——None = 系统作业；页面调用点必须传当前会话用户；actor
     为 dict 时有效六角色须含 dict_admin/sys_admin，不足抛 PermissionError
     （低权撤他人角色＝变相攻击面，与授予同闸）；其余类型 fail-closed 同抛。
+
+    TOCTOU 窗口（RV4-5，与 grant_role 同款声明）：撤销选项列表来自页面
+    渲染时的实时读库（users_admin_page.py ``current_roles = list_roles(
+    target_uid)``），从读到本 DELETE 生效之间另一管理员可能已改同一角色
+    —— 受影响窗口亚 rerun 级。后果有界：目标行已被并发撤销时 rowcount=0
+    如实返回 False（「未持有」），不会误报成功；页面下一次 rerun 重新
+    list_roles 展示真值。
 
     Args:
         user_id: 用户 id

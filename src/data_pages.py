@@ -90,6 +90,7 @@ import pandas as pd
 import streamlit as st
 
 from src.dict_admin_db import finish_batch, persist_revert_log, rollback_batch, start_batch
+from src.db_utils import current_user as _current_user  # R6-4：单一实现点（调用点零变化）
 from src.import_engine import TARGET_FIELDS, plan_import, run_import, validate_mapping
 from src.mysql_db import get_db_cursor
 from src.security import sanitize_csv_dataframe
@@ -272,11 +273,8 @@ GUIDE = {
 # ============================================
 # 会话与权限（纵深防御自检）
 # ============================================
-
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（规范 §6-5：会话只存 st.session_state["user"]）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
+# _current_user 已收敛至 src/db_utils.current_user（R6-4 单一实现点，文件头
+# 别名导入）—— 本模块不再留本地副本（fail-closed 语义不变：user 非 dict 即 None）。
 
 
 def _is_dict_admin(user: Optional[Dict[str, Any]]) -> bool:

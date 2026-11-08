@@ -7,8 +7,8 @@
 ## 一句话架构
 
 Streamlit 单进程应用：界面层（`src/app.py`）在渲染过程中同步调用「释义适配层」，适配层
-依次尝试数据库（MySQL 8.0）、大模型（智谱 AI）、内置示例，任一环节不可用即降级，因此
-**数据库或 API key 缺失都不会让页面崩溃**。
+依次尝试数据库（MySQL 8.0）、大模型（多供应商：智谱 / OpenAI 兼容 / DeepSeek）、内置
+示例，任一环节不可用即降级，因此**数据库或 API key 缺失都不会让页面崩溃**。
 
 ```
 用户（浏览器）
@@ -27,8 +27,9 @@ Streamlit 界面       src/app.py
     ├──────────────► 协作层   src/users_db.py · src/annotation_flow.py · src/reliability.py
     │                多人标注：账号角色 / 任务分配 / 提交·分歧·仲裁 / Krippendorff's α 信度
     │
-    └──────────────► 大模型封装   src/llm_api.py      智谱 AI (GLM)
+    └──────────────► 大模型封装   src/llm_api.py      多供应商（zhipu/openai/deepseek）
                      提示词、调用、JSON 解析、MySQL 缓存、兜底释义
+                     供应商注册/路由数据面 src/llm_providers_db.py（🤖 模型供应商页）
 
 横切  src/security.py（输入校验 / HTML 转义 / 密钥掩码）
       src/design_system.py（颜色、间距、字体、组件样式）
@@ -38,7 +39,9 @@ Streamlit 界面       src/app.py
 
 ### 界面层 — `src/app.py`
 
-- 页面配置与 `session_state` 初始化（卡片折叠状态、侧边栏折叠状态）。
+- 页面配置与 `session_state` 初始化（卡片折叠状态、侧边栏折叠状态）；页面体系为
+  **十七页**（`page_guides.py: PAGE_KEYS=17` 单一事实源，16 个显式分支 + search 兜底），
+  按 `_PAGE_ACCESS` 角色矩阵过滤（六角色：词典管理员/平台管理员/审校/编纂/标注/只读）。
 - 启动时调用 `init_database()`；失败则置 `DB_AVAILABLE = False` 并在页面提示
   「MySQL 数据库不可用，使用离线模式」，随后统计 / 导出 / 反馈写入全部走空数据分支。
 - 界面组成：
@@ -73,36 +76,48 @@ Streamlit 界面       src/app.py
   （`_setting(env_key, yaml_key, default)`）。变量名见 `config/README.md`。
 - 连接：`get_connection_pool()` / `get_db_cursor()`（上下文管理器）；`init_database(max_retries=3,
   retry_delay=2.0)` 启动时带重试建表，以适配 Docker 中 MySQL 尚未就绪的情况。
-- 表（`CREATE_TABLES_SQL`，与 `scripts/init_db.sql` 一致）：
+- 表（核心词库域 `CREATE_TABLES_SQL`；全库 49 张表分属各数据层模块，
+  `scripts/init_db.sql` 只建库与授权、不复制 DDL）：
 
   | 表 | 用途 | 关键字段 |
   |----|------|----------|
-  | `definitions` | 动词释义 | `verb`(唯一) / `chinese_ndef` / `semantic_table`(JSON) / `example_sentence` / `model_version` |
-  | `synonyms` | 近义关系 | `original_verb_id`(外键) / `synonym_verb` |
+  | `word_clusters` | 词簇（main_cat × sub_cat） | `uq_word_clusters_cats` |
+  | `definitions` | 动词释义 | `verb`(唯一) / `chinese_ndef` / `semantic_table`(JSON) / `cluster_id` / `phonetic` |
+  | `word_relations` | 词间关系（簇内完全图） | `uq_word_relations_pair`、`CHECK(verb_a_id < verb_b_id)` |
+  | `word_senses` / `oald_senses` | 中英对照义位 / OALD10 义项 | `sense_index` 等 |
   | `feedbacks` | 用户反馈 | `verb` / `rating`(1–5) / `feedback_text` |
   | `usage_logs` | 查询日志 | `verb` / `query_time` / `device_info` |
-  | `statistics` | 统计 | `stat_name`(唯一) / `stat_value` |
+  | `schema_migrations` | 结构版本记录 | 供 `init_database()` 判断迁移 |
 
+  协作/编纂/媒体/供应商/导入导出等域的表见 `src/users_db.py`、`annotation_flow.py`、
+  `reliability.py`、`category_study.py`、`zh_dict.py`、`media_db.py`、`writing_db.py`、
+  `lexical_db.py`、`llm_providers_db.py`、`registry_db.py` 等模块各自的 DDL。
 - 主要函数：`insert_definition` / `get_definition_by_verb` / `get_all_definitions`；
-  `insert_synonym` / `get_synonyms`；`insert_feedback` / `get_feedback_by_verb` /
-  `get_feedback_data`；`get_stats` / `get_hot_verbs`；`log_usage` / `clear_old_usage_logs`；
-  以及历史迁移入口 `migrate_from_sqlite()`。
+  `get_cluster_graph(…)` / `get_hot_verbs`（带 cache）；`insert_feedback` /
+  `get_feedback_by_verb` / `get_feedback_data`；`log_usage` / `clear_old_usage_logs`。
 - 统计口径：`total_queries` 来自 `usage_logs`（真实查询次数），`total_definitions` 是已收录
   词条数，两者分开统计，不互相冒充。
+- 性能口径（批次 13）：`init_database()` 有会话级单例守卫（`_init_db_done`，每会话只跑
+  一次 DDL）；`get_full_word_graph` / `get_hot_verbs` 走 `st.cache_data`；装配/义项脊柱/
+  版本历史/模板逐义项已收敛为批量查询（N+1 修复，契约见 `tests/test_fx13_fixes.py`）。
 
-### 大模型封装 — `src/llm_api.py`
+### 大模型封装 — `src/llm_api.py`（多供应商）
 
-- 唯一提供商是**智谱 AI**（`from zhipuai import ZhipuAI`），key 取自环境变量
-  `ZHIPUAI_API_KEY`；`LLM_MODEL`（默认 `glm-4`）、`LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、
-  `LLM_TIMEOUT`、`CACHE_TTL_HOURS` 均可由环境变量调整。
+- **多供应商路由**：默认按优先级自动选择 智谱（`ZHIPUAI_API_KEY`，可加
+  `ZHIPUAI_BASE_URL` 指向 OpenAI 兼容网关）→ OpenAI（`OPENAI_API_KEY`）→
+  DeepSeek（`DEEPSEEK_API_KEY`）；`LLM_PROVIDER=zhipu|openai|deepseek` 可强制指定。
+  **DB 优先**：`src/llm_providers_db.py` 注册的供应商（「🤖 模型供应商」页管理，
+  `enabled` + `is_default` 口径）优先生效；环境变量链为无 DB 配置时的兜底。
+- 模型名 `ZHIPUAI_MODEL`（或 `LLM_MODEL`，默认 `glm-4`）、`LLM_TEMPERATURE`、
+  `LLM_MAX_TOKENS`、`LLM_TIMEOUT`、`CACHE_TTL_HOURS` 均可由环境变量调整。
 - 提示词 `PROMPT_TEMPLATE` 要求模型返回 JSON，字段含 `traditional` / `optimized` /
   `chinese_ndef` / `semantic_table`（五键：`manner` 方式、`path` 路径、`direction` 方向、
   `aspect` 体相、`scope` 范围）/ `example` / `synonyms`。
 - `_parse_llm_response()` 从可能带 Markdown 代码块的回复中提取 JSON。
 - 缓存：命中 `get_definition_from_cache()` 直接返回；成功后 `save_definition_to_cache()` 写回
   `definitions` 表，TTL 由 `CACHE_TTL_HOURS` 控制。
-- 关键点：`get_zhipuai_client()` 在 `ZHIPUAI_API_KEY` 为空时返回 `None`，`get_definition()`
-  随之返回 `None`，适配层自动降级，应用照常运行。
+- 关键点：无任何可用供应商（DB 注册全关＋环境变量 key 全空）时 `get_definition()`
+  返回 `None`，适配层自动降级，应用照常运行。
 - 另提供 `generate_batch_definitions()`、`get_synonyms_for_verb()`、
   `get_fallback_definition()` 与异常体系（`LLMError` / `APIKeyError` / `RateLimitError`）。
 
@@ -151,9 +166,9 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 | 页面（单簇） | `app.py` + `src/graph_export.py`（vis-network HTML，vendored） | 跟随查询词的交互完全图，可切换簇 / 缩放 / 点击成员切词 |
 | 页面（全库） | `app.py: render_interactive_graph_page()` + `src/graph_export.py` | graphify 风格力导向图：171 词 / 1935 边，可搜索、点选、按簇过滤；静态 HTML + iframe，数据指纹命名 |
 
-页面渲染刻意不用 vis-network + iframe（graphify 的 `graph.html` 是那套）：本项目已确立
-「零网络依赖」原则（灌库脚本、离线降级），CDN 脚本在内网会渲染成空白；且完全图是静态
-结构，不需力学布局，内联 SVG 还能继承页面主题。代价是没有拖拽缩放。
+页面渲染用 **vendored vis-network**（`src/static/vis-network.min.js` 本地加载，不引 CDN
+——内网零网络依赖）导出为**静态 HTML 文件 + iframe**，文件名带数据指纹：数据不变
+不重载，页内重跑保留选中节点与拖动状态（单簇完全图与全库力导向图同用这一套）。
 
 ### 知识图谱（两张，均可离线重建）
 
@@ -184,12 +199,19 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
 
 ## 部署形态
 
-- **Docker Compose**：`mysql:8.0` 服务 + web 镜像（`python:3.11-slim`）。
+- **Docker Compose**：`mysql:8.0` 服务 + web 镜像（基础镜像 `python:3.11-slim`，
+  三处 `FROM` 按 digest 固定；容器内非 root 运行，uid 1000）。
   `scripts/entrypoint.sh` 先用 `scripts/wait_for_mysql.py` 探活 `$MYSQL_HOST:$MYSQL_PORT`
   （30 次 × 2 秒），超时也以离线模式启动；数据落命名卷 `web-word-mysql-data` /
-  `web-word-app-data`。
-- **本地**：本机 MySQL 8.0 + `streamlit run src/app.py`，用 `MYSQL_HOST=127.0.0.1` 覆盖
-  `config.yaml` 里的 Docker 主机名。
+  `web-word-app-data`，种子由镜像内 `/app/seed/data` 幂等补种（缺才拷）。
+  web 与 mysql 服务均带 **healthcheck**（web 用 python urllib 探 `_stcore/health`）；
+  MySQL 以 `--skip-log-bin` 启动（binlog 关闭，datadir 不再日增约 1G）；
+  compose 的 `env_file` 挂 `.env`＋`.env.local`（后者 `required: false`，
+  需 Compose v2.24+）。
+- **本地**：本机 MySQL 8.0 + `streamlit run src/app.py`，连接参数由
+  `scripts/lib_deploy.sh` 从 `MYSQL_*` 环境变量归一为内部 `DB_*`（已导出的优先、
+  `.env.local` 覆盖 `.env`，不再硬编码 127.0.0.1/webword123）；`./develop.sh` 部署、
+  `./start.sh` 启动、`./repair.sh --fix` 修复，三脚本共享同一函数库。
 
 两种形态共用同一份被跟踪的 `config/config.yaml`，靠环境变量优先级区分 —— 详见
 [`config/README.md`](config/README.md)。

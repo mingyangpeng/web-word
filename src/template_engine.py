@@ -53,7 +53,10 @@ LexiSchema 模板化释义 / 优化要点）。
 
 导出（第四节：模板批量导出）::
 
-    collect_cluster_templates()  当前簇全部义位逐条实例化
+    collect_cluster_templates()  当前簇全部义位逐条实例化（R5-7 起走
+                                 instantiate_templates 批量取数：3 条查询
+                                 取回全簇义位行/簇归属/特征向量，逐义位
+                                 纯函数实例化，语义与逐条口径一致）
     build_export_csv()           §6.4 列结构 CSV，单元格过 src/security
                                  .sanitize_csv_value 防公式注入（= + - @ \\t
                                  前置单引号；该函数已存在，不新增）
@@ -739,7 +742,7 @@ def _get_category(code: str) -> Optional[Dict[str, Any]]:
 
 def _fetch_sense(category: str, sense_id: int,
                  language: str) -> Optional[Dict[str, Any]]:
-    """单义位行 + 特征向量 + 所在簇（一次连接三查）。"""
+    """单义位行 + 特征向量 + 所在簇（一次连接三查；批量入口见 _fetch_senses）。"""
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -777,6 +780,165 @@ def _fetch_sense(category: str, sense_id: int,
         return None
 
 
+def _fetch_senses(category: str, language: str,
+                  sense_ids: Sequence[int]) -> Dict[int, Dict[str, Any]]:
+    """多义位批量取数（R5-7 脊柱/导出 N+1 修复，**只读** cs_* 表）。
+
+    与逐义位 _fetch_sense 等价的批量版：一次 3 条查询取回全部义位的
+    主行 / 簇归属 / 特征向量，行形状逐字段一致（主行同 SELECT 列 +
+    ``_cluster``（cs_cluster_members → cs_clusters 最近运行一行，r.id
+    最大即最新，与逐义位 ORDER BY r.id DESC LIMIT 1 同解；无簇为 None）
+    ＋ ``_vector``（cs_sense_features → {feature_code: int(value)}））。
+
+    Returns:
+        {sense_id: 行 dict}；义位不在库的 id 无键；入参全非法 / 整批
+        查询失败返回 {}（调用方回退逐义位 _fetch_sense，旧行为兜底）。
+    """
+    ids: List[int] = []
+    for sid in sense_ids:
+        try:
+            got = int(sid)
+        except (TypeError, ValueError):
+            continue
+        if got not in ids:
+            ids.append(got)
+    if not ids:
+        return {}
+    placeholders = ", ".join(["%s"] * len(ids))
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                f"""SELECT s.id AS sense_id, s.sense_no, s.sense_label,
+                           s.definition, s.example, s.subject_type, s.register,
+                           s.tag, s.status, s.remark,
+                           l.lemma, l.language, l.source_dict,
+                           c.code AS category_code, c.name_cn AS category_name
+                    FROM cs_senses s
+                    JOIN cs_lexemes l ON s.lexeme_id = l.id
+                    JOIN categories c ON l.category_id = c.id
+                    WHERE c.code = %s AND l.language = %s
+                      AND s.id IN ({placeholders})
+                    ORDER BY s.id""",
+                (category, language, *ids))
+            senses: Dict[int, Dict[str, Any]] = {}
+            for row in cursor.fetchall():
+                senses[int(row["sense_id"])] = dict(row)
+            if not senses:
+                return {}
+            cursor.execute(
+                f"""SELECT m.sense_id, m.cluster_id, cl.cluster_no,
+                           cl.name AS cluster_name
+                    FROM cs_cluster_members m
+                    JOIN cs_clusters cl ON m.cluster_id = cl.id
+                    JOIN cs_cluster_runs r ON cl.run_id = r.id
+                    WHERE m.sense_id IN ({placeholders}) AND r.language = %s
+                    ORDER BY m.sense_id ASC, r.id DESC""",
+                (*ids, language))
+            clusters: Dict[int, Dict[str, Any]] = {}
+            for row in cursor.fetchall():
+                sid = int(row["sense_id"])
+                if sid not in clusters:  # 首见即 r.id 最大（与 LIMIT 1 同解）
+                    clusters[sid] = {k: row[k] for k in
+                                     ("cluster_id", "cluster_no", "cluster_name")}
+            cursor.execute(
+                f"""SELECT sense_id, feature_code, value
+                    FROM cs_sense_features
+                    WHERE sense_id IN ({placeholders})
+                    ORDER BY sense_id ASC""",
+                tuple(ids))
+            vectors: Dict[int, Dict[str, int]] = {}
+            for row in cursor.fetchall():
+                sid = int(row["sense_id"])
+                vectors.setdefault(sid, {})[row["feature_code"]] = int(row["value"])
+            for sid, sense in senses.items():
+                sense["_cluster"] = clusters.get(sid)
+                sense["_vector"] = vectors.get(sid, {})
+            return senses
+    except Exception as e:  # noqa: BLE001 — 整批失败回退逐义位（降级不崩）
+        logger.error("template_engine: fetch_senses failed: %s", e)
+        return {}
+
+
+def instantiate_templates(
+    category: str,
+    language: str,
+    sense_ids: Sequence[int],
+    engine_schema: Any = None,
+) -> Dict[int, Optional[Dict[str, Any]]]:
+    """【槽位实例化·批量编排】多义位一次取数 → 逐义位四维模板（R5-7）。
+
+    语义与逐个 instantiate_template(category, language, sense_id,
+    engine_schema) **逐字段一致**（None 占位口径也一致）：
+      * 母图式按 engine_schema 挑选（_pick_cluster_schema 同参同解）；
+        挑不中时母图式提炼**一次共享**（derive_cluster_schemas 同参确定性，
+        与逐义位重复提炼同解，避免批量导出 N 次重提炼）；
+      * 范畴包按本义位特征码重合度解析（resolve_pack 同参同解，同解共享）；
+      * 批量取数失败（_fetch_senses 返回 {}）回退逐义位 instantiate_template
+        （旧行为兜底）。
+
+    Returns:
+        {sense_id: build_template 结构 | None}；每个合法入参 id 都有键。
+    """
+    ids: List[int] = []
+    for sid in sense_ids:
+        try:
+            got = int(sid)
+        except (TypeError, ValueError):
+            continue
+        if got not in ids:
+            ids.append(got)
+    if not ids:
+        return {}
+    try:
+        senses = _fetch_senses(str(category), str(language), ids)
+    except Exception as e:  # noqa: BLE001 — 防御一层（_fetch_senses 已自兜底）
+        logger.error("template_engine: instantiate_templates fetch failed: %s", e)
+        senses = {}
+    if not senses:
+        return {
+            i: instantiate_template(str(category), str(language), i,
+                                    engine_schema=engine_schema)
+            for i in ids
+        }
+    out: Dict[int, Optional[Dict[str, Any]]] = {}
+    packs: Dict[frozenset, Optional[tuple]] = {}  # 特征码集 → (pack, meta, assembly)
+    derived: Optional[List[Dict[str, Any]]] = None  # 母图式提炼一次共享（懒）
+    for i in ids:
+        try:
+            sense = senses.get(i)
+            if not sense:
+                out[i] = None  # 义位不存在：与逐义位 instantiate_template 同口径
+                continue
+            vector = sense["_vector"]
+            observed = frozenset(vector.keys())
+            if observed not in packs:
+                try:
+                    pack = resolve_pack(str(category), vector.keys())
+                    packs[observed] = (pack, _feature_meta(pack),
+                                       _pack_assembly(pack))
+                except Exception:  # noqa: BLE001 — CategoryPackError 等同旧捕获口径
+                    packs[observed] = None
+            entry = packs[observed]
+            if entry is None:
+                out[i] = None
+                continue
+            pack, feature_meta, assembly = entry
+            cluster_info = sense["_cluster"]
+            cluster_schema = _pick_cluster_schema(engine_schema, cluster_info)
+            if cluster_schema is None:
+                if derived is None:
+                    derived = derive_cluster_schemas(str(category),
+                                                     str(language))
+                cluster_schema = _pick_cluster_schema(derived, cluster_info)
+            out[i] = build_template(sense, vector, cluster_schema,
+                                    feature_meta, assembly=assembly)
+        except Exception as e:  # noqa: BLE001 — 单义位异常折叠为 None（不崩批量）
+            logger.error("template_engine: instantiate_templates sense=%s failed: %s",
+                         i, e)
+            out[i] = None
+    return out
+
+
 def lookup_sense_id(category: str, language: str, lemma: str,
                     sense_no: Optional[str] = None,
                     sense_label: Optional[str] = None) -> Optional[int]:
@@ -811,6 +973,11 @@ def collect_cluster_templates(category: str, language: str,
                               cluster_no: Optional[int] = None) -> Dict[str, Any]:
     """当前簇全部义位逐条实例化（批量导出的数据面）。
 
+    R5-7（N+1 修复）：成员义位改走 instantiate_templates 一次取数
+    （义位行 / 簇归属 / 特征向量各 1 条查询，共 3 条；母图式与范畴包同解
+    共享），替代原「逐成员 instantiate_template 3 条查询 × N」的循环取数；
+    实例化语义与逐成员口径逐字段一致（失败成员 None 不入表）。
+
     Returns:
         {"category", "language", "cluster": {母图式草案}, "templates": [...]}；
         簇不存在时 templates 为空列表。cluster_no 缺省取第一个簇。
@@ -823,10 +990,12 @@ def collect_cluster_templates(category: str, language: str,
             break
     templates: List[Dict[str, Any]] = []
     if cluster:
-        for m in cluster.get("members") or []:
-            tpl = instantiate_template(str(category), str(language),
-                                       int(m["sense_id"]),
-                                       engine_schema=[cluster])
+        members = cluster.get("members") or []
+        by_id = instantiate_templates(str(category), str(language),
+                                      [int(m["sense_id"]) for m in members],
+                                      engine_schema=[cluster])
+        for m in members:
+            tpl = by_id.get(int(m["sense_id"]))
             if tpl:
                 templates.append(tpl)
     return {

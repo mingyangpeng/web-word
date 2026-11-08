@@ -70,12 +70,22 @@ GUIDE 母本（帮助中心同步用，本模块非独立页键——装配以�
   该段缺数灰段，绝不让单段异常打崩整页；缺数原因如实写「暂无：<原因>」。
 
 安全规则：
-  1. 私有 SQL 一律参数化（本模块仅 3 条只读查询：definitions 词目行、
-     categories 代号清单、cs_senses 软映射；其余全走数据层函数）；
+  1. 私有 SQL 一律参数化（本模块 6 条只读查询：definitions 词目行、
+     categories 代号清单、cs_senses 软映射 ＋ R5-4 批量预取 3 条
+     （sense_examples / sense_translations / media_bindings 一次 IN 取回
+     按锚分组）；模板释义走 template_engine.instantiate_templates 批量取数，
+     其余全走数据层函数）；
   2. 所有动态值（词形/释义/例证/对译/路径/图注/属性值）拼进段体前一律
      经 _html_escape（html.escape）转义；段体由 st.markdown 输出
      （unsafe_allow_html=False），段头 h4 与 app.py 同口径带内联样式；
   3. 本模块只读：不建表、不写任何业务表，无写路径。
+
+性能口径（R5-4 装配 N+1 修复）：装配各段对建模义项的子表取数（发布例证 /
+对译定稿 / 媒体绑定）与模板释义不再逐义项循环查库 —— _assembly_sections
+先按映射到的全部 cs_senses.id 一次 IN 取回分组缓存（_ASSEMBLY_PREFETCH，
+try/finally 请求级复位），_fetch_* 薄适配层优先命中缓存；批量取数失败或
+无预取时逐条回退原查询（行为与返回结构不变）。测试仍 monkeypatch
+_fetch_* 薄适配层构造场景（打桩优先于缓存，契约不变）。
 """
 
 import logging
@@ -89,7 +99,11 @@ from src.dict_admin_db import get_values_for_anchor
 from src.design_system import HEADER_H4
 from src.mysql_db import get_db_cursor
 from src.cluster_analysis import PACK_TO_STUDY_CODE
-from src.template_engine import derive_cluster_schemas, instantiate_template
+from src.template_engine import (
+    derive_cluster_schemas,
+    instantiate_template,
+    instantiate_templates,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -414,7 +428,18 @@ def _derive_engine_schema(study_code: str, language: str) -> List[Dict[str, Any]
 def _fetch_template(study_code: str, language: str, cs_sense_id: int,
                     engine_schema: Any) -> Optional[Dict[str, Any]]:
     """② 模板释义（**只读**）：template_engine.instantiate_template（确定性
-    引擎，不调 LLM）。义位不存在 / 数据不可用返回 None。"""
+    引擎，不调 LLM）。R5-4 起优先命中装配预取缓存（instantiate_templates
+    一次取数批量实例化）；无预取 / 缓存未命中回退单义位现场实例化。
+    义位不存在 / 数据不可用返回 None。"""
+    cache = _ASSEMBLY_PREFETCH
+    if cache is not None and cache.get("templates") is not None:
+        try:
+            key = int(cs_sense_id)
+        except (TypeError, ValueError):
+            key = None
+        if key is not None and key in cache["templates"]:
+            template = cache["templates"][key]
+            return dict(template) if template else None
     try:
         return instantiate_template(str(study_code), str(language),
                                     int(cs_sense_id), engine_schema=engine_schema)
@@ -425,7 +450,14 @@ def _fetch_template(study_code: str, language: str, cs_sense_id: int,
 
 def _fetch_published_examples(sense_ref: str) -> List[Dict[str, Any]]:
     """③ 例证区（**只读**）：lexical_db.list_examples(sense_ref, status='发布')
-    —— 只消费发布态（候选/审定例证不进装配）。数据库不可用返回 []。"""
+    —— 只消费发布态（候选/审定例证不进装配）。R5-4 起优先命中装配预取
+    缓存（一次 IN 批量取回分组）；无预取 / 缓存未命中回退原查询。
+    数据库不可用返回 []。"""
+    cache = _ASSEMBLY_PREFETCH
+    if cache is not None and cache.get("examples") is not None:
+        rows = cache["examples"].get(str(sense_ref))
+        if rows is not None:
+            return [dict(r) for r in rows]
     try:
         return lexical_db.list_examples(str(sense_ref), status=lexical_db.STATUS_PUBLISHED)
     except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
@@ -434,7 +466,14 @@ def _fetch_published_examples(sense_ref: str) -> List[Dict[str, Any]]:
 
 
 def _fetch_translation(sense_ref: str) -> Optional[Dict[str, Any]]:
-    """④ 对译区（**只读**）：lexical_db.get_translation（一义位至多一行）。"""
+    """④ 对译区（**只读**）：lexical_db.get_translation（一义位至多一行）。
+    R5-4 起优先命中装配预取缓存；无预取 / 缓存未命中回退原查询。"""
+    cache = _ASSEMBLY_PREFETCH
+    if cache is not None and cache.get("translations") is not None:
+        bucket = cache["translations"]
+        if str(sense_ref) in bucket:
+            row = bucket[str(sense_ref)]
+            return dict(row) if row else None
     try:
         return lexical_db.get_translation(str(sense_ref))
     except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
@@ -444,7 +483,16 @@ def _fetch_translation(sense_ref: str) -> Optional[Dict[str, Any]]:
 
 def _fetch_media_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, Any]]:
     """⑤ 多模态区（**只读**）：media_db.list_assets_for_anchor（绑定＋资产
-    两级状态随行；发布过滤在段构造层做）。"""
+    两级状态随行；发布过滤在段构造层做）。R5-4 起优先命中装配预取缓存；
+    无预取 / 缓存未命中回退原查询。"""
+    cache = _ASSEMBLY_PREFETCH
+    if cache is not None and cache.get("media") is not None:
+        try:
+            key = (str(anchor_type), int(anchor_id))
+        except (TypeError, ValueError):
+            key = None
+        if key is not None and key in cache["media"]:
+            return [dict(r) for r in cache["media"][key]]
     try:
         return media_db.list_assets_for_anchor(anchor_type, int(anchor_id))
     except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
@@ -468,6 +516,220 @@ def _fetch_synonyms(verb: str) -> List[str]:
     except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
         logger.error(f"entry_assembly: 同簇近义查询失败（verb={verb!r}）: {e}")
         return []
+
+
+# ============================================
+# R5-4 装配预取（一次 IN 查询按锚分组，内存装配；失败逐条回退）
+# ============================================
+
+# 请求级预取缓存（_assembly_sections 置位、finally 复位；None = 未启用）。
+# 桶键：examples / translations / media / templates；桶值 None 表示该桶
+# 批量取数失败 → _fetch_* 逐条回退原查询（与修复前行为一致）。
+_ASSEMBLY_PREFETCH: Optional[Dict[str, Any]] = None
+
+# 每义位例证条数上限（与 lexical_db.list_examples 默认 limit=500 同值：
+# 旧行为逐义项 LIMIT 500，批量分组后逐组截断同口径）
+_EXAMPLES_PER_SENSE_LIMIT = 500
+
+
+def _batch_fetch_published_examples(
+    refs: List[str],
+) -> Optional[Dict[str, List[Dict[str, Any]]]]:
+    """③ 例证区批量预取（**只读**私有查询）：全部建模义位的发布态例证
+    一次取回，按 sense_ref 分组（组内 sort_order, id 序、列清单、发布态
+    过滤与逐义位 lexical_db.list_examples(ref, status='发布') 逐字段一致，
+    每组同 500 上限截断）。空清单返回 {}；失败返回 None（逐条回退）。"""
+    if not refs:
+        return {}
+    placeholders = ", ".join(["%s"] * len(refs))
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, sense_ref, content, source, caption, "
+                "media_asset_id, sort_order, status, created_by, created_at "
+                "FROM sense_examples "
+                f"WHERE status = %s AND sense_ref IN ({placeholders}) "
+                "ORDER BY sort_order, id",
+                (lexical_db.STATUS_PUBLISHED, *[str(r) for r in refs]),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+    except Exception as e:  # noqa: BLE001 — 批量失败回退逐义项查询
+        logger.warning(f"entry_assembly: 发布例证批量预取失败，回退逐义项查询: {e}")
+        return None
+    grouped: Dict[str, List[Dict[str, Any]]] = {str(r): [] for r in refs}
+    for row in rows:
+        grouped.setdefault(str(row.get("sense_ref")), []).append(row)
+    for group in grouped.values():
+        del group[_EXAMPLES_PER_SENSE_LIMIT:]
+    return grouped
+
+
+def _batch_fetch_translations(
+    refs: List[str],
+) -> Optional[Dict[str, Dict[str, Any]]]:
+    """④ 对译区批量预取（**只读**私有查询）：全部建模义位的对译定稿一次
+    取回，按 sense_ref 分组（UNIQUE(sense_ref) 一义位一行；列清单与
+    lexical_db.get_translation 逐字段一致）。空清单返回 {}；失败返回 None。"""
+    if not refs:
+        return {}
+    placeholders = ", ".join(["%s"] * len(refs))
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, sense_ref, state, equivalent, note, paraphrase, "
+                "finalized_by, finalized_at, updated_at "
+                f"FROM sense_translations WHERE sense_ref IN ({placeholders})",
+                tuple(str(r) for r in refs),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+    except Exception as e:  # noqa: BLE001 — 批量失败回退逐义项查询
+        logger.warning(f"entry_assembly: 对译定稿批量预取失败，回退逐义项查询: {e}")
+        return None
+    grouped: Dict[str, Dict[str, Any]] = {str(r): None for r in refs}
+    for row in rows:
+        key = str(row.get("sense_ref"))
+        if grouped.get(key) is None:  # UNIQUE 约束下单行；防御性取首行（确定性）
+            grouped[key] = row
+    return grouped
+
+
+def _batch_fetch_media(
+    word_id: Optional[int],
+    sense_ids: List[int],
+) -> Optional[Dict[Tuple[str, int], List[Dict[str, Any]]]]:
+    """⑤ 多模态区批量预取（**只读**私有查询）：词目锚＋全部义项锚一次
+    联查（列清单与 media_db.list_assets_for_anchor 逐字段一致），按
+    (anchor_type, anchor_id) 分组（组内 b.sort_order, b.id 序与逐锚查询
+    一致）。失败返回 None（逐锚回退）。"""
+    clauses: List[str] = []
+    params: List[Any] = []
+    if word_id is not None and int(word_id) > 0:
+        clauses.append("(b.anchor_type = %s AND b.anchor_id = %s)")
+        params.extend([media_db.ANCHOR_WORD, int(word_id)])
+    deduped: List[int] = []
+    for sid in sense_ids:
+        if int(sid) > 0 and sid not in deduped:
+            deduped.append(int(sid))
+    if deduped:
+        placeholders = ", ".join(["%s"] * len(deduped))
+        clauses.append(
+            f"(b.anchor_type = %s AND b.anchor_id IN ({placeholders}))")
+        params.extend([media_db.ANCHOR_SENSE, *deduped])
+    if not clauses:
+        return {}
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT b.id AS binding_id, b.asset_id, b.anchor_type, "
+                "b.anchor_id, b.purpose, b.caption, b.sort_order, "
+                "b.status AS binding_status, b.reviewed_by, b.reviewed_at, "
+                "a.kind, a.file_path, a.mime, a.sha256, a.source, "
+                "a.license, a.size_bytes, a.status AS asset_status, a.created_at "
+                "FROM media_bindings b "
+                "JOIN media_assets a ON a.id = b.asset_id "
+                "WHERE " + " OR ".join(clauses) + " "
+                "ORDER BY b.sort_order, b.id",
+                tuple(params),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+    except Exception as e:  # noqa: BLE001 — 批量失败回退逐锚查询
+        logger.warning(f"entry_assembly: 媒体绑定批量预取失败，回退逐锚查询: {e}")
+        return None
+    grouped: Dict[Tuple[str, int], List[Dict[str, Any]]] = {}
+    if word_id is not None and int(word_id) > 0:
+        grouped[(media_db.ANCHOR_WORD, int(word_id))] = []
+    for sid in deduped:
+        grouped[(media_db.ANCHOR_SENSE, sid)] = []
+    for row in rows:
+        try:
+            key = (str(row.get("anchor_type")), int(row.get("anchor_id")))
+        except (TypeError, ValueError):
+            continue
+        if key in grouped:  # WHERE 已限定键集；防御性丢弃越界行
+            grouped[key].append(row)
+    return grouped
+
+
+def _batch_fetch_templates(
+    study_code: str, language: str, cs_ids: List[int], engine_schema: Any,
+) -> Optional[Dict[int, Optional[Dict[str, Any]]]]:
+    """② 模板释义批量预取：template_engine.instantiate_templates 一次取数
+    （义位行 / 簇归属 / 特征向量共 3 条查询）逐义位实例化（与逐义项
+    instantiate_template 逐字段一致，None 占位同口径）。失败返回 None。"""
+    if not cs_ids:
+        return {}
+    try:
+        result = instantiate_templates(str(study_code), str(language), cs_ids,
+                                       engine_schema=engine_schema)
+    except Exception as e:  # noqa: BLE001 — 批量失败回退逐义项实例化
+        logger.warning(f"entry_assembly: 模板批量预取失败，回退逐义项实例化: {e}")
+        return None
+    if not isinstance(result, dict):
+        return None
+    for cid in cs_ids:  # 防御性补键：义位行缺失与逐义项 None 口径一致
+        result.setdefault(cid, None)
+    return result
+
+
+def _build_assembly_prefetch(
+    row: Optional[Dict[str, Any]],
+    senses: List[Dict[str, Any]],
+    cs_map: Dict[str, Dict[str, Any]],
+    study_code: Optional[str],
+    language: str,
+    engine_schema: Any,
+) -> Dict[str, Any]:
+    """装配预取（R5-4）：各段要循环取数的子表一次批量取回按锚分组。
+
+    只批量「逐义项循环」桶（例证 / 对译 / 媒体 / 模板释义）；单查询桶
+    （词目行 / 义项行 / 范畴清单 / cs 映射 / 定制属性 / 参见）维持原取数。
+    预取编排任何异常折叠为逐条回退（不影响装配输出，空库 / 无库不崩）。
+    """
+    buckets: Dict[str, Any] = {
+        "examples": None, "translations": None, "media": None, "templates": None,
+    }
+    try:
+        refs: List[str] = []
+        template_ids: List[int] = []
+        for s in senses:
+            entry = cs_map.get(str(s.get("sense_index") or "").strip())
+            if not entry or entry.get("id") is None:
+                continue
+            ref = str(entry["id"])
+            if ref not in refs:
+                refs.append(ref)
+            try:
+                cid = int(entry["id"])
+            except (TypeError, ValueError):
+                continue
+            if cid not in template_ids:
+                template_ids.append(cid)
+        buckets["examples"] = _batch_fetch_published_examples(refs)
+        buckets["translations"] = _batch_fetch_translations(refs)
+        word_id: Optional[int] = None
+        if row and row.get("id") is not None:
+            try:
+                word_id = int(row["id"])
+            except (TypeError, ValueError):
+                word_id = None
+        sense_ids: List[int] = []
+        for s in senses:
+            sid = s.get("id")
+            if sid is None:
+                continue
+            try:
+                sid = int(sid)
+            except (TypeError, ValueError):
+                continue
+            if sid not in sense_ids:
+                sense_ids.append(sid)
+        buckets["media"] = _batch_fetch_media(word_id, sense_ids)
+        if study_code is not None and template_ids:
+            buckets["templates"] = _batch_fetch_templates(
+                str(study_code), str(language), template_ids, engine_schema)
+    except Exception as e:  # noqa: BLE001 — 预取编排异常不影响装配
+        logger.warning(f"entry_assembly: 装配预取编排异常，回退逐条查询: {e}")
+    return buckets
 
 
 # ============================================
@@ -779,18 +1041,26 @@ def _assembly_sections(verb: Any, category: str = "motion",
         except Exception as e:  # noqa: BLE001
             logger.warning(f"entry_assembly: 母图式提炼意外失败: {e}")
             engine_schema = []
-    sections = [
-        _section_header(v, row),
-        _section_senses(v, senses, cs_map, study_code, category, language,
-                        engine_schema),
-        _section_examples(senses, cs_map),
-        _section_translations(senses, cs_map),
-        _section_media(row, senses),
-        _section_custom_values(row),
-    ]
-    see_also = _section_see_also(v)
-    if see_also is not None:
-        sections.append(see_also)
+    # R5-4 装配预取：逐义项循环的子表（例证/对译/媒体/模板释义）一次批量
+    # 取回按锚分组；_fetch_* 适配层优先命中缓存，批量失败逐条回退（行为不变）。
+    global _ASSEMBLY_PREFETCH
+    _ASSEMBLY_PREFETCH = _build_assembly_prefetch(
+        row, senses, cs_map, study_code, language, engine_schema)
+    try:
+        sections = [
+            _section_header(v, row),
+            _section_senses(v, senses, cs_map, study_code, category, language,
+                            engine_schema),
+            _section_examples(senses, cs_map),
+            _section_translations(senses, cs_map),
+            _section_media(row, senses),
+            _section_custom_values(row),
+        ]
+        see_also = _section_see_also(v)
+        if see_also is not None:
+            sections.append(see_also)
+    finally:
+        _ASSEMBLY_PREFETCH = None  # 请求级复位：预取缓存绝不跨装配泄漏
     return sections
 
 

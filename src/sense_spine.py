@@ -47,9 +47,10 @@ annotation_submissions → cs_cluster_runs → definition_versions）与 §9 U
   缺数原因如实写「暂无数据：<原因>」，不猜测、不编数。
 
 安全规则：
-  1. 私有 SQL 一律参数化（本模块仅 4 条只读查询：义项行、信度最近运行、
-     cs_senses 映射/簇信息、cs_senses 现状 status/merged_into，其余全走
-     数据层函数）；
+  1. 私有 SQL 一律参数化（本模块 7 条只读查询：义项行、信度最近运行、
+     categories 代号清单、cs_senses 映射、簇信息、cs_senses 现状
+     status/merged_into、R5-5 标注留痕批量（task_type IN 一次取回，替代
+     逐任务类型 3 查询），其余全走数据层函数）；
   2. 段头为模块内静态文案（HTML 由 design_system 样式渲染）；段体走
      st.markdown（unsafe_allow_html=False），由 Streamlit 自动转义，
      与 src/data_pages.py 的转义口径一致（不手工二次转义避免实体直显）。
@@ -282,19 +283,53 @@ def _fetch_sense_row(sense_id: int) -> Optional[Dict[str, Any]]:
 
 def _fetch_submissions_for_spine(sense_id: int) -> List[Dict[str, Any]]:
     """② 标注留痕（**只读**；R6-4 改名 _fetch_submissions_for_spine，与
-    reliability._fetch_submissions 同名不同义消歧）：三类任务逐类调
-    annotation_flow 的「看全部」
-    入口（reviewer+ 口径的页面才嵌脊柱，调用方负责角色门；coder 显示名
-    经 users 表 LEFT JOIN 随行返回）。数据库不可用返回 []。"""
-    rows: List[Dict[str, Any]] = []
-    for task_type in annotation_flow.TASK_TYPES:
-        try:
-            rows.extend(
-                annotation_flow.get_submissions_for_sense(int(sense_id), task_type)
+    reliability._fetch_submissions 同名不同义消歧）。
+
+    R5-5（N+1 修复）：三类任务原逐类调 annotation_flow.get_submissions_for_sense
+    （3 条同构查询）→ 现一次 task_type IN 批量取回（同一 SELECT 列与
+    LEFT JOIN users，组间按 TASK_TYPES 顺序拼接、组内 coder_id, id 序，
+    行转换复用 annotation_flow 的单一实现 —— 输出与逐类拼接逐字段一致）。
+    批量失败回退逐类查询（旧行为兜底；单类失败不拖垮其余类）。
+
+    reviewer+ 口径的页面才嵌脊柱，调用方负责角色门；coder 显示名经 users
+    表 LEFT JOIN 随行返回。数据库不可用返回 []。
+    """
+    try:
+        task_types = annotation_flow.TASK_TYPES
+        placeholders = ", ".join(["%s"] * len(task_types))
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT s.id, s.category, s.sense_id, s.task_type, s.coder_id, "
+                "s.payload, s.ai_assisted, s.status, s.submitted_at, "
+                "u.username, u.display_name "
+                "FROM annotation_submissions s "
+                "LEFT JOIN users u ON u.id = s.coder_id "
+                f"WHERE s.sense_id = %s AND s.task_type IN ({placeholders}) "
+                "ORDER BY s.coder_id, s.id",
+                (int(sense_id), *task_types),
             )
-        except Exception as e:  # noqa: BLE001 — 单任务失败不拖垮其余任务
-            logger.error(f"sense_spine: 标注留痕查询失败（task={task_type}）: {e}")
-    return rows
+            rows = cursor.fetchall()
+    except Exception as e:  # noqa: BLE001 — 批量失败回退逐类查询（旧行为）
+        logger.warning(f"sense_spine: 标注留痕批量查询失败，回退逐任务类型查询: {e}")
+        rows = []
+        for task_type in annotation_flow.TASK_TYPES:
+            try:
+                rows.extend(
+                    annotation_flow.get_submissions_for_sense(int(sense_id), task_type)
+                )
+            except Exception as e2:  # noqa: BLE001 — 单任务失败不拖垮其余任务
+                logger.error(f"sense_spine: 标注留痕查询失败（task={task_type}）: {e2}")
+        return rows
+    order = {t: i for i, t in enumerate(annotation_flow.TASK_TYPES)}
+    rows = sorted(rows, key=lambda r: order.get(r.get("task_type"),
+                                                len(order)))  # 稳定排序：组内保持 coder_id, id 序
+    out: List[Dict[str, Any]] = []
+    for row in rows:
+        item = annotation_flow._submission_row_to_dict(row)
+        item["username"] = row.get("username")
+        item["display_name"] = row.get("display_name")
+        out.append(item)
+    return out
 
 
 def _fetch_latest_reliability(category: str) -> List[Dict[str, Any]]:

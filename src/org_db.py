@@ -36,7 +36,10 @@
   * 成员项目内角色一枚举 {chief, reviewer, editor, annotator, viewer}，
     一人一项目一职（UNIQUE），add_member 重入= 改授职能（upsert）；
   * SQL 一律参数化；FK 对 users ON DELETE CASCADE / SET NULL，账号物理删除
-    （测试清理）不残留悬挂行、不阻断删除路径。
+    （测试清理）不残留悬挂行、不阻断删除路径 —— 隶属「users FK 删除纪律」
+    第 1 条（用户自有表 CASCADE + 纯留痕列 SET NULL），规范全文见
+    src/users_db.py USER_ROLES_TABLE_SQL 前注释；业务引用侧（NO ACTION ＋
+    入口前置探测）的示例是 annotation_flow 三表，本模块不含该口径。
 
 已知口径（R3-7 · P3 · 批次 12 复审，本轮不修码）：remove_member 后 assignments
 残留＋在途检查全局口径 —— closed 任务成员可移除成功但 assignments 行残留（无
