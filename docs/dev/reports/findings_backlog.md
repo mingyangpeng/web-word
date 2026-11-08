@@ -51,3 +51,12 @@
 - [ ] RV3-6 P3 update_draft 无变化=True vs update_example 无变化=False——docstring 互注或统一
 - [ ] RV3-7 P3 pipeline_status 六个 _format_* 无 docstring＋三个注解精度
 - [ ] RV3-8 P3 advance_binding/example_status 参数校验次序不一致（仅一致性）
+
+## RV-5 中文学术文案（15 findings：P2×5 P3×10）
+
+- [ ] RV5-1 P2 准入三分 5 种写法统一（Y=核心/EXT=拓展/N=剔除，首现全称）
+- [ ] RV5-2 P2 搜索页「四要素」→「五要素」＋标点全角化
+- [ ] RV5-3 P2 标注指南「英汉对齐」三值 vs 四值对齐（「错位」属簇层）——文案对齐
+- [ ] RV5-4 P2 users_admin/page_guides 口令→密码 统一
+- [ ] RV5-5 P2 词义簇/语义簇/词簇 三写法定名「词簇」
+- [ ] RV5-6~15 P3 义项/义位/词条/词目定则＋审稿死术语＋滑杆/滑块＋caption/图注＋UPGMA/MDS/medoid 首现中文全称＋图式得分四写定名「重心得分」＋审定/审核/审校/仲裁/裁决五概念速查表＋词类歧义＋裸表名空态补指引＋127/35 差额说明＋平局提示对齐＋母本「编撰」错字＋角色门文案补全＋四卡→六卡同步
