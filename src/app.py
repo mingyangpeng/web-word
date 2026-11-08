@@ -30,6 +30,7 @@ from src.help_center import render_help_center_page
 from src.dict_admin_pages import render_dict_admin_page
 from src.writing_pages import render_writing_page
 from src.lexical_pages import render_lexical_page
+from src.model_settings_pages import render_model_settings_page
 from src.collab_pages import pending_inbox_count, render_collab_page
 from html import escape as _html_escape
 from typing import Optional, Dict, List, Any
@@ -316,6 +317,7 @@ _PAGE_ACCESS_SIX: Dict[str, tuple] = {
     "ai_hub": NEW_ROLES,
     "writing": NEW_ROLES,
     "lexical": ("dict_admin", "reviewer", "editor"),
+    "model_settings": ("dict_admin",),
 }
 
 # 六角色 → legacy 页面权限域的折叠（投影用）：两位一体的旧 admin、
@@ -3340,6 +3342,8 @@ def main():
         render_writing_entry()
     elif _page == "lexical":
         render_lexical_entry()
+    elif _page == "model_settings":
+        render_model_settings_entry()
     elif _page == "help":
         render_help_entry()
     else:
@@ -3403,6 +3407,12 @@ def render_lexical_entry() -> None:
     """📖 例证与对译入口：使用说明 + 例证配置/对译定稿两 tab（编纂成文域）。"""
     render_page_usage_guide("lexical")
     render_lexical_page()
+
+
+def render_model_settings_entry() -> None:
+    """🤖 模型供应商入口：使用说明 + 供应商管理页面（仅词典管理员）。"""
+    render_page_usage_guide("model_settings")
+    render_model_settings_page()
 
 
 def render_help_entry() -> None:

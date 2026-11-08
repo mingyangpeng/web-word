@@ -148,20 +148,21 @@ _SESSIONS = {
 # 基础页 annotate 虽全员可见，页级另有 role gate —— 直入闸门单独断言）。
 _ALL_PAGES = {
     "ai_hub", "annotate", "cluster", "corpus", "dict_admin", "domain", "graph",
-    "help", "lexical", "reliability", "search", "semantic", "submission",
-    "template", "users_admin", "writing",
+    "help", "lexical", "model_settings", "reliability", "search", "semantic",
+    "submission", "template", "users_admin", "writing",
 }
 _EXPECTED_VISIBLE = {
     "anon": {"annotate", "corpus", "domain", "graph", "help", "search"},
     "legacy_admin": _ALL_PAGES,
-    "legacy_reviewer": _ALL_PAGES - {"users_admin", "dict_admin"},
+    "legacy_reviewer": _ALL_PAGES - {"users_admin", "dict_admin", "model_settings"},
     "granted_annotator": _ALL_PAGES - {"users_admin", "dict_admin",
-                                       "reliability", "lexical"},
-    "granted_reviewer": _ALL_PAGES - {"users_admin", "dict_admin"},
+                                       "model_settings", "reliability", "lexical"},
+    "granted_reviewer": _ALL_PAGES - {"users_admin", "dict_admin", "model_settings"},
     "granted_dict_admin": _ALL_PAGES - {"users_admin"},
-    "granted_editor": _ALL_PAGES - {"users_admin", "dict_admin", "reliability"},
+    "granted_editor": _ALL_PAGES - {"users_admin", "dict_admin",
+                                    "model_settings", "reliability"},
     "pure_viewer": _ALL_PAGES - {"submission", "users_admin", "reliability",
-                                 "dict_admin", "lexical"},
+                                 "dict_admin", "lexical", "model_settings"},
 }
 
 

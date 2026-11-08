@@ -475,10 +475,12 @@ from src.dict_admin_pages import GUIDE as _DICT_ADMIN_GUIDE  # noqa: E402
 from src.collab_pages import GUIDE as _AI_HUB_GUIDE  # noqa: E402
 from src.writing_pages import GUIDE as _WRITING_GUIDE  # noqa: E402
 from src.lexical_pages import GUIDE as _LEXICAL_GUIDE  # noqa: E402
+from src.model_settings_pages import GUIDE as _MODEL_SETTINGS_GUIDE  # noqa: E402
 PAGE_GUIDES["dict_admin"] = _DICT_ADMIN_GUIDE
 PAGE_GUIDES["ai_hub"] = _AI_HUB_GUIDE
 PAGE_GUIDES["writing"] = _WRITING_GUIDE
 PAGE_GUIDES["lexical"] = _LEXICAL_GUIDE
+PAGE_GUIDES["model_settings"] = _MODEL_SETTINGS_GUIDE
 PAGE_GUIDES["help"] = PAGE_GUIDES.pop("help")
 
 # 页面键清单（侧边栏 radio 与使用说明共用，保证一一对应）

@@ -25,7 +25,8 @@ from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usag
 APP_PAGES = {"search", "graph", "corpus", "domain", "annotate",
              "submission", "users_admin", "reliability",
              "cluster", "template", "semantic", "dict_admin", "ai_hub",
-             "writing", "lexical", "help"}
+             "writing", "lexical",
+             "model_settings", "help"}
 
 # 每页说明的专属内容锚点（从 PAGE_GUIDES 内容派生，防止说明被清空成模板）
 _ANCHORS = {
@@ -44,6 +45,7 @@ _ANCHORS = {
     "ai_hub": "收件箱",
     "writing": "审校",
     "lexical": "对译",
+    "model_settings": "供应商",
     "help": "四段式",
 }
 # 详细版新增段：每页必须有原理与数据来源
@@ -63,6 +65,7 @@ _ANCHORS_PRINCIPLE = {
     "ai_hub": "混合主动交互",
     "writing": "两种范式",
     "lexical": "三态",
+    "model_settings": "明文存储",
     "help": "母本",
 }
 
@@ -81,6 +84,7 @@ _SESSION_USERS = {
     "dict_admin": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
     "ai_hub": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
     "writing": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
+    "model_settings": {"id": 1, "username": "admin", "display_name": "管理员", "role": "admin"},
 }
 
 
@@ -91,7 +95,7 @@ def test_page_keys_match_app_pages():
                                "submission", "users_admin", "reliability",
                                "cluster", "template", "semantic",
                                "dict_admin", "ai_hub", "writing", "lexical",
-                               "help"]
+                               "model_settings", "help"]
 
 
 def test_every_guide_has_required_fields():
@@ -200,9 +204,9 @@ def test_page_access_table_consistent_with_registration():
 
     keys = {"submission", "users_admin", "reliability",
             "cluster", "template", "semantic", "dict_admin", "ai_hub",
-            "writing", "lexical"}
+            "writing", "lexical", "model_settings"}
     assert set(_PAGE_ACCESS_SIX) == keys, \
-        "_PAGE_ACCESS_SIX 键应恰为十个非基础页（基础六页与帮助中心对所有人可见，不进表）"
+        "_PAGE_ACCESS_SIX 键应恰为十一个非基础页（基础六页与帮助中心对所有人可见，不进表）"
     assert set(_PAGE_ACCESS) == set(_PAGE_ACCESS_SIX), "两表键集漂移"
 
     legacy_canonical = {"admin", "reviewer", "annotator", "viewer"}
