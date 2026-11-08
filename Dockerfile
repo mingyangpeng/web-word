@@ -47,10 +47,10 @@ COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
 # data/mysql（本机数据库目录）与 zh_dict_senses.json 本体不进镜像（后者首启由 mdx 生成）；
 # dictionary.db 全库由 dict_builder stage 组装后 COPY 进来（sha256 已校验），
 # dictionary_senses_subset.json 仍随镜像分发，作为全库缺失场景的降级快照。
-COPY docs/Levin移动动词候选词筛选表.xlsx ./docs/Levin移动动词候选词筛选表.xlsx
-COPY docs/output-oald10en-for-senselist-1020.xlsx ./docs/output-oald10en-for-senselist-1020.xlsx
-COPY docs/词表义项清单.xlsx ./docs/词表义项清单.xlsx
-COPY docs/域系初判表v0.2.xlsx ./docs/域系初判表v0.2.xlsx
+COPY docs/research/tables/Levin移动动词候选词筛选表.xlsx ./docs/research/tables/Levin移动动词候选词筛选表.xlsx
+COPY docs/research/tables/output-oald10en-for-senselist-1020.xlsx ./docs/research/tables/output-oald10en-for-senselist-1020.xlsx
+COPY docs/research/tables/词表义项清单.xlsx ./docs/research/tables/词表义项清单.xlsx
+COPY docs/research/tables/域系初判表v0.2.xlsx ./docs/research/tables/域系初判表v0.2.xlsx
 COPY data/motion_verbs_extracted.json ./data/motion_verbs_extracted.json
 COPY data/oxford_cache.json ./data/oxford_cache.json
 COPY data/dictionary_senses_subset.json ./data/dictionary_senses_subset.json
