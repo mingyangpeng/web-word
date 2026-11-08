@@ -89,6 +89,7 @@ from typing import Any, Dict, List, Optional
 
 import pymysql
 
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
 from src.users_db import effective_six_roles
 
@@ -212,18 +213,10 @@ def ensure_writing_tables() -> None:
 # ============================================
 _INVALID = object()  # 字符串校验失败的哨兵（None 是合法值，不能复用）
 
-
-def _as_int(value: Any) -> Optional[int]:
-    """宽松转 int（int/float/int-str 可转；bool/None/其余 None）—— 防脏参数。
-
-    float NaN/Inf 也拒：int(nan) 抛 ValueError，正好落进 except。
-    """
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+# _as_int 收敛至 src/db_utils.py（R6-4 单一实现点；行为与原本地副本逐字节
+# 一致 —— bool/None 先拦，int(value) 异常落 None，float NaN/Inf 亦拒），
+# 本模块以别名导入（见顶部 import），调用点与测试 monkeypatch 模块属性
+# 零改动。
 
 
 def _as_positive_int(value: Any) -> Optional[int]:
@@ -468,6 +461,12 @@ def update_draft(
     双开标签页互踩等场景由它挡住）。version 列本身不可变，行内更新不改号；
     行存在性先查后写（MySQL 对「值无变化」的 UPDATE 计 0 受影响行，
     不能拿 rowcount 当失败 —— 以前置 SELECT 为准）。
+
+    「无变化」口径（RV3-6，与 lexical_db.update_example 相反、有意设计）：
+    本函数前置 SELECT 确认行在位后，同值改写（rowcount=0）仍返回 **True**
+    （草稿台「再存一次」不算失败）；update_example 以 ``rowcount == 1``
+    判成功，同值更新返回 False（例证页按「未产生变更」提示）。两函数
+    docstring 互注，勿"统一"。
 
     **作者守卫（R1-3，施工规范 §14 批次 12）**：UPDATE WHERE 追加
     ``AND author_id <=> %s``（NULL 安全相等），入口前置 SELECT 同步校验 ——

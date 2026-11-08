@@ -9,7 +9,7 @@
 是什么（两个入口，页面层 src/data_pages.py 数据导入向导第三步调用）：
   * plan_import(rows, mapping) —— **纯函数**（零 DB 访问，可单测）：按「列名 →
     目标字段」映射产出导入计划：合法行（含规整后的写入值）／非法行（含中文原因）；
-  * run_import(rows, mapping, operator, dry_run=True) —— 执行引擎。**默认干跑**：
+  * run_import(rows, mapping, imported_by, dry_run=True) —— 执行引擎。**默认干跑**：
     dry_run=True 只做 SELECT 读库、返回将写入的变更预览（谁会 INSERT、谁会
     UPDATE、每字段旧值→新值），**零写库**；dry_run=False 才逐行 UPSERT
     definitions（键 = verb），并逐行收集 revert_log 供 dict_admin_db
@@ -74,7 +74,7 @@ oald_senses 相关字段一律按白名单拒绝，不假装支持。
 
 **权限要求（§15 导入同权）**：本引擎仅词典管理员可驱动 —— 页面层闸门
 （src/data_pages.py render_import_page 入口 _is_dict_admin 判定 ＋ 集成接线
-的中央闸门 require_dict_admin）拦截后调用；operator 必填（操作人 users.id，
+的中央闸门 require_dict_admin）拦截后调用；imported_by 必填（操作人 users.id，
 审计留痕）。引擎自身不做角色判定（与 dict_admin_db 同口径：页面/服务层闸门
 负责，docstring 标注以便核对）。
 
@@ -86,7 +86,7 @@ revert_log)」须在同一会话内完成；会话丢失则 revert_log 不可恢
 
 接口（契约 §8-Agent Q）：
   plan_import(rows, mapping) -> dict
-  run_import(rows, mapping, operator, dry_run=True) -> dict
+  run_import(rows, mapping, imported_by, dry_run=True) -> dict
   TARGET_FIELDS（目标字段白名单，页面映射下拉据此渲染）
   批次 R3 修复追加（非契约辅助，仿 persist_revert_log 先例）：
   ensure_import_voided_column()（definitions.import_voided 幂等补列，
@@ -113,6 +113,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import pymysql
 
 from src import mysql_db
+from src.db_utils import column_exists as _column_exists  # R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -167,15 +168,9 @@ def _voided_cache_key() -> Tuple[str, str, str, str]:
             str(mysql_db.MYSQL_DATABASE), str(mysql_db.MYSQL_USER))
 
 
-def _column_exists(cursor, table: str, column: str) -> bool:
-    """表上是否已有该列（information_schema 探测，仿 users_db._column_exists）。"""
-    cursor.execute(
-        """SELECT COUNT(*) AS n FROM information_schema.COLUMNS
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
-             AND COLUMN_NAME = %s""",
-        (table, column),
-    )
-    return int(cursor.fetchone()["n"] or 0) > 0
+# _column_exists 收敛至 src/db_utils.py（R6-4 单一实现点；行为与原本地副本
+# 逐字节一致），本模块以别名导入（见顶部 import），调用点与测试
+# monkeypatch 模块属性零改动。
 
 
 def ensure_import_voided_column() -> bool:
@@ -562,11 +557,16 @@ def _apply_update(cursor, existing: Dict[str, Any], values: Dict[str, str],
     })
 
 
-def run_import(rows: Any, mapping: Any, operator: Any, dry_run: bool = True) -> Dict[str, Any]:
+def run_import(rows: Any, mapping: Any, imported_by: Any, dry_run: bool = True) -> Dict[str, Any]:
     """按映射执行导入（**默认干跑，零写库**；显式 dry_run=False 才写库）。
 
     **权限要求（§15 导入同权）**：仅词典管理员可驱动（页面层闸门拦截后调用）；
-    operator 必填（操作人 users.id，审计留痕，非法整批拒绝）。
+    imported_by 必填（操作人 users.id，审计留痕，非法整批拒绝）。
+
+    参数名口径（RV3-3）：操作人参数全库统一「语义动词过去式 + _by」
+    （本函数 imported_by；start_batch started_by；见 src/lexical_db.py
+    模块 docstring 的操作人口径表）—— 原名 operator 是越轨名，改名已同步
+    全部调用点；DB 留痕列名 import_batches.operator 不变。
 
     执行流程（dry_run=False）：
       0. ensure_import_voided_column() 幂等补 definitions.import_voided 列
@@ -591,7 +591,7 @@ def run_import(rows: Any, mapping: Any, operator: Any, dry_run: bool = True) -> 
     Args:
         rows: 行清单（list[dict]，列名 → 单元格值）
         mapping: 「列名 → 目标字段」dict（目标字段 ∈ TARGET_FIELDS）
-        operator: 操作人 users.id（正整数；审计留痕）
+        imported_by: 操作人 users.id（正整数；审计留痕）
         dry_run: True=干跑（默认，零写库）；False=实际写入
 
     Returns:
@@ -609,11 +609,11 @@ def run_import(rows: Any, mapping: Any, operator: Any, dry_run: bool = True) -> 
     """
     total = len(rows) if isinstance(rows, (list, tuple)) else 0
 
-    op = operator if isinstance(operator, int) and not isinstance(operator, bool) else None
+    op = imported_by if isinstance(imported_by, int) and not isinstance(imported_by, bool) else None
     if op is None or op <= 0:
         return _fatal_result(
             total,
-            f"operator 非法: {operator!r}（须为操作人 users.id 正整数，§15 导入同权审计留痕）",
+            f"imported_by 非法: {imported_by!r}（须为操作人 users.id 正整数，§15 导入同权审计留痕）",
         )
 
     plan = plan_import(rows, mapping)
@@ -713,7 +713,7 @@ def run_import(rows: Any, mapping: Any, operator: Any, dry_run: bool = True) -> 
                     result["rows_rejected"] += 1
         result["rows_ok"] = written
         logger.info(
-            f"导入执行完成（operator={op}, dry_run=False）：ok={written}, "
+            f"导入执行完成（imported_by={op}, dry_run=False）：ok={written}, "
             f"rejected={result['rows_rejected']}, revert_log={len(result['revert_log'])} 条"
         )
         return result

@@ -1,11 +1,11 @@
-"""聚类可视化与典型性排序 —— 范畴深挖的谱系树（F3/F2）与 medoid 典型性排序（F6）。
+"""聚类可视化与典型性排序 —— 语义分析的谱系树（F3/F2）与 medoid 典型性排序（F6）。
 
 补齐《白话版对照清单》第二档缺口（docs/spec/白话版对照清单.md §三）：
 
   * F3 谱系树（dendrogram）  论文 §5.1：聚类产出「谱系树」可交互切割；
     本模块用 scipy average 联接画树，并标注 k=5 探索性切分参考线。
   * F2 交互式谱系切割        论文 §5.1「拖动阈值实时重切子簇」：谱系树 tab
-    提供 k 滑杆（2–10），scipy fcluster(maxclust) 对已算好的 linkage 重切，
+    提供 k 滑块（2–10），scipy fcluster(maxclust) 对已算好的 linkage 重切，
     可「保存为新运行版本」（cs_cluster_runs 追加 version，与预计算版共存
     互不覆盖 —— 交互切割结果为探索性运行）。
   * F6 medoid 典型性排序     论文 §5.2：每簇按「到簇代表点的距离」分
@@ -24,7 +24,7 @@ src/category_pack.load_pack），决定 Gower 分支（框架文档 §4「引擎
   15 列齐全，不会触发）。
 
 范畴名解析：本模块的 ``category`` 参数接受范畴包目录名（configs/<category>/，
-如 motion —— 与页面选择器一致）或范畴深挖 categories.code（如 RUN）。
+如 motion —— 与页面选择器一致）或语义分析 categories.code（如 RUN）。
 包名 → 研究范畴代号的对应关系由 PACK_TO_STUDY_CODE 声明（d1 试点：
 motion 包的研究登记名是 RUN 跑范畴）。
 
@@ -132,7 +132,7 @@ from src.category_study import (
     get_cluster_runs,
     get_clusters_with_members,
 )
-# 批次 8 合并页：英汉对比五视图 + 范畴深挖缓存装载器委托 category_study_page
+# 批次 8 合并页：英汉对比五视图 + 语义分析缓存装载器委托 category_study_page
 # （视图函数独立可调、取数逻辑原样复用；无循环导入 —— category_study_page
 # 不回 importer 本模块，其旧页面入口经函数内延迟导入指回这里）
 from src.category_study_page import (
@@ -143,7 +143,7 @@ from src.category_study_page import (
     render_overview_view,
     render_schema_view,
 )
-from src.design_system import HEADER_H1, HEADER_H3
+from src.design_system import HEADER_H1, HEADER_H3, get_badge_html
 from src.mysql_db import cache_scope_key, get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -173,7 +173,7 @@ except ImportError:  # pragma: no cover - 环境无 plotly 时才触发
 # 配置常量
 # ============================================
 
-# 范畴包目录名 → 范畴深挖 categories.code。包是引擎视角的研究对象配置，
+# 范畴包目录名 → 语义分析 categories.code。包是引擎视角的研究对象配置，
 # categories.code 是研究登记名 —— d1 试点：motion 包 → RUN 跑范畴。
 PACK_TO_STUDY_CODE = {"motion": "RUN"}
 
@@ -190,15 +190,18 @@ TIER_LABELS = {
     TIER_TYPICAL: "次典型",
     TIER_PERIPHERY: "边缘",
 }
-# tier 颜色（沿用 src/design_system 的语义色；徽章底色 / plotly 分色共用）
+# tier 颜色（沿用 src/design_system 的语义色；徽章底色 / plotly 分色共用）。
+# RV1-2：徽章底色全取深档（白字对比 ≥4.5:1）—— 旧 #48bb78 2.43:1 /
+# #4299e1 3.05:1 / #a0aec0 2.26:1 全不达 AA（periphery 灰不取 TEXT_DISABLED，
+# 用 TEXT_SECONDARY 同值 #4a5568）。
 TIER_COLORS = {
-    TIER_PROTOTYPE: "#48bb78",   # SUCCESS_COLOR
-    TIER_TYPICAL: "#4299e1",     # INFO_COLOR
-    TIER_PERIPHERY: "#a0aec0",   # TEXT_DISABLED
+    TIER_PROTOTYPE: "#2f855a",   # SUCCESS_COLOR
+    TIER_TYPICAL: "#2b6cb0",     # INFO_COLOR
+    TIER_PERIPHERY: "#4a5568",   # TEXT_SECONDARY
 }
-MEDOID_COLOR = "#ed8936"         # WARNING_COLOR：medoid 徽章金色系
+MEDOID_COLOR = "#c05621"         # WARNING_COLOR：medoid 徽章金色系（白字 4.57:1）
 
-# 交互式谱系切割（F2，论文 §5.1）：滑杆簇数范围 2–10；当前运行无有效 k 时
+# 交互式谱系切割（F2，论文 §5.1）：滑块簇数范围 2–10；当前运行无有效 k 时
 # 默认 5（与 d1 试点的探索性解一致）。
 RECUT_K_MAX = 10
 RECUT_K_DEFAULT = 5
@@ -237,8 +240,9 @@ CLUSTER_LOCKED_COMMENT = (
     "G3 分立复核闸门：1=该簇义项清单复核定稿（locked 簇才允许流入释义撰写，"
     "阶段 2 消费），0=未定稿（批次 6 幂等新增）"
 )
-# 「已锁定」徽章底色（DANGER 色系，与谱系树切分参考线同源；区别 medoid 金色）
-LOCKED_COLOR = "#e53e3e"
+# 「已锁定」徽章底色（DANGER 色系，与谱系树切分参考线同源；区别 medoid 金色；
+# RV1-2：#e53e3e 白字 4.13:1 不达 AA，取深档 #c53030 白字 5.47:1）
+LOCKED_COLOR = "#c53030"
 
 
 # ============================================
@@ -261,7 +265,7 @@ def _pack_name_for(category: str) -> str:
 
 
 def _resolve_study_code(category: str) -> Optional[str]:
-    """范畴参数 → 范畴深挖 categories.code（无已灌数据的范畴返回 None）。
+    """范畴参数 → 语义分析 categories.code（无已灌数据的范畴返回 None）。
 
     先按 categories.code 直接匹配（大小写不敏感，兼容 RUN 与 run），
     再按 PACK_TO_STUDY_CODE 把包名（motion）映射到研究代号（RUN）。
@@ -464,7 +468,7 @@ def _cluster_family_reachable_error() -> Optional[str]:
         return None
     except Exception as e:
         logger.warning(f"簇谱系表族深探针失败（按数据不可用归因）: {e}")
-        return f"范畴深挖数据读取失败：{e}"
+        return f"语义分析数据读取失败：{e}"
 
 
 def _resolve_run(category_id: int, language: str,
@@ -786,7 +790,7 @@ def recut_clusters(dendro: Dict[str, Any], k: int) -> Dict[str, Any]:
 
     对 build_dendrogram_data 返回的**已算好** linkage 矩阵按目标簇数 k 重切
     （scipy.cluster.hierarchy.fcluster(Z, k, criterion='maxclust')），不重算
-    Gower 距离与联接 —— 谱系树 tab 的滑杆每次拖动只做一次轻量切分。
+    Gower 距离与联接 —— 谱系树标签页的滑块每次拖动只做一次轻量切分。
 
     medoid 口径：与 compute_medoid_ranking 同一判定（medoid_index —— 簇内到
     其他成员平均 Gower 距离最小者，平局取下标最小者），距离直接取预计算
@@ -797,7 +801,7 @@ def recut_clusters(dendro: Dict[str, Any], k: int) -> Dict[str, Any]:
     Args:
         dendro: build_dendrogram_data 的返回结构（须含 linkage/members；
             distance_matrix 缺失时多成员簇的 medoid 记 None，不猜）。
-        k: 目标簇数（页面滑杆范围 2–RECUT_K_MAX；k 须 ≤ n_senses）。
+        k: 目标簇数（页面滑块范围 2–RECUT_K_MAX；k 须 ≤ n_senses）。
 
     Returns:
         {"k", "n_clusters", "assignments"（与 dendro["members"] 同序的簇号，
@@ -1857,12 +1861,13 @@ def build_sense_graph_data(dendro: Dict[str, Any],
 # ============================================
 
 def _badge(text: str, color: str) -> str:
-    """小圆角徽章（HTML span，文本须先经 _html_escape）。"""
-    return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
-        f'padding:1px 8px;border-radius:10px;font-size:0.78em;'
-        f'margin-right:4px;">{text}</span>'
-    )
+    """小圆角徽章（HTML span，文本须先经 _html_escape）。
+
+    RV1-2（_badge 收敛）：实现单份进 design_system.get_badge_html ——
+    文字颜色按底色自动选深/浅（旧版写死白字，浅底不达 WCAG AA）；
+    转义契约不变。
+    """
+    return get_badge_html(text, color)
 
 
 def _member_name(m: Dict[str, Any]) -> str:
@@ -1903,7 +1908,7 @@ def _load_page_data(cache_scope: str, category: str, language: str) -> Dict[str,
             cursor.execute("SELECT COUNT(*) AS n FROM cs_cluster_runs")
             cursor.fetchone()
     except Exception as e:
-        load_error = f"范畴深挖数据读取失败：{e}"
+        load_error = f"语义分析数据读取失败：{e}"
     ranking: List[Dict[str, Any]] = []
     dendro: Dict[str, Any] = {}
     if load_error:
@@ -2012,7 +2017,8 @@ def _render_dendrogram(dendro: Dict[str, Any]) -> None:
     )
     if cut is not None:
         fig.add_hline(
-            y=cut, line_dash="dash", line_color="#e53e3e",
+            # RV1-6：参考线深档红（白底 5.47:1；旧 #e53e3e 4.13:1）
+            y=cut, line_dash="dash", line_color="#c53030",
             annotation_text=f"k={k} 探索性切分参考线",
             annotation_position="top right",
         )
@@ -2644,10 +2650,10 @@ def render_semantic_analysis_page() -> None:
         st.info(
             f"范畴 {category}（{LANGUAGE_LABELS.get(language, language)}侧）"
             "暂无聚类运行数据。请先运行 scripts/load_category_study.py "
-            "灌入范畴深挖数据。"
+            "灌入语义分析数据。"
         )
     if data.get("scipy_missing"):
-        st.warning("scipy 未安装，谱系树 tab 不可用（pip install scipy）；"
+        st.warning("scipy 未安装，谱系树标签页不可用（pip install scipy）；"
                    "典型性排序不受影响。")
 
     # —— 英汉对比侧数据（原 render_category_study_page 装载逻辑原样搬移：
@@ -2661,7 +2667,11 @@ def render_semantic_analysis_page() -> None:
         if not categories:
             # ready() 已确认 categories 有行，到这里为空只剩 JOIN/读失败或竞态
             if _categories_table_reachable():
-                st.warning("categories 为空。")
+                st.warning(
+                    "categories 为空：多见于灌数后页面缓存未刷新——请刷新本页重试；"
+                    "仍为空请重跑 `MYSQL_HOST=127.0.0.1 python3 "
+                    "scripts/load_category_study.py` 灌入研究数据。"
+                )
             else:
                 st.warning(
                     "数据不可用：categories 读取失败（JOIN 查询出错或连接中断），"
@@ -2690,7 +2700,7 @@ def render_semantic_analysis_page() -> None:
                 )
     elif _categories_table_reachable():
         st.info(
-            "范畴深挖数据尚未灌入。运行 "
+            "语义分析数据尚未灌入。运行 "
             "`MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py` "
             "从 data/d1/ 跑范畴两个 xlsx 加载。"
         )
@@ -2730,7 +2740,7 @@ def render_semantic_analysis_page() -> None:
             if cs_data is not None:
                 render_view(cs_data)
             else:
-                st.caption("（范畴深挖数据未就绪 —— 见页面顶部提示。）")
+                st.caption("（语义分析数据未就绪 —— 见页面顶部提示。）")
 
 
 def render_cluster_analysis_page() -> None:

@@ -159,7 +159,7 @@ GUIDE = {
     "purpose": (
         "人机协同的总控台：协作收件箱把「AI 提议 → 人裁决」的待办（按不确定度从高到低）"
         "与分派给我的任务收进一页，协同度量把提案台账量化成采纳率等论文可引的指标；"
-        "任务分配已并入词典管理区（📋 任务分配 tab）。"
+        "任务分配已并入词典管理区（📋 任务分配标签页）。"
     ),
     "principle": [
         "混合主动交互（帮助文档 §5.1）：AI 可以发起（草稿/质检通道的建议），人批量裁决；"
@@ -175,7 +175,7 @@ GUIDE = {
         "取数约定只取 draft/audit 两通道；词典管理员可在页底「全部 pending」视图"
         "追溯台账全部待决行（含探针）。",
         "任务分派三级权限链（平台架构设计规范 §8）的第三级（分派任务）在词典管理区"
-        "「📋 任务分配」tab 执行（复用本模块 _render_assign_tab）；过渡期以 "
+        "「📋 任务分配」标签页执行（复用本模块 _render_assign_tab）；过渡期以 "
         "role=='admin' 兼判词典管理员。回避制与负荷上限（默认 10）校验批次 3 接入，"
         "本期分派人自行把关。",
     ],
@@ -193,7 +193,7 @@ GUIDE = {
         "src/org_db.py：get_projects_for_user 取当前用户入册项目与项目内职能，"
         "在「我的任务」段提示任务所属的项目上下文。",
         "definitions × oald_senses（mysql_db 只读查询）：任务分配的动词/义位搜索"
-        "（词目或 OALD 词头 LIKE 匹配，关键词走占位符），命中动词作为 scope_verbs "
+        "（词目或 OALD 义项词目 LIKE 匹配，关键词走占位符），命中动词作为 scope_verbs "
         "落进 assignments。",
     ],
     "steps": [
@@ -624,7 +624,7 @@ def create_assignment(
 def _search_verbs(keyword: str, limit: int = 20) -> List[Dict[str, Any]]:
     """动词/义位搜索（definitions × oald_senses 参数化只读查询，本模块辅助）。
 
-    词目（definitions.verb）或 OALD 义项词头（oald_senses.headword）LIKE 匹配：
+    词目（definitions.verb）或 OALD 义项词目（oald_senses.headword）LIKE 匹配：
     关键词走占位符，包裹用的 ``%`` 由本函数拼在**值**里（``%kw%``）；R2-5 起
     关键词先经 data_pages._escape_like 转义（``!``/``%``/``_``，SQL 侧
     ``ESCAPE '!'`` 与 data_pages.LIKE_ESCAPE 同源同口径）—— 通配符按字面
@@ -930,7 +930,7 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
     division = [n for stage, n in counts if stage == "sense_division"]
     if division:
         st.info(f"义项分立复核有 {division[0]} 条待裁决——裁决动作在"
-                "「📊 语义分析 · 🧬 分立复核」tab 完成（证据与落地在同一处）。")
+                "「📊 语义分析 · 🧬 分立复核」标签页完成（证据与落地在同一处）。")
         if st.button("去分立复核", key="collab_adj_goto_cluster"):
             st.session_state["page"] = "cluster"
             st.rerun()
@@ -1034,7 +1034,7 @@ def _render_verb_picker() -> Optional[List[str]]:
     results_key = f"{KEY_PREFIX}verb_results"
     st.markdown("**① 范围动词（可空）**")
     keyword = st.text_input(
-        "搜索动词 / 义位（匹配词目或 OALD 义项词头，参数化只读查询）",
+        "搜索动词 / 义位（匹配词目或 OALD 义项词目，参数化只读查询）",
         key=f"{KEY_PREFIX}assign_search",
         max_chars=50,
         placeholder="如 run、walk；留空直接创建＝不限动词",

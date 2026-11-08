@@ -671,7 +671,7 @@ class TestR3ConsistencyRegression:
         from src.dict_admin_db import finish_batch, start_batch
 
         bid = start_batch(1, "r9.xlsx", "ab" * 32, "custom_values", {},
-                          operator=1)
+                          started_by=1)
         assert bid > 0
         assert finish_batch(bid, 1, 1, 0) is True
         return bid
@@ -810,7 +810,7 @@ class TestR4OfflineAttribution:
         at.run()
         assert not at.exception
         metrics = {m.label: m.value for m in at.sidebar.metric}
-        for label in ("总查询次数", "已收录词条", "词簇", "词间关系",
+        for label in ("总查询次数", "已收录词目", "词簇", "词间关系",
                       "平均评分", "总反馈数"):
             assert label in metrics, f"离线侧边栏缺 metric {label}"
             assert metrics[label] == "—", f"离线时 {label} 应为 —，实际 {metrics[label]!r}"

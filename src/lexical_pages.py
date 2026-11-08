@@ -50,6 +50,7 @@ from src.design_system import (
     HEADER_H2,
     HEADER_H3,
     REVIEW_STATUS_COLORS,
+    get_badge_html,
     get_card_style,
     get_table_header_style,
     get_table_row_style,
@@ -88,7 +89,7 @@ GUIDE: Dict[str, Any] = {
     "label": "📖 例证与对译",
     "purpose": (
         "编纂成文域的例证与对译半区（工序 11/12）：例证配置为义位配文字例证"
-        "（语料草选/人工改写/自拟三来源）与媒体例证（图/视频带 caption 与来源，"
+        "（语料草选/人工改写/自拟三来源）与媒体例证（图/视频带图注与来源，"
         "绑定入口委托媒体库）；对译定稿按三态收口——完全对应（对应词）/部分"
         "对应（对应词＋括注）/无对应（释义翻译），并起草辨析栏（note）。"
         "产出供阶段 2 词条装配渲染例证区与对译区。"
@@ -99,7 +100,8 @@ GUIDE: Dict[str, Any] = {
         "去向记 merged_into）在下拉中禁选并标注「已并入 → #目标」——并入后的"
         "义位不再独立配置例证/对译，内容随目标义位走（G3 语义）。",
         "例证三来源即改写标记：corpus 语料草选（装配侧标「语料例」）、adapted "
-        "人工改写、composed 自拟——来源随行入库，出版侧（G6 许可检查）据此区分"
+        "人工改写（装配侧标「改写例」）、composed 自拟（装配侧标「自拟例」）"
+        "——来源随行入库，出版侧（G6 许可检查）据此区分"
         "「自产/改写」与版权原文；例证审定三态与媒体资产同链（候选→审定→发布），"
         "单步流转、不可跳级、不可回退，乐观并发守卫两人同流只有一人生效。",
         "例证可重建非词典正文：例证是可反复增删的配置项，remove_example 为"
@@ -200,14 +202,17 @@ STATE_LABELS = {
 STATUS_BADGE_COLORS = REVIEW_STATUS_COLORS
 
 # 对译三态徽章配色（完全对应绿/部分对应橙/无对应灰）。
+# RV1-2：白字对比全 ≥4.5:1 —— 旧 STATE_NONE #718096 白字 4.02:1 不达，
+# 深档换 #4a5568（7.53:1）。
 STATE_BADGE_COLORS = {
     STATE_FULL: "#2f855a",
     STATE_PARTIAL: "#c05621",
-    STATE_NONE: "#718096",
+    STATE_NONE: "#4a5568",
 }
 
-# 已并入徽章配色（拒绝/错误红，与 design_system.ERROR_COLOR 同值）。
-MERGED_BADGE_COLOR = "#e53e3e"
+# 已并入徽章配色（拒绝/错误红，与 design_system.ERROR_COLOR 同值；
+# RV1-2：#e53e3e 白字 4.13:1 不达 AA，取深档 #c53030 5.47:1）。
+MERGED_BADGE_COLOR = "#c53030"
 
 # merged 拒选口径：cs_senses.status 分立落地取值（与
 # cluster_analysis.MERGED_STATUS 同值；本地常量避免拖入 numpy/scipy 依赖）。
@@ -338,12 +343,13 @@ def _translation_missing(
 # ============================================
 
 def _badge(text: str, color: str) -> str:
-    """小圆角徽章（HTML span）。text 由调用方保证已过 _esc。"""
-    return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
-        f'padding:1px 10px;border-radius:10px;font-size:0.78em;'
-        f'margin-right:4px;">{text}</span>'
-    )
+    """小圆角徽章（HTML span）。text 由调用方保证已过 _esc。
+
+    RV1-2（_badge 收敛）：实现单份进 design_system.get_badge_html ——
+    文字颜色按底色自动选深/浅（旧版写死白字，浅底不达 WCAG AA）；
+    转义契约不变。
+    """
+    return get_badge_html(text, color)
 
 
 def _render_table(headers: List[str], rows: List[List[str]]) -> None:
@@ -399,7 +405,7 @@ def _render_examples_table(examples: List[Dict[str, Any]]) -> None:
             _esc(SOURCE_LABELS.get(str(ex.get("source") or ""),
                                    str(ex.get("source") or ""))),
             _esc(caption) if caption else "—",
-            _badge(_esc(status), STATUS_BADGE_COLORS.get(status, "#718096")),
+            _badge(_esc(status), STATUS_BADGE_COLORS.get(status, "#4a5568")),
             _esc(media),
         ])
     _render_table(headers, rows)
@@ -500,7 +506,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 key="lex_ex_add_source",
             )
             caption = st.text_input(
-                "说明/出处 caption（可选，如语料库名/例句出处）",
+                "说明/出处图注（可选，如语料库名/例句出处）",
                 key="lex_ex_add_caption",
             )
             order = st.number_input(
@@ -550,7 +556,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                         key="lex_ex_edit_source",
                     )
                     new_caption = st.text_input(
-                        "说明/出处 caption", value=str(row.get("caption") or ""),
+                        "说明/出处图注", value=str(row.get("caption") or ""),
                         key="lex_ex_edit_caption",
                     )
                     new_order = st.number_input(
@@ -637,7 +643,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                     key="lex_media_asset_id",
                 )
                 media_caption = st.text_input(
-                    "图注/来源说明 caption（媒体例证通常记来源）",
+                    "图注/来源说明（媒体例证通常记来源）",
                     key="lex_media_caption",
                 )
                 if st.button("绑定为媒体例证", key="lex_media_bind"):
@@ -663,7 +669,7 @@ def _render_translation_state(tr: Optional[Dict[str, Any]]) -> None:
         return
     state = str(tr.get("state") or "")
     finalizer = f"#{tr.get('finalized_by')}" if tr.get("finalized_by") else "—"
-    state_color = STATE_BADGE_COLORS.get(state, "#718096")
+    state_color = STATE_BADGE_COLORS.get(state, "#4a5568")
     rows: List[List[str]] = [
         ["三态", _badge(_esc(STATE_LABELS.get(state, state)), state_color)],
         ["对应词 equivalent", _esc(tr.get("equivalent") or "") or "—"],

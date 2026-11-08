@@ -1577,7 +1577,8 @@ _CLUSTER_TEMPLATE = """<!DOCTYPE html>
   #bar { display: flex; align-items: center; gap: 12px; padding: 8px 14px;
          border-bottom: 1px solid #e2e8f0; box-sizing: border-box; }
   #bar .t { font-weight: 600; color: #2d3748; font-size: 14px; }
-  #bar .s { color: #718096; font-size: 12px; }
+  /* RV1-7：12px 小字灰 #718096 对白底 4.02:1（<4.5），深档 #4a5568 7.53:1 */
+  #bar .s { color: #4a5568; font-size: 12px; }
   #bar button { margin-left: auto; border: 1px solid #cbd5e0; background: #fff;
                 color: #4a5568; border-radius: 6px; padding: 4px 10px;
                 font-size: 12px; cursor: pointer; }
@@ -1598,7 +1599,7 @@ _CLUSTER_TEMPLATE = """<!DOCTYPE html>
   #card-body { padding: 10px 12px; max-height: 300px; overflow-y: auto;
                font-size: 12.5px; color: #2d3748; }
   #card-body .row { display: flex; padding: 3px 0; }
-  #card-body .k { color: #718096; min-width: 72px; }
+  #card-body .k { color: #4a5568; min-width: 72px; }  /* RV1-7：深档灰 7.53:1 */
   #card-body .v { flex: 1; word-break: break-word; }
   #card-body .sec { margin: 8px 0 4px; font-weight: 600; color: #553c9a;
                     border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }

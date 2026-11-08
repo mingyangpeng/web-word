@@ -3,7 +3,7 @@
 两层结构，与 tests/test_users_db.py / test_dict_admin_db.py 既有约定一致：
 
   * 纯函数（_cell_str / validate_mapping / plan_import）与 run_import 的
-    入口守卫（operator / 映射非法 / 零合法行早退）不碰数据库 —— 本地与 CI 全跑；
+    入口守卫（imported_by / 映射非法 / 零合法行早退）不碰数据库 —— 本地与 CI 全跑；
   * run_import 干跑零写库断言与真 MySQL 集成（UPSERT → revert_log →
     rollback_batch 恢复往返）依赖真实 MySQL —— 连不上或账号无建库权限就
     skip（类级 skipif + fixture 内 skip），CI（无数据库）依然全绿。
@@ -266,13 +266,13 @@ class TestPlanImport:
 # ============================================
 
 class TestRunImportGuards:
-    """operator / 映射非法 / 零合法行早退 —— 均发生在触库之前。"""
+    """imported_by / 映射非法 / 零合法行早退 —— 均发生在触库之前。"""
 
     def test_operator_required(self):
         for bad in (None, 0, -1, "1", 1.0, True):
             result = run_import([], MAPPING, bad, dry_run=True)
             assert result["ok"] is False
-            assert "operator" in result["error"]
+            assert "imported_by" in result["error"]
             assert result["rows_ok"] == 0
             assert result["revert_log"] == []
 

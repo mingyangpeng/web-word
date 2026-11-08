@@ -336,7 +336,7 @@ class TestStageOneE2E:
 
         before = int(_q("SELECT COUNT(*) AS n FROM definitions")[0]["n"])
 
-        result = run_import(IMPORT_ROWS, IMPORT_MAPPING, operator=chief_id, dry_run=True)
+        result = run_import(IMPORT_ROWS, IMPORT_MAPPING, imported_by=chief_id, dry_run=True)
         assert result["ok"] is True and result["dry_run"] is True
         assert result["rows_total"] == 2 and result["rows_ok"] == 2 and result["rows_rejected"] == 0
         assert result["mapping_errors"] == []
@@ -352,7 +352,7 @@ class TestStageOneE2E:
             "SELECT id FROM definitions WHERE verb IN (%s, %s)", ("walk", "jump")
         ), "干跑不应写库：walk/jump 不应存在"
 
-        # 台账登记（§15 导入同权：operator=词典管理员，审计留痕）
+        # 台账登记（§15 导入同权：started_by=词典管理员，审计留痕）
         file_sha = hashlib.sha256(b"stage1-e2e-walk.xlsx").hexdigest()
         batch_id = start_batch(project_id, "stage1_e2e_walk.xlsx", file_sha,
                                "definitions", IMPORT_MAPPING, chief_id)

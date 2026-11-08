@@ -1,4 +1,4 @@
-"""范畴深挖页面组 —— 跑范畴英汉对比研究的五个视图（Streamlit）。
+"""语义分析页面组（范畴研究）—— 跑范畴英汉对比研究的五个视图（Streamlit）。
 
 数据来自 data/d1/ 两个 xlsx（scripts/load_category_study.py 灌入
 categories / cs_* 8 表，见 src/category_study.py）。五个视图函数：
@@ -32,7 +32,7 @@ from src.category_study import (
     get_cluster_runs, get_clusters_with_members, get_alignments,
     get_cluster_profiles, get_screening_stats,
 )
-from src.design_system import HEADER_H3
+from src.design_system import HEADER_H3, get_badge_html
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +48,14 @@ VIEW_LABELS = {
 
 # 编码值三色（0/1/2）：与编码矩阵表的视觉直觉一致 —— 值越高越"实"
 FEATURE_COLORS = {0: "#f0f4f8", 1: "#90cdf4", 2: "#2b6cb0"}
+# RV1-2：判定/甄别徽章底色一律取深档（白字对比 ≥4.5:1）—— 旧浅档
+# #4299e1 3.05:1 / #ed8936 2.55:1 / #e53e3e 4.13:1 全不达 AA。
 VERDICT_COLORS = {
-    "完全对齐": "#2f855a", "部分对齐": "#4299e1",
-    "错位对齐": "#ed8936", "零对齐": "#e53e3e",
+    "完全对齐": "#2f855a", "部分对齐": "#2b6cb0",
+    "错位对齐": "#c05621", "零对齐": "#c53030",
 }
 STATUS_COLORS = {
-    "保留": "#2f855a", "目标": "#2f855a", "边缘": "#ed8936", "剔除": "#e53e3e",
+    "保留": "#2f855a", "目标": "#2f855a", "边缘": "#c05621", "剔除": "#c53030",
 }
 
 
@@ -97,12 +99,13 @@ def _load_category(cache_scope: str, code: str) -> Optional[Dict[str, Any]]:
 
 
 def _badge(text: str, color: str) -> str:
-    """小圆角徽章（HTML span），用于判定/语体/标注。"""
-    return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
-        f'padding:1px 8px;border-radius:10px;font-size:0.78em;'
-        f'margin-right:4px;">{text}</span>'
-    )
+    """小圆角徽章（HTML span），用于判定/语体/标注。
+
+    RV1-2（_badge 收敛）：实现单份进 design_system.get_badge_html ——
+    文字颜色按底色自动选深/浅（旧版写死白字，浅底不达 WCAG AA）；
+    text 仍由调用方保证已转义（契约不变）。
+    """
+    return get_badge_html(text, color)
 
 
 def _cluster_title(cl: Dict[str, Any]) -> str:
@@ -125,7 +128,9 @@ def _render_profile_bars(profile: Dict[str, float]) -> None:
             f'<div style="display:flex;align-items:center;margin:2px 0;">'
             f'<div style="width:110px;font-size:0.8em;color:#4a5568;">{label}</div>'
             f'<div style="flex:1;background:#edf2f7;border-radius:4px;height:12px;">'
-            f'<div style="width:{pct:.0f}%;background:#4299e1;height:12px;'
+            # RV1-13：填充条对轨道 #edf2f7 的非文本对比旧 #4299e1 仅 2.71:1
+            # （<3:1），深档 #2b6cb0 实算 4.81:1。
+            f'<div style="width:{pct:.0f}%;background:#2b6cb0;height:12px;'
             f'border-radius:4px;"></div></div>'
             f'<div style="width:34px;text-align:right;font-size:0.8em;">{mean:.2f}</div>'
             f'</div>'
@@ -172,7 +177,8 @@ def render_cluster_compare_view(data: Dict[str, Any]) -> None:
                    f"{zh_run['cophenetic']:.3f}" if zh_run["cophenetic"] else "—")
     st.caption(
         "口径：程序预编码（单标注演示），正式流程需双标注 IAA 后重跑；"
-        "k=5 为探索性切分。cophenetic 为共表相关系数，越高聚类越保真。"
+        "k=5 为探索性切分。cophenetic＝共表型相关系数（cophenetic "
+        "correlation coefficient），衡量聚类树对原始距离矩阵的保真度，越高越保真。"
     )
 
     # 核心发现置顶：完全对齐的簇对
@@ -215,9 +221,12 @@ def _render_cluster_card(cl: Dict[str, Any], language: str,
             else alignment["verdict"], color)
     st.markdown(
         f'<div style="border:1px solid #e2e8f0;border-radius:8px;'
-        f'padding:12px;margin-bottom:8px;background:#f7fafc;">'
+        # RV1-3：卡底 #f7fafc 是常亮浅色面，暗色主题下容器内继承主题白字
+        # 实测 1.10:1 不可读 —— 补深字 #1a202c 两种主题都 ≥12:1。
+        f'padding:12px;margin-bottom:8px;background:#f7fafc;color:#1a202c;">'
         f'<div style="font-weight:600;">{lang_label} · {_cluster_title(cl)}'
-        f'<span style="color:#718096;font-weight:400;">（{cl["size"]} 条）</span>'
+        # RV1-7：灰字 #718096 对浅底 4.02:1（<4.5），深档 #4a5568 7.53:1。
+        f'<span style="color:#4a5568;font-weight:400;">（{cl["size"]} 条）</span>'
         f'{verdict_html}</div></div>',
         unsafe_allow_html=True,
     )
@@ -349,7 +358,7 @@ def render_alignment_view(data: Dict[str, Any]) -> None:
             y_zh = n_zh - a["zh_cluster_no"]
             d = a["gower_distance"]
             color = ("#2f855a" if d is not None and d < 0.1 else
-                     "#4299e1" if d is not None and d < 0.2 else "#e53e3e")
+                     "#2b6cb0" if d is not None and d < 0.2 else "#c53030")
             fig.add_trace(go.Scatter(
                 x=[0, 1], y=[y_en, y_zh], mode="lines",
                 line=dict(color=color, width=2 + (1.0 - (d or 0)) * 4),
@@ -475,7 +484,11 @@ def _render_schema_alignment(data: Dict[str, Any]) -> None:
                 dist = (f"{r['distance']:.3f}" if r["distance"] is not None
                         else "—")
                 st.markdown(
-                    f"<div style='display:flex;align-items:center;"
+                    # RV1-8（320px 移动端）：固定宽 span 合计 304px＋gap＋徽章
+                    # 远超窄屏内容宽 —— 容器加 flex-wrap:wrap，窄屏逐项换行、
+                    # 宽屏仍单行。
+                    f"<div style='display:flex;flex-wrap:wrap;"
+                    f"align-items:center;"
                     f"gap:12px;padding:3px 0;font-size:0.9em;'>"
                     f"<span style='width:72px;'>{r['schema']}</span>"
                     f"<span style='width:88px;'>英 {r['en_size']} 条</span>"
@@ -537,7 +550,7 @@ def _render_radar_overlay(data: Dict[str, Any]) -> None:
                 continue
             fig = go.Figure()
             for cl, name, color in ((en_cl, "英语簇", "#2b6cb0"),
-                                    (zh_cl, "汉语簇", "#ed8936")):
+                                    (zh_cl, "汉语簇", "#c05621")):
                 profile = cl.get("profile") or {}
                 codes = [f["code"] for f in FC
                          if f["code"] in profile] or list(profile.keys())
@@ -589,7 +602,7 @@ def _render_feature_mean_chart(senses: List[Dict[str, Any]]) -> None:
             name="英语侧", orientation="h", marker_color="#2b6cb0"))
         fig.add_trace(go.Bar(
             y=[label_of[c] for c in df["特征"]], x=df["汉语"],
-            name="汉语侧", orientation="h", marker_color="#ed8936"))
+            name="汉语侧", orientation="h", marker_color="#c05621"))
         fig.update_layout(
             barmode="group", height=max(420, 26 * len(df)),
             margin=dict(l=10, r=10, t=10, b=10),
@@ -786,7 +799,7 @@ def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
                 f"**{e['lemma']}** [{e['pinyin']}]"
                 + (f" {e['pos']}" if e["pos"] else "")
                 + ("（～儿）" if e["erhua"] else "")
-                + (f" <span style='color:#718096;font-size:0.85em;'>"
+                + (f" <span style='color:#4a5568;font-size:0.85em;'>"
                    f"{e['cross_ref']}</span>" if e["cross_ref"] else ""),
                 unsafe_allow_html=True)
             for s in e["senses"]:
@@ -795,7 +808,7 @@ def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
                 if s["register"]:
                     badges += _badge(s["register"], "#805ad5")
                 if s["is_metaphor"]:
-                    badges += _badge("含比喻例", "#ed8936")
+                    badges += _badge("含比喻例", "#c05621")
                 # 研究层对照：该义项在甄别表里的判定
                 study = studied.get(s["sense_no"]) if s["sense_no"] else None
                 if study:
@@ -851,16 +864,16 @@ def _render_en_dict_evidence(data: Dict[str, Any]) -> None:
         for e in entries:
             src_tag = ""
             if e.get("source") and e["source"] != "OALD10":
-                src_tag = _badge(f"来源:{e['source']}", "#ed8936")
+                src_tag = _badge(f"来源:{e['source']}", "#c05621")
             head = f"**{lemma}** 义项 {e['sense_index']} {src_tag}"
             if e.get("grammar"):
                 head += (
-                    f" <span style='color:#718096;font-size:0.85em;'>"
+                    f" <span style='color:#4a5568;font-size:0.85em;'>"
                     f"[{_esc(e['grammar'])}]</span>"
                 )
             if e.get("sense_group"):
                 head += (
-                    f" <span style='color:#718096;font-size:0.85em;'>"
+                    f" <span style='color:#4a5568;font-size:0.85em;'>"
                     f"({_esc(e['sense_group'])})</span>"
                 )
             st.markdown(head, unsafe_allow_html=True)

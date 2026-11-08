@@ -118,7 +118,7 @@ MYSQL_POOL_MAX_OVERFLOW = _pool_config.get('max_overflow', 10)
 # 表结构版本（见 SCHEMA_VERSION 与 init_database 内的迁移调用）。
 #
 # 设计要点（2026-09 重构）：
-#   * word_clusters —— 词义簇，来源是词库的 (main_cat, sub_cat)。这是「词与词关系」
+#   * word_clusters —— 词簇，来源是词库的 (main_cat, sub_cat)。这是「词与词关系」
 #     的第一性数据：同簇 => 互为近义。
 #   * definitions.cluster_id —— 每个动词归属哪个簇，簇成员关系由此表达。
 #   * word_relations —— 词间关系边表，**物化的是簇内完全图**：同一簇内任意两词都有一
@@ -141,7 +141,7 @@ CREATE_TABLES_SQL = [
         applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 
-    # --- 词义簇 ---
+    # --- 词簇 ---
     """CREATE TABLE IF NOT EXISTS word_clusters (
         id INT AUTO_INCREMENT PRIMARY KEY,
         main_cat VARCHAR(64) NOT NULL,
@@ -433,7 +433,7 @@ CREATE_VIEWS_SQL = [
     """
 ]
 
-# 范畴深挖（category study）8 表：categories / cs_lexemes / cs_senses /
+# 语义分析（category study）8 表：categories / cs_lexemes / cs_senses /
 # cs_sense_features / cs_cluster_runs / cs_clusters / cs_cluster_members /
 # cs_cluster_alignment。表结构单一来源在 src/category_study.py —— 这里在
 # init_database 时 import 并追加，避免循环依赖（category_study 只用本模块的
@@ -503,7 +503,7 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
 
     从 v1 → v2 做的事：
 
-      1. ``definitions`` 增加 ``cluster_id``（+ 索引 + 外键），让每个动词能归属到一个词义簇。
+      1. ``definitions`` 增加 ``cluster_id``（+ 索引 + 外键），让每个动词能归属到一个词簇。
          旧库的 CREATE TABLE IF NOT EXISTS 对已存在的表是空操作，所以必须 ALTER。
       2. 建 ``word_relations``（由 CREATE_TABLES_SQL 完成）并**丢弃旧的 ``synonyms``**。
          synonyms 是派生数据：它的边由词库的 sub_cat 现场推导而来，可以随时重建，
@@ -807,7 +807,7 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
             # Use the database
             cursor.execute(f"USE `{MYSQL_DATABASE}`")
 
-            # 范畴深挖 8 表（v9）+ 现汉7 词典 3 表（v10）：注册进 CREATE_TABLES_SQL 再统一建表
+            # 语义分析 8 表（v9）+ 现汉7 词典 3 表（v10）：注册进 CREATE_TABLES_SQL 再统一建表
             _register_category_study_tables()
             _register_zh_dict_tables()
 
@@ -1059,7 +1059,7 @@ def insert_definition(verb: str, chinese_ndef: str, semantic_table: Dict[str, st
         semantic_table: Dictionary of semantic components (manner, direction, aspect, etc.)
         example_sentence: Example sentence
         model_version: Model version used for generation
-        cluster_id: 所属词义簇 id（见 word_clusters）。为 None 时不覆盖已有值 ——
+        cluster_id: 所属词簇 id（见 word_clusters）。为 None 时不覆盖已有值 ——
             LLM 实时生成释义时并不知道词库的簇划分，若把它写成 NULL 会把灌库
             脚本已经建立的簇归属抹掉。
         annotations: 义位层面的标注字段（见 ``_ANNOTATION_COLUMNS``）。
@@ -1364,7 +1364,7 @@ def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
     """
     try:
         with get_db_cursor() as cursor:
-            # 连 word_clusters 取簇信息，供界面显示「该词属于哪个语义簇」
+            # 连 word_clusters 取簇信息，供界面显示「该词属于哪个词簇」
             cursor.execute("""
                 SELECT d.*,
                        c.label AS cluster_label,
@@ -1464,13 +1464,13 @@ def get_all_definitions(limit: int = 100) -> List[Dict[str, Any]]:
 
 
 # ============================================
-# 词义簇与词间关系
+# 词簇与词间关系
 # ============================================
 def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None,
                            image_schema: str = None, cn_syntax: str = None,
                            translation_strategy: str = None) -> Optional[int]:
     """
-    取回词义簇 id，不存在则创建。
+    取回词簇 id，不存在则创建。
 
     簇的唯一键是 (main_cat, sub_cat)，对应 `docs/research/tables/Levin移动动词候选词筛选表.xlsx`
     的「主范畴 / 次类」两列。
@@ -1878,7 +1878,7 @@ def get_cluster_graph_by_id(cluster_id: int, center: str = None,
 
 def list_clusters(limit: int = 500) -> List[Dict[str, Any]]:
     """
-    列出所有词义簇（按成员数降序），供页面「切换簇」下拉框使用。
+    列出所有词簇（按成员数降序），供页面「切换簇」下拉框使用。
 
     Returns:
         [{"id","label","main_cat","sub_cat","size","edge_count"}, ...]
@@ -2061,7 +2061,7 @@ def get_full_word_graph(cache_scope: Optional[str] = None) -> Optional[Dict[str,
     ]
 
     # 度数 = 该词在图上的连边数。簇内完全图下它恒等于 (簇大小-1)，
-    # 所以节点大小实际表达的是「这个词的语义簇有多大」。
+    # 所以节点大小实际表达的是「这个词的词簇有多大」。
     degree = {r["verb"]: 0 for r in node_rows}
     for link in links:
         if link["source"] in degree:
@@ -2270,10 +2270,10 @@ def get_stats() -> Dict[str, Any]:
     统计口径（2026-09 修正）：
       * total_queries  —— 真实查询次数，来自 usage_logs 表（每次用户搜索都会
         log_usage 记一笔）。修正前这里统计的是 definitions 表的行数，也就是
-        「已收录词条数」，被当成「总查询次数」显示，属于口径错误。
-      * total_definitions —— 已收录词条数，单独返回，不再冒充查询数。
+        「已收录词目数」，被当成「总查询次数」显示，属于口径错误。
+      * total_definitions —— 已收录词目数，单独返回，不再冒充查询数。
       * queries_today —— 今天的查询次数，用于侧边栏的当日增量。
-      * total_clusters / total_relations —— 词义簇数与词间关系边数（结构指标）。
+      * total_clusters / total_relations —— 词簇数与词间关系边数（结构指标）。
 
     Returns:
         Dictionary containing statistics
@@ -2302,7 +2302,7 @@ def get_stats() -> Dict[str, Any]:
             )
             queries_today = int(cursor.fetchone()['n'] or 0)
 
-            # 已收录词条数（与查询次数分开，避免口径混淆）
+            # 已收录词目数（与查询次数分开，避免口径混淆）
             cursor.execute("SELECT COUNT(*) AS n FROM definitions")
             total_definitions = int(cursor.fetchone()['n'] or 0)
 
@@ -2314,7 +2314,7 @@ def get_stats() -> Dict[str, Any]:
             cursor.execute("SELECT COUNT(*) AS n FROM feedbacks")
             total_feedbacks = int(cursor.fetchone()['n'] or 0)
 
-            # 词义簇数量（结构指标，反映词库覆盖的语义分组数）
+            # 词簇数量（结构指标，反映词库覆盖的语义分组数）
             cursor.execute("SELECT COUNT(*) AS n FROM word_clusters")
             total_clusters = int(cursor.fetchone()['n'] or 0)
 
@@ -2567,7 +2567,7 @@ def get_corpus_word_stats(verb: str) -> Optional[Dict[str, Any]]:
 
 
 def get_corpus_schema_scores(verb: str) -> List[Dict[str, Any]]:
-    """单词的四图式得分（按得分降序）。"""
+    """单词的四图式重心得分（按得分降序）。"""
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -2806,7 +2806,7 @@ def update_sense_annotation(sense_id: int, prototype_level: Optional[str],
                             cn_syntax: Optional[str],
                             translation_strategy: Optional[str],
                             needs_review: bool) -> bool:
-    """写入一条 OALD 义位的图式五维标注（空串归一为 NULL = 未标注）。
+    """写入一条 OALD 义项的图式五维标注（空串归一为 NULL = 未标注）。
 
     注意：MySQL UPDATE 默认只计"值有变化"的行为 affected —— 原样复核保存会
     返回 0，因此以"未抛异常"为成功，不能用 rowcount>0 判断。"""

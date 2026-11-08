@@ -329,7 +329,7 @@ def _fetch_oald_senses(verb: str) -> List[Dict[str, Any]]:
 
 def _fetch_category_codes() -> List[str]:
     """② 映射辅助（**只读**）：categories.code 清单（与义项脊柱同口径；
-    范畴深挖 8 表未灌返回 []）。"""
+    语义分析 8 表未灌返回 []）。"""
     try:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT code FROM categories")
@@ -340,7 +340,7 @@ def _fetch_category_codes() -> List[str]:
 
 
 def _study_code_for(category: Any, available_codes: List[str]) -> Optional[str]:
-    """范畴参数 → 范畴深挖 categories.code（纯函数；与 sense_spine 同口径
+    """范畴参数 → 语义分析 categories.code（纯函数；与 sense_spine 同口径
     独立实现：先按 code 大小写不敏感直配，再按 PACK_TO_STUDY_CODE 包名映射）。"""
     cat = str(category or "").strip()
     if not cat:
@@ -515,7 +515,7 @@ def _section_senses(verb: str, senses: List[Dict[str, Any]],
         lines: List[str] = []
         if study_code is None:
             lines.append(
-                f"- （范畴 {category} 未灌入范畴深挖库：coverage 全按「沿用 OALD」"
+                f"- （范畴 {category} 未灌入语义分析库：coverage 全按「沿用 OALD」"
                 "口径渲染，不判建模）")
         modeled_any = False
         for s in senses:
@@ -564,7 +564,7 @@ def _section_examples(senses: List[Dict[str, Any]],
         mapped = [(s, c) for s, c in mapped if c and c.get("id") is not None]
         if not mapped:
             return Section(title, None,
-                           "该词无可取例证的义项：全部义项均为「沿用 OALD」或范畴深挖库"
+                           "该词无可取例证的义项：全部义项均为「沿用 OALD」或语义分析库"
                            "未灌（例证配置挂在 cs_senses 锚上，编纂产出区「例证与对译」"
                            "页按义项配置）")
         lines: List[str] = []
@@ -599,7 +599,7 @@ def _section_translations(senses: List[Dict[str, Any]],
         mapped = [(s, c) for s, c in mapped if c and c.get("id") is not None]
         if not mapped:
             return Section(title, None,
-                           "该词无可取对译的义项：全部义项均为「沿用 OALD」或范畴深挖库"
+                           "该词无可取对译的义项：全部义项均为「沿用 OALD」或语义分析库"
                            "未灌（对译定稿挂在 cs_senses 锚上，一义位一行）")
         lines: List[str] = []
         any_finalized = False

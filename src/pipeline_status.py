@@ -41,7 +41,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from src.db_utils import table_exists as _db_table_exists  # R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
@@ -447,7 +447,8 @@ def _fmt_alpha(alpha: Any) -> str:
         return "—"
 
 
-def _fmt_counts(by_what: Dict[str, Any], fmt_item) -> str:
+def _fmt_counts(by_what: Dict[str, Any],
+                fmt_item: Callable[[str, Any], str]) -> str:
     """分组计数 → 「k v · k v」串（按计数降序、同数按键名升序，确定性渲染）。"""
     def _sort_key(item):
         """排序键：计数降序、同数按键名升序（脏计数按 -1 兜底，不抛）。"""
@@ -529,10 +530,18 @@ _SEGMENT_FORMATTERS = {
 }
 
 
-def format_funnel_segments(status: Any) -> List[Tuple[str, str]]:
+def format_funnel_segments(status: dict) -> List[Tuple[str, str]]:
     """聚合结果 → 漏斗渲染行 ``[(段名, 文本), ...]``（纯函数，不碰 st./DB）。
 
-    * 按 SEGMENT_ORDER 输出六段；status 缺段/多段/键漂移时跳过未知键，不抛；
+    Args:
+        status: get_cluster_pipeline_status 的返回 dict（正常契约入参）。
+        RV3-7 注解精度：``Any`` → ``dict``；None/非 dict 的运行时容忍保留
+        （脏入参返 []，防御性降级不抛），但契约入参就是聚合 dict。
+
+    Returns:
+        list[tuple[str, str]]: (段名, 文本) 渲染行，按 SEGMENT_ORDER 六段；
+
+    * status 缺段/多段/键漂移时跳过未知键，不抛；
     * 有数段文本为该段真实计数串；缺数段（data=None）文本以 MISSING_PREFIX
       开头并附 reason —— 渲染层据此把该行画灰；
     * 入参 None/非 dict/segments 非 dict → []（空漏斗，页面给占位提示）。

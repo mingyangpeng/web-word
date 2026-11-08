@@ -21,6 +21,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
+import src.users_db as users_db_module  # noqa: E402  （RV4-5 monkeypatch 用）
 from src.users_db import (  # noqa: E402
     NEW_ROLES,
     PBKDF2_ITERATIONS,
@@ -706,3 +707,101 @@ class TestR1ActorGate:
         with pytest.raises(PermissionError):
             create_user("x", "pw123456", "x", "superadmin",
                         actor=self._LOW_ACTOR)
+
+
+# ============================================
+# RV4-5：管理动作实时回库复核（消除亚 rerun TOCTOU 窗口）
+# ============================================
+
+@pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过 users 数据层集成测试")
+class TestRV45LiveRoleRecheck:
+    """_require_actor_roles 二级判定（RV4-5）：会话快照足色后仍实时回库
+    复核 —— 快照生成后角色被撤销/账号被停用时，旧快照不再放行敏感写。
+
+    复用模块级 users_db fixture（独立测试库，跑完 DROP）。
+    """
+
+    def _stale_admin_actor(self, uid):
+        """快照形态 actor dict：会话里还带着 dict_admin（库内已撤销）。"""
+        return {"id": uid, "username": "rv45_chief", "role": "viewer",
+                "roles": ["dict_admin", "sys_admin"]}
+
+    def test_stale_snapshot_rejected_after_revoke(self, users_db):
+        """核心场景：revoke 后拿旧快照 grant/revoke —— 实时复核拒绝。"""
+        ensure_user_tables()
+        chief = create_user("rv45_chief", "pw123456", "被撤权管理员", "viewer")
+        assert grant_role(chief, "dict_admin") is True
+        victim = create_user("rv45_victim", "pw123456", "目标", "viewer")
+        stale = self._stale_admin_actor(chief)
+
+        # 快照与库一致时放行（一级+二级都过）
+        assert grant_role(victim, "editor", actor=stale) is True
+        assert revoke_role(victim, "editor", actor=stale) is True
+
+        # 库内撤销 dict_admin：快照没变（rerun 间共享的 session_state 形态）
+        assert revoke_role(chief, "dict_admin") is True
+        assert "dict_admin" not in list_roles(chief)  # 基线 viewer 仍在
+        with pytest.raises(PermissionError, match="实时"):
+            grant_role(victim, "reviewer", actor=stale)
+        with pytest.raises(PermissionError, match="实时"):
+            revoke_role(victim, "viewer", actor=stale)
+        with pytest.raises(PermissionError, match="实时"):
+            set_active(victim, False, actor=stale)
+        # 未生效：库内无任何角色变动
+        assert list_roles(victim) == ["viewer"]
+
+    def test_demoted_snapshot_rejected_after_set_role(self, users_db):
+        """set_role 降级路径：基线重置后旧快照同样被实时复核拦下。"""
+        ensure_user_tables()
+        chief = create_user("rv45_demoted", "pw123456", "降级管理员", "viewer")
+        assert grant_role(chief, "dict_admin") is True
+        target = create_user("rv45_target", "pw123456", "改基线", "viewer")
+        stale = self._stale_admin_actor(chief)
+        assert set_role(chief, "annotator") is True  # 基线重置清掉叠加角色
+        assert "dict_admin" not in list_roles(chief)
+        with pytest.raises(PermissionError, match="实时"):
+            set_role(target, "annotator", actor=stale)
+
+    def test_current_admin_still_passes(self, users_db):
+        """快照与库一致的管理员不受影响（一级+二级都过）。"""
+        ensure_user_tables()
+        chief = create_user("rv45_live", "pw123456", "在权管理员", "viewer")
+        assert grant_role(chief, "dict_admin") is True
+        victim = create_user("rv45_live_v", "pw123456", "目标", "viewer")
+        live = self._stale_admin_actor(chief)
+        live["username"] = "rv45_live"
+        assert grant_role(victim, "editor", actor=live) is True
+        assert set_active(victim, False, actor=live) is True
+        assert set_active(victim, True, actor=live) is True
+
+    def test_fail_closed_when_role_lookup_empty(self, users_db, monkeypatch):
+        """库内查无角色（停用/已删/库故障同形）→ fail-closed 拒绝。"""
+        ensure_user_tables()
+        chief = create_user("rv45_down", "pw123456", "查无角色", "viewer")
+        assert grant_role(chief, "dict_admin") is True
+        victim = create_user("rv45_down_v", "pw123456", "目标", "viewer")
+        actor = self._stale_admin_actor(chief)
+        actor["username"] = "rv45_down"
+        # 模拟 list_roles 失败（数据库故障 → []，has_role fail-closed False）
+        monkeypatch.setattr(users_db_module, "list_roles", lambda uid: [])
+        with pytest.raises(PermissionError, match="实时"):
+            grant_role(victim, "viewer", actor=actor)
+
+    def test_actor_id_dirty_fail_closed(self, users_db):
+        """快照足色但 id 脏值（无身份可复核）→ fail-closed 拒绝。"""
+        ensure_user_tables()
+        victim = create_user("rv45_dirty", "pw123456", "目标", "viewer")
+        for bad_id in (None, 0, "abc"):
+            actor = {"id": bad_id, "username": "ghost", "role": "viewer",
+                     "roles": ["dict_admin"]}
+            with pytest.raises(PermissionError, match="实时"):
+                grant_role(victim, "editor", actor=actor)
+
+    def test_self_password_change_unaffected(self, users_db):
+        """自助改密走 self_uid 分支（无需管理角色，不做实时复核）。"""
+        ensure_user_tables()
+        uid = create_user("rv45_selfpw", "pw123456", "自助改密", "viewer")
+        actor = {"id": uid, "username": "rv45_selfpw", "role": "viewer",
+                 "roles": ["viewer"]}
+        assert change_password(uid, "self-new-pw-9", actor=actor) is True
+        assert verify_login("rv45_selfpw", "self-new-pw-9") is not None

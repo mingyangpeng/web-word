@@ -58,6 +58,31 @@
      （不依赖 ENUM/长度报错）；
   3. 单步流转（候选→审定→发布）带乐观并发守卫 WHERE status=当前态，
      两人同时流转同一条只有一人生效，任何人不跳级、不回退。
+
+操作人参数口径（RV3-3 全库口径表，各数据层模块共遵；本表为声明锚点）：
+  「操作人」类参数跨模块曾有 15 个名字/10+ 种型（backlog RV3-3），统一
+  约定按**留痕列的存储形态**分三族，参数名一律「语义动词过去式 + _by」
+  或会话对象专用名：
+
+  * A 族「用户 id」：参数名 *_by，类型 int|None，留痕列 INT FK users.id。
+    例：created_by（define_field）、updated_by（set_value）、
+    granted_by（org_db.add_member / users_db.grant_role）、
+    finalized_by（set_translation）、assigned_by（annotation_flow）、
+    started_by（start_batch，FX-B RV3-3 自 operator 改名）、
+    imported_by（run_import，同前）。
+  * B 族「用户名」：参数名 *_by，类型 str|None，留痕列 VARCHAR(64) 存
+    username 原文。例：reviewed_by（media_db.advance_binding_status）、
+    registered_by（registry_db）。
+  * C 族「会话对象」：参数名 actor，类型 dict|None，不直接入列、足色
+    判定用。例：users_db 六敏感写函数、writing_db.adjudicate_final /
+    publish、export_center.build_content_snapshot、annotation_flow。
+
+  * B 族取 username 而非 id 的理由：留痕列是迁移追加的 VARCHAR（无 FK），
+    页面层把会话用户名直接入列免二次查库；A 族列是 INT FK，必须传 id。
+    两族类型差异是**有意设计**，各函数 docstring 已就地注明（RV3-3）。
+  * 批次 13 方向（backlog RV3-3 与 R1-1 剩余合并）：A 族是否进一步统一
+    为 ``actor_id: int`` 届时统一定夺；本批先消灭越轨名（operator）并
+    声明本表，改名已同步全部调用点（grep 无残留）。
 """
 
 import logging
@@ -66,6 +91,7 @@ from typing import Any, Dict, List, Optional
 import pymysql
 
 from src import media_db
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -156,14 +182,9 @@ def ensure_lexical_tables() -> None:
 # ============================================
 # 入参规整（应用层先拒，非法值不进数据库）
 # ============================================
-def _as_int(value: Any) -> Optional[int]:
-    """宽松转 int（int/int-str 可转；bool/None/其余返回 None）。"""
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+# _as_int 收敛至 src/db_utils.py（R6-4 单一实现点），本模块以别名导入
+# （`from src.db_utils import as_int as _as_int`），调用点与测试
+# monkeypatch 模块属性零改动。
 
 
 def _clean_ref(sense_ref: Any) -> Optional[str]:
@@ -346,6 +367,12 @@ def update_example(
     可改：content / source / caption / sort_order（改写标记来源随改）。
     status 不在本接口——审定流转走 advance_example_status 单步链。
 
+    「无变化」口径（RV3-6，与 writing_db.update_draft 相反、有意设计）：
+    本函数以 ``rowcount == 1`` 判成功 —— 字段给了但值与库里现值相同
+    （MySQL 同值 UPDATE 计 0 受影响行）返回 **False**（调用方按「未产生
+    变更」处理，例证页提示可如实显示）；update_draft 则以前置 SELECT 确认
+    行在位即 True（同值改写算成功）。两函数 docstring 互注，勿"统一"。
+
     Args:
         example_id: 例证 id（>0，行须存在）。
         content: 新例证文本（None=不改；给出须非空，R2-6 起 ≤MAX_CONTENT_LEN
@@ -355,8 +382,8 @@ def update_example(
         sort_order: 新顺序（None=不改）。
 
     Returns:
-        bool: 更新成功（rowcount=1）True；参数非法 / 行不存在 / 数据库
-        错误 False。
+        bool: 更新成功（rowcount=1）True；参数非法 / 行不存在 /
+        无实际变更（同值更新，rowcount=0）/ 数据库错误 False。
     """
     eid = _as_int(example_id)
     if eid is None or eid <= 0:

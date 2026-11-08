@@ -160,13 +160,31 @@ def _require_actor_roles(
 ) -> None:
     """直调面 actor 足色闸门（R1-1）：不足即抛 PermissionError。
 
+    两级判定（RV4-5 消除亚 rerun TOCTOU 窗口）：
+
+      1. 会话快照判定（effective_six_roles，纯会话计算不查库）——低权/
+         垃圾 actor 在此快速失败（错误文案与既有口径一致，不触库）；
+      2. **实时回库复核（RV4-5）**——快照足色后，再按 ``actor["id"]`` 用
+         has_role（实时读库、fail-closed）复核 allowed_roles 是否仍有任一
+         在位。会话快照是 rerun 间共享的 st.session_state 值：快照生成后
+         角色被撤销（revoke_role / set_role 降级）或账号被停用，快照仍带
+         旧足色，下一次 rerun 内的敏感写就靠它放行 —— 实时复核把这
+         「亚 rerun 窗口」的越权当场拒绝。数据库不可用 / 用户已删除 →
+         has_role False → 拒绝（fail-closed：宁可误拒不放行；且此时后续
+         业务 SQL 也必然失败，不引入额外可用性损失）。
+
     Args:
         actor: 会话用户 dict（页面传当前用户）| None（系统作业放行）。
             其余类型（str/数值/容器垃圾）一律 fail-closed 抛出。
         action: 动作名（拼进拒绝文案）。
         allowed_roles: 允许的六角色集（与管理口径对应的粗门）。
         self_uid: 「本人操作」放行的目标 id（change_password 自助改密用：
-            用户改自己的口令无需管理角色）。
+            用户改自己的口令无需管理角色；该分支不做实时复核 —— 自助
+            改密不扩权，无 TOCTOU 越权面）。
+
+    Raises:
+        PermissionError: actor 非 dict 垃圾值 / 快照足色不足 /
+        实时复核不通过（快照足色但库内角色已撤销或账号已停用，RV4-5）。
     """
     if actor is None:
         return  # 系统作业（docstring 口径：页面调用点必须传 actor）
@@ -188,6 +206,19 @@ def _require_actor_roles(
             f"{action}被拒绝：当前用户（{actor.get('username', '?')}）有效角色集"
             f"（{have}）不足。数据层直调面口径：页面调用点必须传 "
             "actor=当前会话用户；None=系统作业（迁移/灌库脚本）。"
+        )
+
+    # RV4-5 实时回库复核：快照足色 ≠ 当前足色（亚 rerun TOCTOU 窗口）
+    try:
+        uid = int(actor.get("id") or 0)
+    except (TypeError, ValueError):
+        uid = 0  # id 脏值 = 无法确认实时身份 → fail-closed 拒绝
+    if uid <= 0 or not any(has_role(uid, role) for role in allowed_roles):
+        have = "/".join(sorted(effective)) if effective else "空"
+        raise PermissionError(
+            f"{action}被拒绝：会话快照足色（{have}）与库内实时角色不一致 ——"
+            "实时复核不通过（角色可能已被撤销或账号已停用；RV4-5 实时回库"
+            "判定，fail-closed）。请刷新会话后重试。"
         )
 
 

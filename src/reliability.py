@@ -689,14 +689,19 @@ def run_reliability(
 try:
     from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3, get_card_style
 except ImportError:  # pragma: no cover - 仅在 design_system 缺失的环境生效
-    HEADER_H1 = "bold 2.5rem/1.2 system-ui"
-    HEADER_H2 = "bold 2rem/1.3 system-ui"
-    HEADER_H3 = "bold 1.5rem/1.4 system-ui"
+    # RV1-4：降级值与 design_system 同步改独立属性声明（旧 font 简写
+    # "bold 2.5rem/1.2 system-ui" 放进 style 属性会被浏览器整条丢弃）。
+    HEADER_H1 = "font-size: 2.5rem; font-weight: 700; line-height: 1.2;"
+    HEADER_H2 = "font-size: 2rem; font-weight: 700; line-height: 1.3;"
+    HEADER_H3 = "font-size: 1.5rem; font-weight: 700; line-height: 1.4;"
 
     def get_card_style() -> str:
+        # RV1-3：卡底是常亮浅色面，暗色主题下补深字才可读（与 design_system
+        # get_card_style 的 color: #1a202c 同口径）。
         return (
-            "background-color: #f7fafc; padding: 24px; border-radius: 12px;"
-            " border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"
+            "background-color: #f7fafc; color: #1a202c; padding: 24px;"
+            " border-radius: 12px; border: 1px solid #e2e8f0;"
+            " box-shadow: 0 2px 8px rgba(0,0,0,0.05);"
         )
 
 
@@ -782,9 +787,11 @@ def _per_feature_chart(per_feature: dict) -> None:
     try:
         import plotly.graph_objects as go
 
+        # RV1-6：条色取深档（#c53030 白字 5.47:1 / #2f855a 4.54:1），浅色条
+        # 在白底图区不达 WCAG 非文本 3:1（旧 #e53e3e 4.13 / #48bb78 2.43）。
         colors = [
-            "#e53e3e" if (per_feature[n] is None or per_feature[n] < LOW_ALPHA_THRESHOLD)
-            else "#48bb78"
+            "#c53030" if (per_feature[n] is None or per_feature[n] < LOW_ALPHA_THRESHOLD)
+            else "#2f855a"
             for n in names
         ]
         fig = go.Figure(
@@ -799,7 +806,7 @@ def _per_feature_chart(per_feature: dict) -> None:
         fig.add_hline(
             y=LOW_ALPHA_THRESHOLD,
             line_dash="dash",
-            line_color="#ed8936",
+            line_color="#c05621",  # RV1-6：深档警示色（白底 4.57:1；旧 #ed8936 2.55:1）
             annotation_text=f"{LOW_ALPHA_THRESHOLD} 达标线",
         )
         fig.update_layout(
@@ -885,13 +892,15 @@ def render_reliability_page() -> None:
     # --- overall 大数字 + 汇总卡 ---
     if overall is None:
         overall_text = "—"
-        verdict = "<span style='color:#a0aec0'>尚不可计算（可用编码人/重叠单元不足）</span>"
+        # RV1-6：状态彩字换深档（白底对比 ≥4.5:1）—— 旧 #a0aec0 2.26:1、
+        # #48bb78 2.43:1、#e53e3e 4.13:1 全不达 AA。
+        verdict = "<span style='color:#4a5568'>尚不可计算（可用编码人/重叠单元不足）</span>"
     elif overall >= LOW_ALPHA_THRESHOLD:
         overall_text = f"{overall:.3f}"
-        verdict = "<span style='color:#48bb78'>达标（α ≥ 0.7）</span>"
+        verdict = "<span style='color:#2f855a'>达标（α ≥ 0.7）</span>"
     else:
         overall_text = f"{overall:.3f}"
-        verdict = "<span style='color:#e53e3e'>未达标（α &lt; 0.7，需仲裁/重标）</span>"
+        verdict = "<span style='color:#c53030'>未达标（α &lt; 0.7，需仲裁/重标）</span>"
 
     st.markdown(
         f"""
@@ -971,13 +980,18 @@ def render_reliability_page() -> None:
 
 
 def _badge_css() -> str:
-    """口径标注徽章的内联样式（与 design_system.get_badge_style 等价，避免额外依赖）。"""
+    """口径标注徽章的内联样式（与 design_system.get_badge_style 等价，避免额外依赖）。
+
+    RV1-1：旧 HIGHLIGHT_COLOR #ecc94b 黄底白字实测 1.61:1 —— 主路径经
+    design_system 深档 #975a16（白字 5.54:1）＋按底色自动选深/浅字修复；
+    降级分支同步对齐同一深档视觉，两种环境都 ≥4.5:1。
+    """
     try:
         from src.design_system import get_badge_style, HIGHLIGHT_COLOR
 
         return get_badge_style(HIGHLIGHT_COLOR)
     except ImportError:
         return (
-            "display:inline-block;background-color:#ecc94b;color:#1a202c;"
+            "display:inline-block;background-color:#975a16;color:#ffffff;"
             "padding:4px 16px;border-radius:12px;font-size:0.875rem;font-weight:500;"
         )

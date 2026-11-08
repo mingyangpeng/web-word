@@ -878,13 +878,18 @@ def get_field(field_id: int) -> Optional[Dict[str, Any]]:
 # ============================================
 
 def start_batch(project_id: int, file_name: str, file_sha256: str,
-                target_domain: str, mapping_json: Any, operator: int) -> int:
+                target_domain: str, mapping_json: Any, started_by: int) -> int:
     """登记一次导入批次（status='running'），返回批次 id。
 
     **权限要求（§15 导入同权）**：导入向导/批量灌库的业务数据操作**仅词典
     管理员**可执行；平台管理员不碰业务数据。本期数据层不做角色判定 ——
-    批次 2 由中央闸门 require_dict_admin() 拦截后调用；operator 即操作人
+    批次 2 由中央闸门 require_dict_admin() 拦截后调用；started_by 即操作人
     users.id（审计留痕，必填）。
+
+    参数名口径（RV3-3）：操作人参数全库统一「语义动词过去式 + _by」
+    （本函数 started_by；run_import imported_by；口径表见
+    src/lexical_db.py 模块 docstring）—— 原名 operator 是越轨名，改名
+    已同步全部调用点；DB 留痕列名 import_batches.operator 不变。
 
     Args:
         project_id: 词典项目 id
@@ -893,7 +898,7 @@ def start_batch(project_id: int, file_name: str, file_sha256: str,
         target_domain: 灌入的目标域（非空，≤40 字符，如 'definitions'）
         mapping_json: 列→字段映射（dict/list，或可解析为二者的 JSON 串；
             以 JSON 留痕）
-        operator: 操作人 users.id（词典管理员）
+        started_by: 操作人 users.id（词典管理员）
 
     Returns:
         int: 新批次 id（status='running'，行数三列 0）；参数非法 /
@@ -925,9 +930,9 @@ def start_batch(project_id: int, file_name: str, file_sha256: str,
             f"start_batch 拒绝非法 mapping_json: {mapping_json!r}（dict/list 或可解析 JSON 串）"
         )
         return 0
-    op = _as_int(operator)
+    op = _as_int(started_by)
     if op is None or op <= 0:
-        logger.error(f"start_batch 拒绝非法 operator: {operator!r}（操作人必填，§15 导入同权）")
+        logger.error(f"start_batch 拒绝非法 started_by: {started_by!r}（操作人必填，§15 导入同权）")
         return 0
     try:
         with get_db_cursor() as cursor:

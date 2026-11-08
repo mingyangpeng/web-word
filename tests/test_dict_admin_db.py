@@ -586,7 +586,7 @@ class TestDictAdminIntegration:
         """start_batch 登记 running → finish_batch 记账转 finished；重复 finish 拒。"""
         sha = "ab" * 32
         bid = start_batch(1, "语域表.csv", sha, "custom_values",
-                          {"file_col": "word", "register": "field:register"}, operator=1)
+                          {"file_col": "word", "register": "field:register"}, started_by=1)
         assert isinstance(bid, int) and bid > 0
         row = self._fetch("import_batches", bid)
         assert row["project_id"] == 1
@@ -614,7 +614,7 @@ class TestDictAdminIntegration:
     def test_start_batch_accepts_json_str_mapping(self, dict_admin):
         """mapping_json 已是 JSON 串也接受（归一化转存）。"""
         bid = start_batch(1, "f.csv", "cd" * 32, "definitions", '{"col": "field:1"}',
-                          operator=1)
+                          started_by=1)
         assert bid > 0
         row = self._fetch("import_batches", bid)
         assert self._fetch("import_batches", bid)["mapping_json"] is not None
@@ -624,32 +624,32 @@ class TestDictAdminIntegration:
         """非法 sha/文件名/目标域/映射/操作人/项目 一律 0，不进数据库。"""
         good_sha = "ab" * 32
         before = self._count("import_batches")
-        assert start_batch(0, "f.csv", good_sha, "definitions", {}, operator=1) == 0
-        assert start_batch(1, "", good_sha, "definitions", {}, operator=1) == 0
-        assert start_batch(1, "f" * 256, good_sha, "definitions", {}, operator=1) == 0
-        assert start_batch(1, "f.csv", "短", "definitions", {}, operator=1) == 0       # sha 非法
-        assert start_batch(1, "f.csv", "z" * 64, "definitions", {}, operator=1) == 0   # 非十六进制
-        assert start_batch(1, "f.csv", good_sha, "", {}, operator=1) == 0             # 空目标域
-        assert start_batch(1, "f.csv", good_sha, "d" * 41, {}, operator=1) == 0        # 目标域超长
-        assert start_batch(1, "f.csv", good_sha, "definitions", None, operator=1) == 0  # 映射缺失
-        assert start_batch(1, "f.csv", good_sha, "definitions", "col=x", operator=1) == 0  # 非 JSON
-        assert start_batch(1, "f.csv", good_sha, "definitions", 42, operator=1) == 0   # 标量映射
-        assert start_batch(1, "f.csv", good_sha, "definitions", {}, operator=0) == 0
-        assert start_batch(1, "f.csv", good_sha, "definitions", {}, operator=None) == 0
+        assert start_batch(0, "f.csv", good_sha, "definitions", {}, started_by=1) == 0
+        assert start_batch(1, "", good_sha, "definitions", {}, started_by=1) == 0
+        assert start_batch(1, "f" * 256, good_sha, "definitions", {}, started_by=1) == 0
+        assert start_batch(1, "f.csv", "短", "definitions", {}, started_by=1) == 0       # sha 非法
+        assert start_batch(1, "f.csv", "z" * 64, "definitions", {}, started_by=1) == 0   # 非十六进制
+        assert start_batch(1, "f.csv", good_sha, "", {}, started_by=1) == 0             # 空目标域
+        assert start_batch(1, "f.csv", good_sha, "d" * 41, {}, started_by=1) == 0        # 目标域超长
+        assert start_batch(1, "f.csv", good_sha, "definitions", None, started_by=1) == 0  # 映射缺失
+        assert start_batch(1, "f.csv", good_sha, "definitions", "col=x", started_by=1) == 0  # 非 JSON
+        assert start_batch(1, "f.csv", good_sha, "definitions", 42, started_by=1) == 0   # 标量映射
+        assert start_batch(1, "f.csv", good_sha, "definitions", {}, started_by=0) == 0
+        assert start_batch(1, "f.csv", good_sha, "definitions", {}, started_by=None) == 0
         assert self._count("import_batches") == before
 
     # --- 导入批次：回滚（软作废 / 旧值恢复 / 状态机 / 预校验）---
 
     def _finished_batch(self) -> int:
         """建一个已 finished 的批次（回滚用例的公共前置）。"""
-        bid = start_batch(1, "f.csv", "ab" * 32, "custom_values", {}, operator=1)
+        bid = start_batch(1, "f.csv", "ab" * 32, "custom_values", {}, started_by=1)
         assert bid > 0
         assert finish_batch(bid, 5, 5, 0) is True
         return bid
 
     def test_rollback_state_machine(self, dict_admin):
         """running 不可回滚（无基线）；finished 可；rolled_back 不可重复回滚。"""
-        bid = start_batch(1, "f.csv", "ab" * 32, "custom_values", {}, operator=1)
+        bid = start_batch(1, "f.csv", "ab" * 32, "custom_values", {}, started_by=1)
         assert rollback_batch(bid, []) is False              # running：拒绝
         assert self._fetch("import_batches", bid)["status"] == "running"
         assert finish_batch(bid, 5, 5, 0) is True
@@ -808,7 +808,7 @@ class TestRevertLogPersistence:
         conn.close()
 
     def _finished_batch(self) -> int:
-        bid = start_batch(1, "f.xlsx", "ab" * 32, "definitions", {}, operator=1)
+        bid = start_batch(1, "f.xlsx", "ab" * 32, "definitions", {}, started_by=1)
         assert bid > 0
         assert finish_batch(bid, 2, 2, 0) is True
         return bid

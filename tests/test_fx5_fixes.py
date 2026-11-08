@@ -176,9 +176,13 @@ class TestR65:
         assert lexical_pages._next_example_status("发布") is None
 
     def test_review_status_colors_single_source(self):
-        """审定三态徽章配色单份进 design_system（页面侧同源引用）。"""
+        """审定三态徽章配色单份进 design_system（页面侧同源引用）。
+
+        RV1-2：「候选」灰 #718096 白字实测 4.02:1 不达 WCAG AA，
+        深档换 #4a5568（白字 7.53:1）。
+        """
         assert design_system.REVIEW_STATUS_COLORS == {
-            "候选": "#718096", "审定": "#2b6cb0", "发布": "#2f855a",
+            "候选": "#4a5568", "审定": "#2b6cb0", "发布": "#2f855a",
         }
         assert lexical_pages.STATUS_BADGE_COLORS is \
             design_system.REVIEW_STATUS_COLORS
@@ -392,5 +396,5 @@ class TestR713:
     def test_adjudication_hint_uses_new_page_name(self):
         """「📈 谱系与典型性」→「📊 语义分析」（tab 名随 R8-2 短版）。"""
         src = inspect.getsource(collab_pages)
-        assert "「📊 语义分析 · 🧬 分立复核」tab 完成" in src
+        assert "「📊 语义分析 · 🧬 分立复核」标签页完成" in src
         assert "📈 谱系与典型性" not in src
