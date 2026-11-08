@@ -27,10 +27,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import src.mysql_db as db  # noqa: E402
 from src.media_db import (  # noqa: E402
-    ANCHOR_TYPES,
     KINDS,
+    MEDIA_ANCHOR_TYPES,
+    MEDIA_STATUSES,
     PURPOSES,
-    STATUSES,
     bind_asset,
     ensure_media_tables,
     list_assets_for_anchor,
@@ -119,11 +119,11 @@ class TestGuards:
     def test_constants_match_contract(self):
         """四锚/三用途/三状态/三类资产与契约 §3-E 枚举一致。"""
         assert KINDS == ("image", "audio", "video")
-        assert ANCHOR_TYPES == ("word", "sense", "example", "schema")
+        assert MEDIA_ANCHOR_TYPES == ("word", "sense", "example", "schema")
         assert PURPOSES == (
             "pronunciation", "illustration", "example_media", "schema_diagram",
         )
-        assert STATUSES == ("候选", "审定", "发布")
+        assert MEDIA_STATUSES == ("候选", "审定", "发布")  # R6-6 域前缀
 
 
 # ============================================

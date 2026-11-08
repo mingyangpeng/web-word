@@ -60,6 +60,7 @@ import streamlit as st
 
 import src.writing_db as writing_db
 from src import users_db
+from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
 from src.mysql_db import get_db_cursor
 
@@ -279,11 +280,13 @@ def _pseudonym_factory():
     alias_map: Dict[int, str] = {}
 
     def _letter(idx: int) -> str:
+        """序号 → 稳定代号（A..Z，超过 26 人 A2/B2/…；R6-11 补一行式）。"""
         if idx < 26:
             return chr(ord("A") + idx)
         return f"{chr(ord('A') + idx % 26)}{idx // 26 + 1}"
 
     def _who(uid_any: Any) -> str:
+        """user id → 折算显示名（首次出现按序编号，同 id 恒同代号）。"""
         uid = _safe_int(uid_any)
         if uid is None:
             return "（系统登记）"
@@ -292,12 +295,6 @@ def _pseudonym_factory():
         return alias_map[uid]
 
     return _who, alias_map
-
-
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（规范 §6-5：会话只存 st.session_state['user']）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
 
 
 def _esc(value: Any) -> str:
@@ -383,6 +380,7 @@ def _sort_senses_locked_first(senses: List[Dict[str, Any]]) -> List[Dict[str, An
     """
 
     def _key(s: Dict[str, Any]) -> Tuple[int, str, str, int]:
+        """单义位排序键（锁定分组 → 词目 → 义项号 → cs_senses.id）。"""
         locked = bool(s.get("locked"))
         has_cluster = s.get("cluster_id") is not None
         group = 0 if locked else (1 if has_cluster else 2)
@@ -498,8 +496,13 @@ def _build_ai_draft_snapshot(template: Any) -> Optional[Dict[str, Any]]:
 # 私有只读查询（sense_spine _fetch_* 风格：独立降级，绝不编数）
 # ============================================
 
-def _list_categories() -> List[Dict[str, Any]]:
-    """范畴清单（category_study.get_categories 薄包装；失败返回 []）。"""
+def _list_categories_dicts() -> List[Dict[str, Any]]:
+    """范畴清单（category_study.get_categories 薄包装；失败返回 []）。
+
+    R6-4 改名 _list_categories_dicts：返回 dict 清单（含 code/name_cn 等），
+    与 reliability._list_categories（返回 code 元组）同名不同义，就地改名
+    消歧 —— 语义与调用点不变。
+    """
     try:
         from src.category_study import get_categories
 
@@ -666,7 +669,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         )
         return
 
-    categories = _list_categories()
+    categories = _list_categories_dicts()
     if not categories:
         st.info("范畴清单不可用：数据库未灌范畴深挖数据（cs_* 表）或库不可用。")
         return
@@ -1064,7 +1067,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         "版本链按 sense_ref 升序：每版记作者 / based_on_version / 体例版本 —— "
         "三版本脊柱第三条（谁标的 → α → 簇 → 模板 → 释义版本）。"
     )
-    categories = _list_categories()
+    categories = _list_categories_dicts()
     if not categories:
         st.info("范畴清单不可用：数据库未灌范畴深挖数据（cs_* 表）或库不可用。")
         return

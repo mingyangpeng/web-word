@@ -24,6 +24,11 @@
 降级：
     簇不存在 → templates 为空列表（原函数口径）；母图式提炼 / 槽位
     实例化失败 → 原模块记日志返回空 / None，不崩。
+
+阶段口径（R6-2 明示）：**阶段 1 仅契约与自检** —— 本模块只验证
+    ToolSpec 契约可注册、params_schema 可合并默认值、run() 可委托
+    （自检可跑通）；页面接线（ui_surface 对应页面调 run）归
+    **阶段 2**，本模块不 import streamlit、不改页面模块。
 """
 
 from __future__ import annotations

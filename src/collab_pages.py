@@ -31,7 +31,7 @@ docs/help/平台功能使用说明.md §5（AI 协作区）与 §6.6（任务分
     _is_admin_like 门 —— 六角色口径（批次 12 R1-2/R1-5 收口：判定走
     users_db.effective_six_roles 单一实现，legacy admin 经映射兼判，
     授予式管理角色放行）；
-  * 收件箱裁决按钮区按 _can_adjudicate 收口（R1-5：有效六角色含
+  * 收件箱裁决按钮区按 _can_adjudicate_inbox 收口（R1-5：有效六角色含
     dict_admin/reviewer 才渲染按钮，其余角色只读灰注「裁决权归词典管理员/
     审校」）；侧边栏待办徽章保留全角色（提示性质）。
 
@@ -75,6 +75,8 @@ from src.ai_ledger import (
     list_pending,
 )
 from src.annotation_flow import TASK_TYPES as ASSIGNMENT_TASK_TYPES
+from src.annotation_flow import TASK_TYPE_LABELS  # R6-8：单一导出，本模块改引
+from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.data_pages import _escape_like  # R2-5：LIKE 转义与 data_pages 同源
 from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
 from src.mysql_db import get_db_cursor
@@ -100,11 +102,8 @@ _FLASH_KEY = KEY_PREFIX + "flash"
 INBOX_KINDS = (KIND_DRAFT, KIND_AUDIT)
 
 # assignments.task_type 展示名（存库一律用英文枚举值，同 users_admin_page 角色）
-TASK_TYPE_LABELS = {
-    "admission": "准入标注",
-    "feature_coding": "特征编码",
-    "alignment": "英汉对齐",
-}
+# —— R6-8：展示映射收进 annotation_flow.TASK_TYPE_LABELS 单一导出（与
+# sense_spine 同源；原「准入标注」统一为「义位准入」工序名），本模块只 import。
 
 # assignments.status 全四态（DDL ENUM('open','in_progress','submitted','closed')）
 ASSIGNMENT_STATUS_LABELS = {
@@ -234,12 +233,6 @@ GUIDE = {
 # 会话与角色门（纯函数可测）
 # ============================================
 
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（施工规范 §5：st.session_state.get("user")，纵深防御自检）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
-
-
 def _is_admin_like(user: Optional[Dict[str, Any]]) -> bool:
     """管理面判定（纯函数，tests/test_collab_pages.py 覆盖）。
 
@@ -260,8 +253,11 @@ def _is_admin_like(user: Optional[Dict[str, Any]]) -> bool:
     return bool(effective_six_roles(user) & {"dict_admin", "sys_admin"})
 
 
-def _can_adjudicate(user: Optional[Dict[str, Any]]) -> bool:
+def _can_adjudicate_inbox(user: Optional[Dict[str, Any]]) -> bool:
     """收件箱裁决权（R1-5，施工规范 §14 批次 12；纯函数 fail-closed）。
+
+    R6-4 改名 _can_adjudicate_inbox：与 writing_pages._can_adjudicate
+    （词典管理员终裁，dict_admin 单角色口径）同名不同义，就地改名消歧。
 
     有效六角色集（users_db.effective_six_roles 单一实现）含 dict_admin 或
     reviewer 才可裁决 AI 建议 —— 收件箱裁决按钮区按本函数收口，其余角色
@@ -300,20 +296,6 @@ def _clean_reason(reason: Optional[str]) -> Optional[str]:
         return None
     cleaned = reason.strip()
     return cleaned or None
-
-
-def _session_roles(user: Optional[Dict[str, Any]]) -> set:
-    """会话 user dict 的 roles 快照集合（纯函数；缺键/脏值 → 空集，fail-closed）。
-
-    六角色会话（批次 3 app.py 接线 verify_login_full）在 user dict 里带 roles
-    列表；旧版会话无该键 → 空集，调用方回退 _is_admin_like 的 legacy 判定。
-    """
-    if not isinstance(user, dict):
-        return set()
-    roles = user.get("roles")
-    if not isinstance(roles, (list, tuple, set)):
-        return set()
-    return {str(r) for r in roles if isinstance(r, str) and r.strip()}
 
 
 def _legacy_role_map(users: List[Dict[str, Any]]) -> Dict[int, str]:
@@ -801,7 +783,7 @@ def _render_pending_inbox(me: Dict[str, Any]) -> List[Dict[str, Any]]:
     （供管理员「全部 pending」视图做计数对照）。
 
     **裁决按钮区角色收口（R1-5，施工规范 §14 批次 12）**：按钮区过
-    _can_adjudicate(me)（有效六角色含 dict_admin/reviewer）—— 其余角色
+    _can_adjudicate_inbox(me)（有效六角色含 dict_admin/reviewer）—— 其余角色
     只读展示，按钮替换为灰注「裁决权归词典管理员/审校」（提议内容与证据
     链照常可见：知情不等于裁决权）；legacy admin 经映射自然命中。
     """
@@ -819,7 +801,7 @@ def _render_pending_inbox(me: Dict[str, Any]) -> List[Dict[str, Any]]:
     st.caption(
         f"共 {len(pending)} 条待裁决（按不确定度降序）；探针（probe）通道不入收件箱。"
     )
-    can_adjudicate = _can_adjudicate(me)
+    can_adjudicate = _can_adjudicate_inbox(me)
     for p in pending:
         with st.expander(_proposal_summary(p)):
             _proposal_detail(p)
@@ -914,7 +896,8 @@ def pending_inbox_count() -> int:
             )
             row = cursor.fetchone()
             return int(row["n"] or 0) if row else 0
-    except Exception:  # noqa: BLE001 —— 计数失败降级为 0
+    except Exception as e:  # noqa: BLE001 —— 计数失败降级为 0（R6-10 补留痕）
+        logger.warning(f"pending_inbox_count 侧边栏待办计数失败（按 0 降级）: {e}")
         return 0
 
 
@@ -927,7 +910,8 @@ def _pending_stage_counts() -> list:
                 "WHERE status = 'pending' GROUP BY stage ORDER BY n DESC"
             )
             return [(str(r["stage"]), int(r["n"] or 0)) for r in cursor.fetchall()]
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 —— R6-10：吞错补留痕
+        logger.warning(f"_pending_stage_counts 按工序分组计数失败（按空降级）: {e}")
         return []
 
 
@@ -946,8 +930,8 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
     division = [n for stage, n in counts if stage == "sense_division"]
     if division:
         st.info(f"义项分立复核有 {division[0]} 条待裁决——裁决动作在"
-                "「📈 谱系与典型性 · 🧬 义项分立复核」tab 完成（证据与落地在同一处）。")
-        if st.button("去义项分立复核", key="collab_adj_goto_cluster"):
+                "「📊 语义分析 · 🧬 分立复核」tab 完成（证据与落地在同一处）。")
+        if st.button("去分立复核", key="collab_adj_goto_cluster"):
             st.session_state["page"] = "cluster"
             st.rerun()
 
@@ -957,7 +941,7 @@ def _render_inbox_tab(me: Dict[str, Any]) -> None:
 
     「全部 pending / 待我裁决」视图随 _is_admin_like 的六角色升级（R1-2
     同源口径）对授予式管理角色开放；裁决按钮区由 _render_pending_inbox
-    按 _can_adjudicate 收口（R1-5）。
+    按 _can_adjudicate_inbox 收口（R1-5）。
     """
     _pop_flash()
     pending = _render_pending_inbox(me)

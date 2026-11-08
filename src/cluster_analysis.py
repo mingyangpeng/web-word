@@ -87,9 +87,9 @@ cs_cluster_members，单事务），列约束以 category_study.py 的建表 SQL
 
   * render_semantic_analysis_page  「🏃‍♀️ 范畴深挖」（原 category 键，
     src/category_study_page 五视图 radio）并入本模块页面（key=cluster，
-    label 📊 语义分析）：st.tabs 前四 tab（谱系树与交互切割 / 典型性 /
+    label 📊 语义分析）：st.tabs 前四 tab（谱系树（含交互切割）/ 典型性 /
     分立复核 / 义位图谱）委托本模块既有渲染，后五 tab（双语对比 /
-    编码热图 / 跨语言对齐 / 图式对齐 / 总览甄别）委托 category_study_page
+    编码热图 / 跨语言对齐 / 图式对齐 / 总览）委托 category_study_page
     既有视图函数 —— 视图函数与取数逻辑（_load_page_data / _load_category）
     原样复用，仅页面组装收拢，不做任何取数改动。谱系侧运行缺失不早退：
     两侧读同一 cs_* 表族，九 tab 各自优雅降级。
@@ -2551,10 +2551,11 @@ def render_semantic_analysis_page() -> None:
     「一个动作一个门」收口页，st.tabs 九个，全部委托既有渲染、取数逻辑
     原样复用（_load_page_data / _load_category 装载段逐字保留，不改取数）：
 
-      1-4 tab（谱系侧，本模块）：🌳 谱系树与交互切割（F3/F2）→ 🏆 典型性
-         （F6）→ 🧬 分立复核（工序 8 · 闸门 G3）→ 🕸️ 义位图谱（论文 §7.2）；
+      1-4 tab（谱系侧，本模块）：🌳 谱系树（F3/F2，标签 R8-2 缩短；交互
+         切割在 tab 内）→ 🏆 典型性（F6）→ 🧬 分立复核（工序 8 · 闸门 G3）
+         → 🕸️ 义位图谱（论文 §7.2）；
       5-9 tab（英汉对比侧，category_study_page 视图函数）：🫱🫲 双语对比 →
-         🔥 编码热图 → 🔀 跨语言对齐 → ⚖️ 图式对齐 → 📋 总览甄别。
+         🔥 编码热图 → 🔀 跨语言对齐 → ⚖️ 图式对齐 → 📋 总览。
 
     两侧读同一 cs_* 表族，谱系侧运行缺失不早退 —— 九 tab 各自降级
     （谱系 tab warning、对比 tab 引导 caption）。使用说明由
@@ -2653,9 +2654,9 @@ def render_semantic_analysis_page() -> None:
 
     tab_tree, tab_typical, tab_division, tab_graph, tab_compare, tab_matrix, \
         tab_align, tab_schema, tab_overview = st.tabs([
-            "🌳 谱系树与交互切割", "🏆 典型性", "🧬 分立复核", "🕸️ 义位图谱",
+            "🌳 谱系树", "🏆 典型性", "🧬 分立复核", "🕸️ 义位图谱",
             "🫱🫲 双语对比", "🔥 编码热图", "🔀 跨语言对齐", "⚖️ 图式对齐",
-            "📋 总览甄别"])
+            "📋 总览"])
 
     with tab_tree:
         _render_dendrogram(data["dendro"])

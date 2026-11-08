@@ -45,6 +45,7 @@ from src.design_system import (
     get_card_style, get_table_header_style, get_table_row_style,
 )
 from src import guards
+from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.users_db import (
     NEW_ROLES,
     ROLES,
@@ -112,12 +113,6 @@ _ACTION_FUNCTIONAL_ROLE = "职能角色的授予/撤销"
 # 唯一作用是选择传给 guards.require_role 的 allowed 集合（翻转即放宽，判定
 # 实现不变）。
 _SYS_ADMIN_TRANSITION_FUNCTIONAL_GRANT = False
-
-
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（规范 §6-5：会话只存 st.session_state["user"]）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
 
 
 def _gate_error(me: Dict[str, Any], target_role: str,
@@ -461,7 +456,9 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
         st.info("没有可授予角色的其他用户。")
         return
 
-    selected_label = st.selectbox("选择用户", list(options.keys()), key="role_grant_user")
+    selected_label = st.selectbox(
+        "选择用户", list(options.keys()), key="users_admin_role_grant_user",
+    )
     target_uid = options[selected_label]
     current_roles = list_roles(target_uid)
 

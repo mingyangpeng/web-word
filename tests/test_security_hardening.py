@@ -602,41 +602,55 @@ class TestHardeningUi:
             return default
 
     def test_default_password_banner_and_dismiss(self, ui_env):
-        """默认口令用户登录 → 侧边栏横幅；经横幅表单改密 → 横幅消失"""
+        """默认口令用户登录 → 侧边栏横幅（唯一入口指向自助面板）；经自助面板改密 → 横幅消失。
+
+        R8-1（批次 12）：横幅内嵌表单已删除——改密 UI 三处合一，唯一入口=
+        「🔑 修改密码」自助面板（_render_self_change_password_form）。本用例改经
+        自助面板走完整改密流，横幅「改密后消失」语义不变。
+        """
         at = self._new_at()
         at.run()
         at = self._form_login(at, "admin", "admin123")
         assert not at.exception
-        assert any("内置默认口令" in str(w.value) for w in at.sidebar.warning), \
+        assert any("内置默认密码" in str(w.value) for w in at.sidebar.warning), \
             "默认口令用户登录后未出现强制改密横幅"
+        # 三处合一：横幅不再内嵌表单，唯一入口=自助面板
+        assert not any(t.key == "force_new_password" for t in at.sidebar.text_input), \
+            "内嵌表单已删除，不应再有 force_new_password 输入"
+        assert any("修改密码" in str(b.label) for b in at.sidebar.button), \
+            "唯一入口「🔑 修改密码」expander 未渲染"
 
-        # 横幅表单：两次不一致 → 报错；7 位 → 报错；合规 → 成功且横幅消失
+        # 经唯一入口（自助面板）改密：两次不一致 → 报错；7 位 → 报错；合规 → 成功且横幅消失
         def _set_form(at, v1, v2):
-            inputs = {t.key: t for t in at.sidebar.text_input}
-            inputs["force_new_password"].set_value(v1)
-            inputs["force_new_password_again"].set_value(v2)
+            # AppTest：expander 折叠态不影响元素树（面板内 widget 始终可寻址、
+            # 表单可直接提交），无需（也不能）对 Expander 块做 set_value
+            cur = {t.key: t for t in at.sidebar.text_input}
+            cur["self_pw_old"].set_value("admin123")
+            cur["self_pw_new"].set_value(v1)
+            cur["self_pw_again"].set_value(v2)
             submit = [b for b in at.sidebar.button
-                      if b.form_id and "修改口令" in str(b.label)]
-            assert submit, "改密提交按钮未找到"
+                      if b.form_id and "修改密码" in str(b.label)]
+            assert submit, "自助改密提交按钮未找到"
             submit[0].click()
             at.run()
             return at
 
-        at = _set_form(at, "aa", "bb")
-        assert any("不一致" in str(e.value) for e in at.sidebar.error)
+        # 两次新密码不一致 → 自助面板校验报错（报错文案落在 sidebar.error）
+        at = _set_form(at, "hd-admin-new", "different")
+        assert any("两次新密码一致" in str(e.value) for e in
+                   list(at.sidebar.error) + list(at.error))
         at = _set_form(at, "7chars!", "7chars!")
-        assert any("至少 8 位" in str(e.value) for e in at.sidebar.error)
-
+        assert any("至少 8 位" in str(e.value) for e in
+                   list(at.sidebar.error) + list(at.error))
         at = _set_form(at, "hd-admin-new", "hd-admin-new")
         assert not at.exception
         assert is_using_default_password(ui_env["admin_id"]) is False
         assert verify_login("admin", "hd-admin-new") is not None
         assert verify_login("admin", "admin123") is None
-        # 下一次 rerun：横幅与表单都不再出现
+        # 下一次 rerun：横幅不再出现
         at.run()
         assert not at.exception
-        assert not any("内置默认口令" in str(w.value) for w in at.sidebar.warning)
-        assert not any(t.key == "force_new_password" for t in at.sidebar.text_input)
+        assert not any("内置默认密码" in str(w.value) for w in at.sidebar.warning)
 
     def test_role_change_takes_effect_immediately(self, ui_env):
         """管理员改角色后，旧会话下次操作即按新角色判定（标注页立即失去 annotator 权限）"""

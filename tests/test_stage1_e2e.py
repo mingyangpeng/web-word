@@ -21,7 +21,7 @@
                    重复裁决被拒（一次性留痕）
   06 媒体链        register_asset（license 必填硬闸＋sha256 去重）→
                    bind_asset（词目锚）→ 审定状态单步流转（候选→审定→发布，
-                   跳级与越终点拒绝，_advance_binding_status 乐观守卫）
+                   跳级与越终点拒绝，advance_binding_status 乐观守卫）
   07 快照与漏斗    build_content_snapshot（dict_admin actor；非词典管理员
                    被 §15 闸门拒绝）→ export_batches 落行＋zip 存在；
                    get_cluster_pipeline_status('motion') 六段 data/reason
@@ -40,7 +40,7 @@
   * MySQL 不可用 / 账号无建库权限时整类 skip（CI 无库依然全绿）；
   * 数据层签名以各模块实际实现为准（先 grep 核对过）。
 
-依赖说明：07 用到 dict_admin_pages._advance_binding_status（媒体绑定审定
+依赖说明：07 用到 media_db.advance_binding_status（媒体绑定审定，R6-12 下沉
 流转的唯一写路径，本模块导入但不触发任何 st. 渲染调用）。
 """
 
@@ -67,13 +67,13 @@ from src.collab_pages import (  # noqa: E402
     create_assignment,
 )
 from src.dict_admin_db import start_batch  # noqa: E402
-from src.dict_admin_pages import _advance_binding_status  # noqa: E402
+from src.media_db import advance_binding_status  # noqa: E402  R6-12 下沉
 from src.export_center import EXPORT_ROOT, build_content_snapshot  # noqa: E402
 from src.import_engine import plan_import, run_import  # noqa: E402
 from src.media_db import (  # noqa: E402
-    STATUS_CANDIDATE,
-    STATUS_PUBLISHED,
-    STATUS_REVIEWED,
+    MEDIA_STATUS_CANDIDATE,
+    MEDIA_STATUS_PUBLISHED,
+    MEDIA_STATUS_REVIEWED,
     bind_asset,
     list_assets_for_anchor,
     register_asset,
@@ -486,25 +486,30 @@ class TestStageOneE2E:
         )
         assert len(bindings) == 1
         binding_id = int(bindings[0]["id"])
-        assert bindings[0]["status"] == STATUS_CANDIDATE, "新绑定默认候选态"
+        assert bindings[0]["status"] == MEDIA_STATUS_CANDIDATE, "新绑定默认候选态"
 
         # 单步流转：候选→审定→发布；跳级/越终点拒绝（乐观并发守卫）
-        assert _advance_binding_status(binding_id, STATUS_CANDIDATE, STATUS_PUBLISHED) is False, (
+        assert advance_binding_status(
+            binding_id, MEDIA_STATUS_CANDIDATE, MEDIA_STATUS_PUBLISHED) is False, (
             "候选→发布跳级应被拒（逐级不可跳）"
         )
         listed = list_assets_for_anchor("word", word_anchor_id)
         match = [r for r in listed if int(r["binding_id"]) == binding_id]
-        assert match and match[0]["binding_status"] == STATUS_CANDIDATE, "跳级被拒后仍是候选"
+        assert match and match[0]["binding_status"] == MEDIA_STATUS_CANDIDATE, \
+            "跳级被拒后仍是候选"
         assert match[0]["license"] == "CC BY-SA 4.0（e2e 测试）", "资产联查应带许可信息"
 
-        assert _advance_binding_status(binding_id, STATUS_CANDIDATE, STATUS_REVIEWED) is True
-        assert _advance_binding_status(binding_id, STATUS_REVIEWED, STATUS_PUBLISHED) is True
-        assert _advance_binding_status(binding_id, STATUS_PUBLISHED, STATUS_PUBLISHED) is False, (
+        assert advance_binding_status(
+            binding_id, MEDIA_STATUS_CANDIDATE, MEDIA_STATUS_REVIEWED) is True
+        assert advance_binding_status(
+            binding_id, MEDIA_STATUS_REVIEWED, MEDIA_STATUS_PUBLISHED) is True
+        assert advance_binding_status(
+            binding_id, MEDIA_STATUS_PUBLISHED, MEDIA_STATUS_PUBLISHED) is False, (
             "发布为终点，不能再流转"
         )
         final = [r for r in list_assets_for_anchor("word", word_anchor_id)
                  if int(r["binding_id"]) == binding_id]
-        assert final and final[0]["binding_status"] == STATUS_PUBLISHED
+        assert final and final[0]["binding_status"] == MEDIA_STATUS_PUBLISHED
 
     # ------------------------------------------------------------
     # 07 快照与漏斗：build_content_snapshot（dict_admin）+ export_batches 落行

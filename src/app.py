@@ -682,7 +682,7 @@ def render_card_header(card_key: str, title: str, icon: str) -> None:
     expanded = st.session_state.card_expanded.get(card_key, True)
     arrow = "▼" if expanded else "▶"
     st.button(
-        f"{icon}|{title}|{arrow}",
+        f"{icon} {title} {arrow}",
         key=f"card_toggle_{card_key}",
         use_container_width=True,
         on_click=_toggle_card,
@@ -1589,25 +1589,9 @@ def _render_default_password_guard(user: Dict[str, Any]) -> None:
     if not is_using_default_password(uid):
         return
     st.sidebar.warning(
-        "⚠️ **内置默认口令，请立即修改**：当前口令是公开的 bootstrap 凭据，"
-        "改密前本提示持续显示。"
-    )
-    with st.sidebar.form("force_change_password_form"):
-        st.markdown("**🔑 设置新口令（≥8 位）**")
-        new1 = st.text_input("新口令", type="password", key="force_new_password",
-                             max_chars=128)
-        new2 = st.text_input("确认新口令", type="password",
-                             key="force_new_password_again", max_chars=128)
-        submitted = st.form_submit_button("修改口令", use_container_width=True)
-    if submitted:
-        if not new1 or new1 != new2:
-            st.sidebar.error("两次输入的新口令为空或不一致。")
-        elif len(new1) < 8:
-            st.sidebar.error("新口令长度至少 8 位。")
-        elif change_password(uid, new1, actor=user):
-            st.sidebar.success("✅ 口令已修改，本提示不再出现。")
-        else:
-            st.sidebar.error("修改失败（数据库未写入），请重试。")
+        "⚠️ **内置默认密码，请立即修改**：当前密码是公开的 bootstrap 凭据。"
+        "请使用下方唯一的「🔑 修改密码」入口修改；修改成功前本提示持续显示。"
+    )  # R8-1（批次 12）：内嵌表单删除——改密 UI 三处合一，唯一入口=自助面板
 
 
 def _render_self_change_password_form(user: Dict[str, Any]) -> None:
@@ -1695,7 +1679,10 @@ def _render_login_section() -> None:
         if st.session_state.get(_USER_DB_BACKED_KEY):
             _render_default_password_guard(user)
             _render_must_change_password_banner(user)
-            with st.sidebar.expander("🔑 修改密码", expanded=False):
+            # R8-1：默认口令用户表单默认展开（改密完成后 is_using_default_password
+            # 实时判 False，expander 收起——唯一入口始终可见、无需滚动寻找）
+            _auto_open = is_using_default_password(int(user.get("id")))
+            with st.sidebar.expander("🔑 修改密码", expanded=_auto_open):
                 _render_self_change_password_form(user)
         return
 

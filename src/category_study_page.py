@@ -237,9 +237,14 @@ def render_matrix_view(data: Dict[str, Any]) -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>义位 × 特征编码矩阵</h3>",
                 unsafe_allow_html=True)
 
+    # R8-3 口径统一：语言侧标签的条数此前写死在文案里（灌数变更即腐烂），
+    # 改为按当前数据实时计数。
+    n_en = sum(1 for s in data["senses"] if s["language"] == "en")
+    n_zh = sum(1 for s in data["senses"] if s["language"] == "zh")
     lang = st.radio("语言侧", options=["en", "zh"],
-                    format_func=lambda v: "英语（32 义位）" if v == "en"
-                    else "汉语（19 条目）", horizontal=True, key="cs_matrix_lang")
+                    format_func=lambda v: f"英语（{n_en} 义位）" if v == "en"
+                    else f"汉语（{n_zh} 条目）", horizontal=True,
+                    key="cs_matrix_lang")
 
     status_filter = st.multiselect(
         "判定筛选（汉语侧）", options=["保留", "边缘", "剔除"],
@@ -438,8 +443,6 @@ def _render_schema_alignment(data: Dict[str, Any]) -> None:
     # 判定列在 dataframe 里会被压窄（只剩首字），改用 HTML 徽章行渲染
     try:
         import plotly.graph_objects as go
-        labels = [f"{r['schema']}\nEN {r['en_size']} / ZH {r['zh_size']}"
-                  for r in rows]
         verdict_color = {"完全对齐": 2, "部分对齐": 1, "零对齐": 0}
         z = [[verdict_color.get(r["verdict"], 0)] for r in rows]
         fig = go.Figure(data=go.Heatmap(
@@ -599,11 +602,13 @@ def _render_feature_mean_chart(senses: List[Dict[str, Any]]) -> None:
 
     # 差异要点：路径三特征贡献主要分歧（P1 汉语高，P2/P3 英语独有）
     top = sorted(rows, key=lambda r: abs(r["英语"] - r["汉语"]), reverse=True)[:3]
+    top_text = "；".join(
+        f"{label_of[r['特征']]}（英 {r['英语']:.3f} / 汉 {r['汉语']:.3f}）"
+        for r in top
+    )
     st.caption(
-        "差异最大的 3 个特征：" +
-        "；".join(f"{label_of[r['特征']]}（英 {r['英语']:.3f} / 汉 {r['汉语']:.3f}）"
-                  for r in top) +
-        "——方式/介质/动因维度双语趋同（M3a 完全一致），路径维度系统性分歧。"
+        "差异最大的 3 个特征：" + top_text
+        + "——方式/介质/动因维度双语趋同（M3a 完全一致），路径维度系统性分歧。"
     )
 
 
@@ -679,6 +684,17 @@ def render_overview_view(data: Dict[str, Any]) -> None:
     c[1].metric("英语目标义位", en["n_senses"])
     c[2].metric("汉语词条", zh["n_lexemes"])
     c[3].metric("汉语义位条目", zh["n_senses"])
+    # R8-3：总览计数口径注 —— 「汉语词条 19」vs 顶部范畴条「汉 24 词条」
+    # 类差异的原因说明（数据源与缓存口径），见下方 caption。
+    st.caption(
+        "口径注：以上四卡取自 get_screening_stats（研究加工层 cs_lexemes / "
+        "cs_senses，按范畴+语言计数）—— 与页面顶部范畴条（get_categories "
+        "的计数子查询）**同表同口径**，正常应一致。若两者短暂不一致：本视图"
+        "数据经页面级缓存（_load_category，10 分钟），灌数脚本重跑后的窗口期"
+        "内顶部条已刷新、总览卡仍是旧值 —— 刷新页面或等缓存过期即一致，"
+        "并非两个「词条」定义。另与词典原始层（《现汉7》zh_dict_* 全表条数）"
+        "天然不同：研究层只收甄别后的目标词条，词典层含未入研究的全部义项。"
+    )
 
     # 汉语判定漏斗
     zh_status = zh.get("status", {})
@@ -838,9 +854,15 @@ def _render_en_dict_evidence(data: Dict[str, Any]) -> None:
                 src_tag = _badge(f"来源:{e['source']}", "#ed8936")
             head = f"**{lemma}** 义项 {e['sense_index']} {src_tag}"
             if e.get("grammar"):
-                head += f" <span style='color:#718096;font-size:0.85em;'>"                         f"[{_esc(e['grammar'])}]</span>"
+                head += (
+                    f" <span style='color:#718096;font-size:0.85em;'>"
+                    f"[{_esc(e['grammar'])}]</span>"
+                )
             if e.get("sense_group"):
-                head += f" <span style='color:#718096;font-size:0.85em;'>"                         f"({_esc(e['sense_group'])})</span>"
+                head += (
+                    f" <span style='color:#718096;font-size:0.85em;'>"
+                    f"({_esc(e['sense_group'])})</span>"
+                )
             st.markdown(head, unsafe_allow_html=True)
             if e.get("definition"):
                 st.markdown(f"&nbsp;&nbsp;{e['definition']}",

@@ -55,10 +55,11 @@ widget key 一律 'dict_admin_' 前缀（见各 st.* 调用 key=）；用户生�
 由集成步骤挂载（render_dict_admin_page() 注册进 app.py 分派 + GUIDE 并入
 PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
 
-本模块私有参数化辅助（media_db 契约未含的查询/流转，docstring 注明；写路径
-仅绑定状态单步流转一处，乐观并发守卫 WHERE status=当前态）：
-  _find_asset_by_sha256 / _list_media_assets / _list_media_bindings /
-  _advance_binding_status（R3-4a：流转时写入审定留痕 reviewed_by/reviewed_at）
+媒体查询与流转（R6-12 起归 media_db 数据层单一实现）：资产列表
+  media_db.list_assets、绑定审定流转 media_db.advance_binding_status
+  （R3-4a：流转时写入审定留痕 reviewed_by/reviewed_at；乐观并发守卫
+  WHERE status=当前态）、下一态查表 media_db.next_binding_status；
+  本模块仅余两个只读私有辅助：_find_asset_by_sha256 / _list_media_bindings
 批次 8 上传通道（落盘后复用 register_asset 登记链，license/sha256 口径不变）：
   纯函数 _validate_upload（扩展名/MIME 白名单 + ≤50MB + R2-2 内容魔数一致性：
   声明 image 须 PNG/JPEG 魔数，svg/script 伪装 png 落盘前被拦）与
@@ -97,12 +98,14 @@ import streamlit as st
 from src import ai_ledger, dict_admin_db, export_center, media_db, org_db
 from src import registry_db
 from src import pipeline_status, users_db
+from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.mysql_db import get_db_cursor
 from src import guards
 from src.design_system import (
     HEADER_H1,
     HEADER_H2,
     HEADER_H3,
+    REVIEW_STATUS_COLORS,
     get_card_style,
     get_table_header_style,
     get_table_row_style,
@@ -342,12 +345,6 @@ MEDIA_UPLOAD_KIND_EXT = {
 # 上传落盘根 = 仓库根（data/ 的父目录；category_pack/reliability 同款推导）
 _MEDIA_UPLOAD_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 审定三态的单步流转表（候选→审定→发布；发布为终点，逐级不可跳）
-MEDIA_STATUS_NEXT = {
-    media_db.STATUS_CANDIDATE: media_db.STATUS_REVIEWED,
-    media_db.STATUS_REVIEWED: media_db.STATUS_PUBLISHED,
-}
-
 # ============================================
 # 出版导出（批次 8 G6 闸门执行页）：快照状态展示映射与 G6 检查口径
 # ============================================
@@ -479,11 +476,6 @@ def _media_register_error(file_path: Any, kind: Any, source: Any,
     if not str(license_text or "").strip():
         return "许可（license）必填：无许可的资产不入库（media_db 硬约束，D⑥ 许可纪律）。"
     return None
-
-
-def _next_media_status(status: Any) -> Optional[str]:
-    """审定流转的下一状态（纯函数）：候选→审定→发布；发布/未知态返回 None。"""
-    return MEDIA_STATUS_NEXT.get(str(status or ""))
 
 
 def _format_bytes(size: Any) -> str:
@@ -628,12 +620,6 @@ def _upload_target_path(kind: Any, data: Any, base: Any) -> str:
 # 角色门与会话（纵深防御，规范 §6-4：入口判定，不信任前端隐藏）
 # ============================================
 
-def _current_user() -> Optional[Dict[str, Any]]:
-    """当前会话用户（规范 §6-5：会话只存 st.session_state['user']）。"""
-    user = st.session_state.get("user")
-    return user if isinstance(user, dict) else None
-
-
 def _db_confirms_dict_admin(user: Dict[str, Any]) -> bool:
     """实时查库兜底：users_db.has_role(id, 'dict_admin')（fail-closed）。
 
@@ -698,14 +684,17 @@ def _project_options(projects: List[Dict[str, Any]]) -> Dict[str, int]:
 
 
 def _anchor_label(anchor: str) -> str:
+    """锚类型枚举 → 下拉展示标签（中文名＋英文原值，未知值回退原文）。"""
     return f"{ANCHOR_LABELS.get(anchor, anchor)}（{anchor}）"
 
 
 def _value_type_label(value_type: str) -> str:
+    """值类型枚举 → 下拉展示标签（中文名＋英文原值，未知值回退原文）。"""
     return f"{VALUE_TYPE_LABELS.get(value_type, value_type)}（{value_type}）"
 
 
 def _project_role_label(role: str) -> str:
+    """项目内职能枚举 → 下拉展示标签（中文名＋英文原值，未知值回退原文）。"""
     return f"{PROJECT_ROLE_LABELS.get(role, role)}（{role}）"
 
 
@@ -1297,7 +1286,7 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
                 st.error("字段清单已变化，请重试。")
             return
         value_type = str(field.get("value_type") or "text")
-        anchor_choices = list(dict_admin_db.ANCHOR_TYPES)
+        anchor_choices = list(dict_admin_db.APPLIES_TO)
         anchor_type = st.selectbox(
             "锚类型（须与字段 applies_to 一致）",
             anchor_choices,
@@ -1431,13 +1420,11 @@ def _render_fields_tab(me: Dict[str, Any]) -> None:
 # ============================================
 # Tab 7：媒体库（批次 4 Agent M；批次 8 Agent W 开通上传通道；资产归词典管理员）
 # ============================================
-# media_db 契约（§3-E）只含 register_asset / bind_asset / list_assets_for_anchor，
-# 不含列表查询与状态流转 —— 按批次 2 页面层惯例（collab_pages 的 assignments
-# 一处 INSERT 同款），此处补少量参数化辅助并在 docstring 注明：
-#   * _find_asset_by_sha256 / _list_media_assets / _list_media_bindings 为只读查询；
-#   * _advance_binding_status 是本模块唯一写路径：审定流转逐级单步
-#     （候选→审定→发布），带乐观并发守卫（WHERE status = 当前态），任何人
-#     不可跳级、不可回退。
+# media_db 契约（§3-E）只含 register_asset / bind_asset / list_assets_for_anchor；
+# R6-12 起列表查询与审定流转也下沉数据层（media_db.list_assets /
+# advance_binding_status / next_binding_status 单一实现），本模块不再自留
+# 这两份 SQL —— 页面只调数据层。仍留在本模块的少量只读辅助：
+#   * _find_asset_by_sha256（登记去重预检）/ _list_media_bindings（流转取数）。
 # 批次 8 上传通道：登记资产双轨之一 —— st.file_uploader 白名单文件先落盘
 # data/media/{kind}/YYYYMM/{sha256 前 16 位}{后缀}（目录自动建），再复用同一条
 # register_asset 登记链（license 必填、sha256 去重口径不变）；既有「服务器路径
@@ -1459,28 +1446,6 @@ def _find_asset_by_sha256(sha256: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _list_media_assets(status: Optional[str] = None,
-                       limit: int = MEDIA_LIST_LIMIT) -> List[Dict[str, Any]]:
-    """资产档案列表（**只读**）：按审定态筛选（None=全部），id 降序。"""
-    sql = (
-        "SELECT id, kind, file_path, mime, sha256, source, license, "
-        "size_bytes, status, created_at FROM media_assets"
-    )
-    params: List[Any] = []
-    if status:
-        sql += " WHERE status = %s"
-        params.append(status)
-    sql += " ORDER BY id DESC LIMIT %s"
-    params.append(max(1, int(limit)))
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(sql, tuple(params))
-            return [dict(r) for r in cursor.fetchall()]
-    except Exception as e:
-        logger.warning(f"读取媒体资产列表失败（按空列表处理）: {e}")
-        return []
-
-
 def _list_media_bindings(limit: int = MEDIA_LIST_LIMIT) -> List[Dict[str, Any]]:
     """绑定列表（**只读**）：绑定 × 资产联查，id 降序（审定流转的取数源）。"""
     try:
@@ -1500,51 +1465,6 @@ def _list_media_bindings(limit: int = MEDIA_LIST_LIMIT) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.warning(f"读取媒体绑定列表失败（按空列表处理）: {e}")
         return []
-
-
-def _advance_binding_status(binding_id: int, from_status: str,
-                            to_status: str,
-                            reviewed_by: Optional[str] = None) -> bool:
-    """绑定审定流转一步（**本模块唯一写路径**）：候选→审定→发布。
-
-    参数化 UPDATE + 乐观并发守卫（WHERE status = from_status）：两人同时
-    流转同一条时只有一人生效；rowcount=1 即成功。非法状态对（不在
-    MEDIA_STATUS_NEXT 链上）直接拒绝 —— 逐级单步、不可跳级。
-
-    审定留痕（R3-4a）：reviewed_by 非空时随流转写入 media_bindings 的
-    reviewed_by（操作人，当前会话用户 username）与 reviewed_at（NOW()）——
-    每一步流转都刷新（列语义 = 把绑定推到当前态的人与时间）；未传（既有
-    调用方/测试缺省）维持旧 UPDATE 形态不碰这两列。列由 media_db
-    .ensure_media_tables 幂等迁移（媒体页入口已先调）。
-
-    Returns:
-        bool: 流转生效 True；id 非法 / 流转表外 / 状态已变 / 库不可用 False。
-    """
-    if _next_media_status(from_status) != to_status:
-        logger.error(
-            f"媒体绑定流转拒绝非单步对：{from_status!r} → {to_status!r}"
-        )
-        return False
-    actor = str(reviewed_by).strip() if reviewed_by is not None else ""
-    try:
-        with get_db_cursor() as cursor:
-            if actor:
-                cursor.execute(
-                    "UPDATE media_bindings SET status = %s, "
-                    "reviewed_by = %s, reviewed_at = NOW() "
-                    "WHERE id = %s AND status = %s",
-                    (to_status, actor, int(binding_id), from_status),
-                )
-            else:
-                cursor.execute(
-                    "UPDATE media_bindings SET status = %s "
-                    "WHERE id = %s AND status = %s",
-                    (to_status, int(binding_id), from_status),
-                )
-            return cursor.rowcount == 1
-    except Exception as e:
-        logger.error(f"媒体绑定流转失败（binding={binding_id}）: {e}")
-        return False
 
 
 def _render_media_register_form(me: Dict[str, Any]) -> None:
@@ -1728,8 +1648,7 @@ def _render_media_assets_table(assets: List[Dict[str, Any]]) -> None:
     rows: List[List[str]] = []
     for a in assets:
         status = str(a.get("status") or "")
-        color = {"候选": "#718096", "审定": "#4299e1", "发布": _ACTIVE_GREEN}.get(
-            status, "#718096")
+        color = REVIEW_STATUS_COLORS.get(status, _INACTIVE_GRAY)
         rows.append([
             str(int(a.get("id") or 0)),
             _esc(MEDIA_KIND_LABELS.get(str(a.get("kind")), a.get("kind"))),
@@ -1772,7 +1691,7 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
         )
         anchor_type = st.selectbox(
             "锚类型（多态引用：词目/义位/例证/图式）",
-            list(media_db.ANCHOR_TYPES),
+            list(media_db.MEDIA_ANCHOR_TYPES),
             format_func=lambda t: MEDIA_ANCHOR_LABELS.get(t, t),
             key=f"{key_prefix}_anchor_type",
             help="锚行主键：word=现汉词条 zh_dict_entries.id 或 definitions.id；"
@@ -1822,8 +1741,7 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
     rows: List[List[str]] = []
     for b in bindings:
         status = str(b.get("binding_status") or "")
-        color = {"候选": "#718096", "审定": "#4299e1", "发布": _ACTIVE_GREEN}.get(
-            status, "#718096")
+        color = REVIEW_STATUS_COLORS.get(status, _INACTIVE_GRAY)
         anchor = str(b.get("anchor_type") or "")
         rows.append([
             str(int(b.get("id") or 0)),
@@ -1839,7 +1757,7 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
         rows,
     )
 
-    flowable = [b for b in bindings if _next_media_status(b.get("binding_status"))]
+    flowable = [b for b in bindings if media_db.next_binding_status(b.get("binding_status"))]
     if not flowable:
         st.caption("没有可流转的绑定（全部已发布或状态未知）。")
         return
@@ -1855,7 +1773,8 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
         key="dict_admin_media_flow_select",
     )
     binding = flow_options.get(flow_label)
-    next_status = _next_media_status(binding.get("binding_status")) if binding else None
+    next_status = (media_db.next_binding_status(binding.get("binding_status"))
+                   if binding else None)
     if st.button(
         f"➡️ 流转到「{next_status or '—'}」",
         type="primary",
@@ -1871,10 +1790,11 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
         except PermissionError as e:
             st.error(f"⛔ {e}")
             return
-        if _advance_binding_status(int(binding.get("id") or 0),
-                                   str(binding.get("binding_status")),
-                                   next_status,
-                                   reviewed_by=str((actor or {}).get("username") or "")):
+        if media_db.advance_binding_status(
+                int(binding.get("id") or 0),
+                str(binding.get("binding_status")),
+                next_status,
+                reviewed_by=str((actor or {}).get("username") or "")):
             st.success(f"绑定 #{binding.get('id')} 已流转到「{next_status}」"
                        f"（审定人：{_esc(str((actor or {}).get('username') or '未知'))}）。"
                        "词条装配多模态区只取「发布」态绑定。")
@@ -1903,10 +1823,11 @@ def _render_media_tab(me: Dict[str, Any]) -> None:
     _render_media_upload_form(me)
 
     status_filter = st.selectbox(
-        "资产列表按状态筛选", ("全部",) + tuple(media_db.STATUSES),
+        "资产列表按状态筛选", ("全部",) + tuple(media_db.MEDIA_STATUSES),
         key="dict_admin_media_asset_filter",
     )
-    assets = _list_media_assets(None if status_filter == "全部" else str(status_filter))
+    assets = media_db.list_assets(None if status_filter == "全部" else str(status_filter),
+                                  limit=MEDIA_LIST_LIMIT)
     _render_media_assets_table(assets)
 
     st.markdown("")
@@ -2179,6 +2100,7 @@ def _g6_backup_summary(
         logger.warning(f"G6 备份新鲜：exports 目录扫描失败（{root}）: {e}")
 
     def _fmt(ts: Optional[float]) -> str:
+        """时间戳 → 'YYYY-MM-DD HH:MM'（None → '—'，G6 备份卡展示口径）。"""
         return "—" if ts is None else datetime.fromtimestamp(ts).strftime(
             "%Y-%m-%d %H:%M")
 
@@ -2252,7 +2174,7 @@ def _advance_export_status(batch_id: int, from_status: str, to_status: str,
     撤销表示该快照作废、退出出版通道，如需再出版须重新生成快照 —— 不做
     revoked→ready 回退，防「撤销又复活」造成审计断链；published 亦为终态）。
     乐观并发守卫：UPDATE ... WHERE id=%s AND status=当前态 —— 两人同时流转
-    只有一人生效（与 _advance_binding_status 同款）。
+    只有一人生效（与 media_db.advance_binding_status 同款，R6-12 下沉）。
 
     出版留痕（R3-4b）：流转到 published 且 published_by 非空时，随流转写入
     export_batches 的 published_by（操作人，当前会话用户 username）与

@@ -72,6 +72,8 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 import streamlit as st
 
 from src import annotation_flow, media_db
+from src.annotation_flow import TASK_TYPE_LABELS  # R6-8：单一导出
+from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
 from src.cluster_analysis import (
     PACK_TO_STUDY_CODE,
     TIER_LABELS,
@@ -88,12 +90,8 @@ logger = logging.getLogger(__name__)
 # 常量（段头文案与展示映射）
 # ============================================
 
-# ② 标注留痕：任务类型中文（annotation_flow.TASK_TYPES 展示映射）
-TASK_TYPE_LABELS = {
-    "admission": "义位准入",
-    "feature_coding": "特征编码",
-    "alignment": "英汉对齐",
-}
+# ② 标注留痕：任务类型中文 —— R6-8 收进 annotation_flow.TASK_TYPE_LABELS
+# 单一导出（与 collab_pages 同源同值），本模块不再自留一份。
 
 # ⑥ 媒体：kind / purpose 的中文展示映射（media_db 常量）
 KIND_LABELS = {"image": "图片", "audio": "音频", "video": "视频"}
@@ -132,16 +130,6 @@ class SpineSection(NamedTuple):
 # ============================================
 # 展示口径纯函数（无 st./DB 依赖，tests 直接测）
 # ============================================
-
-def _as_int(value: Any) -> Optional[int]:
-    """宽松转 int（bool/None/非整值返回 None；义位锚 id 的入参清洗）。"""
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
 
 def _truncate(text: Any, limit: int = _SUMMARY_MAX_LEN) -> str:
     """任意值 → 截断字符串（脏值兜底 str()；None → 空串）。"""
@@ -292,8 +280,10 @@ def _fetch_sense_row(sense_id: int) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _fetch_submissions(sense_id: int) -> List[Dict[str, Any]]:
-    """② 标注留痕（**只读**）：三类任务逐类调 annotation_flow 的「看全部」
+def _fetch_submissions_for_spine(sense_id: int) -> List[Dict[str, Any]]:
+    """② 标注留痕（**只读**；R6-4 改名 _fetch_submissions_for_spine，与
+    reliability._fetch_submissions 同名不同义消歧）：三类任务逐类调
+    annotation_flow 的「看全部」
     入口（reviewer+ 口径的页面才嵌脊柱，调用方负责角色门；coder 显示名
     经 users 表 LEFT JOIN 随行返回）。数据库不可用返回 []。"""
     rows: List[Dict[str, Any]] = []
@@ -544,7 +534,7 @@ def _section_annotations(sense_id: int) -> SpineSection:
     """② 标注留痕：三类任务 × 编码人的提交（payload 摘要；留痕可见）。"""
     title = "② 标注留痕（annotation_submissions · 谁标的）"
     try:
-        rows = _fetch_submissions(sense_id)
+        rows = _fetch_submissions_for_spine(sense_id)
         if not rows:
             return SpineSection(title, None,
                                 "该义位暂无任何标注提交（admission / "

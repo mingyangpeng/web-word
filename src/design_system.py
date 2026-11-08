@@ -42,6 +42,17 @@ DANGER_COLOR = "#e53e3e"       # Red 600 - Critical errors
 INFO_COLOR = "#4299e1"         # Blue 500 - Informational messages
 HIGHLIGHT_COLOR = "#ecc94b"    # Yellow 400 - Highlights, badges
 
+# 审定三态徽章配色（R6-5 单份事实源）：候选灰 / 审定蓝 / 发布绿。
+# 媒体绑定（词典管理区媒体库）与例证（编纂成文区）共用同一条审定链
+# （候选→审定→发布），徽章配色此前在 dict_admin_pages / lexical_pages
+# 各留一份且「审定」蓝值漂移（#4299e1 白字对比不足 WCAG AA）—— 统一取
+# lexical_pages 的深蓝 #2b6cb0（白字对比 ≥4.5:1）。
+REVIEW_STATUS_COLORS = {
+    "候选": "#718096",   # Gray 500 - candidate（灰）
+    "审定": "#2b6cb0",   # Blue 700 - reviewed（白字 5.9:1）
+    "发布": "#2f855a",   # Green 700 - published（白字 4.9:1）
+}
+
 # ============================================================================
 # Spacing System (8px base unit)
 # ============================================================================
@@ -59,8 +70,10 @@ SPACE_XL = 48   # Extra large: 48px (section spacing, page sections)
 # Typography scale based on system fonts with consistent line heights
 
 # Font families
-FONT_FAMILY_BASE = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-FONT_FAMILY_MONO = "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
+FONT_FAMILY_BASE = ("system-ui, -apple-system, BlinkMacSystemFont, "
+                    "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif")
+FONT_FAMILY_MONO = ("ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, "
+                    "'Liberation Mono', monospace")
 
 # Header sizes (h1-h4)
 HEADER_H1 = "bold 2.5rem/1.2 system-ui"
@@ -81,6 +94,7 @@ LINE_HEIGHT_RELAXED = 1.6
 # ============================================================================
 # Component Style Functions
 # ============================================================================
+
 
 def get_button_primary_style() -> str:
     """
@@ -465,7 +479,9 @@ def hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
 # Accessibility Utilities
 # ============================================================================
 
-def check_contrast(foreground: str, background: str, ui_component: bool = False) -> tuple[bool, float]:
+def check_contrast(
+    foreground: str, background: str, ui_component: bool = False,
+) -> tuple[bool, float]:
     """
     Check if color contrast meets WCAG AA standards.
 
@@ -495,14 +511,16 @@ def check_contrast(foreground: str, background: str, ui_component: bool = False)
     """
     # Convert hex to RGB
     def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+        """'#rrggbb' → (r, g, b) 三元组（R6-11 补一行式 docstring）。"""
         hex_color = hex_color.lstrip('#')
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
     fg_rgb = hex_to_rgb(foreground)
     bg_rgb = hex_to_rgb(background)
 
     # Convert RGB to grayscale values (W3C luminance formula)
     def get_luma(rgb: tuple[int, int, int]) -> float:
+        """RGB 三元组 → W3C 亮度（0-255 加权灰度值）。"""
         return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
 
     fg_luma = get_luma(fg_rgb)
@@ -568,6 +586,7 @@ DESIGN_SYSTEM_AUTHOR = "Claude Code"
 # Initialization
 # ============================================================================
 
+
 def initialize_design_system() -> None:
     """
     Initialize the design system module.
@@ -580,10 +599,26 @@ def initialize_design_system() -> None:
         >>> # Runs initial checks and prints verification results
     """
     print(f"Design System v{DESIGN_SYSTEM_VERSION} initialized")
-    print(f"Colors: {len(['PRIMARY_COLOR', 'SECONDARY_COLOR', 'SUCCESS_COLOR', 'ERROR_COLOR', 'WARNING_COLOR', 'BACKGROUND_COLOR', 'CARD_COLOR', 'TEXT_COLOR', 'TEXT_SECONDARY', 'TEXT_DISABLED', 'BORDER_COLOR', 'DANGER_COLOR', 'INFO_COLOR', 'HIGHLIGHT_COLOR'])}")
-    print(f"Spacing: {len(['SPACE_XS', 'SPACE_SM', 'SPACE_MD', 'SPACE_LG', 'SPACE_XL'])}")
-    print(f"Fonts: {len(['HEADER_H1', 'HEADER_H2', 'HEADER_H3', 'HEADER_H4', 'BODY_SM', 'BODY_BASE', 'BODY_LG', 'LINE_HEIGHT_TIGHT', 'LINE_HEIGHT_NORMAL', 'LINE_HEIGHT_RELAXED'])}")
-    print(f"Components: {len(['get_button_primary_style', 'get_button_secondary_style', 'get_button_outline_style', 'get_button_warning_style', 'get_card_style', 'get_container_style', 'get_input_field_style', 'get_input_field_focused_style', 'get_table_style', 'get_table_header_style', 'get_table_row_style', 'get_table_cell_style', 'get_section_spacing', 'get_badge_style', 'check_contrast', 'verify_all_contrasts', 'initialize_design_system'])}")
+    colors = ("PRIMARY_COLOR", "SECONDARY_COLOR", "SUCCESS_COLOR", "ERROR_COLOR",
+              "WARNING_COLOR", "BACKGROUND_COLOR", "CARD_COLOR", "TEXT_COLOR",
+              "TEXT_SECONDARY", "TEXT_DISABLED", "BORDER_COLOR", "DANGER_COLOR",
+              "INFO_COLOR", "HIGHLIGHT_COLOR")
+    spacing = ("SPACE_XS", "SPACE_SM", "SPACE_MD", "SPACE_LG", "SPACE_XL")
+    fonts = ("HEADER_H1", "HEADER_H2", "HEADER_H3", "HEADER_H4", "BODY_SM",
+             "BODY_BASE", "BODY_LG", "LINE_HEIGHT_TIGHT", "LINE_HEIGHT_NORMAL",
+             "LINE_HEIGHT_RELAXED")
+    components = ("get_button_primary_style", "get_button_secondary_style",
+                  "get_button_outline_style", "get_button_warning_style",
+                  "get_card_style", "get_container_style",
+                  "get_input_field_style", "get_input_field_focused_style",
+                  "get_table_style", "get_table_header_style",
+                  "get_table_row_style", "get_table_cell_style",
+                  "get_section_spacing", "get_badge_style", "check_contrast",
+                  "verify_all_contrasts", "initialize_design_system")
+    print(f"Colors: {len(colors)}")
+    print(f"Spacing: {len(spacing)}")
+    print(f"Fonts: {len(fonts)}")
+    print(f"Components: {len(components)}")
     print("\nWCAG AA Contrast Verification:")
     print("=" * 60)
     results = verify_all_contrasts()

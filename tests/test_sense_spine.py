@@ -29,8 +29,10 @@ from src import data_pages, dict_admin_pages, media_db, sense_spine  # noqa: E40
 from src.dict_admin_pages import (  # noqa: E402
     _format_bytes,
     _media_register_error,
-    _next_media_status,
     _sha256_file,
+)
+from src.media_db import (  # noqa: E402  R6-12 下沉
+    next_binding_status as _next_media_status,
 )
 from src.sense_spine import (  # noqa: E402
     SpineSection,
@@ -99,7 +101,7 @@ class TestModuleContract:
 def _patch_all_missing(monkeypatch):
     """全部取数适配层 → 空库口径（义位行不存在、各数据层返回空）。"""
     monkeypatch.setattr(sense_spine, "_fetch_sense_row", lambda sid: None)
-    monkeypatch.setattr(sense_spine, "_fetch_submissions", lambda sid: [])
+    monkeypatch.setattr(sense_spine, "_fetch_submissions_for_spine", lambda sid: [])
     monkeypatch.setattr(sense_spine, "_fetch_latest_reliability", lambda cat: [])
     monkeypatch.setattr(sense_spine, "_fetch_category_codes", lambda: [])
     monkeypatch.setattr(sense_spine, "_fetch_media", lambda sid: [])
@@ -152,7 +154,7 @@ def _patch_partial(monkeypatch):
         })
     monkeypatch.setattr(sense_spine, "_fetch_cs_sense_state", lambda cs_id: None)
     monkeypatch.setattr(
-        sense_spine, "_fetch_submissions", lambda sid: [
+        sense_spine, "_fetch_submissions_for_spine", lambda sid: [
             {"id": 1, "task_type": "admission", "coder_id": 7,
              "payload": {"admission": "Y", "schema": "PATH", "alignment": "对齐"},
              "ai_assisted": True, "status": "submitted",
@@ -262,7 +264,7 @@ def test_not_covered_placeholder_text(monkeypatch):
     monkeypatch.setattr(
         sense_spine, "_fetch_sense_row",
         lambda sid: {"id": sid, "sense_index": 3, "verb": "run"})
-    monkeypatch.setattr(sense_spine, "_fetch_submissions", lambda sid: [])
+    monkeypatch.setattr(sense_spine, "_fetch_submissions_for_spine", lambda sid: [])
     monkeypatch.setattr(sense_spine, "_fetch_latest_reliability", lambda cat: [])
     monkeypatch.setattr(sense_spine, "_fetch_category_codes", lambda: ["RUN"])
     monkeypatch.setattr(sense_spine, "_find_cs_sense_id", lambda *a: None)
@@ -379,7 +381,7 @@ def test_merged_probe_skipped_when_mapping_fails(monkeypatch):
     monkeypatch.setattr(
         sense_spine, "_fetch_sense_row",
         lambda sid: {"id": sid, "sense_index": 3, "verb": "run"})
-    monkeypatch.setattr(sense_spine, "_fetch_submissions", lambda sid: [])
+    monkeypatch.setattr(sense_spine, "_fetch_submissions_for_spine", lambda sid: [])
     monkeypatch.setattr(sense_spine, "_fetch_latest_reliability", lambda cat: [])
     monkeypatch.setattr(sense_spine, "_fetch_category_codes", lambda: ["RUN"])
     monkeypatch.setattr(sense_spine, "_find_cs_sense_id", lambda *a: None)
@@ -418,7 +420,7 @@ def test_dirty_data_does_not_crash(monkeypatch):
             "grammar": None, "examples": "不是JSON", "sense_group": None,
             "is_idiom": "x", "verb": None})
     monkeypatch.setattr(
-        sense_spine, "_fetch_submissions", lambda sid: [
+        sense_spine, "_fetch_submissions_for_spine", lambda sid: [
             {"id": 1, "task_type": "奇怪任务", "coder_id": None,
              "payload": "不是字典", "status": "奇怪状态", "submitted_at": None,
              "username": None, "display_name": None},
@@ -461,7 +463,7 @@ def test_fetcher_exceptions_collapse_to_gray(monkeypatch):
     def boom(*a, **k):
         raise RuntimeError("db down")
     monkeypatch.setattr(sense_spine, "_fetch_sense_row", boom)
-    monkeypatch.setattr(sense_spine, "_fetch_submissions", boom)
+    monkeypatch.setattr(sense_spine, "_fetch_submissions_for_spine", boom)
     monkeypatch.setattr(sense_spine, "_fetch_latest_reliability", boom)
     monkeypatch.setattr(sense_spine, "_fetch_media", boom)
     monkeypatch.setattr(sense_spine, "_fetch_custom_values", boom)
@@ -474,7 +476,7 @@ def test_fetcher_exceptions_collapse_to_gray(monkeypatch):
 def test_instantiate_template_exception_is_contained(monkeypatch):
     """⑤ instantiate_template 抛异常被段内捕获 → 灰段不外泄。"""
     monkeypatch.setattr(sense_spine, "_fetch_sense_row", lambda sid: None)
-    monkeypatch.setattr(sense_spine, "_fetch_submissions", lambda sid: [])
+    monkeypatch.setattr(sense_spine, "_fetch_submissions_for_spine", lambda sid: [])
     monkeypatch.setattr(sense_spine, "_fetch_latest_reliability", lambda cat: [])
     monkeypatch.setattr(sense_spine, "_fetch_category_codes", lambda: ["RUN"])
     monkeypatch.setattr(sense_spine, "_find_cs_sense_id", lambda *a: 77)
@@ -623,9 +625,9 @@ class TestMediaStatusFlow:
         assert _next_media_status(None) is None
 
     def test_chain_uses_media_db_constants(self):
-        """流转表以 media_db.STATUSES 常量为源（枚举漂移即断言失败）。"""
-        candidate, reviewed, published = media_db.STATUSES
-        assert dict_admin_pages.MEDIA_STATUS_NEXT == {
+        """流转表以 media_db.MEDIA_STATUSES 常量为源（R6-12 下沉；枚举漂移即断言失败）。"""
+        candidate, reviewed, published = media_db.MEDIA_STATUSES
+        assert media_db.MEDIA_STATUS_NEXT == {
             candidate: reviewed, reviewed: published}
 
 

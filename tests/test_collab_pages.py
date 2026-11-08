@@ -16,7 +16,7 @@
 
 覆盖面（阶段1施工规范 §5 对 Agent H 的要求）：
   GUIDE 契约（四段式、steps≥3、label 口径）/ 角色门 _is_admin_like 六角色
-  口径（批次 12 R1-2 升级）＋ _can_adjudicate 裁决权（R1-5）/
+  口径（批次 12 R1-2 升级）＋ _can_adjudicate_inbox 裁决权（R1-5；R6-4 改名消歧 writing_pages 同名件）/
   空理由拒绝逻辑 _validate_decision 四态 / 收件箱排序（uncertainty DESC、
   缺失最后、id ASC）/ 分派写读回路（INSERT assignments ↔ 我的任务查询，
   status≠closed 过滤）/ 动词搜索（参数化 LIKE）/ 工序枚举与表就绪探测。
@@ -46,7 +46,7 @@ from src.collab_pages import (  # noqa: E402
     KEY_PREFIX,
     LEGACY_ASSIGNEE_ROLES,
     _assignments_table_ready,
-    _can_adjudicate,
+    _can_adjudicate_inbox,
     _clean_reason,
     _candidate_assignees,
     _fmt_rate,
@@ -106,7 +106,7 @@ class TestGuideContract:
 
 
 class TestRoleGate:
-    """角色门 _is_admin_like / _can_adjudicate（批次 12 R1-2/R1-5 六角色口径）。
+    """角色门 _is_admin_like / _can_adjudicate_inbox（批次 12 R1-2/R1-5 六角色口径；R6-4 改名）。
 
     _is_admin_like 升级为有效六角色集判定（users_db.effective_six_roles 单一
     实现）：legacy role=='admin' 经映射两位一体自然通过（升级前后对存量账号
@@ -157,18 +157,18 @@ class TestRoleGate:
 
 
 class TestCanAdjudicate:
-    """收件箱裁决权 _can_adjudicate（R1-5：dict_admin/reviewer 两角色）。"""
+    """收件箱裁决权 _can_adjudicate_inbox（R1-5：dict_admin/reviewer 两角色；R6-4 改名）。"""
 
     def test_dict_admin_and_reviewer_pass(self):
         """有效集含 dict_admin 或 reviewer → True（legacy admin 映射兼判）。"""
-        assert _can_adjudicate({"id": 1, "role": "admin"})
-        assert _can_adjudicate({"id": 3, "role": "reviewer"})
-        assert _can_adjudicate({"id": 2, "role": "viewer",
-                                "roles": ["dict_admin", "viewer"]})
-        assert _can_adjudicate({"id": 4, "role": "viewer",
-                                "roles": ["reviewer", "viewer"]})
-        assert _can_adjudicate({"id": 5, "role": "annotator",
-                                "roles": ["dict_admin"]})
+        assert _can_adjudicate_inbox({"id": 1, "role": "admin"})
+        assert _can_adjudicate_inbox({"id": 3, "role": "reviewer"})
+        assert _can_adjudicate_inbox({"id": 2, "role": "viewer",
+                                      "roles": ["dict_admin", "viewer"]})
+        assert _can_adjudicate_inbox({"id": 4, "role": "viewer",
+                                      "roles": ["reviewer", "viewer"]})
+        assert _can_adjudicate_inbox({"id": 5, "role": "annotator",
+                                      "roles": ["dict_admin"]})
 
     def test_other_roles_fail(self):
         """sys_admin/editor/annotator/viewer 单角色 → False（fail-closed）。"""
@@ -179,12 +179,12 @@ class TestCanAdjudicate:
             {"id": 9, "role": "viewer", "roles": ["sys_admin"]},
             {"id": 10, "role": "viewer"},
         ):
-            assert not _can_adjudicate(user), user
+            assert not _can_adjudicate_inbox(user), user
 
     def test_not_a_session_user_fails(self):
         """未登录/非 dict/缺角色键 → False（fail-closed）。"""
         for bad in (None, "reviewer", 42, [], {}):
-            assert not _can_adjudicate(bad), repr(bad)
+            assert not _can_adjudicate_inbox(bad), repr(bad)
 
 
 class TestValidateDecision:
