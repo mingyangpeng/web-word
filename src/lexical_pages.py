@@ -425,17 +425,20 @@ def _render_merged_excluded(excluded: List[Dict[str, Any]]) -> None:
 # 页面层只读取数辅助（参数化；cs_senses 现状不复制到本域）
 # ============================================
 
-def _list_sense_options(limit: int = 1000) -> List[Dict[str, Any]]:
+def _list_sense_options() -> List[Dict[str, Any]]:
     """义位下拉选项取数（**只读**）：cs_senses × cs_lexemes 联查。
 
     编纂成文域以 cs_senses.id 为义位锚（sense_ref），本查询只读、不写范畴
     研究域；返回行含 status/merged_into 现状（分立复核落地值 merged/split）
     ——merged 义位由 _sense_selectable 拒选、_sense_options 排除出下拉。
+
+    R5-8：**不带 LIMIT，全量拉取**。曾硬编码 ``LIMIT 1000`` 且不校验条数
+    ——义位规模逼近上限（当前 996 行）后，split 增量溢出的义项会无声消失
+    （下拉静默缺项，用户无从察觉）。当前规模（~10³ 行 × 7 列）全量拉取
+    开销可忽略，静默截断风险归零；若未来规模增长到需要分页，必须改为
+    显式截断提示（st.warning 报告总数与可见数），不得恢复无声 LIMIT。
     表未建 / 数据库不可用返回 []（页面优雅降级，不编数据）。
     """
-    limit_val = _as_int(limit)
-    if limit_val is None or limit_val <= 0:
-        limit_val = 1000
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -443,9 +446,7 @@ def _list_sense_options(limit: int = 1000) -> List[Dict[str, Any]]:
                           l.lemma, l.language
                    FROM cs_senses s
                    JOIN cs_lexemes l ON l.id = s.lexeme_id
-                   ORDER BY l.lemma, l.language, s.id
-                   LIMIT %s""",
-                (limit_val,),
+                   ORDER BY l.lemma, l.language, s.id""",
             )
             return [dict(r) for r in cursor.fetchall()]
     except Exception as e:  # noqa: BLE001 —— 表缺失/库不可用按空清单降级
