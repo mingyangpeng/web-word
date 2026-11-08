@@ -29,10 +29,12 @@ data/dictionary.db
 # 「父目录被整体排除时，无法再用 ! 把它里面的文件加回来」（官方文档明确说明）。
 # 写成 `docs/*` 只排除目录**内容**、不排除目录本身，! 例外才能生效。
 docs/*
-!docs/Levin移动动词候选词筛选表.xlsx
-!docs/output-oald10en-for-senselist-1020.xlsx
-!docs/词表义项清单.xlsx
-!docs/域系初判表v0.2.xlsx
+!docs/research
+!docs/research/tables
+!docs/research/tables/Levin移动动词候选词筛选表.xlsx
+!docs/research/tables/output-oald10en-for-senselist-1020.xlsx
+!docs/research/tables/词表义项清单.xlsx
+!docs/research/tables/域系初判表v0.2.xlsx
 .planning/
 scripts/get-stats*
 .claude/

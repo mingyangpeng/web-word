@@ -21,6 +21,12 @@ load_env() {
     set -a
     # shellcheck disable=SC1091
     source .env
+    # .env.local（gitignored）：生产部署的真实凭据覆盖 .env 占位值
+    # 加载顺序 .env → .env.local，后加载覆盖同名变量
+    if [ -f .env.local ]; then
+      # shellcheck disable=SC1091
+      source .env.local
+    fi
     set +a
     echo "[env] 已加载 .env（ZHIPUAI_API_KEY: $([ -n "${ZHIPUAI_API_KEY:-}" ] && echo 已配置 || echo 未配置)）"
   else
