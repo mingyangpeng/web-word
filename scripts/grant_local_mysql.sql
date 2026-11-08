@@ -135,3 +135,8 @@ GRANT ALL PRIVILEGES ON `web\_word\_review\_regression\_test`.* TO 'web_word_use
 GRANT ALL PRIVILEGES ON `web\_word\_review\_regression\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_review\_regression\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- 批次 13：多供应商 LLM 测试库
+GRANT ALL PRIVILEGES ON `web\_word\_llm\_providers\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_llm\_providers\_test`.* TO 'web_word_user'@'localhost';
+FLUSH PRIVILEGES;
