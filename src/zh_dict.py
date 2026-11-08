@@ -21,9 +21,8 @@ cs_senses 是**研究加工层**（甄别/编码后的义位）。研究层通�
 JSON 列不可查询、不可索引，例句是要按义项/比喻标记检索的一等数据。
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from src.mysql_db import get_db_cursor
 

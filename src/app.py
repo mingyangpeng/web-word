@@ -25,7 +25,7 @@ from src.mysql_db import (
     get_domain_family_examples, get_db_cursor,
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
-from src.page_guides import PAGE_GUIDES, PAGE_KEYS, page_label, render_page_usage_guide
+from src.page_guides import PAGE_KEYS, page_label, render_page_usage_guide
 from src.help_center import render_help_center_page
 from src.dict_admin_pages import render_dict_admin_page
 from src.writing_pages import render_writing_page
@@ -2499,7 +2499,7 @@ def render_domain_family_page() -> None:
         return
 
     total = sum(r["n_senses"] for r in overview)
-    n_verbs = len({r["family"] for r in overview})
+    _ = len({r["family"] for r in overview})  # R7-22: 词簇数已由 metrics 卡展示
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("保留义位", total)
     c2.metric("认知域", len({r["domain"] for r in overview}))
