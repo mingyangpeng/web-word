@@ -158,3 +158,9 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx20\_test`.* TO 'web_word_user'@'127.0.0.1'
 GRANT ALL PRIVILEGES ON `web\_word\_fx20\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx20\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- FX-25：AI 体例质检引擎测试库（tests/test_fx25_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;

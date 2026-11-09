@@ -325,11 +325,13 @@ class TestR1VisibilityMatrix:
         """侧边栏 radio 选项逐会话对表（越权放大/误伤收窄都算退化）。
 
         注：本版 Streamlit 的 AppTest radio.options 已是 format_func 加工后的
-        展示标签 —— 用页面体系同源的 page_label 反查回页面键再对表。
+        展示标签 —— FX-23 七区分组后标签带「【区名】」前缀，用页面体系同源的
+        sidebar_option_label 反查回页面键再对表（分组只改呈现不改键集）。
         """
-        from src.page_guides import PAGE_KEYS, page_label
+        from src.app import sidebar_option_label
+        from src.page_guides import PAGE_KEYS
 
-        label_to_key = {page_label(k): k for k in PAGE_KEYS}
+        label_to_key = {sidebar_option_label(k): k for k in PAGE_KEYS}
         user = None if session_key == "anon" else _sessions()[session_key]
         at = _new_at()
         if user is not None:

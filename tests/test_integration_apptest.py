@@ -24,7 +24,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
-from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
+from src.app import sidebar_option_label  # noqa: E402  （FX-23 七区分组标签）
+from src.page_guides import PAGE_KEYS  # noqa: E402
 from src.users_db import create_user, ensure_user_tables  # noqa: E402
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -81,11 +82,13 @@ def _form_login(at, username: str, password: str):
 
 def _radio_keys(at) -> list:
     """侧边栏页面 radio 的当前选项，还原为页面键（AppTest 的 options 是
-    format_func 应用后的标签，这里用 page_label 反查回 PAGE_KEYS 的键）。"""
+    format_func 应用后的标签，这里用页面体系同源的 sidebar_option_label
+    反查回 PAGE_KEYS 的键 —— FX-23 七区分组后标签带「【区名】」前缀，
+    页名仍出自 page_label，故与 app 用同一格式化函数反查）。"""
     radios = [r for r in at.sidebar.radio if r.label == "页面"]
     if not radios:
         return []
-    label2key = {page_label(k): k for k in PAGE_KEYS}
+    label2key = {sidebar_option_label(k): k for k in PAGE_KEYS}
     return [label2key.get(str(o), str(o)) for o in radios[0].options]
 
 
@@ -921,9 +924,18 @@ class TestS3NewPagesMatrix:
         self._login_and_assert_new_pages("r3_rev", "r3-rev-pw")
 
     def test_admin_new_pages_and_full_radio_order(self, r3_env):
-        """admin：三新页可见可渲染；radio 为全部 12 键且保持 PAGE_KEYS 顺序。"""
+        """admin：三新页可见可渲染；radio 为全部 17 键且保持七区分组顺序。
+
+        FX-23 七区菜单分组：admin 全可见，选项序 = 七区序（组间按
+        _SIDEBAR_ZONES，组内保持 PAGE_KEYS 相对序）—— 键集仍恰为 PAGE_KEYS
+        全集（路由契约不变），只是展示重排。
+        """
+        from src.app import _SIDEBAR_ZONES
+
         at = self._login_and_assert_new_pages("r3_admin", "r3-admin-pw")
-        assert _radio_keys(at) == list(PAGE_KEYS), "admin 侧边栏应为全部页面键（原序）"
+        zone_ordered = [k for _zone, zone_keys in _SIDEBAR_ZONES for k in zone_keys]
+        assert sorted(zone_ordered) == sorted(PAGE_KEYS), "七区表须不重不漏覆盖 17 页"
+        assert _radio_keys(at) == zone_ordered, "admin 侧边栏应为全部页面键（七区序）"
 
     def test_viewer_new_pages_visible_and_render(self, r3_env):
         """viewer：三新页可见可渲染（_PAGE_ACCESS 显式含 viewer；区别于受保护三页）。"""
