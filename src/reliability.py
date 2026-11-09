@@ -696,6 +696,7 @@ except ImportError:  # pragma: no cover - 仅在 design_system 缺失的环境�
     HEADER_H3 = "font-size: 1.5rem; font-weight: 700; line-height: 1.4;"
 
     def get_card_style() -> str:
+        """design_system 缺席环境的卡片样式兜底（RV1-3 同口径浅色卡底）。"""
         # RV1-3：卡底是常亮浅色面，暗色主题下补深字才可读（与 design_system
         # get_card_style 的 color: #1a202c 同口径）。
         return (
@@ -756,6 +757,7 @@ def _export_csv(result: dict) -> bytes:
     writer = csv.writer(buf)
 
     def _write_row(cells) -> None:
+        """CSV 单行写入（逐格过 sanitize_csv_cell，防公式注入口径统一）。"""
         writer.writerow([sanitize_csv_cell(c) for c in cells])
 
     _write_row(["# 信度报告（AI-assisted IAA：全员可见 AI 草稿口径）"])

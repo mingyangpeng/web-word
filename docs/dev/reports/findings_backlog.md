@@ -218,3 +218,22 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 **顺带修复两处**：
 - 🔴 src/tools/registry.py reset_registry_state 的 `_DB_ENABLED_LOADER = None` 原为函数局部赋值（缺 global），loader 解绑从未生效——FX-20 收尾时发现并修复
 - annotation_flow._query 补 docstring（fx5 契约）；test_fx20 修 3 处断言口径（迁移计数按 ALTER 计/整数串 id 合法清洗/杂类型 actor 用字符串构造）
+
+
+## 批次 15/16（2026-11-09~10 · 阶段 2 自主迭代第一批）
+
+> 五路 agent 并行交付，规范对账②组过半落地。全量回归 **2289 passed / 0 failed**（批次 14 基线 2152 → +137 用例）。
+
+**批次 15（2e2d795）**：
+- [x] ②七区菜单分组——app.py 侧边栏 17 页按使用说明书七区分组（单 radio＋分区前缀标签方案：路由契约 PAGE_KEYS 不变、权限门零改动、无 rerun 环路；未登录态照实 6 键）（FX-23）
+- [x] ②驾驶舱「风险清单＋待我裁决汇总」——风险五项（存疑义位/信度未达标/分立积压/审校超时 7 天口径/快照滞留）只读灰注降级＋AI 提案 pending 分列＋待我审校四卡（FX-24）
+- [x] ②AI 体例质检挂钩——新建 src/style_check.py 五检查项引擎（配置完备性/定义词表/排序规则/spine 覆盖/媒体绑定）＋style_check_runs 表＋collab_metrics 体例质检通过率接真三态（motion 真跑 3pass/1fail/1warn：DEFINING_VOCAB fail=词表待编者核定的如实结论）（FX-25）
+
+**批次 16（本节）**：
+- [x] 体例质检 UI 入口——驾驶舱「🧪 体例质检」段：运行按钮＋逐项三色徽章表＋最近 5 次历史＋通过率口径注（form_submit_button 提交、ui_kit.flash 纪律、R4 归因灰注）（FX-26）
+- [x] ②usage_logs.user_id——查询日志归因：ALTER-only 幂等迁移（NULL=未登录/系统作业，RV2-3 第 1 类）＋log_usage 向后兼容签名＋app 搜索写路径登录态归因（FX-27）
+- [x] ②G3 locked 撰写侧消费——writing_db.get_cluster_lock_state 锁态读面（fail-open）＋撰写台「🔒 词簇已定稿锁定」徽章＋模板页「定稿基线」标识（规范口径：锁定=放行撰写，非禁写；cs_clusters 无 locked_at/locked_by 列如实不编造）（FX-28）
+- [x] R6-11 docstring 清欠——fx5 契约全绿：全仓补注（category_pack/llm_api/reliability/word_source/dict_admin_pages 新增 5 函数）＋缝合 app.py field/_status、mysql_db 两个 register（FX-26＋合并缝合）
+- [x] ALTER-only 清单补记 usage_logs.user_id（FX-27 报备→合并缝合）
+
+**②组余量（阶段 2 继续）**：登录落地三分支、项目广播、用户上下文 5 表、工具 run() 页面接线。

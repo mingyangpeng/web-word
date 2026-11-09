@@ -45,7 +45,8 @@ CRUD 契约（施工规范 §10）：
   另有非契约只读/收口辅助 get_version / get_latest_version / list_comments /
   list_comments_for_versions（R5-6 版本历史 N+1 批量读：一次 IN 按版本分组，
   与逐版本 list_comments 逐字段一致）/ resolve_comment（供页面与测试，
-  仿 ai_ledger.get_proposal 先例）。
+  仿 ai_ledger.get_proposal 先例）/ get_cluster_lock_state（G3 簇锁定状态
+  读面，只读 cs_* 表 —— 撰写台/模板页「🔒 定稿基线」提示的单一取数口）。
 
 角色与回避制口径（§8「回避制无豁免，含词典管理员」）：
   * 数据层硬校验：审校动作（submit_for_review 指派、add_comment、
@@ -1402,6 +1403,83 @@ def resolve_comment(comment_id: int, resolved: bool = True) -> bool:
         return False
 
 
+# ============================================
+# 词簇锁定状态读面（G3 撰写侧消费；只读 cs_* 表，不碰锁定写入逻辑）
+# ============================================
+
+# get_cluster_lock_state 降级原因（fail-open 口径：锁定是「基线已定稿」提示
+# 不是闸刀 —— 库不可用/无簇归属一律 locked=False 放行编纂主流程，reason
+# 如实标注降级原因，不把取数故障谎报成「未锁定」以外的状态）。
+LOCK_REASON_INVALID_PARAMS = "invalid_params"
+LOCK_REASON_NO_CLUSTER = "no_cluster"
+LOCK_REASON_DB_UNAVAILABLE = "db_unavailable"
+
+
+def get_cluster_lock_state(category: Any, sense_id: Any) -> Dict[str, Any]:
+    """词簇锁定状态读面（G3「分立→释义」撰写侧消费；**只读**，fail-open）。
+
+    经簇归属映射（cs_cluster_members → cs_clusters，只认该范畴内该义位的
+    **最新聚类运行** —— ORDER BY r.id DESC LIMIT 1，与 sense_spine
+    _fetch_cluster_info 既有只读口径同解）查 sense_id 所在词簇的
+    cs_clusters.locked（批次 6 幂等迁移列，G3 复核定稿落库位；锁定/解锁
+    写路径在 cluster_analysis.set_cluster_locked，本函数只读不写）。
+
+    **列名以实际表结构为准（诚实口径）**：cs_clusters 现只有
+    ``locked TINYINT(1)``（批次 6 迁移），**无 locked_at / locked_by 列**
+    —— 本读面如实只返回 locked 与簇身份字段，不编造锁定时间/操作人；
+    如需留痕须先扩展批次 6 迁移（不在本消费范围内动手）。
+
+    Args:
+        category: 范畴代号（categories.code，如 ``RUN``；空/非串 → 降级）。
+        sense_id: cs_senses.id（正整数；非法 → 降级）。
+
+    Returns:
+        dict: 簇归属命中 →
+          ``{"locked": bool, "cluster_id", "cluster_no", "cluster_name",
+          "run_id"}``；
+          降级（fail-open，一律 ``locked=False`` 不阻断编纂）→
+          ``{"locked": False, "reason": LOCK_REASON_*}``：
+          invalid_params（入参非法，未触库）/ no_cluster（该义位无簇归属，
+          未入簇属正常态）/ db_unavailable（库不可用 / cs_* 表或 locked 列
+          缺失 —— 消费方按「锁态未知」渲染，不得谎报已锁定）。
+    """
+    cat = category.strip() if isinstance(category, str) else ""
+    sid = _as_positive_int(sense_id)
+    if not cat or sid is None:
+        return {"locked": False, "reason": LOCK_REASON_INVALID_PARAMS}
+    sql = (
+        "SELECT cl.id AS cluster_id, cl.cluster_no, cl.name AS cluster_name, "
+        "       cl.locked, r.id AS run_id "
+        "FROM cs_cluster_members m "
+        "JOIN cs_clusters cl ON cl.id = m.cluster_id "
+        "JOIN cs_cluster_runs r ON r.id = cl.run_id "
+        "JOIN categories c ON c.id = r.category_id "
+        "WHERE c.code = %s AND m.sense_id = %s "
+        "ORDER BY r.id DESC LIMIT 1"
+    )
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, (cat, sid))
+            row = cursor.fetchone()
+    except pymysql.Error as e:
+        logger.warning(
+            f"get_cluster_lock_state 查询降级（库不可用/locked 列未迁移）: {e}"
+        )
+        return {"locked": False, "reason": LOCK_REASON_DB_UNAVAILABLE}
+    except Exception as e:  # noqa: BLE001 — 读面任何意外都按锁态未知降级
+        logger.warning(f"get_cluster_lock_state 查询意外降级: {e}")
+        return {"locked": False, "reason": LOCK_REASON_DB_UNAVAILABLE}
+    if row is None:
+        return {"locked": False, "reason": LOCK_REASON_NO_CLUSTER}
+    return {
+        "locked": bool(row.get("locked")),
+        "cluster_id": row.get("cluster_id"),
+        "cluster_no": row.get("cluster_no"),
+        "cluster_name": row.get("cluster_name"),
+        "run_id": row.get("run_id"),
+    }
+
+
 __all__ = [
     "VERSION_STATUSES",
     "VERDICTS",
@@ -1443,4 +1521,8 @@ __all__ = [
     "list_comments",
     "list_comments_for_versions",
     "resolve_comment",
+    "get_cluster_lock_state",
+    "LOCK_REASON_INVALID_PARAMS",
+    "LOCK_REASON_NO_CLUSTER",
+    "LOCK_REASON_DB_UNAVAILABLE",
 ]

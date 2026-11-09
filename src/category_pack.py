@@ -85,10 +85,12 @@ class CategoryPackError(Exception):
 # ============================================
 
 def _configs_root() -> str:
+    """范畴包配置根目录（<仓库根>/configs；CATEGORIES 扫描与包校验共用）。"""
     return os.path.join(_REPO_ROOT, "configs")
 
 
 def _category_dir(category: str) -> str:
+    """范畴包目录路径（configs/<category>；load_pack 逐文件读取的基准目录）。"""
     return os.path.join(_configs_root(), str(category))
 
 
@@ -208,6 +210,7 @@ def _check_deep(category: str, raw: dict, problems: list[str]) -> None:
 
 
 def _check_pack_meta(category: str, pack: Any, problems: list[str]) -> None:
+    """① pack.yaml 元信息校验：category 字段须与目录名一致、version 必填。"""
     if pack is None:  # 文件级问题已记录
         return
     got = pack.get("category")

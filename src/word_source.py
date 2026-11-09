@@ -195,6 +195,7 @@ def load_levin_table(path: str = None, scope: str = "all") -> List[Dict[str, Any
         raise ValueError(f"xlsx 缺少必需列 {missing}；实际列 = {header}")
 
     def cell(row, name, default=""):
+        """按列名取单元格文本（列缺席/越界返回 default，统一过 _clean）。"""
         i = idx.get(name)
         return _clean(row[i]) if i is not None and i < len(row) else default
 
@@ -286,6 +287,7 @@ class DictionaryDB:
     """
 
     def __init__(self, path: str = None):
+        """记库路径并置空连接与子集快照缓存（惰性建立，构造不触盘）。"""
         self.path = path or DICTIONARY_DB
         self._conn: Optional[sqlite3.Connection] = None
         # 子集快照（data/dictionary_senses_subset.json）的惰性缓存：
@@ -294,9 +296,11 @@ class DictionaryDB:
 
     @property
     def available(self) -> bool:
+        """数据源是否可用（全库或子集快照任一在场即可判定动词资格）。"""
         return os.path.exists(self.path) or os.path.exists(DICTIONARY_DB_SUBSET)
 
     def _load_subset(self) -> Dict[str, List[Dict[str, Any]]]:
+        """读子集快照 JSON（惰性一次，缺失/损坏按空映射降级，不抛异常）。"""
         if self._subset is None:
             try:
                 with open(DICTIONARY_DB_SUBSET, encoding="utf-8") as f:
@@ -306,17 +310,20 @@ class DictionaryDB:
         return self._subset
 
     def connect(self) -> sqlite3.Connection:
+        """只读连接（mode=ro：第三方数据绝不该写；惰性建立并复用）。"""
         if self._conn is None:
             # 只读打开：这个库是第三方数据，本项目绝不该写它
             self._conn = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
         return self._conn
 
     def close(self) -> None:
+        """关闭只读连接并复位（未连接时幂等 no-op）。"""
         if self._conn is not None:
             self._conn.close()
             self._conn = None
 
     def has_verb(self, verb: str) -> bool:
+        """词目是否为动词资格来源词（全库 SQL 判定；全库缺席降级子集快照）。"""
         if not os.path.exists(self.path):
             # 全库不在 → 子集快照判定（快照只含 17 词，与全库行为对齐：
             # 其余词本就没有义位明细）
