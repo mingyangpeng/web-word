@@ -28,8 +28,9 @@
 
 降级口径（与 org_db/users_db 容错口径一致）：
   * 数据库不可用时：读函数返回 []（list_broadcasts）/ None（latest_for_user，
-    None=取数失败，与「真 0 条=空清单」区分，供页面分级灰注）、写函数返回
-    None，只记日志不抛异常；
+    None=取数失败，与「真 0 条=空清单」区分，供页面分级灰注）、发布返回
+    带原因的结果体 {"id": None, "reason": ...}（RV14-5：拒绝归因走 reason
+    字段，页面按 reason 显示真实原因），只记日志不抛异常；
   * published_by 为 NULL 的行渲染为「系统作业」（RV2-3 留痕列第 1 类口径，
     与 style_check 历史表同款）；本模块原样返回 NULL，文案在页面层。
 
@@ -59,6 +60,12 @@ LIST_LIMIT_DEFAULT = 20
 # 发布允许角色（规范 §8：项目广播归词典管理员职责）
 PUBLISH_ALLOWED_ROLES = ("dict_admin",)
 
+# 正文应用层上限（RV14-5）：DDL body 列为 TEXT（64KB），应用层闸收口
+# 10000 字符 —— 超限在入参校验阶段拒绝并归因「正文超长」，不再让 DB 层
+# 报错把原因折叠成「数据库不可用」。50000 以内余量留给 utf8mb4 多字节
+# 最坏情形（10000 字符 × 4 字节 ≪ 64KB）。
+MAX_BODY_LEN = 10000
+
 
 # ============================================
 # 建表
@@ -86,10 +93,22 @@ def ensure_broadcast_table() -> None:
 # 发布
 # ============================================
 
+def _rejected(reason: str) -> Dict[str, Any]:
+    """统一拒绝返回体（RV14-5：{"id": None, "reason": 原因}，页面按 reason
+    显示真实原因，不再把全部拒绝折叠成一条一揽子文案）。"""
+    return {"id": None, "reason": reason}
+
+
 def publish_broadcast(project_id: int, title: str, body: str,
-                      actor: Any) -> Optional[int]:
+                      actor: Any) -> Dict[str, Any]:
     """
-    发布一条项目广播，返回新广播 id；参数非法/拒绝/库不可用返回 None。
+    发布一条项目广播；返回结果体 {"id": int|None, "reason": str|None}。
+
+    成功 → {"id": 新广播 id, "reason": None}；各类拒绝 →
+    {"id": None, "reason": 具体原因}（RV14-5：返回体带 reason 字段，页面按
+    reason 显示真实原因 —— 正文超长/标题超长/项目不在册/库不可用不再共用
+    一条含糊文案）。角色闸拒绝仍抛 PermissionError（不吞，与拒绝返回体是
+    两类事实）。
 
     两道闸（调用点页面门之外的数据层闸，纵深防御）：
       1. **角色闸**：guards.require_role(actor, allowed=PUBLISH_ALLOWED_ROLES,
@@ -98,7 +117,7 @@ def publish_broadcast(project_id: int, title: str, body: str,
          转译为 st.error 与灰注）；
       2. **项目在册闸**：project_id 必须是 dictionary_projects 在册项目，
          经 org_db.list_projects() 只读校验（广播域不写 org 域）；不在册
-         返回 None（静默拒绝，记 error 日志）。
+         返回 reason=「项目不在册」的结果体（静默拒绝，记 error 日志）。
 
     published_by 取 actor 的用户 id（RV2-3 留痕列第 1 类：NULL=系统作业；
     本函数总有人 actor，正常路径恒为发布人 id；actor 缺 id 时落 NULL，
@@ -107,12 +126,13 @@ def publish_broadcast(project_id: int, title: str, body: str,
     Args:
         project_id: 目标项目 id（须在册）
         title: 标题（非空，≤200 字符 —— DDL VARCHAR(200)，超长截断前先拒）
-        body: 正文（非空）
+        body: 正文（非空，≤MAX_BODY_LEN=10000 字符 —— RV14-5 应用层闸，
+              DDL TEXT 64KB 只是物理兜底）
         actor: 发布人用户 dict（含 id/role/roles；词典管理员）
 
     Returns:
-        int | None: 新广播 id；角色闸拒绝抛 PermissionError（不吞）；
-        title/body 空、project 不在册、数据库错误返回 None。
+        dict: {"id": int|None, "reason": str|None}；角色闸拒绝抛
+        PermissionError（不吞）。
     """
     from src.guards import require_role  # 局部导入：数据层不拖 UI 依赖的顶层
 
@@ -120,19 +140,29 @@ def publish_broadcast(project_id: int, title: str, body: str,
                         action="项目广播发布")
     if not isinstance(title, str) or not title.strip():
         logger.error("publish_broadcast 需要非空标题")
-        return None
+        return _rejected("标题为空（必填）")
     if not isinstance(body, str) or not body.strip():
         logger.error("publish_broadcast 需要非空正文")
-        return None
+        return _rejected("正文为空（必填）")
     if len(title) > 200:
         logger.error("publish_broadcast 标题超长（>200 字符，DDL 上限）")
-        return None
+        return _rejected("标题超长（>200 字符，上限）")
+    if len(body) > MAX_BODY_LEN:
+        logger.error("publish_broadcast 正文超长（>%d 字符，应用层上限；"
+                     "DDL TEXT 64KB 只是物理兜底）", MAX_BODY_LEN)
+        return _rejected(f"正文超长（>{MAX_BODY_LEN} 字符，上限）")
     pid = _as_int(project_id)
     if pid is None or pid <= 0:
         logger.error(f"publish_broadcast 需要合法 project_id: {project_id!r}")
-        return None
+        return _rejected("目标项目 id 非法")
     publisher_id = _as_int(user.get("id")) if isinstance(user, dict) else None
     try:
+        # RV17-1：在册闸借道 org_db.list_projects()——该函数断库自折叠成 []，
+        # 断库会被误归因「项目不在册」。先做一发连通探测分流（R4 口径：
+        # 失败 ≠ 数据空），归因如实。
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
         from src.org_db import list_projects  # 局部导入避免模块加载环
 
         registered = {int(p.get("id") or 0) for p in list_projects()}
@@ -140,20 +170,20 @@ def publish_broadcast(project_id: int, title: str, body: str,
             logger.error(
                 f"publish_broadcast 拒绝：项目 {pid} 不在册（dictionary_projects 无此行）"
             )
-            return None
+            return _rejected(f"项目 #{pid} 不在册（dictionary_projects 无此行）")
         with get_db_cursor() as cursor:
             cursor.execute(
                 "INSERT INTO project_broadcasts (project_id, title, body, published_by) "
                 "VALUES (%s, %s, %s, %s)",
                 (pid, title.strip(), body, publisher_id),
             )
-            return int(cursor.lastrowid)
+            return {"id": int(cursor.lastrowid), "reason": None}
     except pymysql.Error as e:
         logger.error(f"项目 {pid} 发布广播失败（MySQL）: {e}")
-        return None
+        return _rejected("数据库暂不可用（详见服务端日志）")
     except Exception as e:
         logger.error(f"项目 {pid} 发布广播意外错误: {e}")
-        return None
+        return _rejected("数据层意外异常（详见服务端日志）")
 
 
 # ============================================

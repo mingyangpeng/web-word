@@ -556,6 +556,11 @@ def run_style_check(category: str, actor: Any = None) -> Dict[str, Any]:
             f"范畴名非法：{category!r}（应为 configs/ 下目录名，"
             "不含路径分隔符与点前缀）"
         )
+    if len(cat) > 64:
+        return _declined(
+            f"范畴名超长（>64 字符，超出 style_check_runs.category 列宽）："
+            f"{category!r}"
+        )
     # 权限闸（guards 既有模式）：None=系统作业照 RV 口径；显式 actor 过闸
     if actor is None:
         run_by: Optional[int] = None

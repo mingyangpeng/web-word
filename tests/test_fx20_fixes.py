@@ -130,8 +130,13 @@ def _patch_plain(monkeypatch):
     return cursor
 
 
-ADMIN_ACTOR = {"username": "admin", "roles": ["dict_admin"]}
-LOW_ACTOR = {"username": "henchman", "roles": ["annotator"]}
+ADMIN_ACTOR = {"id": 1, "username": "admin", "roles": ["dict_admin"]}
+LOW_ACTOR = {"id": 2, "username": "henchman", "roles": ["annotator"]}
+# FX-32（RV13-5）适配：actor dict 增补 "id" 键 —— reassign_assignment /
+# create_reannotation_tasks 的留痕一致性闸要求 reassigned_by/assigned_by 与
+# actor["id"] 一致（留痕只能是自己），伪造组合（无 id / 他人 id）改为拒绝；
+# 会话用户实际形态本就含 id（users_db.verify_login 四键），此适配让桩用户与
+# 生产会话同构，并非放松口径。
 
 
 # ============================================
@@ -252,7 +257,10 @@ class TestReassignAssignment:
         )
         assert reassign_assignment(42, 1, 9, 1, actor=ADMIN_ACTOR) is True
         update = [p for s, p in cursor.executed if "UPDATE assignments" in s]
-        assert update == [(9, 42, "open")]  # 乐观守卫 WHERE status 复验
+        # FX-32（RV13-2/RV14-6）适配：UPDATE 钉板随原子复验收口更新 ——
+        # SET (assignee_id, assigned_by)；WHERE (id, status, assignee_id 前值,
+        # EXISTS 项目在册在用复验 pid/new_uid)。status+前值+在册三重复验原子化。
+        assert update == [(9, 1, 42, "open", 7, 1, 9)]
 
     @pytest.mark.parametrize("status", ["in_progress", "submitted", "closed"])
     def test_status_gate_rejects(self, monkeypatch, status):
@@ -281,7 +289,7 @@ class TestReassignAssignment:
         assert not [s for s, _ in cursor.executed if "UPDATE assignments" in s]
 
     def test_missing_assignment_rejected(self, monkeypatch):
-        cursor = _patch_plain(monkeypatch)  # 无种子 → fetchone None
+        _patch_plain(monkeypatch)  # 无种子 → fetchone None
         assert reassign_assignment(999, 1, 9, 1, actor=ADMIN_ACTOR) is False
 
     def test_optimistic_guard_rowcount_zero(self, monkeypatch):
@@ -470,7 +478,7 @@ class TestReadHelpers:
         assert "WHERE a.status IN" in sql and params[0] == "open"
 
     def test_list_assignments_admin_bad_statuses_empty(self, monkeypatch):
-        cursor = _patch_plain(monkeypatch)
+        _patch_plain(monkeypatch)
         assert list_assignments_admin(statuses=["bogus"]) == []
         assert list_assignments_admin(limit=0) == []
 
@@ -490,7 +498,7 @@ class TestReadHelpers:
         assert "status IN (%s, %s)" in sql and set(params[:2]) == {"merged", "split"}
 
     def test_list_divided_senses_degrades_on_error(self, monkeypatch):
-        cursor = _patch_plain(monkeypatch)
+        _patch_plain(monkeypatch)  # 随后被 _BoomCtx 覆盖，本桩仅保证可导入态
 
         def _boom(sql, params=None):
             raise RuntimeError("fx20 fake db down")

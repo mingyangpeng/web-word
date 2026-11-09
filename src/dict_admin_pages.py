@@ -42,8 +42,10 @@
 src/users_admin_page.py（role gate 入口判定 + HTML 转义 + 卡片表格）。
 
 权限（纵深防御，规范 §15 导入/内容操作同权）：入口两层判定 ——
-  1. 会话纯函数 _is_dict_admin：role == 'admin'（过渡期：内置 admin 兼有
-     dict_admin/sys_admin，users_db 迁移口径）或 roles 列表含 'dict_admin'；
+  1. 会话纯函数 _is_dict_admin：users_db.effective_six_roles（六角色单一
+     实现，RV13-6 收口）有效集含 dict_admin —— legacy role='admin' 经映射
+     两位一体自然命中（内置 admin 兼有 dict_admin/sys_admin，users_db 迁移
+     口径），roles 列表含 'dict_admin' 亦放行；
   2. 会话不放行时再实时查库 users_db.has_role(id, 'dict_admin') 兜底
      （会话快照滞后于授权的场景，如先登录后被授予角色）。
 两层都不过 → st.warning「仅词典管理员」并 return，页面内容不渲染。
@@ -162,6 +164,7 @@ from src import broadcast_db  # FX-30：项目广播数据层（发布入口在�
 from src import mysql_db, writing_db  # FX-24：存疑义位/待我审校只读取数（不写这两层）
 from src import registry_db
 from src import pipeline_status, style_check, users_db  # style_check：FX-25 质检引擎（FX-26 UI 入口只调不实现）
+from src.users_db import effective_six_roles  # RV13-6：_is_dict_admin 收口到六角色单一实现
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.mysql_db import get_db_cursor
@@ -484,24 +487,18 @@ def _esc(value: Any) -> str:
 
 
 def _is_dict_admin(user: Any) -> bool:
-    """会话用户 dict 是否放行词典管理区（纯函数，fail-closed）。
+    """会话用户 dict 是否放行词典管理区（纯函数，fail-closed；RV13-6 收口）。
 
-    过渡期判定（施工规范 §5 通用约定）：
-      * role == 'admin' 视为兼有 dict_admin/sys_admin（内置 admin 的
-        users_db 幂等迁移口径）；
-      * roles 列表（六角色多角色快照）含 'dict_admin' 放行；
-      * 非 dict 会话、缺键、roles 为非序列类型一律不放行（fail-closed，
-        不做大小写/类型宽容 —— 角色枚举在库里恒为小写字面量）。
-    实时兜底（会话滞后场景）由 _db_confirms_dict_admin 另行查库，不在本函数。
+    单一口径：users_db.effective_six_roles（六角色门的单一实现，R1-2 同源）
+    有效集含 dict_admin 即放行 —— legacy role='admin' 经映射两位一体自然
+    命中（升级前后对存量账号判定逐字节一致），roles 快照含 dict_admin 放行；
+    非 dict 会话 / 缺键 / 非法角色名一律不放行（fail-closed，effective_
+    six_roles 对垃圾角色名折叠为空集）。原自写判定（role=='admin' 或 roles
+    逐名比对）与其完全等价，删除双实现防漂移。实时兜底（会话滞后场景）
+    由 _db_confirms_dict_admin 另行查库，不在本函数。
     """
-    if not isinstance(user, dict):
-        return False
-    if user.get("role") == "admin":
-        return True
-    roles = user.get("roles")
-    if isinstance(roles, (list, tuple, set)):
-        return any(str(r) == "dict_admin" for r in roles)
-    return False
+    return "dict_admin" in effective_six_roles(
+        user if isinstance(user, dict) else {})
 
 
 def _parse_enum_csv(raw: Any) -> List[str]:
@@ -1228,16 +1225,17 @@ def _fx24_collect_my_reviews(me_id: Any) -> Tuple[Optional[int], Optional[str]]:
     再过 review_tasks 连通探测：探测不过按取数失败灰注，探测通过如实 0。
     """
     try:
-        rows = writing_db.list_pending_reviews(reviewer_id=int(me_id))
+        n = writing_db.count_pending_reviews(reviewer_id=int(me_id))
     except (TypeError, ValueError):
         return None, "当前用户 id 非法（受派审校人口径无法计算）"
     except Exception as e:  # noqa: BLE001 —— 数据层理论不抛，防御性兜一层
         logger.warning(f"驾驶舱待我审校取数异常: {e}")
         return None, _fx24_brief_reason(e)
-    if not isinstance(rows, list):
-        return None, f"返回异常形态: {type(rows).__name__}"
-    if not rows and not _cockpit_db_ready("review_tasks"):
+    if n is None and not _cockpit_db_ready("review_tasks"):
         return None, "review_tasks 表未建或数据库不可用"
+    if n is None:
+        return None, "计数取数失败（见服务端日志）"
+    return int(n), None
     return len(rows), None
 
 
@@ -1277,7 +1275,7 @@ def _fx24_collect_risk_items() -> List[Dict[str, str]]:
 
     _add("存疑义位（❓ needs_review=1，待复核/存疑清单）",
          _fx24_collect_doubt_senses(), "🏷️ 标注平台（管理员快速通道视图）")
-    _add("信度未达标（最近一次运行 α<G2 线 0.7）",
+    _add(f"信度未达标（最近一次运行 α<G2 线 {_fx24_alpha_threshold():g}）",
          _fx24_collect_low_alpha_detail(), "📐 信度报告（逐特征 α＋分歧清单）")
     _add("分立复核积压（merged/split 已裁决待处理）",
          _fx24_collect_divided_backlog(),
@@ -1362,10 +1360,12 @@ def _render_my_decisions_section() -> None:
     counts, kind_reason = _fx24_collect_pending_by_kind()
     me_id = me.get("id")
     my_n, my_reason = _fx24_collect_my_reviews(me_id)
-    if kind_reason is not None or my_reason is not None:
+    _failed_reasons = [r for r in (kind_reason, my_reason) if r is not None]
+    if _failed_reasons:
         st.warning(
-            "数据库暂不可用，部分指标为降级渲染 ——「—」为取数失败（不代表没有"
-            "数据），0 为真实计数；库恢复后刷新即回真值。"
+            "部分指标取数失败：" + "；".join(_failed_reasons)
+            + " ——「—」为取数失败（不代表没有数据），0 为真实计数；"
+            "恢复后刷新即回真值。"
         )
     cols = st.columns(4)
     with cols[0]:
@@ -1759,9 +1759,16 @@ def _render_members_tab(me: Dict[str, Any]) -> None:
     else:
         st.error("项目自检发现问题：" + "；".join(_esc(x) for x in problems))
 
-    # FX-30：项目广播发布入口（规范 §8②组；段口径见 _render_broadcast_section）
+    # FX-30：项目广播发布入口（规范 §8②组；段口径见 _render_broadcast_section）。
+    # RV15-2：项目名从本 tab 已取的项目清单带出（广播段不二次查库），
+    # 段头 caption 回显「发布目标：{项目名}」。
+    project_name = next(
+        (str(p.get("name") or "") for p in projects
+         if int(p.get("id") or 0) == project_id),
+        None,
+    )
     st.divider()
-    _render_broadcast_section(project_id, me)
+    _render_broadcast_section(project_id, me, project_name=project_name)
 
 
 # ============================================
@@ -1816,29 +1823,38 @@ def _render_broadcast_history(project_id: int) -> None:
                   _broadcast_history_rows(items))
 
 
-def _render_broadcast_section(project_id: int, me: Dict[str, Any]) -> None:
+def _render_broadcast_section(project_id: int, me: Dict[str, Any],
+                              project_name: Optional[str] = None) -> None:
     """📢 项目广播段（FX-30，规范 §8②组「项目广播」发布入口）。
 
     词典管理员在本 tab 选中的项目下：标题＋正文 form 发布 → 数据层
     publish_broadcast（内含 require_role 词典管理员闸＋项目在册校验），
     调用点先过 guards.require_dict_admin 中央闸门（纵深防御，同页媒体/
     快照写路径 R1-8 口径）；成功 ui_kit.flash ＋ st.rerun（RV12-2，
-    禁 st.success 回潮）；title/body 缺失/项目不在册/库失败按数据层
-    None 返回转 st.warning 灰注；PermissionError 转 st.error。
-    下方渲染该项目广播历史小表（本 tab 收起状态不阻塞渲染）。
+    禁 st.success 回潮）；title/body 缺失/超长/项目不在册/库失败按数据层
+    结果体的 reason 字段（RV14-5）转 st.warning 逐因灰注；PermissionError
+    转 st.error。下方渲染该项目广播历史小表（本 tab 收起状态不阻塞渲染）。
+
+    表单三键按项目作用域化（RV15-2：f"dict_admin_bc_title_{project_id}" 等
+    —— 切项目后表单值不残留上一项目的陈旧载荷）；project_name 由调用方
+    从已取的项目清单带出（本段不二次查库），缺省回退「项目 #id」。
     """
     st.markdown(f"<h4 style='{HEADER_H3}'>📢 项目广播（项目成员全员可见）</h4>",
                 unsafe_allow_html=True)
     st.caption(
+        f"发布目标：{project_name or f'项目 #{project_id}'}（id {project_id}）。"
         "广播面向该项目全体成员公示（规范 §8：项目广播归词典管理员；"
         "成员在「🤖 AI 协作 → 📥 协作收件箱」顶部看到最新广播）。"
     )
-    with st.form("dict_admin_broadcast_form", clear_on_submit=True):
+    form_key = f"dict_admin_broadcast_form_{project_id}"
+    with st.form(form_key, clear_on_submit=True):
         title = st.text_input(
-            "广播标题（必填，≤200 字符）", key="dict_admin_bc_title",
+            "广播标题（必填，≤200 字符）",
+            key=f"dict_admin_bc_title_{project_id}",
         )
         body = st.text_area(
-            "广播正文（必填）", height=120, key="dict_admin_bc_body",
+            "广播正文（必填，≤10000 字符）", height=120,
+            key=f"dict_admin_bc_body_{project_id}",
         )
         submitted = st.form_submit_button("📢 发布广播", use_container_width=True)
     if not submitted:
@@ -1847,7 +1863,7 @@ def _render_broadcast_section(project_id: int, me: Dict[str, Any]) -> None:
     # R1-8：发布广播是项目公示写路径 —— 调用点中央闸门（同 add_member 口径）
     try:
         guards.require_dict_admin()
-        new_id = broadcast_db.publish_broadcast(project_id, title, body, actor=me)
+        result = broadcast_db.publish_broadcast(project_id, title, body, actor=me)
     except PermissionError as e:
         st.error(f"⛔ {e}")
         _render_broadcast_history(project_id)
@@ -1857,15 +1873,19 @@ def _render_broadcast_section(project_id: int, me: Dict[str, Any]) -> None:
         st.warning("广播未发布：数据层返回异常（详见服务端日志），请稍后重试。")
         _render_broadcast_history(project_id)
         return
-    if new_id is not None:
+    # RV14-5：结果体 {"id": int|None, "reason": str|None} —— 页面按 reason
+    # 显示真实原因；非 dict 形态（防御/旧形态打桩）折叠为未知原因灰注。
+    new_id = result.get("id") if isinstance(result, dict) else None
+    reason = (result.get("reason") if isinstance(result, dict) else None) \
+        or "未知原因（broadcast_db 已记日志，详见服务端日志）"
+    if isinstance(new_id, int) and new_id > 0:
         ui_kit.flash(f"📢 广播已发布（#{new_id}）：项目 {project_id} 成员将在"
                      "协作收件箱顶部看到本条广播。")
         logger.info(f"dict_admin {me.get('username')} 向项目 {project_id} "
                     f"发布广播 #{new_id}")
         st.rerun()
     else:
-        st.warning("广播未发布：标题/正文为空、标题超 200 字符、项目不在册"
-                   "或数据库不可用（broadcast_db 已记日志）。")
+        st.warning(f"广播未发布：{reason}。")
         _render_broadcast_history(project_id)
 
 

@@ -178,9 +178,8 @@ def _patch_ok_world(monkeypatch, *, flagged=0, divided_n=0, stale_n=0,
     monkeypatch.setattr(dp, "get_db_cursor", lambda: fake)
     monkeypatch.setattr(dp.mysql_db, "get_annotation_progress",
                         lambda: [{"verb": "run", "flagged": flagged}])
-    monkeypatch.setattr(dp.writing_db, "list_pending_reviews",
-                        lambda reviewer_id=None, limit=200:
-                        [{"task_id": i} for i in range(my_reviews)])
+    monkeypatch.setattr(dp.writing_db, "count_pending_reviews",
+                        lambda reviewer_id=None: my_reviews)
     return fake
 
 
@@ -235,12 +234,12 @@ def test_my_reviews_counts_current_user_assignment(monkeypatch):
     """待我审校 = 当前用户为受派审校人的 pending 任务数（reviewer_id 透传）。"""
     seen = {}
 
-    def _fake_list(reviewer_id=None, limit=200):
+    def _fake_count(reviewer_id=None):
         seen["reviewer_id"] = reviewer_id
-        return [{"task_id": 1}, {"task_id": 2}]
+        return 2
 
     monkeypatch.setattr(dp, "get_db_cursor", lambda: _FakeCursor())
-    monkeypatch.setattr(dp.writing_db, "list_pending_reviews", _fake_list)
+    monkeypatch.setattr(dp.writing_db, "count_pending_reviews", _fake_count)
     ok_n, reason = _fx24_collect_my_reviews(7)
     assert reason is None and ok_n == 2
     assert seen["reviewer_id"] == 7
@@ -332,11 +331,11 @@ def test_divided_zero_with_probe_fail_degrades(monkeypatch):
 
 
 def test_my_reviews_zero_with_probe_fail_degrades(monkeypatch):
-    """list_pending_reviews 把库不可用折叠成 [] → 空结果过探测兜底。"""
+    """count_pending_reviews 返 None（库不可用计数契约）→ 探测兜底归因。"""
     monkeypatch.setattr(dp, "get_db_cursor",
                         lambda: _FakeCursor(probes_ok=False))
-    monkeypatch.setattr(dp.writing_db, "list_pending_reviews",
-                        lambda reviewer_id=None, limit=200: [])
+    monkeypatch.setattr(dp.writing_db, "count_pending_reviews",
+                        lambda reviewer_id=None: None)
     ok_n, reason = _fx24_collect_my_reviews(7)
     assert ok_n is None and "review_tasks" in str(reason)
 
@@ -455,8 +454,8 @@ def test_degraded_world_renders_unavailable_notes_and_dash(monkeypatch):
         dp, "get_db_cursor",
         lambda: _FakeCursor(fail_on=["SELECT"], probes_ok=False))
     monkeypatch.setattr(dp.mysql_db, "get_annotation_progress", lambda: None)
-    monkeypatch.setattr(dp.writing_db, "list_pending_reviews",
-                        lambda reviewer_id=None, limit=200: [])
+    monkeypatch.setattr(dp.writing_db, "count_pending_reviews",
+                        lambda reviewer_id=None: None)
     _render_risk_list_section()
     _render_my_decisions_section()
     joined = stub.joined()

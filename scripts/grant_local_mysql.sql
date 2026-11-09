@@ -170,3 +170,25 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'127.0.0.1'
 GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+-- FX-33：两步激活原子复验/用户上下文 CASCADE/广播归因测试库（tests/test_fx33_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx33\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx33\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx33\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
+-- FX-32：改派原子复验/重标幂等闸测试库（tests/test_fx32_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx32\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx32\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx32\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
+FLUSH PRIVILEGES;
+
+-- RV18-1：查询归因真库沙箱（tests/test_fx27_fixes.py 实用库）
+GRANT ALL PRIVILEGES ON `web\_word\_r1\_probe`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_r1\_probe`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_r1\_probe`.* TO 'web_word_user'@'%';
+
+-- RV18-1：项目广播域测试库（tests/test_fx30_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx30\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx30\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx30\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;

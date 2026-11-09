@@ -927,8 +927,14 @@ def _migrate_usage_logs_user_id(cursor) -> None:
     """
     column, sql = USAGE_LOGS_USER_ID_COLUMN
     if not _column_exists(cursor, "usage_logs", column):
-        cursor.execute(sql)
-        logger.info(f"usage_logs.{column} 列已补齐（FX-27 查询归因迁移）")
+        try:
+            cursor.execute(sql)
+            logger.info(f"usage_logs.{column} 列已补齐（FX-27 查询归因迁移）")
+        except pymysql.err.OperationalError as e:
+            if e.args and e.args[0] == 1060:  # Duplicate column：并发首启第二进程——幂等成功
+                logger.info("usage_logs.user_id 已被并发进程补齐（1060 幂等自愈）")
+            else:
+                raise
 
 
 # ============================================

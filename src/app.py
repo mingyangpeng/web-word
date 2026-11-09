@@ -31,7 +31,7 @@ from src.dict_admin_pages import render_dict_admin_page
 from src.writing_pages import render_writing_page
 from src.lexical_pages import render_lexical_page
 from src.model_settings_pages import render_model_settings_page
-from src.collab_pages import pending_inbox_count, render_collab_page
+from src.collab_pages import _can_adjudicate_inbox, pending_inbox_count, render_collab_page
 from src import ui_kit  # RV12-2：一次性提示统一收口（main() 每轮渲染弹出）
 from html import escape as _html_escape
 from typing import Callable, Optional, Dict, List, Any, Tuple
@@ -1784,12 +1784,22 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
 #   * 「有待办」＝ ai_proposals 台账 pending 的 draft/audit 提议数 > 0
 #     （pending_inbox_count —— 与侧边栏「🤖 AI 待办 N 条 · 去处理」徽章同一
 #     信号源；库不可用/表未建按 0 计，自然落到后续分支）→ 协作收件箱 ai_hub
-#     （六角色全可见，_PAGE_ACCESS_SIX["ai_hub"]=NEW_ROLES）；
+#     （六角色全可见，_PAGE_ACCESS_SIX["ai_hub"]=NEW_ROLES）。
+#     RV15-1 落地判定加角色条件：仅当用户可裁决（_can_adjudicate_inbox ——
+#     collab_pages 收件箱裁决按钮区同源口径，有效六角色含 dict_admin/reviewer）
+#     且其可裁决域（draft/audit pending，即 pending_inbox_count 计数面）>0
+#     时才落 ai_hub；无裁决权角色（viewer/annotator/editor/sys_admin 在
+#     收件箱本就是只读展示）直接顺序到分支 2/3 —— pending_inbox_count 全局
+#     计数不动（侧边栏徽章语义保留：徽章是全角色提示性质），只收落地分支；
 #   * 「有续接点」＝ 用户上下文域 user_state（工作位置/续接点，规范 §8-⑨）
 #     读到上次工作页 —— 页级续接点读取尚未接线（src/user_context_db 的
 #     user_state 为键值面，「键 → 落地页」的换算归其接线方），本模块留
 #     set_resume_page_loader 缝（FX-18 set_db_enabled_loader 同款两步绑定），
 #     未绑定/读不到 ＝ 无续接点，顺序取下一分支；
+#     RV15-3「侧边栏『继续：…』」可见面落位：分支 2 命中即 ui_kit.flash
+#     「已回到上次工作位置：{页名}」（flash 队列 main() 每轮渲染消费既有
+#     纪律；登录成功路径紧随 st.rerun，提示下一轮渲染弹出）；分支 3（首次）
+#     不 flash；
 #   * 「首次」（无待办且无续接点）→ 搜索释义 search；
 #   * 各分支目标先过 _visible_page_keys 角色可见性过滤：落地页不得是该角色
 #     radio 之外的隐藏页（不可见视同该分支未命中，顺序取下一分支）。
@@ -1835,7 +1845,9 @@ def _resume_page_loader(user_id: int) -> Optional[str]:
         for row in list_states():
             if row.get("state_key") == "resume_page":
                 page_key = row.get("state_value")
-                return page_key if isinstance(page_key, str) else None
+                # 白名单双保险：脏值/越权页键在此拦下（落地层还有可见集过滤）
+                return (page_key if isinstance(page_key, str)
+                        and page_key in PAGE_KEYS else None)
         return None
     except Exception as e:  # noqa: BLE001
         logger.debug(f"续接点适配器读取失败（按无续接点降级）: {e}")
@@ -1849,18 +1861,26 @@ def _landing_page_for(user: Dict[str, Any]) -> str:
     """登录落地三分支解析（规范 §9 L242 原文口径，逐条对照见本区注释）。
 
     分支顺序即规范语序：有待办→协作收件箱；有续接点→上次位置；首次→搜索释义。
+    RV15-1：分支 1 加可裁决角色条件（_can_adjudicate_inbox 同源口径）——
+    无裁决权角色不因全局 pending>0 被落去 ai_hub；RV15-3：分支 2 命中即
+    flash「已回到上次工作位置」。
     仅在登录成功路径调用一次（_render_login_section）；返回键必属该角色可见集
     （_visible_page_keys ⊆ PAGE_KEYS），七区路由契约不受影响。
     """
     visible = _visible_page_keys(user)
-    # 分支 1：有待办 → 协作收件箱（ai_hub 六角色全可见）
-    if "ai_hub" in visible and pending_inbox_count() > 0:
+    # 分支 1：有待办 → 协作收件箱（ai_hub 六角色全可见）。
+    # RV15-1：落地判定加可裁决角色条件（口径见本区注释块）——可裁决且其
+    # 可裁决域 pending>0 才落 ai_hub，无裁决权角色顺序到分支 2/3。
+    if ("ai_hub" in visible and _can_adjudicate_inbox(user)
+            and pending_inbox_count() > 0):
         return "ai_hub"
-    # 分支 2：有续接点 → 上次位置（user_state 续接点；侧边栏「继续：…」同源）
+    # 分支 2：有续接点 → 上次位置（user_state 续接点；侧边栏「继续：…」同源）。
+    # RV15-3：命中即 flash（规范「继续：…」可见面；main() 下一轮渲染消费）。
     resume = _resume_work_page(user)
     if resume is not None and resume in visible:
+        ui_kit.flash(f"已回到上次工作位置：{page_label(resume)}")
         return resume
-    # 分支 3：首次（无待办且无续接点）→ 搜索释义
+    # 分支 3：首次（无待办且无续接点）→ 搜索释义（不 flash）
     return "search"
 
 

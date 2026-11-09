@@ -1,4 +1,4 @@
-"""FX-18 修复批次回归测试。
+r"""FX-18 修复批次回归测试。
 
 覆盖台账（FX-15 规范×实现对账 组①：工具注册表/两步激活/两表落库/pack 自检）：
 
@@ -8,8 +8,10 @@
   * 权限闸门   available_set 非 sys_admin 拒 / enabled_set 非 dict_admin 拒
                （guards.require_role，PermissionError 先于任何 DB 触达）；
   * 两步激活   enabled 必须 available 先行（未 available 拒且不留审计）；
-               enabled ⊆ available 不变式（enabled=1 时 available_unset 拒）；
-               enabled_unset 幂等（无行返回 True）；
+               enabled ⊆ available 不变式（enabled=1 时 available_unset 拒，
+               RV14-3 后由 UPDATE WHERE 原子复验兜底）；
+               enabled_unset 幂等（无行返回 True）；available_unset 幂等
+               （无行返回 True 不建行不留痕，RV14-9）；
   * 持久化往返 available → enabled → 查询（get_setting/is_enabled/
                enabled_map/list_settings）全链真库沙箱（web_word_fx18_test）；
   * 审计留痕   available_set/available_unset/enabled_set/enabled_unset 各写
@@ -261,17 +263,30 @@ class TestTwoStepActivationRoundTrip:
             ["typicality"]
 
     def test_enabled_requires_available_first(self, fx18_env):
-        """available 先行约束：无行 / available=0 时 enabled_set 拒且不留审计。"""
+        """available 先行约束：无行 / available=0 时 enabled_set 拒且不留审计。
+
+        RV14-9 口径变更：available_set(available=False) 无行 → 幂等熄灭
+        （True，不 INSERT available=0 空行、不留审计——同 enabled_set 无行
+        熄灭先例）；「available=0 显式行」改由 先置位→撤下 造出（撤下走
+        UPDATE 原子复验并落审计 available_unset），enabled_set 照旧被前置闸拒绝。
+        """
         tsd.ensure_tool_settings_tables()
-        # 无行（available 未做）
+        # 无行（available 未做）：enabled_set 拒且不留审计
         assert tsd.enabled_set("motion", "typicality", actor=DICT_ADMIN) is False
         assert tsd.list_audit(category="motion") == []
-        # available=0 的显式行（available_set(False) 落审计动作 available_unset——撤下也是平台管理员操作，应留痕）
+        # 无行撤位（RV14-9）：幂等熄灭 True，不建行、不留审计；
+        # enabled_set 照旧被「无行=未 available 先行」拒绝
         assert tsd.available_set("motion", "typicality", actor=SYS_ADMIN,
                                  available=False)
+        assert tsd.get_setting("motion", "typicality") is None
+        assert tsd.list_audit(category="motion") == []
+        assert tsd.enabled_set("motion", "typicality", actor=DICT_ADMIN) is False
+        # available=0 的显式行（先置位再撤下；撤下也是平台管理员操作，应留痕）
+        assert tsd.available_set("motion", "typicality", actor=SYS_ADMIN)
+        assert tsd.available_unset("motion", "typicality", actor=SYS_ADMIN)
         assert tsd.enabled_set("motion", "typicality", actor=DICT_ADMIN) is False
         actions = [r["action"] for r in tsd.list_audit(category="motion")]
-        assert actions == ["available_unset"]  # 仅撤下留痕；enabled_set 拒绝不留任何审计
+        assert actions == ["available_unset", "available_set"]  # 倒序：仅平台管理员动作留痕；enabled_set 拒绝不留任何审计
         assert tsd.is_enabled("motion", "typicality") is False
 
     def test_available_unset_blocked_while_enabled(self, fx18_env):
@@ -810,6 +825,6 @@ class TestCategoriesToolsPage:
         assert rows[0]["tool_id"] == first_tool_id
         assert rows[0]["available"] == 1 and rows[0]["enabled"] == 0
         audit = tsd.list_audit()
-        assert any(r["action"] == "available_set" and
-                   r["actor_username"] == "sys_a" and
-                   r["tool_id"] == first_tool_id for r in audit)
+        assert any(r["action"] == "available_set"
+                   and r["actor_username"] == "sys_a"
+                   and r["tool_id"] == first_tool_id for r in audit)

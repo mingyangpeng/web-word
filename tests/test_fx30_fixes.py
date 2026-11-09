@@ -92,6 +92,14 @@ _ME_ADMIN = {"id": 7, "username": "fx30chief", "display_name": "主编甲",
 _ME_VIEWER = {"id": 8, "username": "fx30viewer", "display_name": "路人",
               "role": "viewer", "roles": ["viewer"], "active": True}
 
+
+def _reject_reason(result):
+    """RV14-5 结果体契约：{"id": int|None, "reason": str|None} —— 取拒绝原因，
+    顺带断言 id=None（拒绝体不携带 id）。"""
+    assert result["id"] is None
+    return result["reason"]
+
+
 _FAKE_BROADCASTS = [
     {"id": 12, "project_id": 3, "project_name": "现汉七",
      "title": "出版导出暂停", "body": "周五 22:00 起库维护，导出暂停半日。",
@@ -195,6 +203,10 @@ class _CaptureCursor:
     def execute(self, sql, params=None):
         self._store.append((sql, params))
 
+    def fetchone(self):
+        # RV17-1 连通探测（SELECT 1）取行走此——桩恒返回存活行
+        return {"1": 1}
+
     def fetchall(self):
         return []
 
@@ -286,12 +298,14 @@ class TestPublishGate:
                 bdb.publish_broadcast(1, "标题", "正文", actor=actor)
 
     def test_unregistered_project_rejected(self, monkeypatch):
-        """项目不在册（org_db.list_projects 无此 id）→ None（静默拒绝＋error 日志）。"""
+        """项目不在册（org_db.list_projects 无此 id）→ 结果体 id=None＋reason
+        归因「不在册」（RV14-5：拒绝走 reason 字段，静默拒绝＋error 日志）。"""
         monkeypatch.setattr(org_db, "list_projects",
                             lambda: [{"id": 3, "name": "现汉七"}])
-        assert bdb.publish_broadcast(999, "标题", "正文", actor=_ME_ADMIN) is None
-        assert bdb.publish_broadcast(999, "标题", "正文",
-                                     actor={"id": 1, "roles": ["dict_admin"]}) is None
+        for actor in (_ME_ADMIN, {"id": 1, "roles": ["dict_admin"]}):
+            result = bdb.publish_broadcast(999, "标题", "正文", actor=actor)
+            assert result["id"] is None
+            assert "不在册" in result["reason"]
 
     def test_registered_project_inserts(self, monkeypatch):
         """在册项目 → INSERT 参数化落库；标题去空白；published_by=actor id。"""
@@ -300,8 +314,8 @@ class TestPublishGate:
                             lambda: [{"id": 3, "name": "现汉七"}])
         monkeypatch.setattr(bdb, "get_db_cursor",
                             lambda *a, **k: _CaptureCursor(store, lastrowid=42))
-        new_id = bdb.publish_broadcast(3, "  维护公告  ", "正文", actor=_ME_ADMIN)
-        assert new_id == 42
+        result = bdb.publish_broadcast(3, "  维护公告  ", "正文", actor=_ME_ADMIN)
+        assert result == {"id": 42, "reason": None}
         sql, params = store[-1]
         assert "INSERT INTO project_broadcasts" in sql
         assert params == (3, "维护公告", "正文", 7)
@@ -314,28 +328,41 @@ class TestPublishGate:
                             lambda *a, **k: _CaptureCursor(store, lastrowid=1))
         new_id = bdb.publish_broadcast(
             1, "系统公示", "自动作业", actor={"roles": ["dict_admin"]})
-        assert new_id == 1
+        assert new_id["id"] == 1 and new_id["reason"] is None
         assert store[-1][1][3] is None
 
     def test_invalid_params_rejected_before_db(self, monkeypatch):
-        """空标题/空正文/超长标题/非法 project_id → None；DB 与 org 域零触达。"""
+        """空标题/空正文/超长标题/非法 project_id → id=None 且 reason 非空
+        （RV14-5 归因）；DB 与 org 域零触达。"""
         monkeypatch.setattr(bdb, "get_db_cursor", _ExplodeCursor())
         monkeypatch.setattr(org_db, "list_projects",
                             lambda: (_ for _ in ()).throw(AssertionError("org 域被触达")))
-        assert bdb.publish_broadcast(3, "   ", "正文", actor=_ME_ADMIN) is None
-        assert bdb.publish_broadcast(3, None, "正文", actor=_ME_ADMIN) is None
-        assert bdb.publish_broadcast(3, "标题", "  ", actor=_ME_ADMIN) is None
-        assert bdb.publish_broadcast(3, "标题", None, actor=_ME_ADMIN) is None
-        assert bdb.publish_broadcast(3, "x" * 201, "正文", actor=_ME_ADMIN) is None
+        assert _reject_reason(bdb.publish_broadcast(3, "   ", "正文", actor=_ME_ADMIN))
+        assert _reject_reason(bdb.publish_broadcast(3, None, "正文", actor=_ME_ADMIN))
+        assert _reject_reason(bdb.publish_broadcast(3, "标题", "  ", actor=_ME_ADMIN))
+        assert _reject_reason(bdb.publish_broadcast(3, "标题", None, actor=_ME_ADMIN))
+        assert "超长" in _reject_reason(
+            bdb.publish_broadcast(3, "x" * 201, "正文", actor=_ME_ADMIN))
         for bad_pid in (True, None, 0, -1, "3x", 3.5):
-            assert bdb.publish_broadcast(bad_pid, "标题", "正文",
-                                         actor=_ME_ADMIN) is None, bad_pid
+            assert _reject_reason(
+                bdb.publish_broadcast(bad_pid, "标题", "正文", actor=_ME_ADMIN)
+            ), bad_pid
+
+    def test_body_over_limit_rejected_with_reason(self, monkeypatch):
+        """正文超 10000 字符（RV14-5 应用层闸）→ 归因「正文超长」，零 DB 触达。"""
+        monkeypatch.setattr(bdb, "get_db_cursor", _ExplodeCursor())
+        result = bdb.publish_broadcast(3, "标题", "字" * (bdb.MAX_BODY_LEN + 1),
+                                       actor=_ME_ADMIN)
+        assert result["id"] is None
+        assert "正文超长" in result["reason"]
 
     def test_db_down_returns_none(self, monkeypatch):
-        """库不可用 → None（记日志不抛，降级口径）。"""
+        """库不可用 → id=None、reason 归因「数据库」（记日志不抛，降级口径）。"""
         monkeypatch.setattr(org_db, "list_projects", lambda: [{"id": 3}])
         monkeypatch.setattr(bdb, "get_db_cursor", _ExplodeCursor())
-        assert bdb.publish_broadcast(3, "标题", "正文", actor=_ME_ADMIN) is None
+        result = bdb.publish_broadcast(3, "标题", "正文", actor=_ME_ADMIN)
+        assert result["id"] is None
+        assert "数据库" in result["reason"]
 
 
 class TestQueryGuards:
@@ -357,10 +384,12 @@ class TestQueryGuards:
             assert bdb.latest_for_user(bad) == [], bad
 
     def test_degradation_triple(self, monkeypatch):
-        """降级三态：publish→None / list→[] / latest→None（表未建同径）。"""
+        """降级三态：publish→拒绝体（reason 归因数据库）/ list→[] /
+        latest→None（表未建同径）。"""
         monkeypatch.setattr(bdb, "get_db_cursor", _ExplodeCursor())
         monkeypatch.setattr(org_db, "list_projects", lambda: [{"id": 3}])
-        assert bdb.publish_broadcast(3, "标题", "正文", actor=_ME_ADMIN) is None
+        result = bdb.publish_broadcast(3, "标题", "正文", actor=_ME_ADMIN)
+        assert result["id"] is None and "数据库" in result["reason"]
         assert bdb.list_broadcasts(3) == []
         assert bdb.latest_for_user(7) is None
 
@@ -434,8 +463,10 @@ class TestBroadcastRoundtrip:
         org_db.add_member(project, member, "editor", granted_by=chief)
 
         actor = {"id": chief, "role": "admin"}      # legacy admin → dict_admin
-        first = bdb.publish_broadcast(project, "第一条公告", "正文一", actor=actor)
-        second = bdb.publish_broadcast(project, "第二条公告", "正文二", actor=actor)
+        first = bdb.publish_broadcast(project, "第一条公告", "正文一",
+                                      actor=actor)["id"]
+        second = bdb.publish_broadcast(project, "第二条公告", "正文二",
+                                       actor=actor)["id"]
         assert first and second and second > first
 
         items = bdb.list_broadcasts(project)
@@ -457,8 +488,8 @@ class TestBroadcastRoundtrip:
         p2 = org_db.create_project("项目二", chief, ["motion"])
         actor = {"id": chief, "role": "admin"}
         bdb.publish_broadcast(p1, "P1-旧", "x", actor=actor)
-        p1_latest = bdb.publish_broadcast(p1, "P1-新", "y", actor=actor)
-        p2_latest = bdb.publish_broadcast(p2, "P2-新", "z", actor=actor)
+        p1_latest = bdb.publish_broadcast(p1, "P1-新", "y", actor=actor)["id"]
+        p2_latest = bdb.publish_broadcast(p2, "P2-新", "z", actor=actor)["id"]
 
         mine = bdb.latest_for_user(chief)
         assert [it["id"] for it in mine] == [p2_latest, p1_latest]  # 广播 id 倒序
@@ -470,8 +501,8 @@ class TestBroadcastRoundtrip:
         assert bdb.latest_for_user(outsider) == []    # 未入册 → 空清单（不渲染段）
 
     def test_gate_and_validation_in_db(self, fx30_db):
-        """真实库下复验：非词典管理员抛 PermissionError；不在册项目 None；
-        空 title/body None；published_by=NULL 行读回发布人为空。"""
+        """真实库下复验：非词典管理员抛 PermissionError；不在册项目拒绝体；
+        空 title/body 拒绝体；published_by=NULL 行读回发布人为空。"""
         self._create_base_tables()
         chief = create_user("fx30_chief3", "pass_fx30_1", "主编丁", "admin")
         ann = create_user("fx30_ann3", "pass_fx30_1", "标注戊", "annotator")
@@ -483,27 +514,30 @@ class TestBroadcastRoundtrip:
                                   actor={"id": ann, "role": "annotator"})
         with pytest.raises(PermissionError):
             bdb.publish_broadcast(project, "越权标题", "正文", actor=None)
-        assert bdb.publish_broadcast(999999, "不在册", "正文", actor=actor) is None
-        assert bdb.publish_broadcast(project, "", "正文", actor=actor) is None
-        assert bdb.publish_broadcast(project, "标题", "  ", actor=actor) is None
+        assert "不在册" in _reject_reason(
+            bdb.publish_broadcast(999999, "不在册", "正文", actor=actor))
+        assert _reject_reason(bdb.publish_broadcast(project, "", "正文", actor=actor))
+        assert _reject_reason(bdb.publish_broadcast(project, "标题", "  ", actor=actor))
 
         sys_row = bdb.publish_broadcast(
-            project, "系统公示", "自动作业", actor={"roles": ["dict_admin"]})
+            project, "系统公示", "自动作业", actor={"roles": ["dict_admin"]})["id"]
         rows = bdb.list_broadcasts(project)
         assert len(rows) == 1 and rows[0]["id"] == sys_row
         assert rows[0]["published_by"] is None
         assert rows[0]["publisher_username"] is None
 
     def test_table_missing_degrades(self, fx30_db):
-        """广播表未建（只建 users/org）→ 读 [] / None、发布 None，不抛。"""
+        """广播表未建（只建 users/org）→ 读 [] / None、发布拒绝体，不抛。
+        本用例 org 表空册 → 项目不在册先于触库被拒（RV14-5 归因「不在册」）。"""
         from src.users_db import ensure_user_tables
 
         ensure_user_tables()
         org_db.ensure_org_tables()   # 刻意不调 ensure_broadcast_table
         assert bdb.list_broadcasts(1) == []
         assert bdb.latest_for_user(1) is None
-        assert bdb.publish_broadcast(
-            1, "标题", "正文", actor={"roles": ["dict_admin"]}) is None
+        result = bdb.publish_broadcast(
+            1, "标题", "正文", actor={"roles": ["dict_admin"]})
+        assert result["id"] is None and "不在册" in result["reason"]
 
 
 # ============================================
@@ -538,7 +572,7 @@ class TestBroadcastSection:
         dp._render_broadcast_section(3, _ME_ADMIN)
         joined = stub.joined()
         assert "📢 项目广播" in joined
-        assert 'key="dict_admin_bc_title"' in inspect.getsource(
+        assert 'key=f"dict_admin_bc_title_{project_id}"' in inspect.getsource(
             dp._render_broadcast_section)
         captions = stub.texts("caption")
         assert any("共 2 条" in c for c in captions)
@@ -557,7 +591,8 @@ class TestBroadcastSection:
 
     def test_section_submit_success_flash_rerun(self, monkeypatch):
         """提交 → 中央闸门过 → publish → ui_kit.flash ＋ st.rerun；无 st.success。"""
-        stub = _patch_section(monkeypatch, _StubSt(submit=True), publish=9)
+        stub = _patch_section(monkeypatch, _StubSt(submit=True),
+                              publish={"id": 9, "reason": None})
         _clear_flash_queue()
         dp._render_broadcast_section(3, _ME_ADMIN)
         assert any(k == "rerun" for k, _ in stub.messages)
@@ -603,12 +638,21 @@ class TestBroadcastSection:
         # docstring 口径注释可提及 st.success，代码调用（st.success(）不得在场
         assert "st.success(" not in src
 
-    def test_section_widget_keys_prefixed(self):
-        """widget key 一律 'dict_admin_' 前缀（本页自订规则；广播段三键）。"""
+    def test_section_widget_keys_scoped_by_project(self):
+        """widget key 一律 'dict_admin_' 前缀；广播段三键按项目作用域化
+        （RV15-2：切项目键不同，会话 widget 状态不残留陈旧载荷）。"""
         src = inspect.getsource(dp._render_broadcast_section)
-        assert 'key="dict_admin_bc_title"' in src
-        assert 'key="dict_admin_bc_body"' in src
-        assert '"dict_admin_broadcast_form"' in src
+        assert 'key=f"dict_admin_bc_title_{project_id}"' in src
+        assert 'key=f"dict_admin_bc_body_{project_id}"' in src
+        assert 'f"dict_admin_broadcast_form_{project_id}"' in src
+        assert 'key="dict_admin_bc_title"' not in src  # 旧全局键已退役
+
+    def test_section_caption_echoes_publish_target(self, monkeypatch):
+        """RV15-2：段头 caption 回显「发布目标：{项目名}」（调用方带出项目名）。"""
+        stub = _patch_section(monkeypatch, _StubSt(), items=[])
+        dp._render_broadcast_section(3, _ME_ADMIN, project_name="现汉七")
+        captions = stub.texts("caption")
+        assert any("发布目标：现汉七" in c and "id 3" in c for c in captions)
 
     def test_history_rows_truncate_long_body(self):
         """长正文截断 80 字＋省略号；时间原样；发布者回退 username→#id。"""
@@ -725,7 +769,7 @@ def test_apptest_publish_smoke_flash(monkeypatch):
 
     def _fake_publish(project_id, title, body, actor=None):
         seen["args"] = (project_id, title, body, actor)
-        return 9
+        return {"id": 9, "reason": None}   # RV14-5 结果体契约
 
     monkeypatch.setattr(dp.broadcast_db, "publish_broadcast", _fake_publish)
     at = AppTest.from_string(_DICT_ADMIN_SMOKE_SCRIPT, default_timeout=60)

@@ -18,7 +18,7 @@
     matched_features 证据链）；render(ctx) 留批次 2（ui_surface 对应
     app.py 的 _page == "semantic"）。
     注意：index / value_types / ranges 属页面级缓存与元数据注入参数，
-    不进 params_schema（批次 2 接线时如需预装载索引再扩展 schema）。
+    预装载索引经 params_schema 的 index 键透传（FX-29 接线扩面）。
 
 降级：
     查询向量为空 / 范畴未灌数据 / 库不可用 → search_similar_senses
