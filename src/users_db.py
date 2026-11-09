@@ -87,7 +87,10 @@ CREATED_BY_COLUMN_SQL = "ALTER TABLE users ADD COLUMN created_by INT NULL"
 #      DELETE 撞 FK 或级联撕掉业务数据。**不做破坏性 ALTER**：存量库不
 #      迁移既有约束，两条口径各归各表、只约束新建表。
 #   互指：org_db.py 模块 docstring（成员/项目侧 CASCADE+SET NULL 落点）、
-#   src/annotation_flow.py 三表 DDL（NO ACTION 业务引用示例）。
+#   src/annotation_flow.py 三表 DDL（NO ACTION 业务引用示例）、
+#   src/user_context_db.py DDL（用户上下文域 5 表 user_profiles/user_state/
+#   user_bookmarks/user_notes/draft_states —— 用户自有表类，已按本纪律落
+#   FK ON DELETE CASCADE，批次 17 FX-33）。
 # user_roles 多角色表（平台架构设计规范 §8 六角色）。一人可叠加，UNIQUE 去重；
 # FK 对 users ON DELETE CASCADE：口径见上第 1 条（账号物理删除时角色行
 # 跟随消失，绝不阻断删除路径）。

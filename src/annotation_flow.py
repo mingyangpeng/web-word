@@ -258,7 +258,13 @@ def parse_payload(raw: Any) -> dict:
 
 
 def _parse_json_list(raw: Any) -> Optional[list]:
-    """JSON 列（scope_verbs / submission_ids）→ list；NULL → None；坏数据 → None。"""
+    """JSON 列（scope_verbs / submission_ids）→ list；NULL → None；坏数据 → None。
+
+    返回契约不变（None=全部动词 / 无仲裁留痕，RV14-8 不动形态）；坏数据路径
+    加 logger.warning 留痕 —— scope_verbs 坏数据按 None 降级会把「范围语义」
+    静默放大为「全部动词」（标注人实际能看到的动词集合被放大），必须落日志
+    供运维核查库内脏数据，不得无声降级。
+    """
     if raw is None:
         return None
     if isinstance(raw, (list, tuple)):
@@ -267,14 +273,28 @@ def _parse_json_list(raw: Any) -> Optional[list]:
         try:
             raw = raw.decode("utf-8")
         except UnicodeDecodeError:
+            _warn_bad_json_list(f"UTF-8 解码失败: {bytes(raw)[:80]!r}")
             return None
     if isinstance(raw, str):
         try:
             parsed = json.loads(raw)
-            return parsed if isinstance(parsed, list) else None
         except json.JSONDecodeError:
+            _warn_bad_json_list(f"非法 JSON: {raw[:80]!r}")
             return None
+        if not isinstance(parsed, list):
+            _warn_bad_json_list(f"JSON 非 list（{type(parsed).__name__}）: {raw[:80]!r}")
+            return None
+        return parsed
+    _warn_bad_json_list(f"非字符串/列表类型（{type(raw).__name__}）: {raw!r}"[:120])
     return None
+
+
+def _warn_bad_json_list(detail: str) -> None:
+    """_parse_json_list 坏数据统一告警文案（RV14-8：单点，两消费方同口径）。"""
+    logger.warning(
+        "JSON 列坏数据按 None 降级（%s）—— scope_verbs 场景即「范围语义"
+        "静默放大为全部动词」，请核查库内脏数据", detail,
+    )
 
 
 def _row_round(row: dict) -> Optional[int]:
@@ -322,21 +342,43 @@ def ensure_flow_tables() -> None:
                 cursor.execute(ddl)
             _migrate_assignments_round_columns(cursor)
     except pymysql.Error as e:
-        logger.error(f"flow 表初始化失败（MySQL，检查 users/oald_senses 是否已建）: {e}")
+        if _is_dup_column_error(e):
+            # RV14-4：1060（Duplicate column）= 并发首启的第二进程在探测窗口后
+            # 撞列 —— 幂等成功而非故障，单列分流，不进下方「检查 users/oald_senses
+            # 是否已建」误导文案（那是被引用表缺失的归因）。
+            logger.info(f"flow 表结构已被并发进程补齐（MySQL 1060 幂等自愈）: {e}")
+        else:
+            logger.error(f"flow 表初始化失败（MySQL，检查 users/oald_senses 是否已建）: {e}")
     except Exception as e:
         logger.error(f"flow 表初始化意外错误: {e}")
+
+
+def _is_dup_column_error(e: BaseException) -> bool:
+    """MySQL 1060（ER_DUP_FIELD，Duplicate column）判定（RV14-4 迁移幂等自愈）。"""
+    return isinstance(e, pymysql.Error) and bool(e.args) and e.args[0] == 1060
 
 
 def _migrate_assignments_round_columns(cursor) -> None:
     """assignments 存量结构迁移：补 round / training 两列（幂等，FX-20）。
 
     ALTER-only：column_exists 探测（information_schema，走 db_utils 单一实现）→
-    缺列才 ADD COLUMN；二次执行探测命中直接跳过，不炸不重复加列。迁移失败由
-    ensure_flow_tables 的外层 try/except 记日志（不抛），页面可继续渲染。
+    缺列才 ADD COLUMN；二次执行探测命中直接跳过，不炸不重复加列。ALTER 逐条
+    捕 MySQL 1060（并发首启第二进程在探测窗口后撞列，RV14-4）—— 视为幂等
+    成功继续探测下一列；其余 pymysql.Error 向上抛，由 ensure_flow_tables
+    的外层 try/except 记日志（不抛），页面可继续渲染。
     """
     for column, sql in ASSIGNMENTS_ROUND_COLUMNS:
         if not _column_exists(cursor, "assignments", column):
-            cursor.execute(sql)
+            try:
+                cursor.execute(sql)
+            except pymysql.Error as e:
+                if not _is_dup_column_error(e):
+                    raise
+                logger.info(
+                    f"assignments.{column} 已由并发进程补齐"
+                    "（MySQL 1060，幂等自愈继续，RV14-4）"
+                )
+                continue
             logger.info(f"assignments.{column} 列已补齐（FX-20 试标轮迁移）")
 
 
@@ -1120,14 +1162,25 @@ def reassign_assignment(
       2. 状态闸：status ∈ REASSIGNABLE_ASSIGNMENT_STATUSES（'open'）——
          规范 §8「改派仅限 draft/rejected」以码为准的映射，见常量注释；
       3. 非当前承包人闸：new_assignee ≠ 现承包人（换人不是重复指派）；
-      4. 同项目在册闸：new_assignee 须在 project_members(project_id) 在册且
-         账号在用（users.active=1）—— 三级权限链第二级，未入册者不接任务；
-      5. 乐观并发守卫：UPDATE ... WHERE id=%s AND status=%s（status 闸在
-         SQL 里复验，防读后他人已把状态推进）。
+      4. 调用方所选项目在册闸（RV13-4 措辞降格）：new_assignee 须在**调用方
+         所选** project_id 的 project_members 在册且账号在用（users.active=1）
+         —— assignments 无项目列，「任务所属项目」语义待阶段 2 补列后建立；
+         dict_admin 全局可信角色下风险有界（管理员本可经 collab_pages 对任意
+         项目分派，本闸不新增也收不走其合法面）；
+      5. 留痕一致性（RV13-5）：reassigned_by 须与 actor["id"] 一致（as_int
+         清洗后比对）—— 数据层直调面收口：留痕只能是自己，不接受「A 会话
+         落 B 的名」；actor=None 系统作业面不受此限（此时入参即留痕来源）；
+      6. 原子并发守卫（RV13-2/RV14-6）：单条 UPDATE ... WHERE id=%s AND
+         status=%s AND assignee_id=%s AND EXISTS(项目在册在用复验) —— 在册
+         校验从「读后写」收敛为与写库原子复验，消除读↔写窗口的 TOCTOU；
+         assignee_id 前值复验消除并发改派的静默覆盖与审计前值失真。
+         rowcount=0 时重读行归因（状态已推进 / 承包人已被并发改派（含同值
+         重放）/ 目标已失格 / 行已删除），日志如实。
 
     原承包人在途保护沿用 org_db.remove_member 的既有纪律口径：本函数只换
-    assignments.assignee_id，**不动** project_members（原承包人在该项目的其他
-    在途任务与成员资格不受影响）。
+    assignments.assignee_id（assigned_by 同步为执行改派的管理员，台账「当前
+    分派人」如实），**不动** project_members（原承包人在该项目的其他在途
+    任务与成员资格不受影响）。
 
     审计：成功改派写结构化日志（谁改的/原→新承包人/分派 id/项目 id），
     logger.info 级别供运维回溯（本表无专用审计列，遵循「改研究方案的进文件，
@@ -1138,12 +1191,13 @@ def reassign_assignment(
         project_id: 改派目标校验用项目 id（assignments 无项目列，项目上下文
             由调用方提供 —— 页面传当前所选项目）
         new_assignee_id: 新承包人 users.id
-        reassigned_by: 执行改派的词典管理员 users.id
+        reassigned_by: 执行改派的词典管理员 users.id（须等于 actor["id"]，
+            见闸 5）
         actor: 会话用户 dict（页面传当前用户）| None（系统作业）
 
     Returns:
         bool: 改派成功 True；分派不存在 / 状态闸不过 / 目标非法（非在册、
-        同人）/ 数据库错误 False
+        同人）/ 留痕不一致（RV13-5）/ 并发守卫未命中 / 数据库错误 False
 
     Raises:
         PermissionError: actor 为低权 dict / 非 dict 垃圾值（入口先抛）。
@@ -1165,6 +1219,18 @@ def reassign_assignment(
             f"reassigned_by={reassigned_by!r}"
         )
         return False
+    # 闸 5（RV13-5）：留痕执行人与会话 actor 一致性 —— 留痕只能是自己。
+    # actor 已过 _require_assignment_actor（dict 或 None）；dict 缺合法 id
+    # 视为不一致（fail-closed，不猜）。
+    if actor is not None:
+        actor_id = _as_int(actor.get("id"))
+        if actor_id is None or actor_id != by_id:
+            logger.error(
+                f"改派拒绝：reassigned_by（user {by_id}）与会话用户 "
+                f"actor['id']（{actor_id!r}）不一致 —— "
+                "留痕只能是自己（RV13-5）；系统作业请传 actor=None"
+            )
+            return False
 
     select_sql = (
         "SELECT id, assignee_id, status, category, task_type "
@@ -1175,10 +1241,18 @@ def reassign_assignment(
         "JOIN users u ON u.id = pm.user_id "
         "WHERE pm.project_id = %s AND pm.user_id = %s AND u.active = 1"
     )
-    # 乐观并发守卫：status 在 WHERE 里复验（读后他人推进状态则 rowcount=0）
+    # 原子并发守卫（RV13-2/RV14-6）：status + assignee_id 前值 + 项目在册在用
+    # EXISTS 三重复验与写库同语句原子执行（读后写窗口的 TOCTOU 收口）；
+    # SET assigned_by 同步为执行改派的管理员（台账「当前分派人」如实）。
+    # 注：reviewer 建议文本含 updated_at=NOW()，assignments 无该列（DDL 仅
+    # created_at），按实际表结构核对后不落此列。
     update_sql = (
-        "UPDATE assignments SET assignee_id = %s "
-        "WHERE id = %s AND status = %s"
+        "UPDATE assignments SET assignee_id = %s, assigned_by = %s "
+        "WHERE id = %s AND status = %s AND assignee_id = %s "
+        "AND EXISTS ("
+        "SELECT 1 FROM project_members pm "
+        "JOIN users u ON u.id = pm.user_id "
+        "WHERE pm.project_id = %s AND pm.user_id = %s AND u.active = 1)"
     )
     try:
         with get_db_cursor() as cursor:
@@ -1209,11 +1283,13 @@ def reassign_assignment(
                     "（project_members 校验不过）"
                 )
                 return False
-            cursor.execute(update_sql, (new_uid, aid, status))
+            cursor.execute(update_sql, (new_uid, by_id, aid, status,
+                                        current_assignee, pid, new_uid))
             if cursor.rowcount <= 0:
-                logger.error(
-                    f"改派失败：分派 #{aid} 状态已被并发推进（乐观守卫未命中）"
+                reason = _reassign_miss_reason(
+                    cursor, aid, status, current_assignee, pid, new_uid
                 )
+                logger.error(f"改派失败：分派 #{aid} {reason}")
                 return False
             logger.info(
                 f"改派审计：分派 #{aid}（{row.get('category')}/"
@@ -1230,24 +1306,85 @@ def reassign_assignment(
         return False
 
 
+def _reassign_miss_reason(
+    cursor, aid: int, expected_status: Any, prev_assignee: Optional[int],
+    pid: int, new_uid: int,
+) -> str:
+    """改派 UPDATE rowcount=0 的归因（RV13-2/RV14-6：0 行不只一种，日志如实）。
+
+    重读行尽力区分四种 0 行：状态已并发推进 / 承包人已被并发改派（含同值
+    重放 —— 他人已完成本次改派）/ 目标已失格（并发移出项目或账号停用，
+    EXISTS 复验未命中）/ 行面未变但并发更新窗口仍存在（兜底文案）。重读
+    本身失败时归因降级为兜底文案，不掩盖原始失败。
+    """
+    fallback = "分派已被并发更新（含同值重放）"
+    try:
+        cursor.execute(
+            "SELECT status, assignee_id FROM assignments WHERE id = %s", (aid,)
+        )
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 —— 归因尽力而为，失败走兜底文案
+        return fallback
+    if not row:
+        return "分派不存在（已被并发删除）"
+    now_status = row.get("status")
+    now_assignee = _as_int(row.get("assignee_id"))
+    if now_status != expected_status:
+        return (
+            f"状态已并发推进为 {now_status!r}（乐观守卫未命中，"
+            "仅 open 可改派）"
+        )
+    if now_assignee is not None and now_assignee != prev_assignee:
+        if now_assignee == new_uid:
+            return "已被并发完成同值改派（同值重放，本次未重复写）"
+        return (
+            f"承包人已被并发改派为 user {now_assignee}"
+            "（前值复验未命中，未覆盖他人变更）"
+        )
+    # 行面（状态/承包人）未变 → 目标成员资格复验（区分「目标已失格」0 行）
+    try:
+        cursor.execute(
+            "SELECT COUNT(*) AS n FROM project_members pm "
+            "JOIN users u ON u.id = pm.user_id "
+            "WHERE pm.project_id = %s AND pm.user_id = %s AND u.active = 1",
+            (pid, new_uid),
+        )
+        member_row = cursor.fetchone()
+        if int((member_row or {}).get("n") or 0) <= 0:
+            return "目标已失格（并发移出项目或账号停用，在册复验未命中）"
+    except Exception:  # noqa: BLE001 —— 归因尽力而为
+        pass
+    return fallback
+
+
 _DIVIDED_COLS_ENSURED = False
 
 
 def _ensure_divided_cols() -> None:
     """list_divided_senses 读 cs_senses.merged_into —— 列由 cluster_analysis 的
     分立迁移负责（页面/分析路径触发）；本读面（驾驶舱台账）可能先于其被调，
-    故自行做一次幂等补列（进程级哨兵直通；失败仅记日志，查询路径照旧容错）。"""
+    故自行做一次幂等补列（进程级哨兵直通；失败仅记日志，查询路径照旧容错）。
+    ALTER 捕 MySQL 1060（并发首启另一进程已补列）视为幂等成功置哨兵（RV14-4，
+    与 _migrate_assignments_round_columns 同款处理）。"""
     global _DIVIDED_COLS_ENSURED
     if _DIVIDED_COLS_ENSURED:
         return
     try:
         with get_db_cursor() as cursor:
             if not _column_exists(cursor, "cs_senses", "merged_into"):
-                cursor.execute(
-                    "ALTER TABLE cs_senses ADD COLUMN merged_into INT NULL "
-                    "AFTER status"
-                )
-                logger.info("cs_senses.merged_into 列已补齐（FX-20 台账读面迁移）")
+                try:
+                    cursor.execute(
+                        "ALTER TABLE cs_senses ADD COLUMN merged_into INT NULL "
+                        "AFTER status"
+                    )
+                    logger.info("cs_senses.merged_into 列已补齐（FX-20 台账读面迁移）")
+                except pymysql.Error as e:
+                    if not _is_dup_column_error(e):
+                        raise
+                    logger.info(
+                        "cs_senses.merged_into 已由并发进程补齐"
+                        "（MySQL 1060，幂等自愈，RV14-4）"
+                    )
         _DIVIDED_COLS_ENSURED = True
     except Exception as e:  # noqa: BLE001 —— 表未建/库不可用由查询路径如实降级
         logger.warning(f"cs_senses.merged_into 迁移探测失败（list_divided_senses）: {e}")
@@ -1368,8 +1505,18 @@ def create_reannotation_tasks(
         o.headword, cs_senses.sense_no=str(o.sense_index)) 映射到 cs_senses，
         状态须 ∈ DIVIDED_SENSE_STATUSES（merged/split）—— 未裁决/映射不上的
         义位跳过并列明，绝不带病建任务；
-      * 重标任务派给**该批义位的历史标注人**（annotation_submissions DISTINCT
-        coder_id）—— 谁标过谁重标；无历史提交的义位不产生任务（如实返回）；
+      * 重标任务派给**该批义位的历史标注人且账号在用**（RV13-3：
+        annotation_submissions DISTINCT coder_id JOIN users u ON u.active=1，
+        停用账号排除）；复核口径如实声明——复核=账号在用；**项目在册不可
+        建立**（assignments 无项目列），口径与改派面一致降级（闸 4 口径见
+        reassign_assignment docstring）；无历史提交的义位不产生任务（如实返回）；
+      * 同轮幂等闸（RV14-1）：落库前按 (category, task_type, assignee_id,
+        round) 探测 assignments 已存在行（探测条件 ``round IS NOT NULL AND
+        round=%s``，round 为 NULL 的正式轮行不受影响），存在即跳过该标注人
+        并计入返回体 ``dedup`` —— 页面重复发起不再翻倍；
+      * 留痕一致性（RV13-5）：assigned_by 须与 actor["id"] 一致（as_int 清洗
+        后比对）—— 留痕只能是自己；actor=None 系统作业面不受此限（此时
+        入参即留痕来源）；
       * scope_verbs = 受影响义位的 headword 集合（正确使用动词范围语义，
         不把 sense_id 塞进 scope —— FX-15 口径：scope 语义不动）；义位查不到
         headword 时 None=全部动词（页面灰注如实说明）；
@@ -1396,11 +1543,12 @@ def create_reannotation_tasks(
         dict::
 
             {"ok": bool, "reannotation_round": int, "created": int,
-             "assignment_ok": int, "failed_coder_ids": [...],
+             "dedup": int, "failed_coder_ids": [...],
              "eligible_sense_ids": [...], "skipped": [{"sense_id", "reason"}, ...],
              "coder_ids": [...], "note": str|None, "error": str|None}
 
-        ok=True 时 created=成功建出的任务数；error 只在 ok=False 时非空。
+        ok=True 时 created=成功建出的任务数、dedup=按同轮幂等闸跳过的标注人
+        数（RV14-1）；error 只在 ok=False 时非空。
         actor 低权直接抛 PermissionError（入口先抛，同 save_adjudication）。
     """
     _require_assignment_actor(actor, "发起重标（G2 修订→重标闭环）")
@@ -1421,6 +1569,20 @@ def create_reannotation_tasks(
     admin = _as_int(assigned_by)
     if admin is None or admin <= 0:
         return {"ok": False, "error": f"非法 assigned_by: {assigned_by!r}", "created": 0}
+    # 留痕一致性（RV13-5）：assigned_by 与会话 actor["id"] 一致 —— 留痕只能
+    # 是自己；actor=None 系统作业面不受此限（此时入参即留痕来源）。
+    if actor is not None:
+        actor_id = _as_int(actor.get("id"))
+        if actor_id is None or actor_id != admin:
+            return {
+                "ok": False,
+                "error": (
+                    f"assigned_by（user {admin}）与会话用户 actor['id']"
+                    f"（{actor_id!r}）不一致 —— 留痕只能是自己（RV13-5）；"
+                    "系统作业请传 actor=None"
+                ),
+                "created": 0,
+            }
     ids: List[int] = []
     for raw in (sense_ids if isinstance(sense_ids, (list, tuple)) else []):
         value = _as_int(raw)
@@ -1474,8 +1636,12 @@ def create_reannotation_tasks(
                     "reannotation_round": new_round,
                 }
             placeholders = ", ".join(["%s"] * len(eligible))
+            # 历史标注人复核（RV13-3）：JOIN users 过滤停用账号（u.active=1）。
+            # 项目在册复核不可建立 —— assignments 无项目列，口径与改派面一致
+            # 降级为「账号在用」（docstring 已如实声明）。
             cursor.execute(
                 "SELECT DISTINCT coder_id FROM annotation_submissions "
+                "JOIN users u ON u.id = coder_id AND u.active = 1 "
                 f"WHERE category = %s AND task_type = %s AND sense_id IN ({placeholders}) "
                 "ORDER BY coder_id",
                 (category, task_type, *eligible),
@@ -1487,6 +1653,7 @@ def create_reannotation_tasks(
                     "ok": True,
                     "reannotation_round": new_round,
                     "created": 0,
+                    "dedup": 0,
                     "eligible_sense_ids": eligible,
                     "skipped": skipped,
                     "coder_ids": [],
@@ -1503,6 +1670,21 @@ def create_reannotation_tasks(
             )
             verbs = [str(r["headword"]).strip() for r in cursor.fetchall()]
             verbs = [v for v in verbs if v]
+            # 同轮幂等闸（RV14-1）：已存在同 (category, task_type, assignee_id,
+            # round) 行的标注人跳过 —— 页面重复发起不再翻倍。探测条件
+            # ``round IS NOT NULL AND round=%s``：round 为 NULL 的正式轮行
+            # （RV2-3 未设轮次）不受影响。探测失败随外层闸核对一起 fail-closed
+            # （幂等性无法核实时不落库）。
+            coder_placeholders = ", ".join(["%s"] * len(coder_ids))
+            cursor.execute(
+                "SELECT DISTINCT assignee_id FROM assignments "
+                f"WHERE category = %s AND task_type = %s "
+                f"AND assignee_id IN ({coder_placeholders}) "
+                "AND `round` IS NOT NULL AND `round` = %s",
+                (category, task_type, *coder_ids, new_round),
+            )
+            dup_ids = {_as_int(r["assignee_id"]) for r in cursor.fetchall()}
+            dup_ids.discard(None)
     except pymysql.Error as e:
         logger.error(f"重标闸核对失败（category={category}）: {e}")
         return {"ok": False, "error": f"数据库错误: {e}", "created": 0}
@@ -1513,7 +1695,11 @@ def create_reannotation_tasks(
     scope_verbs = verbs if verbs else None
     failed: List[int] = []
     created = 0
+    dedup = 0
     for coder in coder_ids:
+        if coder in dup_ids:
+            dedup += 1  # 同轮幂等闸（RV14-1）：已有同轮行，跳过不重复建
+            continue
         if assign_task(
             coder, category, task_type, scope_verbs, admin,
             round=new_round, training=None,
@@ -1521,20 +1707,27 @@ def create_reannotation_tasks(
             created += 1
         else:
             failed.append(coder)
+    notes: List[str] = []
+    if failed:
+        notes.append("部分标注人建任务失败，详见服务端日志")
+    if dedup:
+        notes.append(f"{dedup} 名标注人本轮重标任务已存在（幂等跳过）")
     logger.info(
         f"重标审计：范畴 {category}/{task_type} 轮次 {round}→{new_round}，"
         f"义位 {eligible}，历史标注人 {coder_ids}，建任务 {created} 条"
-        f"（失败 {failed}，跳过 {skipped}），发起人 user {admin}，"
+        f"（幂等跳过 {dedup}，失败 {failed}，跳过 {skipped}），"
+        f"发起人 user {admin}，"
         f"actor={getattr(actor, 'get', lambda k: None)('username')}"
     )
     return {
         "ok": True,
         "reannotation_round": new_round,
         "created": created,
+        "dedup": dedup,
         "failed_coder_ids": failed,
         "eligible_sense_ids": eligible,
         "skipped": skipped,
         "coder_ids": coder_ids,
-        "note": None if not failed else "部分标注人建任务失败，详见服务端日志",
+        "note": "；".join(notes) or None,
         "error": None,
     }

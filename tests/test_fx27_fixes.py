@@ -280,7 +280,7 @@ class TestRecordQueryAttribution:
 
 
 # ============================================
-# 4) 真库沙箱（web_word_fx27_test：init 全链路 + 写入 + 聚合口径）
+# 4) 真库沙箱（web_word_r1_probe：init 全链路 + 写入 + 聚合口径）
 # ============================================
 def _q(sql, params=()):
     with db.get_db_cursor() as cursor:

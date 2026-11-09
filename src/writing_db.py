@@ -1159,6 +1159,35 @@ def list_versions(
         return []
 
 
+def count_pending_reviews(reviewer_id: Optional[int] = None) -> Optional[int]:
+    """待审任务计数（COUNT 专查——驾驶舱 metric 卡只需数字，宽取数 200 行
+    含 content/ai_draft 全文列纯属浪费，RV16-2）。
+
+    Args:
+        reviewer_id: 受派审校人过滤（None=全部待审；语义同 list_pending_reviews）。
+
+    Returns:
+        int|None: 待审轮数；库不可用返回 None（与 list_pending_reviews 的
+        [] 折叠不同——计数面必须区分真 0 与失败，消费方按 R4 归因）。
+    """
+    rid = _as_int(reviewer_id)
+    where = "WHERE r.verdict = 'pending'"
+    params: list = []
+    if rid is not None and rid > 0:
+        where += " AND r.reviewer_id = %s"
+        params.append(rid)
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                f"SELECT COUNT(*) AS n FROM review_tasks r {where}", tuple(params)
+            )
+            row = cursor.fetchone()
+        return int(row["n"]) if row else 0
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"count_pending_reviews 取数失败: {e}")
+        return None
+
+
 def list_pending_reviews(
     reviewer_id: Optional[int] = None, limit: int = 200
 ) -> List[Dict[str, Any]]:

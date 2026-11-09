@@ -75,33 +75,10 @@ _NO_DB_TOUCH = "被测路径不应触碰数据库（fail-closed/校验须在任�
 
 _OLD_TS = datetime(2000, 1, 1, 0, 0, 0)
 
-# A/B 两个测试身份（users 表不存在也无妨 —— 软引用无外键，仓库惯例）
+# A/B 两个测试身份（RV14-2 后 FK 生效：user_id 必须指向真实 users 行，
+# fixture 在测试库里以显式 id 建这两行）
 UID_A = 101
 UID_B = 202
-
-
-def _mysql_reachable() -> bool:
-    """探测 MySQL 是否可用（只建连接，不建库）。"""
-    try:
-        import pymysql
-        from pymysql.cursors import DictCursor
-
-        conn = pymysql.connect(
-            host=db.MYSQL_HOST,
-            port=db.MYSQL_PORT,
-            user=db.MYSQL_USER,
-            password=db.MYSQL_PASSWORD,
-            charset=db.MYSQL_CHARSET,
-            cursorclass=DictCursor,
-            connect_timeout=3,
-        )
-        conn.close()
-        return True
-    except Exception:  # noqa: BLE001
-        return False
-
-
-HAS_MYSQL = _mysql_reachable()
 
 
 def _q(sql: str, params: tuple = ()):
@@ -172,7 +149,8 @@ class TestDdlContract:
             assert f"CREATE TABLE IF NOT EXISTS {name} " in ddl
 
     def test_domain_discipline_columns_in_every_ddl(self):
-        """域纪律落 DDL：每表 user_id NOT NULL + 双时间戳默认值 + 无外键。"""
+        """域纪律落 DDL：每表 user_id NOT NULL + 双时间戳默认值 +
+        user_id 外键 ON DELETE CASCADE（RV14-2：用户自有表类，删号自愈）。"""
         for ddl in ucdb._USER_CONTEXT_TABLE_DDLS:
             assert "user_id INT NOT NULL" in ddl
             assert (
@@ -181,7 +159,9 @@ class TestDdlContract:
             assert (
                 "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP" in ddl
             )
-            assert "FOREIGN KEY" not in ddl.upper()  # 软引用，无外键
+            # RV14-2：外键统一引用 users(id)，删除口径 CASCADE（只约束新建表）
+            assert ("FOREIGN KEY (user_id) REFERENCES users(id) "
+                    "ON DELETE CASCADE" in ddl)
 
     def test_bookmark_anchor_types_match_ddl_enum(self):
         """应用层白名单与 DDL ENUM 同值（先拒非法值，MySQL 报错只是最后防线）。"""
@@ -311,8 +291,20 @@ def ctx_db():
 
     old_database = db.MYSQL_DATABASE
     try:
-        ucdb._TABLES_ENSURED = False  # 强制重走 DDL 路径
+        # RV14-2：五表 user_id 外键引用 users(id) —— 建表前 users 必须先行
+        # （与生产 init_database 时序一致），且写入身份须是真实 users 行
+        # （FK 生效后孤儿 user_id 会被 1452 拒绝）。
+        from src.users_db import ensure_user_tables
+
         db.MYSQL_DATABASE = TEST_DB
+        ensure_user_tables()
+        _q("INSERT INTO users (id, username, password_hash, display_name, "
+           "role, active) VALUES (%s, %s, %s, %s, %s, 1)",
+           (UID_A, "fx31_a", "x", "A 用户", "viewer"))
+        _q("INSERT INTO users (id, username, password_hash, display_name, "
+           "role, active) VALUES (%s, %s, %s, %s, %s, 1)",
+           (UID_B, "fx31_b", "x", "B 用户", "viewer"))
+        ucdb._TABLES_ENSURED = False  # 强制重走 DDL 路径
         ensure_user_context_tables()
         ensure_user_context_tables()  # 幂等：二次执行不炸不重建
         yield
@@ -344,7 +336,7 @@ def ctx_db():
 
 @pytest.mark.usefixtures("ctx_db")
 class TestSchemaContract:
-    """information_schema 实测：5 表齐、列结构、无外键、唯一键。"""
+    """information_schema 实测：5 表齐、列结构、users FK（CASCADE）、唯一键。"""
 
     def test_all_five_tables_exist(self):
         rows = _q(
@@ -380,8 +372,8 @@ class TestSchemaContract:
         rows = _q(
             "SELECT TABLE_NAME, COLUMN_NAME, IS_NULLABLE, DATA_TYPE, "
             "COLUMN_DEFAULT FROM information_schema.COLUMNS "
-            "WHERE TABLE_SCHEMA = %s",
-            (TEST_DB,),
+            "WHERE TABLE_SCHEMA = %s AND TABLE_NAME IN (%s,%s,%s,%s,%s)",
+            (TEST_DB, *SPEC_TABLE_NAMES),
         )
         cols = {}
         for r in rows:
@@ -399,14 +391,19 @@ class TestSchemaContract:
         assert cols["draft_states"]["state_json"]["DATA_TYPE"] == "json"
         assert cols["user_notes"]["note"]["IS_NULLABLE"] == "NO"
 
-    def test_no_foreign_keys(self):
+    def test_cascade_foreign_keys_to_users(self):
+        """RV14-2 实测：5 表各有指向 users 的 FK，DELETE_RULE=CASCADE
+        （删 users 行 5 表行级联消失，端到端见 TestUserDeleteCascade）。"""
         rows = _q(
-            "SELECT TABLE_NAME FROM information_schema.TABLE_CONSTRAINTS "
-            "WHERE TABLE_SCHEMA = %s AND CONSTRAINT_TYPE = 'FOREIGN KEY' "
+            "SELECT TABLE_NAME, DELETE_RULE FROM "
+            "information_schema.REFERENTIAL_CONSTRAINTS "
+            "WHERE CONSTRAINT_SCHEMA = %s AND REFERENCED_TABLE_NAME = 'users' "
             "AND TABLE_NAME IN (%s,%s,%s,%s,%s)",
             (TEST_DB, *SPEC_TABLE_NAMES),
         )
-        assert rows == []
+        by_table = {r["TABLE_NAME"]: r["DELETE_RULE"] for r in rows}
+        assert set(by_table) == set(SPEC_TABLE_NAMES)
+        assert all(rule == "CASCADE" for rule in by_table.values())
 
     def test_unique_keys_per_table(self):
         """每表的幂等唯一键就位（upsert 覆盖语义的物理兜底）。"""
@@ -797,3 +794,41 @@ class TestDbDownDegradation:
         ensure_user_context_tables()  # 直通（不触库）
         assert list_profiles() == []
         assert upsert_profile("k", "v") is False
+
+
+# ============================================
+# RV14-2：删 users 行 → 5 表行级联消失（真库端到端）
+# ============================================
+
+@pytest.mark.usefixtures("ctx_db")
+class TestUserDeleteCascade:
+    """用户自有表类的删除口径：账号物理删除时上下文行 CASCADE 跟随消失
+    （RV2-2「users FK 删除纪律」分类口径，单一出处 users_db.py）；他人行无损。"""
+
+    def test_delete_user_cascades_five_tables(self, monkeypatch):
+        _login(monkeypatch, UID_A)
+        for _, write in _A_WRITES:
+            assert write() is True
+        _login(monkeypatch, UID_B)
+        for _, write in _A_WRITES:
+            assert write() is True
+
+        _q("DELETE FROM users WHERE id = %s", (UID_A,))
+
+        for table, _ in _A_WRITES:
+            assert _count(table) == 1, f"{table}: 删号未级联（应只剩 B 一行）"
+        # B 的行完好（逐表核对归属：删的是 A，B 行不受牵连）
+        for table, _ in _A_WRITES:
+            rows = _q(f"SELECT COUNT(*) AS n FROM {table} WHERE user_id = %s",
+                      (UID_B,))
+            assert int(rows[0]["n"]) == 1, table
+
+    def test_fk_rejects_orphan_user_id(self):
+        """FK 真实生效：user_id 指向不存在的 users 行被库拒绝（1452）——
+        本域「必须归人」从应用层口径落到物理约束。"""
+        import pymysql
+
+        with pytest.raises(pymysql.err.IntegrityError) as excinfo:
+            _q("INSERT INTO user_profiles (user_id, pref_key, pref_value) "
+               "VALUES (999999, 'k', 'v')")
+        assert excinfo.value.args[0] == 1452

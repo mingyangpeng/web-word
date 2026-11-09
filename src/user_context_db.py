@@ -38,7 +38,14 @@ localStorage 备注阶段 2 一键上传合并」。
     （读 [] / 写 False），绝不触碰数据库 —— 上下文域是登录态功能；
   * 只读写自己的行：所有 SQL 的 WHERE 一律带会话派生的 user_id，无法越权
     （连参数入口都没有）；
-  * 无外键（软引用，仓库惯例）；users 缺行不炸（登录态由 app 层保证）；
+  * 外键口径（RV14-2）：五表 user_id 统一 `FOREIGN KEY (user_id) REFERENCES
+    users(id) ON DELETE CASCADE` —— 按 users_db.py「users FK 删除纪律」
+    （RV2-2 定名，该处为单一出处；互指注释由合并者在 users_db.py 补一行）
+    的分类，本域五表是**用户自有表类**（行本身是账号的附属数据，如
+    user_roles/project_members 同类）：账号物理删除时 CASCADE 跟随消失，
+    删号自愈不阻断。**只约束新建表**（RV2-2 纪律）：ensure 幂等走
+    CREATE TABLE IF NOT EXISTS，对存量无 FK 库不追溯 —— 存量库补 FK 需
+    手工 ALTER（**本批无存量**，沙箱与生产均按新 DDL 建表）；
   * created_at / updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP，
     **更新语句手动刷 updated_at = NOW()**（dict_admin_db 回滚恢复 updated_at
     的既有先例；DDL 不加 ON UPDATE CURRENT_TIMESTAMP —— 刷新点显式在 SQL
@@ -46,7 +53,11 @@ localStorage 备注阶段 2 一键上传合并」。
   * RV2-3 留痕列 NULL 口径照仓库三分类落位：VARCHAR/TEXT/JSON NULL=动作
     尚未发生（bookmark 未填备注 / draft 无快照 / 键已建未设值）；
     user_notes.note NOT NULL=显式无内容（'' 即清空但保留行）；本域无
-    「系统作业」行（每行必有主人，user_id NOT NULL）。
+    「系统作业」行（每行必有主人，user_id NOT NULL）；
+  * 长度闸（RV14-5）：TEXT 列 64KB 的应用层闸收口在 50000 字符 ——
+    KV 值（_upsert_kv）与笔记正文（upsert_note）超限直接拒绝返回 False，
+    入参校验先于 DB 访问（超长值根本不进数据库，归因「入参超长」而非
+    「数据库不可用」）。
 
 建表与容错（annotation_flow._FLOW_TABLE_DDLS 先例：表 DDL 定义在本模块，
 ensure 惰性建表＋进程级哨兵直通，不改 src/mysql_db.py）：
@@ -92,60 +103,66 @@ logger = logging.getLogger(__name__)
 
 USER_PROFILES_TABLE_SQL = """CREATE TABLE IF NOT EXISTS user_profiles (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL COMMENT '主人 users.id（软引用，无外键；会话派生）',
+  user_id INT NOT NULL COMMENT '主人 users.id（外键 ON DELETE CASCADE，用户自有表类；会话派生）',
   pref_key VARCHAR(120) NOT NULL COMMENT '偏好键（含界面设置 ui.*）',
   pref_value TEXT NULL COMMENT '偏好值（原样字符串；NULL=键已建未设值，RV2-3 第 2 类）',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_user_profiles (user_id, pref_key)
+  UNIQUE KEY uq_user_profiles (user_id, pref_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
 USER_STATE_TABLE_SQL = """CREATE TABLE IF NOT EXISTS user_state (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL COMMENT '主人 users.id（软引用，无外键；会话派生）',
+  user_id INT NOT NULL COMMENT '主人 users.id（外键 ON DELETE CASCADE，用户自有表类；会话派生）',
   state_key VARCHAR(120) NOT NULL COMMENT '状态键（last_sense=续接点；recent_senses=最近浏览足迹）',
   state_value TEXT NULL COMMENT '状态值（通常 JSON 串；NULL=键已建未设值，RV2-3 第 2 类）',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_user_state (user_id, state_key)
+  UNIQUE KEY uq_user_state (user_id, state_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
 USER_BOOKMARKS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS user_bookmarks (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL COMMENT '主人 users.id（软引用，无外键；会话派生）',
+  user_id INT NOT NULL COMMENT '主人 users.id（外键 ON DELETE CASCADE，用户自有表类；会话派生）',
   anchor_type ENUM('sense','entry','page') NOT NULL
     COMMENT '跳转锚类型：义位/词条/页面（多态软引用，锚形态各异，无外键）',
   anchor_id VARCHAR(120) NOT NULL
     COMMENT '锚值（sense=oald_senses.id 数字串；entry=词目文本；page=页面路由键）',
-  title VARCHAR(200) NULL COMMENT '收藏显示名（NULL=未命名，展示时回退锚值，RV2-3 第 2 类）',
-  note VARCHAR(500) NULL COMMENT '收藏备注（NULL=未填，RV2-3 第 2 类）',
+  title VARCHAR(200) NULL COMMENT '收藏显示名（NULL=未命名（含空白串归一，RV14-7），展示时回退锚值，RV2-3 第 2 类）',
+  note VARCHAR(500) NULL COMMENT '收藏备注（NULL=未填（含空白串归一，RV14-7），RV2-3 第 2 类）',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_user_bookmarks (user_id, anchor_type, anchor_id),
-  KEY idx_user_bookmarks_user (user_id)
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
 USER_NOTES_TABLE_SQL = """CREATE TABLE IF NOT EXISTS user_notes (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL COMMENT '主人 users.id（软引用，无外键；会话派生）',
+  user_id INT NOT NULL COMMENT '主人 users.id（外键 ON DELETE CASCADE，用户自有表类；会话派生）',
   sense_id INT NOT NULL COMMENT '义位锚 oald_senses.id（软引用，无外键；义位唯一锚规范）',
   note TEXT NOT NULL COMMENT '笔记正文（NOT NULL：''=显式清空但保留行，RV2-3 第 3 类）',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_user_notes (user_id, sense_id)
+  UNIQUE KEY uq_user_notes (user_id, sense_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
 DRAFT_STATES_TABLE_SQL = """CREATE TABLE IF NOT EXISTS draft_states (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL COMMENT '主人 users.id（软引用，无外键；会话派生）',
+  user_id INT NOT NULL COMMENT '主人 users.id（外键 ON DELETE CASCADE，用户自有表类；会话派生）',
   form_key VARCHAR(150) NOT NULL COMMENT '表单标识（页面+表单名，如 definition_draft:sense:345）',
   state_json JSON NULL COMMENT '表单字段快照（JSON；NULL=键已建无内容快照，RV2-3 第 2 类）',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_draft_states (user_id, form_key)
+  UNIQUE KEY uq_draft_states (user_id, form_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
-# 顺序无关（无外键、互不引用），照 _FLOW_TABLE_DDLS 元组先例统一遍历建表。
+# 顺序无关（五表互不引用；FK 统一指向 users），照 _FLOW_TABLE_DDLS 元组先例
+# 统一遍历建表 —— **users 表必须先存在**（FK 引用目标），生产由
+# init_database 先建 users，本 ensure 惰性触发时序天然满足。
 _USER_CONTEXT_TABLE_DDLS = (
     USER_PROFILES_TABLE_SQL,
     USER_STATE_TABLE_SQL,
@@ -158,6 +175,13 @@ _USER_CONTEXT_TABLE_DDLS = (
 # 值不进数据库，MySQL ENUM 报错只是最后防线）。扩展新锚 = 改此常量＋存量库
 # ALTER（ENUM 尾部追加对 MySQL 是安全变更），DDL 是契约。
 BOOKMARK_ANCHOR_TYPES = ("sense", "entry", "page")
+
+# TEXT 列（64KB）的应用层长度闸（RV14-5）：KV 值与笔记正文上限 50000 字符，
+# 超限在入参校验阶段拒绝（先于任何 DB 访问）—— 超长值根本不进数据库，
+# 归因「入参超长」而非「数据库不可用」。与 DDL 列宽的余量留给 utf8mb4
+# 多字节最坏情形（50000 字符 × 4 字节 < 64KB 余量充足）。
+MAX_KV_VALUE_LEN = 50000
+MAX_NOTE_LEN = 50000
 
 
 # ============================================
@@ -178,8 +202,12 @@ def ensure_user_context_tables() -> None:
     不抛异常（哨兵不置位，下次自动重试）——本模块被无 DB 环境读取时必须
     能静默降级（与 ensure_user_tables / ensure_llm_provider_tables 口径一致）。
 
-    五表互不引用且无外键（软引用），单库可独立先建，不依赖 init_database
-    的其他表。
+    五表 FK 统一引用 users(id) ON DELETE CASCADE（RV14-2，用户自有表类，
+    分类口径单一出处见 users_db.py「users FK 删除纪律」）：**建表前 users
+    表必须已存在**，否则 CREATE 报 FK 错 —— 本函数照旧只记日志不抛、哨兵
+    不置位，下次调用自动重试（生产 init_database 先建 users，惰性触发时序
+    天然满足）。存量无 FK 库不追溯（CREATE IF NOT EXISTS 语义），补 FK 需
+    手工 ALTER —— 本批无存量。
     """
     global _TABLES_ENSURED
     if _TABLES_ENSURED:
@@ -231,11 +259,19 @@ def _check_key(key: Any, limit: int) -> Optional[str]:
 
 
 def _check_opt_text(value: Any, limit: int, sentinel: Any) -> Any:
-    """可选文本：None→合法 None；str 合规→文本；其余→sentinel（拒绝哨兵）。"""
+    """可选文本（RV14-7 单口径）：None / 空白串（strip 后为空）→ None；
+    str 合规 → 文本原样（用户数据不替用户清洗，仅空白串归一）；其余 →
+    sentinel（拒绝哨兵）。
+
+    空白串归一 None 对齐 DDL「NULL=未命名」单口径 —— 收藏标题/备注存 ''
+    或 '   ' 与「未填」在展示层是同一事实，入库前归一避免双口径。
+    """
     if value is None:
         return None
     if not isinstance(value, str) or len(value) > limit:
         return sentinel
+    if value.strip() == "":
+        return None
     return value
 
 
@@ -249,10 +285,12 @@ def _upsert_kv(table: str, key_col: str, value_col: str, key: Any, value: Any,
 
     value 严格收 str | None（None=NULL=键已建未设值；dict/list 等由调用方
     json.dumps 后传入 —— 数据层不偷偷序列化，避免「存进去的是啥」出现两种
-    口径）。重复写同一值也是成功（幂等），见模块 docstring 返回值口径。
+    口径），且 ≤ MAX_KV_VALUE_LEN（RV14-5：TEXT 64KB 应用层闸，超长拒绝）。
+    重复写同一值也是成功（幂等），见模块 docstring 返回值口径。
     fail-closed 顺序：入参校验 → 会话归人 → 才 ensure/触库（未登录零 DB 访问）。
     """
-    if value is not None and not isinstance(value, str):
+    if value is not None and (not isinstance(value, str)
+                              or len(value) > MAX_KV_VALUE_LEN):
         return False
     clean_key = _check_key(key, key_limit)
     if clean_key is None:
@@ -480,9 +518,14 @@ def _delete_composite(table: str, anchor_type: str, anchor_id: str) -> bool:
 # ============================================
 
 def upsert_note(sense_id: Any, note: str) -> bool:
-    """写当前用户在某义位上的私人笔记（同义位重写=覆盖，''=显式清空）。"""
+    """写当前用户在某义位上的私人笔记（同义位重写=覆盖，''=显式清空）。
+
+    正文 ≤ MAX_NOTE_LEN（RV14-5：TEXT 64KB 应用层闸，超长拒绝返回 False，
+    入参校验先于 DB 访问——超长值根本不进数据库）。
+    """
     sid = as_int(sense_id)
-    if sid is None or sid <= 0 or not isinstance(note, str):
+    if sid is None or sid <= 0 or not isinstance(note, str) \
+            or len(note) > MAX_NOTE_LEN:
         return False
     uid = _resolve_user_id()
     if uid is None:

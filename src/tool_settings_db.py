@@ -22,6 +22,24 @@ src/mysql_db.py 的 CREATE_TABLES_SQL —— init_database 统一建表，启动
      （保持 enabled ⊆ available 不变式；规范未明文，本模块选「拒绝」而非
      「级联熄灭」—— 级联会以平台管理员身份写 enabled 审计，越权语义）。
 
+并发语义（RV14-3/RV14-9，两步激活不变式的 TOCTOU 收口）：
+  * 不变式闸不靠「先读后判」而靠 UPDATE WHERE 原子复验 —— 撤位
+    `UPDATE ... SET available=0 WHERE id=%s AND enabled=0`（rowcount=0 →
+    复读归因：仍 enabled=1 → 拒「工具仍启用，先解除 enabled」；enabled=0
+    且 available 已 0 → 重复撤位幂等成功）；enabled 置位
+    `UPDATE ... SET enabled=1 ... WHERE id=%s AND available=1`（rowcount=0
+    → 复读归因：available=0 → 拒「available 已被并发撤下」；available=1
+    且 enabled 已 1 → 重复置位幂等成功）。预检读只用于归因与审计取旧值，
+    放行与否以 UPDATE 执行时刻的行态为准；
+  * 并发首置撞 UNIQUE（Duplicate entry 1062）：available_set 首置 INSERT
+    捕 1062 → 转幂等 UPDATE 读回现值返回 True（对齐 user_context_db 的
+    ON DUPLICATE KEY 并发兜底先例；此处显式捕 1062 而非直接改
+    ON DUPLICATE KEY UPDATE available=VALUES(available)，理由：撤位路径
+    需 enabled=0 守卫语义分叉，且读回现值让审计 old→new 如实反映竞速行）；
+  * available_set(available=False) 无行 → 直接返回 True 幂等熄灭（同
+    enabled_set 无行熄灭先例），不再 INSERT available=0 空行压掉进程位
+    （RV14-9：无持久化行 = 无状态可变更 = 不写审计）。
+
 权限口径（§8 六角色）：available 位归平台管理员（sys_admin）、enabled 位归
 词典管理员（dict_admin），判定统一走 guards.require_role（本模块不做角色
 判定实现，只声明「动作 → 允许角色集」映射，与 users_admin_page 同型）；
@@ -63,7 +81,9 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+import pymysql
 
 from src.guards import require_role
 from src.mysql_db import get_db_cursor
@@ -233,13 +253,19 @@ def available_set(category: str, tool_key: str, actor: Any = None,
     """平台管理员置 available 位（两步激活第一步，§4/§8：工具 available）。
 
     - 权限：require_role(actor, {"sys_admin"})，不满足抛 PermissionError；
-    - 已有行 → UPDATE 幂等；无行 → INSERT（available 位独立于 enabled 存在，
-      两步激活允许「先 available 未 enabled」的中间态）；
-    - available 由 True 撤为 False 且该行 enabled=1 → 拒绝（返回 False，
-      不变式 enabled ⊆ available；见模块 docstring 口径说明）。
+    - 已有行 → UPDATE；无行且置位 → INSERT（available 位独立于 enabled 存在，
+      两步激活允许「先 available 未 enabled」的中间态）；无行且撤位 →
+      直接 True 幂等熄灭（RV14-9，同 enabled_set 无行熄灭先例：无持久化行
+      = 无状态可变更，不 INSERT available=0 空行、不写审计）；
+    - 撤位不变式（enabled ⊆ available）不靠「先读后判」—— UPDATE 带
+      `AND enabled=0` 原子复验（RV14-3 TOCTOU 收口）：预检后、执行前
+      available 被并发点亮 enabled 的窗口里，撤位 UPDATE 命中 0 行 → 复读
+      归因「工具仍启用，先解除 enabled」拒绝；
+    - 首置 INSERT 撞 UNIQUE（并发首置，Duplicate entry 1062）→ 转幂等
+      UPDATE 读回现值返回 True（RV14-3；口径见模块 docstring「并发语义」）。
 
     Returns:
-        True 写库成功；False 入参非法 / 拒绝撤位 / 数据库错误。
+        True 写库成功（含幂等路径）；False 入参非法 / 拒绝撤位 / 数据库错误。
     """
     require_role(actor, {"sys_admin"}, action="工具 available 设置")
     pair = _norm_pair(category, tool_key)
@@ -252,25 +278,66 @@ def available_set(category: str, tool_key: str, actor: Any = None,
         with get_db_cursor() as cursor:
             row = _read_row(cursor, cat, key)
             old_row = dict(row) if row else None
+            if row is None and not available:
+                # RV14-9：无行撤位 = 幂等熄灭（本来就没有持久化行，无状态可
+                # 变更；不 INSERT available=0 空行压掉进程位，不写审计）。
+                return True
             if row is None:
+                try:
+                    cursor.execute(
+                        "INSERT INTO category_tool_settings "
+                        "(category, tool_id, available, updated_by) "
+                        "VALUES (%s, %s, %s, %s)",
+                        (cat, key, 1 if available else 0, _actor_ref(actor)[0]),
+                    )
+                except pymysql.err.IntegrityError as exc:
+                    if not exc.args or exc.args[0] != 1062:
+                        raise  # 非 UNIQUE 冲突照旧走外层降级
+                    # RV14-3：并发首置撞 UNIQUE —— 另一进程已抢先建行，转
+                    # 幂等 UPDATE 读回现值返回 True（对齐 user_context_db
+                    # ON DUPLICATE KEY 先例；选显式捕 1062 而非
+                    # ON DUPLICATE KEY UPDATE 的理由见模块 docstring）。
+                    raced = _read_row(cursor, cat, key)
+                    if raced is None:
+                        # 极端：冲突行又消失（外部清理）——按幂等成功返回，
+                        # 不写审计（无行可审计，状态目标已达成）。
+                        return True
+                    old_row = dict(raced)
+                    cursor.execute(
+                        "UPDATE category_tool_settings SET available = %s, "
+                        "updated_by = %s WHERE id = %s",
+                        (1 if available else 0, _actor_ref(actor)[0],
+                         raced["id"]),
+                    )
+            elif available:
                 cursor.execute(
-                    "INSERT INTO category_tool_settings "
-                    "(category, tool_id, available, updated_by) "
-                    "VALUES (%s, %s, %s, %s)",
-                    (cat, key, 1 if available else 0, _actor_ref(actor)[0]),
+                    "UPDATE category_tool_settings SET available = 1, "
+                    "updated_by = %s WHERE id = %s",
+                    (_actor_ref(actor)[0], row["id"]),
                 )
             else:
-                if row.get("enabled") and not available:
-                    logger.error(
-                        "available_set 拒绝撤位：工具 %s/%s 仍 enabled=1"
-                        "（enabled ⊆ available 不变式），先由词典管理员解除启用",
-                        cat, key)
-                    return False
+                # 撤位：不变式闸并入 UPDATE WHERE 原子复验（RV14-3）——
+                # rowcount=0 时区分「仍 enabled=1（拒）」与「重复撤位无变化
+                # （幂等成功）」，靠同游标复读归因（应用层 autocommit 下
+                # MySQL 默认 rowcount=实际变更行数，无变化也是 0）。
                 cursor.execute(
-                    "UPDATE category_tool_settings SET available = %s, "
-                    "updated_by = %s WHERE id = %s",
-                    (1 if available else 0, _actor_ref(actor)[0], row["id"]),
+                    "UPDATE category_tool_settings SET available = 0, "
+                    "updated_by = %s WHERE id = %s AND enabled = 0",
+                    (_actor_ref(actor)[0], row["id"]),
                 )
+                if cursor.rowcount == 0:
+                    fresh = _read_row(cursor, cat, key)
+                    if fresh is None:
+                        # 行已被并发删除：撤位目标已达成，幂等熄灭（不写审计）
+                        return True
+                    if fresh.get("enabled"):
+                        logger.error(
+                            "available_set 拒绝撤位：工具 %s/%s 仍 enabled=1"
+                            "（enabled ⊆ available 不变式，并发复验），"
+                            "先由词典管理员解除启用", cat, key)
+                        return False
+                    # enabled=0 且 available 已 0：重复撤位（无状态变更），
+                    # 按既有幂等口径返回 True 并照写审计（每次动作留痕）。
             old_value = _value_json(bool(old_row["available"]),
                                     bool(old_row["enabled"])) if old_row else None
             new_value = _value_json(available,
@@ -295,7 +362,11 @@ def enabled_set(category: str, tool_key: str, actor: Any = None,
     - 权限：require_role(actor, {"dict_admin"})，不满足抛 PermissionError；
     - **available 先行**（两步激活语义）：enabled=True 时该 (category,
       tool_key) 必须 available=1（DB 读不到该行或 available=0 一律拒绝，
-      返回 False）；
+      返回 False）；预检通过后 UPDATE 再带 `AND available=1` 原子复验
+      （RV14-3 TOCTOU 收口）——预检后、执行前 available 被并发撤下的窗口
+      里，置位 UPDATE 命中 0 行 → 复读归因「available 已被并发撤下」拒绝；
+      复读发现 available=1 且 enabled 已 1 则为重复置位（无状态变更），
+      按幂等成功照写审计；
     - 置 enabled=True 时快照注册表当前 tool_version（D⑥ 口径 version）；
       工具未注册同样拒绝（引用必须先在注册表）；
     - 审计照写（含被拒的「未 available 先行」吗？——不：拒绝路径不产生
@@ -313,7 +384,7 @@ def enabled_set(category: str, tool_key: str, actor: Any = None,
             row = _read_row(cursor, cat, key)
             old_row = dict(row) if row else None
             if enabled:
-                # 两步激活：available 必须先行
+                # 两步激活：available 必须先行（预检：常见路径直接归因拒绝）
                 if row is None or not row.get("available"):
                     logger.error(
                         "enabled_set 拒绝：工具 %s/%s 未 available 先行"
@@ -336,11 +407,30 @@ def enabled_set(category: str, tool_key: str, actor: Any = None,
                 # 此分支为防御（不应到达）
                 logger.error("enabled_set 异常：行不存在（不应到达）")
                 return False
-            cursor.execute(
-                "UPDATE category_tool_settings SET enabled = %s, "
-                "tool_version = %s, updated_by = %s WHERE id = %s",
-                (1 if enabled else 0, version, _actor_ref(actor)[0], row["id"]),
-            )
+            if enabled:
+                # 置位：available 先行闸并入 UPDATE WHERE 原子复验（RV14-3）
+                cursor.execute(
+                    "UPDATE category_tool_settings SET enabled = 1, "
+                    "tool_version = %s, updated_by = %s "
+                    "WHERE id = %s AND available = 1",
+                    (version, _actor_ref(actor)[0], row["id"]),
+                )
+                if cursor.rowcount == 0:
+                    fresh = _read_row(cursor, cat, key)
+                    if fresh is None or not fresh.get("available"):
+                        logger.error(
+                            "enabled_set 拒绝：工具 %s/%s 的 available 已被"
+                            "并发撤下（两步激活不变式，原子复验 rowcount=0）",
+                            cat, key)
+                        return False
+                    # available=1 且 enabled 已 1：重复置位（无状态变更），
+                    # 按幂等成功照写审计（每次动作留痕）。
+            else:
+                cursor.execute(
+                    "UPDATE category_tool_settings SET enabled = 0, "
+                    "tool_version = %s, updated_by = %s WHERE id = %s",
+                    (version, _actor_ref(actor)[0], row["id"]),
+                )
             old_value = _value_json(bool(old_row["available"]),
                                     bool(old_row["enabled"])) if old_row else None
             new_value = _value_json(bool(old_row["available"]) if old_row else False,

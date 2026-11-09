@@ -59,14 +59,21 @@ _VIEWER = {"id": 903, "username": "fx29_view", "display_name": "只读",
 
 @pytest.fixture(autouse=True)
 def _reset_resume_loader():
-    """loader 缝复位（autouse）：模块级缝不跨用例泄漏。"""
+    """loader 缝复位＋flash 队列清空（autouse）：模块级缝/裸模式会话队列
+    不跨用例泄漏（RV15-3 起分支 2 命中会写 ui_kit flash 队列）。"""
     yield
     app_module.set_resume_page_loader(None)
+    from src import ui_kit
+    ui_kit.st.session_state.pop(ui_kit._FLASH_QUEUE_KEY, None)
 
 
 # ============================================
 # 1+2. 落地解析锁 / 优先级锁（单元，不触库）
 # ============================================
+# RV15-1 口径更新：分支 1 加可裁决角色条件（_can_adjudicate_inbox 同源口径
+# —— 有效六角色含 dict_admin/reviewer 才落 ai_hub），无裁决权角色
+# （viewer/annotator/editor/sys_admin）有全局 pending 也顺序到分支 2/3；
+# pending_inbox_count 全局计数不动（侧边栏徽章语义保留）。
 
 @pytest.mark.parametrize("user", [_ADMIN, _ANNOTATOR, _VIEWER],
                          ids=["admin", "annotator", "viewer"])
@@ -76,16 +83,28 @@ def test_first_login_lands_search(user, monkeypatch):
     assert app_module._landing_page_for(user) == "search"
 
 
-@pytest.mark.parametrize("user", [_ADMIN, _ANNOTATOR, _VIEWER],
-                         ids=["admin", "annotator", "viewer"])
-def test_pending_todo_lands_collab_inbox(user, monkeypatch):
-    """分支 1「有待办」：pending(draft/audit) > 0 → 协作收件箱 ai_hub。
+def test_adjudicator_pending_lands_collab_inbox(monkeypatch):
+    """分支 1「有待办」：可裁决（legacy admin 两位一体）且 pending>0 → ai_hub。
 
-    ai_hub 六角色全可见（_PAGE_ACCESS_SIX["ai_hub"]=NEW_ROLES），viewer 亦然；
     待办信号源与侧边栏「🤖 AI 待办」徽章同一函数（pending_inbox_count）。
     """
     monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 2)
-    assert app_module._landing_page_for(user) == "ai_hub"
+    assert app_module._landing_page_for(_ADMIN) == "ai_hub"
+
+
+@pytest.mark.parametrize("user", [_ANNOTATOR, _VIEWER],
+                         ids=["annotator", "viewer"])
+def test_non_adjudicator_pending_skips_ai_hub(user, monkeypatch):
+    """RV15-1：无裁决权角色有全局 pending → 不落 ai_hub，顺序到分支 3。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 2)
+    assert app_module._landing_page_for(user) == "search"
+
+
+def test_non_adjudicator_pending_falls_to_resume(monkeypatch):
+    """RV15-1 验收面：viewer 登录且有全局 pending → 落续接点而非 ai_hub。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 2)
+    app_module.set_resume_page_loader(lambda uid: "cluster")
+    assert app_module._landing_page_for(_VIEWER) == "cluster"
 
 
 def test_pending_zero_counts_as_first_time(monkeypatch):
@@ -109,7 +128,7 @@ def test_resume_none_means_first_time(monkeypatch):
 
 
 def test_pending_takes_priority_over_resume(monkeypatch):
-    """优先级锁（规范语序即分支序）：有待办压过续接点。"""
+    """优先级锁（规范语序即分支序）：有待办压过续接点（可裁决角色）。"""
     monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 1)
     app_module.set_resume_page_loader(lambda uid: "cluster")
     assert app_module._landing_page_for(_ADMIN) == "ai_hub"
@@ -143,13 +162,17 @@ def test_loader_failure_falls_through_to_search(monkeypatch):
 
 
 def test_landing_targets_always_valid_page_keys(monkeypatch):
-    """路由契约哨兵：三分支落地键必属 PAGE_KEYS（键集 17 键不变）。"""
+    """路由契约哨兵：三分支落地键必属 PAGE_KEYS（键集 17 键不变）。
+
+    RV15-1：admin（可裁决）落 ai_hub；annotator/viewer（无裁决权）顺序到
+    分支 2 落续接点 cluster（cluster 六角色全可见）—— 落地键仍在可见集内。
+    """
     assert len(PAGE_KEYS) == 17
     monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 2)
     app_module.set_resume_page_loader(lambda uid: "cluster")
     hits = {app_module._landing_page_for(u) for u in (_ADMIN, _ANNOTATOR, _VIEWER)}
     assert hits <= set(PAGE_KEYS), f"落地键越出 PAGE_KEYS: {hits}"
-    assert hits == {"ai_hub"}  # 有待办压过续接点：三角色全落 ai_hub
+    assert hits == {"ai_hub", "cluster"}
 
 
 # ============================================
@@ -167,7 +190,8 @@ TEST_DB = "web_word_writing_test"
 TIMEOUT = 180
 
 _USERS = (("fx29_ann", "fx29-ann-pw", "标注员", "annotator"),
-          ("fx29_view", "fx29-view-pw", "只读用户", "viewer"))
+          ("fx29_view", "fx29-view-pw", "只读用户", "viewer"),
+          ("fx29_rev", "fx29-rev-pw", "审校用户", "reviewer"))
 
 
 @pytest.fixture(scope="module")
@@ -268,7 +292,7 @@ def test_login_first_time_lands_search(fx29_db, monkeypatch):
 
 
 def test_login_with_pending_lands_ai_hub(fx29_db, monkeypatch):
-    """真登录表单：有待办 → 落地协作收件箱；viewer 亦然（ai_hub 全角色）。
+    """真登录表单：可裁决角色（reviewer）有待办 → 落地协作收件箱（RV15-1）。
 
     登录前残留页为 search（未登录回退），登录后被落地改写为 ai_hub ——
     证明「落地写页」确实发生在登录成功那一刻。
@@ -278,11 +302,23 @@ def test_login_with_pending_lands_ai_hub(fx29_db, monkeypatch):
     at.run()
     assert _pget(at, "page") == "search"
 
+    at = _form_login(at, "fx29_rev", "fx29-rev-pw")
+    assert not at.exception, [str(e.value) for e in at.exception]
+    user = _pget(at, "user")
+    assert isinstance(user, dict) and user["username"] == "fx29_rev"
+    assert _pget(at, "page") == "ai_hub", "登录落地（有待办）应为协作收件箱"
+
+
+def test_login_viewer_with_pending_skips_ai_hub(fx29_db, monkeypatch):
+    """RV15-1 AppTest 面：viewer 有全局 pending → 不落 ai_hub（首次到 search）。"""
+    monkeypatch.setattr(collab_pages, "pending_inbox_count", lambda: 2)
+    at = _new_at()
+    at.run()
     at = _form_login(at, "fx29_view", "fx29-view-pw")
     assert not at.exception, [str(e.value) for e in at.exception]
     user = _pget(at, "user")
     assert isinstance(user, dict) and user["username"] == "fx29_view"
-    assert _pget(at, "page") == "ai_hub", "登录落地（有待办）应为协作收件箱"
+    assert _pget(at, "page") == "search", "无裁决权角色不因全局 pending 落 ai_hub"
 
 
 # ============================================
@@ -293,12 +329,13 @@ def test_manual_page_switch_after_landing_not_hijacked(fx29_db, monkeypatch):
     """落地后手动切页不被劫持：radio 点选即生效并跨轮保持。
 
     落地解析只在登录成功路径跑一次 —— 切页、再跑一轮（无任何输入）后
-    页面停留在用户选择，不弹回 ai_hub。
+    页面停留在用户选择，不弹回 ai_hub。（RV15-1：落地 ai_hub 用可裁决的
+    reviewer 账号。）
     """
     monkeypatch.setattr(collab_pages, "pending_inbox_count", lambda: 2)
     at = _new_at()
     at.run()
-    at = _form_login(at, "fx29_ann", "fx29-ann-pw")
+    at = _form_login(at, "fx29_rev", "fx29-rev-pw")
     assert _pget(at, "page") == "ai_hub", "前置：登录落地协作收件箱"
 
     _page_radio(at).set_value("search")
@@ -374,3 +411,50 @@ def test_corpus_page_routes_through_registry_tool(fx29_db, monkeypatch):
     captions = " ".join(str(c.value) for c in at.caption)
     assert "PS 计算口径" in captions
     assert "当前槽位：2 行" in captions
+
+class TestResumeGlue:
+    """RV18-3：续接点胶水层真适配器＋登出写路径行为覆盖（此前仅 lambda 桩喂缝）。"""
+
+    def test_adapter_reads_own_state_row(self, fx29_db, monkeypatch):
+        """真适配器：会话派生 list_states 读 resume_page；未写/删除后返 None。"""
+        import src.user_context_db as ucdb
+
+        monkeypatch.setattr(
+            ucdb, "current_user",
+            lambda: {"id": 2, "username": "fx29_ann", "role": "annotator",
+                     "roles": ["annotator"]})
+        ucdb.ensure_user_context_tables()
+        assert app_module._resume_page_loader(2) is None  # 未写 → None
+        assert ucdb.upsert_state("resume_page", "cluster") is True
+        assert app_module._resume_page_loader(2) == "cluster"
+        assert ucdb.delete_state("resume_page") is True
+        assert app_module._resume_page_loader(2) is None
+
+    def test_adapter_non_string_value_returns_none(self, fx29_db, monkeypatch):
+        """脏值 fail-open：state_value 非字符串（数值注入）→ None 不落地。"""
+        import src.user_context_db as ucdb
+
+        monkeypatch.setattr(
+            ucdb, "current_user",
+            lambda: {"id": 2, "username": "fx29_ann", "role": "annotator",
+                     "roles": ["annotator"]})
+        ucdb.ensure_user_context_tables()
+        ucdb.upsert_state("resume_page", "cluster")
+        # 直写脏值（绕过 upsert 的 str 校验——模拟库内脏数据）
+        with db.get_db_cursor() as cursor:
+            cursor.execute(
+                "UPDATE user_state SET state_value = %s "
+                "WHERE state_key = 'resume_page'", ("12345",))
+        assert app_module._resume_page_loader(2) is None
+        ucdb.delete_state("resume_page")
+
+    def test_logout_write_path_wires_upsert_state(self):
+        """登出写路径源级钉板：_logout 经会话派生 upsert_state 落 resume_page
+        （RV18-3 胶水另一半；写库行为本体由 fx31 upsert 测试覆盖）。"""
+        import inspect
+
+        src = inspect.getsource(app_module._logout)
+        assert "upsert_state" in src
+        assert '"resume_page"' in src
+        assert "PAGE_KEYS" in src  # 页键白名单守卫在场
+
