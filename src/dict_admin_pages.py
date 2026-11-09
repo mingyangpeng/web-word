@@ -115,6 +115,26 @@ FX-24（规范×实现对账 ②组「驾驶舱风险清单＋待我裁决汇总
   kind（draft/audit/probe）分列计数（轻量 GROUP BY，精确无截断）＋ 待我审校
   （writing_db.list_pending_reviews 当前用户受派口径）；st.metric 计数卡，
   caption 注明处理入口（AI 协作页/释义撰写与审校页）。
+
+FX-26（体例质检 UI 入口，接 FX-25 引擎 src/style_check.py 的公开面）：驾驶舱
+  tab 在 FX-24 两段之后追加「🧪 体例质检」段 _render_style_check_section ——
+  ① 运行入口：范畴下拉（_funnel_category_options 同源，范畴级 style.yaml
+  缺席回退词典层）＋ form 提交按钮「▶ 运行体例质检」，调用点
+  guards.require_dict_admin() 中央闸门（纵深防御，同页写路径同口径）后调
+  style_check.run_style_check(category, actor=当前用户)（引擎内部
+  require_role 再兜一道）；成功 ui_kit.flash ＋ st.rerun（RV12-2，提示不丢），
+  ok=False（style.yaml 缺失/解析失败/库不可用）按 R4 归因 st.warning 灰注，
+  PermissionError 转 st.error；
+  ② 逐项结果表：最近一次 run 的 items（code/rule/status/detail），status ∈
+  pass/fail/warn 三色徽章走 design_system.get_badge_html 既有口径
+  （SUCCESS/ERROR/WARNING_COLOR）；通过率 caption 注明公式
+  passed/(passed+failed)、warn 不入分子也不入分母（引擎模块 docstring 为
+  口径单一事实源）；
+  ③ 历史小表：list_recent_runs(category, limit=FX26_STYLE_CHECK_HISTORY=5)
+  最近 5 次 run（id/时间/执行人/通过/未过/警告），run_by 为 NULL 显示
+  「系统作业」（RV2-3 留痕口径）。本段只做渲染与执行入口，不重复实现任何
+  检查逻辑；motion 现状（run #1：3 过/1 未过/1 警告，DEFINING_VOCAB 未过=
+  词表待编者核定）由数据如实展示，不做特判文案。
 """
 
 import hashlib
@@ -131,16 +151,20 @@ import streamlit as st
 from src import ai_ledger, annotation_flow, dict_admin_db, export_center, media_db, org_db
 from src import mysql_db, writing_db  # FX-24：存疑义位/待我审校只读取数（不写这两层）
 from src import registry_db
-from src import pipeline_status, users_db
+from src import pipeline_status, style_check, users_db  # style_check：FX-25 质检引擎（FX-26 UI 入口只调不实现）
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.mysql_db import get_db_cursor
 from src import guards
 from src.design_system import (
+    ERROR_COLOR,
     HEADER_H1,
     HEADER_H2,
     HEADER_H3,
     REVIEW_STATUS_COLORS,
+    SUCCESS_COLOR,
+    WARNING_COLOR,
+    get_badge_html,
     get_card_style,
     get_table_header_style,
     get_table_row_style,
@@ -876,7 +900,8 @@ def _render_cockpit_metrics(projects: List[Dict[str, Any]],
 
 def _render_cockpit_tab() -> None:
     """驾驶舱：规模与台账指标卡（st.metric）+ 十五工序漏斗 + 逐项目自检清单
-    ＋ FX-24 两段（⚠️ 风险清单 / 📥 待我裁决汇总，见段注释口径）。
+    ＋ FX-24 两段（⚠️ 风险清单 / 📥 待我裁决汇总）＋ FX-26 体例质检段
+    （🧪，FX-25 引擎 UI 入口；各段口径见各自函数 docstring）。
 
     进度漏斗（批次 3 Agent I）：src/pipeline_status.get_cluster_pipeline_status
     聚合语义分析段（工序 4–8）＋编纂成文占位段，format_funnel_segments 出渲染行；
@@ -996,6 +1021,9 @@ def _render_cockpit_tab() -> None:
     # 权限沿用本页入口两级角色门，两段内部再各自兜底，见各函数 docstring）。
     _render_risk_list_section()
     _render_my_decisions_section()
+    # FX-26：体例质检（FX-25 引擎的 UI 入口；含写路径——运行按钮，
+    # 权限门与降级口径见 _render_style_check_section docstring）。
+    _render_style_check_section()
 
 
 # ============================================
@@ -1346,6 +1374,219 @@ def _render_my_decisions_section() -> None:
         "「✍️ 释义撰写与审校」页审校台；探针通常不入裁决流（仅在探针问答页"
         "按需查询，ai_ledger.list_pending 取数约定）。"
     )
+
+
+# ============================================
+# FX-26：驾驶舱「🧪 体例质检」段（FX-25 引擎 src/style_check.py 的 UI 入口）
+# ============================================
+# 纪律：本段只做渲染与执行入口，检查逻辑零重复（全部走引擎公开面
+# run_style_check / list_recent_runs / pass_rate_from_counts）；权限沿用本页
+# 入口两级角色门，段内再过 _is_dict_admin(_current_user()) 兜底（同 FX-24
+# 两段），运行按钮提交时调用点再过 guards.require_dict_admin()（API 级中央
+# 闸门，纵深防御，同页成员/快照写路径同口径）；成功反馈 ui_kit.flash ＋
+# st.rerun（RV12-2），引擎 ok=False（style.yaml 缺失/解析失败/库不可用）按
+# R4 归因 st.warning 灰注如实转述，不编数不崩页。
+
+# 历史 run 小表条数（任务书口径：最近 5 次；引擎 list_recent_runs limit 透传）。
+FX26_STYLE_CHECK_HISTORY = 5
+
+# 逐项结论三态徽章：文案与配色（design_system 既有色板，get_badge_html 按
+# 底色自动选深/浅字）；未知 status 按灰徽章原样展示（引擎契约外值不隐藏）。
+_STYLE_CHECK_STATUS_LABELS = {"pass": "通过", "fail": "未过", "warn": "警告"}
+_STYLE_CHECK_STATUS_COLORS = {
+    "pass": SUCCESS_COLOR,   # #2f855a（design_system.SUCCESS_COLOR）
+    "fail": ERROR_COLOR,     # #c53030（design_system.ERROR_COLOR）
+    "warn": WARNING_COLOR,   # #c05621（design_system.WARNING_COLOR）
+}
+
+
+def _style_check_status_badge(status: Any) -> str:
+    """逐项结论徽章（design_system.get_badge_html 既有口径）：pass/fail/warn
+    三色，枚举外值灰徽章显原文（text 已过 _esc 的调用契约由本函数保证）。"""
+    key = str(status or "").strip()
+    label = _STYLE_CHECK_STATUS_LABELS.get(key, key or "—")
+    color = _STYLE_CHECK_STATUS_COLORS.get(key, _INACTIVE_GRAY)
+    return get_badge_html(_esc(label), color)
+
+
+def _style_check_user_names() -> Dict[int, str]:
+    """run_by（用户 id）→ 展示名映射（users_db.list_users 一次取全量，只读）。
+
+    花名册不可用（库断连等）按空映射降级 —— 历史小表执行人格退回「#id」，
+    不因装饰性映射失败拖垮质检段。
+    """
+    try:
+        users = users_db.list_users() or []
+    except Exception as e:  # noqa: BLE001 —— 装饰性取数，失败按空映射降级
+        logger.warning(f"体例质检历史执行人映射取数失败: {e}")
+        return {}
+    names: Dict[int, str] = {}
+    for u in users:
+        if not isinstance(u, dict):
+            continue
+        try:
+            uid = int(u.get("id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if uid > 0:
+            names[uid] = str(u.get("display_name") or u.get("username") or f"#{uid}")
+    return names
+
+
+def _style_check_history_rows(runs: List[Dict[str, Any]]) -> List[List[str]]:
+    """历史 run 小表行（id/时间/执行人/通过/未过/警告；纯归一，不触库）。"""
+    names = _style_check_user_names()
+    rows: List[List[str]] = []
+    for run in runs:
+        run_by = run.get("run_by")
+        try:
+            runner = names.get(int(run_by), f"#{int(run_by)}") if run_by is not None \
+                else "系统作业"
+        except (TypeError, ValueError):
+            runner = str(run_by)
+        rows.append([
+            _esc(f"#{run.get('id') or '?'}"),
+            _esc(str(run.get("created_at") or "—")),
+            _esc(runner),
+            str(run.get("passed") or 0),
+            str(run.get("failed") or 0),
+            str(run.get("warned") or 0),
+        ])
+    return rows
+
+
+def _style_check_run_clicked(category: str, me: Dict[str, Any]) -> None:
+    """「▶ 运行体例质检」提交处理：中央闸门 → 引擎执行 → 成功 flash＋rerun。
+
+    权限：调用点 guards.require_dict_admin()（API 级中央闸门；页面 tab 门之
+    上纵深防御，非词典管理员 st.error 转述拒绝文案）；引擎内部
+    require_role(actor, {"dict_admin"}) 再兜一道（PermissionError 同转述）。
+    引擎契约：ok=True 已落 style_check_runs 一行 → ui_kit.flash 成功提示
+    （RV12-2：rerun 丢弃本轮渲染也不丢提示）＋ st.rerun()，新 run 由历史表
+    首位与逐项表如实展示；ok=False（style.yaml 缺失/解析失败/库不可用）→
+    R4 归因灰注 st.warning 转述引擎 reason（含「未执行、未落库」口径）；
+    引擎意外抛错（理论不抛，内部已兜）同样灰注不崩页。
+    """
+    try:
+        guards.require_dict_admin()
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
+    try:
+        result = style_check.run_style_check(category, actor=me)
+    except PermissionError as e:  # 引擎闸门拒绝（与会话闸门口径一致）
+        st.error(f"⛔ {e}")
+        return
+    except Exception as e:  # noqa: BLE001 —— 引擎已内部兜底，防御性再转译
+        logger.warning(f"体例质检执行异常（category={category}）: {e}")
+        st.warning(f"体例质检未执行：{type(e).__name__}: {e}"
+                   "（详见服务端日志；本次未落任何记录）")
+        return
+    if not isinstance(result, dict) or not result.get("ok"):
+        reason = result.get("reason") if isinstance(result, dict) else None
+        st.warning("体例质检未执行：" + str(reason or "引擎返回异常形态"
+                   "（详见服务端日志）；本次未落任何记录。"))
+        return
+    passed = int(result.get("passed") or 0)
+    failed = int(result.get("failed") or 0)
+    warned = int(result.get("warned") or 0)
+    ui_kit.flash(
+        f"体例质检完成：run #{result.get('run_id')}（范畴 {result.get('category')}）"
+        f"通过 {passed}/{passed + failed}、警告 {warned} 项单列 —— 结果见下方"
+        "逐项表与历史记录；未过项的处置口径见其「说明」列。")
+    logger.info(
+        f"dict_admin {me.get('username')} 运行体例质检（category={category}）"
+        f"→ run #{result.get('run_id')}：pass={passed} fail={failed} warn={warned}")
+    st.rerun()
+
+
+def _render_style_check_section() -> None:
+    """🧪 体例质检（FX-26）：FX-25 引擎的 UI 入口（运行/逐项结果/历史）。
+
+    结构（自上而下）：
+      * 范畴下拉（_funnel_category_options 同源；引擎侧范畴级
+        configs/<category>/style.yaml 缺席自动回退词典层 style.yaml）＋
+        form「▶ 运行体例质检」按钮（表单提交型控件，选择不触发整页 rerun；
+        提交处理 _style_check_run_clicked）；
+      * 逐项结果表：最近一次 run 的 items（code/规则/结论/说明），结论
+        pass/fail/warn 三色徽章（design_system.get_badge_html 既有口径）；
+        detail_json 解析失败如实灰注，不编项；
+      * 通过率 caption：公式 passed/(passed+failed)（warn 不入分子也不入
+        分母 —— 警告是「自动化比对未覆盖/暂无数据」类观察项，不是体例违例；
+        口径单一事实源在 style_check 模块 docstring）；分母 0 → 「—」
+        （还没有可比项 ≠ 0%）；
+      * 历史小表：最近 FX26_STYLE_CHECK_HISTORY=5 次 run（list_recent_runs；
+        时间/执行人/通过/未过/警告，run_by=NULL=「系统作业」）。
+    数据不可用分级：list_recent_runs 返回 None（表未建/库断连）→ R4 归因
+    灰注；空列表 → 「尚无质检记录」引导文案（真 0 ≠ 取数失败）。
+    权限：沿用页面入口两级角色门，段内再过 _is_dict_admin 兜底（非词典
+    管理员整段不渲染，同 FX-24 两段 fail-closed）。
+    """
+    me = _current_user()
+    if not me or not _is_dict_admin(me):
+        return
+    st.markdown(f"<h3 style='{HEADER_H3}'>🧪 体例质检（AI 机械准绳）</h3>",
+                unsafe_allow_html=True)
+    with st.form("dict_admin_style_check_form", clear_on_submit=False):
+        cat = st.selectbox(
+            "质检范畴（configs/<category>/style.yaml，范畴级缺席回退词典层）",
+            _funnel_category_options(),
+            key="dict_admin_style_check_category",
+        )
+        submitted = st.form_submit_button("▶ 运行体例质检")
+    if submitted:
+        _style_check_run_clicked(str(cat or ""), me)
+
+    runs = style_check.list_recent_runs(category=str(cat or ""),
+                                        limit=FX26_STYLE_CHECK_HISTORY)
+    if runs is None:
+        st.warning(
+            "质检记录数据不可用：style_check_runs 读取失败（数据库不可用或"
+            "表未建）—— 运行体例质检同样不可用，恢复后重试；不代表没有历史"
+            "记录（R4 归因口径）。")
+        return
+    if not runs:
+        st.info(
+            f"范畴 {cat} 尚无质检记录：点上方「▶ 运行体例质检」执行首次机械"
+            "质检（结果落 style_check_runs，协同度量的「体例质检通过率」随之"
+            "出真值）。")
+        return
+    latest = runs[0]
+    items = latest.get("items")
+    if items:
+        rows = []
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            rows.append([
+                _esc(str(it.get("code") or "—")),
+                _esc(str(it.get("rule") or "—")),
+                _style_check_status_badge(it.get("status")),
+                _esc(str(it.get("detail") or "—")),
+            ])
+        _render_table(["检查项", "规则", "结论", "说明"], rows)
+    else:
+        st.warning("最近一次 run 的逐项明细解析失败（detail_json 非法或为空）"
+                   "—— 仅展示计数，重跑一次质检即生成新明细。")
+    passed = int(latest.get("passed") or 0)
+    failed = int(latest.get("failed") or 0)
+    warned = int(latest.get("warned") or 0)
+    total = int(latest.get("total") or 0) or (len(items) if items else 0)
+    rate = style_check.pass_rate_from_counts(passed, failed)
+    st.caption(
+        f"最近一次 run #{latest.get('id')}（{latest.get('created_at')}，范畴 "
+        f"{latest.get('category')}）：通过 {passed} / 未过 {failed} / 警告 "
+        f"{warned}（共 {total} 项）。"
+        f"通过率 {_format_rate(rate)} ＝ passed/(passed+failed)，warn 单列"
+        "不入分母（警告是观察项不是违例；口径单一事实源 src/style_check.py "
+        "模块 docstring）；「未过」项的处置口径见其「说明」列（如 "
+        "DEFINING_VOCAB=词表待编者核定）。")
+    history_rows = _style_check_history_rows(runs)
+    _render_table(["run", "时间", "执行人", "通过", "未过", "警告"], history_rows)
+    st.caption(
+        f"历史小表为范畴 {cat} 最近 {len(runs)} 次运行（新在前，引擎 "
+        "list_recent_runs id 降序）；执行人「系统作业」= run_by 为 NULL 的"
+        "系统作业留痕（RV2-3 留痕列第 1 类口径）。")
 
 
 # ============================================

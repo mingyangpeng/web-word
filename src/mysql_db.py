@@ -173,6 +173,8 @@ SCHEMA_VERSION = 11
 #   * assignments.round / assignments.training —— src/annotation_flow.py
 #     （FX-20 试标轮迁移：round INT NULL / training TINYINT(1) NULL DEFAULT NULL，
 #     _migrate_assignments_round_columns 幂等补列）
+#   * usage_logs.user_id —— src/mysql_db.py 本文件
+#     （FX-27 查询归因：user_id INT NULL，_migrate_usage_logs_user_id 幂等补列）
 
 # AI 体例质检执行记录（FX-25）表 DDL —— 单一事实源在本常量：CREATE_TABLES_SQL
 # 末位引用它随全量建表执行；src/style_check.ensure_style_check_table 引用同一
@@ -546,6 +548,7 @@ CREATE_VIEWS_SQL = [
 # init_database 时 import 并追加，避免循环依赖（category_study 只用本模块的
 # get_db_cursor）。v9 迁移即「建表」，新表无历史数据，无需 ALTER。
 def _register_category_study_tables() -> None:
+    """注册范畴研究域三表（转交 category_study.register_tables 单一来源）。"""
     try:
         from src import category_study
         category_study.register_tables()
@@ -555,6 +558,7 @@ def _register_category_study_tables() -> None:
 # 《现汉7》中文词典 3 表（v10）：zh_dict_entries / zh_dict_senses /
 # zh_dict_examples。表结构单一来源在 src/zh_dict.py，注册机制同上。
 def _register_zh_dict_tables() -> None:
+    """注册《现汉7》三表（表结构单一来源在 src/zh_dict.py，注册机制同上）。"""
     try:
         from src import zh_dict
         zh_dict.register_tables()
@@ -875,6 +879,42 @@ def _migrate_schema(cursor) -> Dict[str, Any]:
 
 
 # ============================================
+# usage_logs 查询归因列（FX-27，规范②组「usage_logs.user_id」）
+# ============================================
+# 查询日志（usage_logs，即规范语境的 queries 表：热门动词/总查询次数的数据源）
+# 的归因留痕列。规范《平台架构设计规范.md》附录 A ⑥「usage_logs(＋user_id 可空)」
+# 与「存量表变更」同口径。ALTER-only 幂等迁移，照
+# annotation_flow._migrate_assignments_round_columns 先例：CREATE TABLE 文本保持
+# 原样（存量库与新库统一走「先建旧形 → 探测补列」同一条路径），本列因此属文件
+# 头部「ALTER-only 列清单」口径（清单本体由合并时统一补记）。
+#
+# NULL 口径：RV2-3「留痕列 NULL 口径」第 1 类 —— user_id = users.id（软引用无
+# FK，同 style_check_runs.run_by 先例：日志表高频写入 + users 表属 users_db 域，
+# 不挂 FK），NULL = 未登录访客/系统作业，不用 0 冒充。聚合口径
+# （get_stats / get_hot_verbs）不读此列，仅归因留痕。
+USAGE_LOGS_USER_ID_COLUMN = (
+    "user_id",
+    "ALTER TABLE usage_logs ADD COLUMN user_id INT NULL "
+    "COMMENT '查询人 users.id（软引用无 FK；NULL=未登录/系统作业 "
+    "—— RV2-3 留痕列第 1 类口径）'",
+)
+
+
+def _migrate_usage_logs_user_id(cursor) -> None:
+    """usage_logs 存量结构迁移：补 user_id 查询归因列（幂等，FX-27）。
+
+    ALTER-only：_column_exists 探测（information_schema）→ 缺列才 ADD COLUMN；
+    二次执行探测命中直接跳过，不炸不重复加列。失败由 init_database 的容错
+    try/except 记日志（不拖垮启动）——列缺失时 log_usage 仍按旧形态写入
+    （降级为无归因），页面主链路不受影响。
+    """
+    column, sql = USAGE_LOGS_USER_ID_COLUMN
+    if not _column_exists(cursor, "usage_logs", column):
+        cursor.execute(sql)
+        logger.info(f"usage_logs.{column} 列已补齐（FX-27 查询归因迁移）")
+
+
+# ============================================
 # 初始化数据库
 # ============================================
 def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
@@ -936,6 +976,15 @@ def init_database(max_retries: int = 3, retry_delay: float = 2.0) -> bool:
             # 必须跑在建视图之前：视图引用 definitions.cluster_id，而旧库要等迁移
             # 才补上这一列，否则 CREATE VIEW 会报 Unknown column。
             _migrate_schema(cursor)
+
+            # FX-27：usage_logs.user_id 查询归因列（ALTER-only 幂等迁移，见
+            # _migrate_usage_logs_user_id）。失败只记日志不拦启动 —— 归因是留痕
+            # 信息，列缺失时 log_usage 降级按旧形态写入（无归因），不该让整库
+            # 初始化失败（与下方保留期清理的容错口径一致）。
+            try:
+                _migrate_usage_logs_user_id(cursor)
+            except Exception as e:
+                logger.warning(f"usage_logs.user_id migration skipped: {e}")
 
             # 视图依赖迁移后的列，放在迁移之后
             for view_sql in CREATE_VIEWS_SQL:
@@ -2585,23 +2634,41 @@ def get_hot_verbs(cache_scope: Optional[str] = None,
         return []
 
 
-def log_usage(verb: str, device_info: Optional[str] = None) -> bool:
+def log_usage(verb: str, device_info: Optional[str] = None,
+              user_id: Optional[int] = None) -> bool:
     """
     Log a usage event.
+
+    FX-27 查询归因：user_id 传查询人 users.id（登录态，由调用方取
+    current_user()["id"]）；不传 / None（既有调用方、未登录访客）保持旧
+    INSERT 形态、不碰归因列 —— 列值即 NULL（RV2-3 留痕列第 1 类：未登录
+    = NULL，不用 0 冒充）。user_id 非空而归因列尚未迁移到位时（迁移失败
+    的降级态）写入失败只记日志返回 False，不影响页面主链路。
 
     Args:
         verb: The verb that was queried
         device_info: Optional device information
+        user_id: Optional 查询人 users.id（FX-27 归因留痕；软引用无 FK，
+            NULL=未登录/系统作业）
 
     Returns:
         bool: True if successful
     """
     try:
         with get_db_cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO usage_logs (verb, device_info) VALUES (%s, %s)",
-                (verb, device_info)
-            )
+            if user_id is None:
+                # 旧形态原样保留：既有调用/未登录路径逐字符不变，写入不依赖
+                # 迁移列是否到位（迁移失败时降级为无归因，仍然记上这条查询）
+                cursor.execute(
+                    "INSERT INTO usage_logs (verb, device_info) VALUES (%s, %s)",
+                    (verb, device_info)
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO usage_logs (verb, device_info, user_id) "
+                    "VALUES (%s, %s, %s)",
+                    (verb, device_info, user_id)
+                )
             return True
     except pymysql.Error as e:
         logger.error(f"Failed to log usage for '{verb}': {e}")

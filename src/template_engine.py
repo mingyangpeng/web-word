@@ -63,6 +63,9 @@ LexiSchema 模板化释义 / 优化要点）。
     build_export_json()          结构化 JSON（ensure_ascii=False）
 
 页面接入由集成步骤统一做：本模块只暴露 render_template_page()。
+G3 消费（FX-28）：locked 词簇的模板实例化结果加「🔒 定稿基线」标识
+（writing_db.get_cluster_lock_state 锁态读面，只读 fail-open；不禁止
+查看/导出）。
 
 约束与边界：
   * 槽位拼装配置外置于范畴包（schemas.yaml 的 template_assembly 节，
@@ -1051,11 +1054,43 @@ def build_export_json(payload: Dict[str, Any]) -> str:
 
 
 # ============================================
+# G3 簇锁定消费（FX-28 撰写侧；只读 writing_db 锁态读面，不改锁定写入）
+# ============================================
+
+TEMPLATE_LOCK_BADGE = "🔒 定稿基线"
+
+
+def template_lock_note(lock_state: Any) -> Optional[str]:
+    """locked 词簇的模板实例化标识文案（纯函数；G3 撰写侧消费）。
+
+    lock_state 为 writing_db.get_cluster_lock_state 的返回。locked=True →
+    「🔒 定稿基线」标识＋说明（该词簇义项清单已分立复核定稿 —— 本模板为
+    定稿基线，查看与导出不受限；修订以新版本走审校）；未锁定 / 无簇归属 /
+    入参非法 / 库不可用（读面 fail-open 降级）→ None（不加标识 —— 锁定是
+    提示不是闸刀，不阻断模板页任何只读与导出动作）。
+    """
+    if not isinstance(lock_state, dict) or not lock_state.get("locked"):
+        return None
+    cluster = lock_state.get("cluster_no")
+    where = f"（簇{cluster}）" if cluster is not None else ""
+    return (
+        f"**{TEMPLATE_LOCK_BADGE}{where}** —— 该词簇义项清单已分立复核定稿"
+        "（G3 分立→释义闸门）：本模板为定稿基线，查看与导出不受限；"
+        "修订以新版本提交走审校（锁定不是禁写）。"
+    )
+
+
+# ============================================
 # Streamlit 页（页面接入由集成步骤统一做：app.py 只需调本函数）
 # ============================================
 
 def render_template_page() -> None:
-    """「释义模板引擎」页：母图式卡片 → 实例化模板卡片 → OALD 对照 → 批量导出。"""
+    """「释义模板引擎」页：母图式卡片 → 实例化模板卡片 → OALD 对照 → 批量导出。
+
+    G3 消费（FX-28）：locked 词簇的模板实例化结果上方加「🔒 定稿基线」
+    标识（取数经 writing_db.get_cluster_lock_state 锁态读面，fail-open
+    降级不加标识）；不禁止查看/导出。
+    """
     import streamlit as st
 
     from src.category_study import category_study_ready, get_categories
@@ -1144,7 +1179,22 @@ def render_template_page() -> None:
         st.error("模板实例化失败，请查看日志。")
         return
 
+    # G3 锁定状态读面消费（FX-28）：locked 词簇的模板实例化结果加
+    # 「🔒 定稿基线」标识（不禁止查看/导出；读面 fail-open 降级时不加）。
+    try:
+        from src.writing_db import get_cluster_lock_state
+
+        lock_state = get_cluster_lock_state(str(cat_code), sense_id)
+    except Exception as e:  # noqa: BLE001 — 读面意外按锁态未知降级，不崩页
+        logger.warning(f"render_template_page: 锁态读面降级: {e}")
+        lock_state = {"locked": False, "reason": "db_unavailable"}
+    cluster_locked = bool(
+        isinstance(lock_state, dict) and lock_state.get("locked"))
+    lock_note = template_lock_note(lock_state)
+
     st.markdown("##### 实例化模板（四维结构）")
+    if lock_note:
+        st.markdown(lock_note)
     st.markdown(f"**{tpl['template_text']}**")
     d1, d2 = st.columns(2)
     with d1:
@@ -1207,7 +1257,10 @@ def render_template_page() -> None:
         payload = None
     if payload and payload.get("templates"):
         n = len(payload["templates"])
-        st.caption(f"已生成 {n} 条模板（簇{payload['cluster'].get('cluster_no')}）。")
+        baseline = " · 🔒 定稿基线（G3 分立复核定稿）" if cluster_locked else ""
+        st.caption(
+            f"已生成 {n} 条模板（簇{payload['cluster'].get('cluster_no')}）"
+            f"{baseline}。")
         csv_bytes = build_export_csv(payload["templates"]).encode("utf-8-sig")
         json_bytes = build_export_json(payload).encode("utf-8")
         dl1, dl2 = st.columns(2)

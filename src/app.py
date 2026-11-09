@@ -59,7 +59,8 @@ from src.users_db import (
 from src.wordforms_db import ensure_wordforms_tables, resolve_form  # noqa: E402
 # R6-4：_current_user 单一实现点在 src/db_utils.py（别名导入，调用点零变化；
 # 行为与旧本地副本逐字节一致 —— fail-closed，user 非 dict 即 None）。
-from src.db_utils import current_user as _current_user  # noqa: E402
+# as_int（FX-27）：查询归因 user_id 的入参清洗（bool/非整值 → None，不冒充 id）。
+from src.db_utils import as_int, current_user as _current_user  # noqa: E402
 from src.annotation_flow import (
     ensure_flow_tables, submit_annotation, get_my_submissions,
     get_submissions_for_sense, detect_disagreements, save_adjudication,
@@ -604,12 +605,19 @@ def _record_query(verb: str) -> None:
     不要放进 get_display_definition() —— 那个函数每次渲染会被四张卡片各调一次，
     放在那里会把一次查询记成多次。
 
+    FX-27 查询归因：登录态取当前用户 users.id 随查询写入（usage_logs.user_id，
+    规范②组归因留痕）；未登录传 None —— 列值即 NULL（RV2-3 留痕列第 1 类口径：
+    未登录 = NULL，不用 0 冒充）。id 经 as_int 清洗（bool/脏值 → None，不把
+    伪 id 写进库）。
+
     失败只记日志，绝不影响界面。
     """
     if not DB_AVAILABLE or not verb:
         return
+    user = _current_user()
+    user_id = as_int(user.get("id")) if user else None
     try:
-        log_usage(str(verb)[:100])
+        log_usage(str(verb)[:100], user_id=user_id)
     except Exception as e:
         logger.error(f"查询日志写入失败 for '{verb}': {e}")
 
@@ -862,6 +870,7 @@ def render_card_annotation(verb):
         return html + '<p style="color: #4a5568;">暂无标注数据（数据库不可用或该词未收录）</p></div>'
 
     def field(label, value, color="#2d3748"):
+        """义位卡单字段渲染：空值返回空串，非空转义后拼 HTML 行。"""
         if not value:
             return ""
         value = _html_escape(str(value))  # DB/LLM 文本进 unsafe_allow_html 前转义
@@ -2905,6 +2914,7 @@ def _render_annotation_admin_view() -> None:
     # ---- 义位选择 ----
     only_open = st.checkbox("只看待标注/存疑义位", value=False)
     def _status(s):
+        """义位条目的审定状态徽标文案：存疑优先，其余按层级标签折算（RV5-1）。"""
         if s.get("needs_review"):
             return "❓存疑"
         # 权威层存储值「拓展」统一显示为 EXT（RV5-1，口径见 LEVEL_LABELS 注释）

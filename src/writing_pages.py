@@ -61,7 +61,9 @@ import streamlit as st
 import src.writing_db as writing_db
 from src import users_db
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
-from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
+from src.design_system import (
+    HEADER_H1, HEADER_H2, HEADER_H3, get_badge_html,
+)
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -84,7 +86,9 @@ GUIDE: Dict[str, Any] = {
         "AI 体例质检＋终审」；审校走回避制且无豁免（含词典管理员）—— 审校动作"
         "（指派/意见/打回/通过）的审校人一律不得是撰写人，数据层硬校验。",
         "G3 闸门位消费：撰写台选义位时 locked 簇优先展示（🔒 = 分立复核定稿，"
-        "义项清单锁定后才允许流入释义撰写）；未锁定簇与未入簇义位仍可选但如实"
+        "义项清单锁定后才允许流入释义撰写）；打开义位草稿时，locked 词簇在"
+        "页面顶部显「🔒 词簇已定稿锁定」徽章＋定稿基线说明（锁定不是禁写 ——"
+        "修订仍可撰写并提交走审校）；未锁定簇与未入簇义位仍可选但如实"
         "标注 ⚠️；status='merged'（已并入他义位）的义位一律禁选。",
         "模板预览是确定性引擎（template_engine，不调 LLM）：四维模板是编者的"
         "结构化语义底座，不是成品释义 —— 成文以文本框人工改定为准；义位不在"
@@ -109,7 +113,9 @@ GUIDE: Dict[str, Any] = {
         "版本链＋list_pending_reviews 待审清单）—— 状态机与回避制硬校验都在数据层。",
         "cs_senses / cs_lexemes / categories / cs_cluster_members / cs_clusters "
         "（category_study 8 表，本页私有只读查询）：撰写台义位下拉 —— 最新聚类"
-        "运行的簇归属 ＋ locked 徽标（G3 闸门位），merged 义位过滤。",
+        "运行的簇归属 ＋ locked 徽标（G3 闸门位），merged 义位过滤；顶部锁定"
+        "徽章另经 writing_db.get_cluster_lock_state 锁态读面取数（fail-open："
+        "库不可用/无簇归属降级不渲染、不阻断编纂）。",
         "src/template_engine.py：instantiate_template 槽位实例化（确定性引擎）"
         "—— 撰写台模板预览与 ai_draft 快照（审校对照用），只读不写。",
         "oald_senses × definitions（本页私有只读查询）：sense_ref 第三段 OALD 锚"
@@ -212,6 +218,18 @@ _HISTORY_REALNAME_ROLES = {"editor", "reviewer", "dict_admin"}
 
 # draft 态内容对折算视角的展示文案（R1-10：在途草稿不外露）
 _DRAFT_HIDDEN_TEXT = "🔒 撰写中（草稿内容仅作者与审校侧可见）"
+
+# G3 簇锁定徽章（撰写台顶部；FX-28 撰写侧消费）。文案口径与簇分析侧一致
+# （「已锁定 · 复核定稿（G3 放行释义撰写）」/「该簇已锁定（分立复核定稿，
+# G3）」）；徽章底色与 cluster_analysis.LOCKED_COLOR 同源（DANGER 深档
+# #c53030，白字 AA）—— 不 import cluster_analysis（重模块），常量对齐。
+_LOCK_BADGE_COLOR = "#c53030"
+LOCK_BANNER_TEXT = "🔒 词簇已定稿锁定"
+LOCK_BANNER_NOTE = (
+    "该词簇义项清单已分立复核定稿（G3 分立→释义闸门）：锁定词簇的模板为"
+    "定稿基线；释义修订仍可撰写并提交走审校 —— 锁定不是禁写，是「基线已"
+    "定稿」的提示口径。"
+)
 
 
 # ============================================
@@ -392,6 +410,22 @@ def _sort_senses_locked_first(senses: List[Dict[str, Any]]) -> List[Dict[str, An
         )
 
     return sorted(senses, key=_key)
+
+
+def cluster_lock_banner(lock_state: Any) -> Optional[str]:
+    """撰写台顶部锁定徽章文案（纯函数；G3 锁定状态读面的消费呈现）。
+
+    lock_state 为 writing_db.get_cluster_lock_state 的返回。locked=True →
+    「🔒 词簇已定稿锁定」徽章（get_badge_html，色与簇分析侧 LOCKED_COLOR
+    同源）＋定稿基线说明，一条 markdown 字符串（调用方以
+    unsafe_allow_html=True 渲染；说明为模块常量非用户内容，转义口径不变）。
+    未锁定 / 无簇归属 / 入参非法 / 库不可用（读面 fail-open 降级）→ None
+    —— 锁定是提示不是闸刀，降级不渲染徽章也不阻断撰写。
+    """
+    if not isinstance(lock_state, dict) or not lock_state.get("locked"):
+        return None
+    badge = get_badge_html(_esc(LOCK_BANNER_TEXT), _LOCK_BADGE_COLOR)
+    return f"{badge}\n\n{LOCK_BANNER_NOTE}"
 
 
 def _resolve_edit_target(
@@ -710,6 +744,17 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
     if ref is None:
         st.error("义位锚拼装失败（数据异常）：请换一个义位，或联系管理员核查 cs_senses 行。")
         return
+
+    # G3 锁定状态读面消费（FX-28）：打开该义位草稿时，locked 词簇在页面顶部
+    # 显「🔒 词簇已定稿锁定」徽章＋定稿基线说明（取数走 writing_db
+    # .get_cluster_lock_state 单一读面；fail-open 降级不渲染徽章、不阻断
+    # 撰写 —— 锁定是提示不是闸刀，规范 G3 拦的是「未定清单上写释义」）。
+    lock_state = writing_db.get_cluster_lock_state(
+        str(sense.get("category_code") or ""), cs_id)
+    banner = cluster_lock_banner(lock_state)
+    if banner:
+        st.markdown(banner, unsafe_allow_html=True)
+
     if sense.get("locked"):
         cluster_note = "🔒 G3 已锁定（分立复核定稿，正常放行）"
     elif sense.get("cluster_id"):

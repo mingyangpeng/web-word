@@ -124,6 +124,7 @@ _db_provider_cache: Dict[str, Any] = {"valid": False, "read_at": 0.0, "provider"
 
 
 def _openai_sdk_available():
+    """openai SDK 是否可导入（离线环境 False，调用方降级到 HTTP 兜底路径）。"""
     try:
         import openai  # noqa: F401
         return True
@@ -190,6 +191,7 @@ class _AnthropicCompatClient:
 
     def __init__(self, base_url: str, api_key: str,
                  timeout: Optional[int] = None):
+        """按 DB 供应商配置装配兼容客户端（chat.completions.create 挂到 _create）。"""
         self.base_url = (base_url or "").rstrip("/")
         self.api_key = api_key or ""
         self.timeout = int(timeout or LLM_TIMEOUT)
@@ -199,6 +201,7 @@ class _AnthropicCompatClient:
                 temperature: Optional[float] = None,
                 max_tokens: Optional[int] = None,
                 timeout: Optional[int] = None, **kwargs) -> SimpleNamespace:
+        """发 Anthropic Messages 请求并包成 OpenAI 风格响应（SimpleNamespace）。"""
         from src.llm_providers_db import http_post_json  # 延迟导入（同降级口径）
 
         if not self.base_url:
