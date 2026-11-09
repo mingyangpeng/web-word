@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Optional
 import pymysql
 
 from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
+from src.db_utils import column_exists as _column_exists  # R6-4：同上（FX-20 迁移用）
 from src.mysql_db import get_db_cursor
 from src.users_db import effective_six_roles
 
@@ -127,6 +128,38 @@ _FLOW_TABLE_DDLS = (
     ANNOTATION_SUBMISSIONS_TABLE_SQL,
     ADJUDICATIONS_TABLE_SQL,
 )
+
+# FX-20 试标轮两列（ALTER-only 幂等迁移；建表 SQL 保持规范 §2 原样不动，
+# 存量库与新库统一走「建旧形 → 探测补列」同一条迁移路径，仿
+# media_db.MEDIA_BINDINGS_AUDIT_COLUMNS 先例）。NULL 口径遵循仓库 RV2-3
+# 「留痕列 NULL 口径」：round INT NULL=未设轮次（正式轮不用 0 冒充）；
+# training TINYINT(1) NULL=非试标轮（未设即 NULL，不用 0 冒充「非试标」）。
+# `round` 加反引号：与 MySQL 内建函数名 ROUND 同名，防御性引用。
+ASSIGNMENTS_ROUND_COLUMNS = (
+    ("round", "ALTER TABLE assignments ADD COLUMN `round` INT NULL"),
+    ("training",
+     "ALTER TABLE assignments ADD COLUMN training TINYINT(1) NULL DEFAULT NULL"),
+)
+
+# assignments.status 实际枚举（规范 §2 DDL ENUM，test_status_constants_match_ddl_enum
+# 锁定）。规范 §8 写「改派仅限 draft/rejected」，码内无此二字面值 —— 以码为准的
+# 映射口径见 REASSIGNABLE_ASSIGNMENT_STATUSES 注释。
+ASSIGNMENT_STATUSES = ("open", "in_progress", "submitted", "closed")
+
+# 改派状态闸（FX-20，规范 §8「改派仅限 draft/rejected」→ 码内枚举映射）：
+#   * draft（已分派未动工）→ 'open'；
+#   * rejected 无字面对应 —— 全仓无 assignments 状态流转写点（分派创建即 open，
+#     无人 UPDATE status），无法产生「被打回」行；
+#   * in_progress（active 对应，动工中）/ submitted（工作已交付待审，改派会孤儿化
+#     已交成果）/ closed（已闭环）一律拒绝改派。
+# 刻意比「停用用户强制先改派在途任务」（规范 §8）更严：在途 in_progress 的移出
+# 保护沿用 org_db.remove_member 既有纪律口径（占位实现），本函数不放宽、
+# 也不接管该纪律 —— 闸门收窄到「未动工的分派可换人」这一最小诚实面。
+REASSIGNABLE_ASSIGNMENT_STATUSES = ("open",)
+
+# 分立复核裁决落地后的 cs_senses.status 取值（与 cluster_analysis.SPLIT_STATUS_VALUES
+# 同一口径的镜像常量 —— annotation_flow 不反向依赖页面/分析模块，防环）。
+DIVIDED_SENSE_STATUSES = ("merged", "split")
 
 
 # ============================================
@@ -244,12 +277,39 @@ def _parse_json_list(raw: Any) -> Optional[list]:
     return None
 
 
+def _row_round(row: dict) -> Optional[int]:
+    """assignments 行的 round 列 → int|None（FX-20；None=未设轮次，RV2-3 口径）。
+
+    PyMySQL 对 INT NULL 给 None；脏值（非数字串等）按 None 降级不编数。
+    """
+    raw = row.get("round")
+    if raw is None:
+        return None
+    value = _as_int(raw)
+    return value if (value is not None and value >= 1) else None
+
+
+def _row_training(row: dict) -> Optional[bool]:
+    """assignments 行的 training 列 → bool|None（FX-20；None=非试标不留痕）。
+
+    TINYINT(1) 可能有 0/1/None 三态：None=未设（正式轮不留痕）；0/1 → bool。
+    列未迁移补齐（查询报 Unknown column）由调用方的降级路径兜住。
+    """
+    raw = row.get("training")
+    if raw is None:
+        return None
+    return bool(raw)
+
+
 # ============================================
 # 建表
 # ============================================
 def ensure_flow_tables() -> None:
     """幂等创建 flow 三表：assignments / annotation_submissions / adjudications
     （规范 §2 DDL 原样，CREATE TABLE IF NOT EXISTS，可重复调用）。
+
+    建表后随做 FX-20 试标轮两列的幂等迁移（``_migrate_assignments_round_columns``，
+    information_schema 探测、已有则跳过 —— 存量库与新库同一条路径）。
 
     外键引用 users 与 oald_senses：集成时先调 ``users_db.ensure_user_tables()``
     （users 表为空还会得到内置 admin），并确保 ``mysql_db.init_database()`` 已建
@@ -260,10 +320,24 @@ def ensure_flow_tables() -> None:
         with get_db_cursor() as cursor:
             for ddl in _FLOW_TABLE_DDLS:
                 cursor.execute(ddl)
+            _migrate_assignments_round_columns(cursor)
     except pymysql.Error as e:
         logger.error(f"flow 表初始化失败（MySQL，检查 users/oald_senses 是否已建）: {e}")
     except Exception as e:
         logger.error(f"flow 表初始化意外错误: {e}")
+
+
+def _migrate_assignments_round_columns(cursor) -> None:
+    """assignments 存量结构迁移：补 round / training 两列（幂等，FX-20）。
+
+    ALTER-only：column_exists 探测（information_schema，走 db_utils 单一实现）→
+    缺列才 ADD COLUMN；二次执行探测命中直接跳过，不炸不重复加列。迁移失败由
+    ensure_flow_tables 的外层 try/except 记日志（不抛），页面可继续渲染。
+    """
+    for column, sql in ASSIGNMENTS_ROUND_COLUMNS:
+        if not _column_exists(cursor, "assignments", column):
+            cursor.execute(sql)
+            logger.info(f"assignments.{column} 列已补齐（FX-20 试标轮迁移）")
 
 
 # ============================================
@@ -740,6 +814,9 @@ def assign_task(
     task_type: str,
     scope_verbs: Optional[list],
     assigned_by: int,
+    *,
+    round: Optional[int] = None,
+    training: Optional[bool] = None,
 ) -> bool:
     """新建一条任务分配（assignments 表；规范 §3 之外的补充函数，签名经任务方确认）。
 
@@ -750,6 +827,12 @@ def assign_task(
         scope_verbs: 动词范围。None = 全部动词；否则为动词名列表
             （如 ["run", "walk"]），存为 JSON
         assigned_by: 分配人 id（admin）
+        round: 轮次（第几轮标注；FX-20 试标轮）。None=正式轮不留痕（RV2-3：
+            未设轮次=NULL，不用 0 冒充）；给值须 int 且 ≥1（bool 不算 int）。
+            要求 assignments 已含 round 列（ensure_flow_tables 幂等迁移补齐）。
+        training: 试标轮位（FX-20）。None=非试标轮不留痕；True/False 存 1/0
+            （试标轮位=1 起）。round 是「第几轮」的计数，training 是「该轮是否
+            试标」的位标记，两者独立留痕、互不替代。
 
     Returns:
         bool: 成功 True；参数非法 / assignee 不存在（FK 拒绝）/ 数据库错误 False
@@ -767,6 +850,24 @@ def assign_task(
     if task_type not in TASK_TYPES:
         logger.error(f"assign_task 拒绝非法 task_type: {task_type!r}")
         return False
+    # round/training 校验（FX-20）：非法值入口先拒，不进数据库。
+    # bool 是 int 子类，须先排除 —— True 冒充轮次 1 是脏数据不是留痕。
+    round_val: Optional[int]
+    if round is None:
+        round_val = None
+    elif isinstance(round, bool) or not isinstance(round, int) or round < 1:
+        logger.error(f"assign_task 拒绝非法 round（须 int 且 ≥1 或 None）: {round!r}")
+        return False
+    else:
+        round_val = round
+    training_val: Optional[int]
+    if training is None:
+        training_val = None
+    elif isinstance(training, bool):
+        training_val = 1 if training else 0
+    else:
+        logger.error(f"assign_task 拒绝非法 training（须 bool 或 None）: {training!r}")
+        return False
     if scope_verbs is not None:
         if not isinstance(scope_verbs, (list, tuple)):
             logger.error(f"assign_task 拒绝非法 scope_verbs: {scope_verbs!r}")
@@ -780,19 +881,24 @@ def assign_task(
         scope_verbs_json = None
 
     sql = (
-        "INSERT INTO assignments (assignee_id, category, task_type, scope_verbs, assigned_by) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "INSERT INTO assignments "
+        "(assignee_id, category, task_type, scope_verbs, assigned_by, `round`, training) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
     try:
         with get_db_cursor() as cursor:
-            cursor.execute(sql, (assignee, category, task_type, scope_verbs_json, admin))
+            cursor.execute(
+                sql,
+                (assignee, category, task_type, scope_verbs_json, admin,
+                 round_val, training_val),
+            )
             return cursor.rowcount > 0
     except pymysql.Error as e:
         # 含 FK 违反（assignee/assigned_by 用户不存在，errno 1452）
         logger.error(f"创建任务分配失败（assignee={assignee}）: {e}")
         return False
     except Exception as e:
-        logger.error(f"创建任务分配意外错误（assignee={assignee}）: {e}")
+        logger.error(f"创建任务分派意外错误（assignee={assignee}）: {e}")
         return False
 
 
@@ -814,13 +920,17 @@ def get_assignment_stats() -> List[Dict[str, Any]]:
               "category": str, "task_type": str,
               "assignment_status": 'open'|'in_progress'|'submitted'|'closed'|None,
               "scope_verbs": list|None, "assigned_by": int|None,
+              "round": int|None, "training": bool|None,
               "n_submitted": int, "n_adjudicated": int}]
 
-        数据库不可用返回 []。
+        round/training 为 FX-20 试标轮两列（NULL=未设轮次/非试标，RV2-3 留痕列
+        NULL 口径；assignments 表未迁移补列时键仍存在、值为 None）。孤儿行
+        （有提交无分派）两键为 None。数据库不可用返回 []。
     """
     assignments_sql = (
         "SELECT a.id AS assignment_id, a.assignee_id, a.category, a.task_type, "
         "a.status AS assignment_status, a.scope_verbs, a.assigned_by, "
+        "a.`round` AS round, a.training, "
         "u.username, u.display_name, "
         "COALESCE(t.n_submitted, 0) AS n_submitted, "
         "COALESCE(t.n_adjudicated, 0) AS n_adjudicated "
@@ -870,6 +980,8 @@ def get_assignment_stats() -> List[Dict[str, Any]]:
                         "assigned_by": (
                             int(row["assigned_by"]) if row.get("assigned_by") else None
                         ),
+                        "round": _row_round(row),
+                        "training": _row_training(row),
                         "n_submitted": int(row.get("n_submitted") or 0),
                         "n_adjudicated": int(row.get("n_adjudicated") or 0),
                     }
@@ -887,6 +999,8 @@ def get_assignment_stats() -> List[Dict[str, Any]]:
                         "assignment_status": None,
                         "scope_verbs": None,
                         "assigned_by": None,
+                        "round": None,
+                        "training": None,
                         "n_submitted": int(row.get("n_submitted") or 0),
                         "n_adjudicated": int(row.get("n_adjudicated") or 0),
                     }
@@ -898,3 +1012,529 @@ def get_assignment_stats() -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"查询分配进度意外错误: {e}")
         return []
+
+
+# ============================================
+# FX-20：分派台账读面 / 改派 / 试标轮 / 重标闭环（G2 修订→重标）
+# ============================================
+def list_assignments_admin(
+    statuses: Optional[list] = None, limit: int = 200
+) -> List[Dict[str, Any]]:
+    """assignments 台账（词典管理员任务分配面板：改派/轮次徽章的数据源）。
+
+    Args:
+        statuses: 状态过滤清单（ASSIGNMENT_STATUSES 子集）；None=不过滤全量。
+        limit: 返回条数上限（≤0 返回 []；防一次性拖全表），按 id 降序（最新在前）。
+
+    Returns:
+        list[dict]::
+
+            [{"id", "assignee_id", "username", "display_name", "category",
+              "task_type", "status", "scope_verbs"(list|None), "assigned_by",
+              "round"(int|None), "training"(bool|None), "created_at"}]
+
+        表未建 / 列未迁移（Unknown column）/ 库不可用返回 []（页面按空台账
+        降级渲染，不崩）。审计口径：本函数只读，写路径在 reassign_assignment。
+    """
+    try:
+        lim = int(limit)
+    except (TypeError, ValueError):
+        return []
+    if lim <= 0:
+        return []
+    sql = (
+        "SELECT a.id, a.assignee_id, a.category, a.task_type, a.status, "
+        "a.scope_verbs, a.assigned_by, a.`round` AS round, a.training, "
+        "a.created_at, u.username, u.display_name "
+        "FROM assignments a LEFT JOIN users u ON u.id = a.assignee_id"
+    )
+    params: list = []
+    if statuses:
+        clean = [s for s in statuses if s in ASSIGNMENT_STATUSES]
+        if not clean:
+            return []
+        sql += " WHERE a.status IN (" + ", ".join(["%s"] * len(clean)) + ")"
+        params.extend(clean)
+    sql += " ORDER BY a.id DESC LIMIT %s"
+    params.append(lim)
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, tuple(params))
+            rows = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                item["scope_verbs"] = _parse_json_list(item.get("scope_verbs"))
+                item["round"] = _row_round(item)
+                item["training"] = _row_training(item)
+                rows.append(item)
+            return rows
+    except pymysql.Error as e:
+        # 含表未建 / round 列未迁移（errno 1054 Unknown column）：按空台账降级
+        logger.error(f"查询分派台账失败: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"查询分派台账意外错误: {e}")
+        return []
+
+
+def _require_assignment_actor(actor: Any, action: str) -> None:
+    """改派/重标的数据层直调面权限闸（FX-20；与 save_adjudication 同族口径）。
+
+    keyword ``actor=None`` = 系统作业（迁移等）；页面调用点**必须**传
+    ``actor=当前会话用户``。actor 为 dict 时其有效六角色须含词典管理员面
+    （dict_admin / sys_admin —— 规范 §8：任务分配/改派/轮次是词典管理员职责，
+    与页面 guards.require_dict_admin 入口同一判定实现
+    users_db.effective_six_roles），不足抛 PermissionError；其余类型 fail-closed
+    同抛。抛出发生在调用方的 try 之前，不落入返回值口径。
+    """
+    if actor is None:
+        return  # 系统作业（docstring 口径：页面调用点必须传 actor）
+    if isinstance(actor, dict):
+        effective = effective_six_roles(actor)
+        if effective & {"dict_admin", "sys_admin"}:
+            return
+        raise PermissionError(
+            f"{action}被拒绝：当前用户（{actor.get('username', '?')}）有效角色集"
+            "不含 dict_admin —— 任务分配/改派/轮次仅词典管理员可执行"
+            "（数据层直调面口径：页面调用点必须传 actor=当前会话用户；"
+            "None=系统作业）。"
+        )
+    raise PermissionError(
+        f"{action}被拒绝：actor 须为会话用户 dict 或 None（系统作业）。"
+    )
+
+
+def reassign_assignment(
+    assignment_id: int,
+    project_id: int,
+    new_assignee_id: int,
+    reassigned_by: int,
+    *,
+    actor: Any = None,
+) -> bool:
+    """改派一条分派（assignments.assignee_id 换人；FX-20 改派入口的数据层）。
+
+    闸门（全部通过才写库，任一拒绝返回 False 并记日志）：
+      1. actor 权限闸（_require_assignment_actor：dict_admin/sys_admin；
+         None=系统作业，页面调用点必须传会话用户）；
+      2. 状态闸：status ∈ REASSIGNABLE_ASSIGNMENT_STATUSES（'open'）——
+         规范 §8「改派仅限 draft/rejected」以码为准的映射，见常量注释；
+      3. 非当前承包人闸：new_assignee ≠ 现承包人（换人不是重复指派）；
+      4. 同项目在册闸：new_assignee 须在 project_members(project_id) 在册且
+         账号在用（users.active=1）—— 三级权限链第二级，未入册者不接任务；
+      5. 乐观并发守卫：UPDATE ... WHERE id=%s AND status=%s（status 闸在
+         SQL 里复验，防读后他人已把状态推进）。
+
+    原承包人在途保护沿用 org_db.remove_member 的既有纪律口径：本函数只换
+    assignments.assignee_id，**不动** project_members（原承包人在该项目的其他
+    在途任务与成员资格不受影响）。
+
+    审计：成功改派写结构化日志（谁改的/原→新承包人/分派 id/项目 id），
+    logger.info 级别供运维回溯（本表无专用审计列，遵循「改研究方案的进文件，
+    改运营状态的进界面」——留痕走日志，与 collab_pages 创建分派同口径）。
+
+    Args:
+        assignment_id: 分派 id
+        project_id: 改派目标校验用项目 id（assignments 无项目列，项目上下文
+            由调用方提供 —— 页面传当前所选项目）
+        new_assignee_id: 新承包人 users.id
+        reassigned_by: 执行改派的词典管理员 users.id
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
+
+    Returns:
+        bool: 改派成功 True；分派不存在 / 状态闸不过 / 目标非法（非在册、
+        同人）/ 数据库错误 False
+
+    Raises:
+        PermissionError: actor 为低权 dict / 非 dict 垃圾值（入口先抛）。
+    """
+    _require_assignment_actor(actor, "改派任务分派")
+    aid = _as_int(assignment_id)
+    pid = _as_int(project_id)
+    new_uid = _as_int(new_assignee_id)
+    by_id = _as_int(reassigned_by)
+    if aid is None or aid <= 0 or pid is None or pid <= 0:
+        logger.error(
+            f"reassign_assignment 拒绝非法 id: assignment_id={assignment_id!r}, "
+            f"project_id={project_id!r}"
+        )
+        return False
+    if new_uid is None or new_uid <= 0 or by_id is None or by_id <= 0:
+        logger.error(
+            f"reassign_assignment 拒绝非法 id: new_assignee_id={new_assignee_id!r}, "
+            f"reassigned_by={reassigned_by!r}"
+        )
+        return False
+
+    select_sql = (
+        "SELECT id, assignee_id, status, category, task_type "
+        "FROM assignments WHERE id = %s"
+    )
+    member_sql = (
+        "SELECT COUNT(*) AS n FROM project_members pm "
+        "JOIN users u ON u.id = pm.user_id "
+        "WHERE pm.project_id = %s AND pm.user_id = %s AND u.active = 1"
+    )
+    # 乐观并发守卫：status 在 WHERE 里复验（读后他人推进状态则 rowcount=0）
+    update_sql = (
+        "UPDATE assignments SET assignee_id = %s "
+        "WHERE id = %s AND status = %s"
+    )
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(select_sql, (aid,))
+            row = cursor.fetchone()
+            if not row:
+                logger.error(f"改派拒绝：分派 #{aid} 不存在")
+                return False
+            current_assignee = _as_int(row.get("assignee_id"))
+            status = row.get("status")
+            if status not in REASSIGNABLE_ASSIGNMENT_STATUSES:
+                logger.error(
+                    f"改派拒绝：分派 #{aid} 状态为 {status!r}"
+                    f"（仅 {REASSIGNABLE_ASSIGNMENT_STATUSES} 可改派 —— 规范"
+                    "「改派仅限 draft/rejected」以码为准的映射，见常量注释）"
+                )
+                return False
+            if current_assignee is not None and new_uid == current_assignee:
+                logger.error(
+                    f"改派拒绝：新承包人（user {new_uid}）与分派 #{aid} 现承包人相同"
+                )
+                return False
+            cursor.execute(member_sql, (pid, new_uid))
+            member_row = cursor.fetchone()
+            if int((member_row or {}).get("n") or 0) <= 0:
+                logger.error(
+                    f"改派拒绝：user {new_uid} 不是项目 {pid} 在册在用成员"
+                    "（project_members 校验不过）"
+                )
+                return False
+            cursor.execute(update_sql, (new_uid, aid, status))
+            if cursor.rowcount <= 0:
+                logger.error(
+                    f"改派失败：分派 #{aid} 状态已被并发推进（乐观守卫未命中）"
+                )
+                return False
+            logger.info(
+                f"改派审计：分派 #{aid}（{row.get('category')}/"
+                f"{row.get('task_type')}，状态 {status}）承包人 "
+                f"{current_assignee} → {new_uid}，执行人 user {by_id}，"
+                f"项目 {pid}，actor={getattr(actor, 'get', lambda k: None)('username')}"
+            )
+            return True
+    except pymysql.Error as e:
+        logger.error(f"改派失败（assignment={aid}, project={pid}）: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"改派意外错误（assignment={aid}, project={pid}）: {e}")
+        return False
+
+
+_DIVIDED_COLS_ENSURED = False
+
+
+def _ensure_divided_cols() -> None:
+    """list_divided_senses 读 cs_senses.merged_into —— 列由 cluster_analysis 的
+    分立迁移负责（页面/分析路径触发）；本读面（驾驶舱台账）可能先于其被调，
+    故自行做一次幂等补列（进程级哨兵直通；失败仅记日志，查询路径照旧容错）。"""
+    global _DIVIDED_COLS_ENSURED
+    if _DIVIDED_COLS_ENSURED:
+        return
+    try:
+        with get_db_cursor() as cursor:
+            if not _column_exists(cursor, "cs_senses", "merged_into"):
+                cursor.execute(
+                    "ALTER TABLE cs_senses ADD COLUMN merged_into INT NULL "
+                    "AFTER status"
+                )
+                logger.info("cs_senses.merged_into 列已补齐（FX-20 台账读面迁移）")
+        _DIVIDED_COLS_ENSURED = True
+    except Exception as e:  # noqa: BLE001 —— 表未建/库不可用由查询路径如实降级
+        logger.warning(f"cs_senses.merged_into 迁移探测失败（list_divided_senses）: {e}")
+
+
+def list_divided_senses(limit: int = 200) -> List[Dict[str, Any]]:
+    """分立复核已裁决义位清单（cs_senses.status ∈ merged/split；G2 重标入口证据面）。
+
+    只读；表未建 / merged_into 列未迁移 / 库不可用返回 []（页面按「尚无裁决」
+    降级，不编数）。裁决落地写点在 cluster_analysis.execute_sense_division
+    （本模块只读消费，不越权）。
+    """
+    try:
+        lim = int(limit)
+    except (TypeError, ValueError):
+        return []
+    if lim <= 0:
+        return []
+    sql = (
+        "SELECT id, sense_no, sense_label, status, merged_into "
+        "FROM cs_senses WHERE status IN (%s, %s) ORDER BY id LIMIT %s"
+    )
+    _ensure_divided_cols()
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, (*DIVIDED_SENSE_STATUSES, lim))
+            rows = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                merged_into = _as_int(item.get("merged_into"))
+                item["merged_into"] = merged_into if merged_into and merged_into > 0 else None
+                rows.append(item)
+            return rows
+    except pymysql.Error as e:
+        logger.error(f"查询已裁决义位失败（cs_senses）: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"查询已裁决义位意外错误（cs_senses）: {e}")
+        return []
+
+
+def _resolve_study_code(category: str) -> Optional[str]:
+    """范畴参数 → 语义分析 categories.code（FX-20 重标闸用；与 sense_spine
+    _study_code_for 同口径的独立实现 —— annotation_flow 不 import sense_spine
+    （它 import 本模块，反向会成环），PACK_TO_STUDY_CODE 包名映射**懒导入**
+    cluster_analysis（调用时才 import，模块加载序无环）。"""
+
+    def _query(code: str) -> Optional[str]:
+        """按 code 查 categories 表：存在返回原 code，不存在返回 None（fx5 契约：全函数 docstring）。"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT code FROM categories WHERE code = %s LIMIT 1", (code,)
+            )
+            row = cursor.fetchone()
+            return str(row["code"]) if row else None
+
+    cat = str(category or "").strip()
+    if not cat:
+        return None
+    try:
+        direct = _query(cat)
+    except Exception as e:  # noqa: BLE001 —— categories 表未建/库不可用按未解析
+        logger.warning(f"categories 直配查询失败（{cat}）: {e}")
+        direct = None
+    if direct:
+        return direct
+    try:
+        # 懒导入：cluster_analysis 是页面/分析层模块，模块顶层 import 会拖重
+        # 依赖（streamlit 等）且有环风险；仅此处按需取包名映射。
+        from src.cluster_analysis import PACK_TO_STUDY_CODE
+
+        mapped = PACK_TO_STUDY_CODE.get(cat.lower())
+        if not mapped:
+            return None
+        return _query(mapped)
+    except ImportError:
+        logger.warning("cluster_analysis.PACK_TO_STUDY_CODE 不可用，包名映射跳过")
+        return None
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"categories 包名映射查询失败（{cat}）: {e}")
+        return None
+
+
+# 标注侧 sense_id（oald_senses.id）→ cs_senses 状态的裁决闸查询（FX-20）。
+# 映射键与 sense_spine._find_cs_sense_id 同口径：(categories.code, language='en',
+# cs_lexemes.lemma=o.headword, cs_senses.sense_no=str(o.sense_index))；
+# sense_no 直接用 CAST(o.sense_index AS CHAR) 在 JOIN 条件内解析（免先读行再
+# 二次查询），多命中取最小 id（确定性，与 _find_cs_sense_id 一致）。
+_CS_STATUS_SQL = (
+    "SELECT s.status AS cs_status "
+    "FROM oald_senses o "
+    "JOIN cs_lexemes l ON l.language = 'en' AND l.lemma = o.headword "
+    "JOIN categories c ON c.id = l.category_id AND c.code = %s "
+    "JOIN cs_senses s ON s.lexeme_id = l.id "
+    "AND s.sense_no = CAST(o.sense_index AS CHAR) COLLATE utf8mb4_unicode_ci "
+    "WHERE o.id = %s "
+    "ORDER BY s.id LIMIT 1"
+)
+
+
+def create_reannotation_tasks(
+    category: str,
+    sense_ids: list,
+    round: int,
+    assigned_by: int,
+    *,
+    actor: Any = None,
+    task_type: str = "feature_coding",
+) -> Dict[str, Any]:
+    """G2「修订→重标」闭环：对已裁决 merged/split 的义位发起重标（FX-20）。
+
+    语义（最小诚实闭环）：
+      * ``round`` = 被裁决失效的**当前轮次**（int ≥1）；函数创建 round+1 的
+        重标任务（旧轮提交**原样保留作历史**，annotation_submissions 零写入
+        —— status 仅 submitted/adjudicated 两态，不造「失效」第三态）；
+      * 受影响义位闸：逐义位把**标注侧 sense_id**（annotation_submissions.
+        sense_id = oald_senses.id 空间）经 (categories.code, cs_lexemes.lemma=
+        o.headword, cs_senses.sense_no=str(o.sense_index)) 映射到 cs_senses，
+        状态须 ∈ DIVIDED_SENSE_STATUSES（merged/split）—— 未裁决/映射不上的
+        义位跳过并列明，绝不带病建任务；
+      * 重标任务派给**该批义位的历史标注人**（annotation_submissions DISTINCT
+        coder_id）—— 谁标过谁重标；无历史提交的义位不产生任务（如实返回）；
+      * scope_verbs = 受影响义位的 headword 集合（正确使用动词范围语义，
+        不把 sense_id 塞进 scope —— FX-15 口径：scope 语义不动）；义位查不到
+        headword 时 None=全部动词（页面灰注如实说明）；
+      * training 恒为 None（重标是正式轮，试标位留给试标分派）。
+
+    **落库点挂钩待接线**：分立复核裁决落地写点在 cluster_analysis.
+    execute_sense_division（merge/split 写 cs_senses，非本模块所有权文件），
+    本函数是裁决后的重标消费口 —— 建议接线位置：adjudicate_sense_division
+    的 adopted 分支（decide 留痕与 execute_sense_division 落地成功后）按
+    proposal["sense_ids"] 调本函数（actor=裁决人会话用户，None 兜底系统作业）。
+    当前由词典管理员在「任务分配」tab 的「发起重标」入口手工触发，闸门保证
+    只有已裁决义位可发。
+
+    Args:
+        category: 范畴名（包名 motion 或研究代号 RUN，经 _resolve_study_code 解析）
+        sense_ids: 受影响义位 id 清单（标注侧 oald_senses.id；去重保序）
+        round: 被裁决失效的当前轮次（int ≥1；任务建在 round+1）
+        assigned_by: 发起重标的词典管理员 users.id
+        actor: 会话用户 dict（页面传当前用户）| None（系统作业）
+        task_type: 重标任务类型（默认 feature_coding=工序5 特征标注重标；
+            须 ∈ TASK_TYPES）
+
+    Returns:
+        dict::
+
+            {"ok": bool, "reannotation_round": int, "created": int,
+             "assignment_ok": int, "failed_coder_ids": [...],
+             "eligible_sense_ids": [...], "skipped": [{"sense_id", "reason"}, ...],
+             "coder_ids": [...], "note": str|None, "error": str|None}
+
+        ok=True 时 created=成功建出的任务数；error 只在 ok=False 时非空。
+        actor 低权直接抛 PermissionError（入口先抛，同 save_adjudication）。
+    """
+    _require_assignment_actor(actor, "发起重标（G2 修订→重标闭环）")
+    if not isinstance(category, str) or not category.strip():
+        return {"ok": False, "error": "范畴名为空", "created": 0}
+    if task_type not in TASK_TYPES:
+        return {
+            "ok": False,
+            "error": f"非法 task_type: {task_type!r}（须为 {TASK_TYPES} 之一）",
+            "created": 0,
+        }
+    if isinstance(round, bool) or not isinstance(round, int) or round < 1:
+        return {
+            "ok": False,
+            "error": f"非法 round（须 int 且 ≥1，= 被失效的当前轮次）: {round!r}",
+            "created": 0,
+        }
+    admin = _as_int(assigned_by)
+    if admin is None or admin <= 0:
+        return {"ok": False, "error": f"非法 assigned_by: {assigned_by!r}", "created": 0}
+    ids: List[int] = []
+    for raw in (sense_ids if isinstance(sense_ids, (list, tuple)) else []):
+        value = _as_int(raw)
+        if value is None or value <= 0:
+            return {"ok": False, "error": f"非法 sense_id: {raw!r}", "created": 0}
+        if value not in ids:
+            ids.append(value)
+    if not ids:
+        return {"ok": False, "error": "sense_ids 为空", "created": 0}
+
+    new_round = round + 1
+    skipped: List[Dict[str, Any]] = []
+    try:
+        study_code = _resolve_study_code(category)
+        if not study_code:
+            return {
+                "ok": False,
+                "error": (
+                    f"范畴 {category!r} 无法解析到语义分析研究代号（categories "
+                    "未灌数据或包名未登记）—— 重标闸无法核对分立裁决，未创建任务"
+                ),
+                "created": 0,
+            }
+        # 逐义位裁决闸（映射 oald_senses.id → cs_senses.status）
+        eligible: List[int] = []
+        with get_db_cursor() as cursor:
+            for sid in ids:
+                cursor.execute(_CS_STATUS_SQL, (study_code, sid))
+                row = cursor.fetchone()
+                if not row:
+                    skipped.append({
+                        "sense_id": sid,
+                        "reason": "未映射到语义分析义位（cs_senses），无法核对分立裁决",
+                    })
+                    continue
+                status = str(row.get("cs_status") or "").strip().lower()
+                if status not in DIVIDED_SENSE_STATUSES:
+                    skipped.append({
+                        "sense_id": sid,
+                        "reason": f"cs_senses 状态为 {row.get('cs_status')!r}"
+                        "（非 merged/split），未裁决或维持原分立",
+                    })
+                    continue
+                eligible.append(sid)
+            if not eligible:
+                return {
+                    "ok": False,
+                    "error": "所选义位均未通过分立裁决闸（仅 merged/split 可重标）",
+                    "created": 0,
+                    "skipped": skipped,
+                    "reannotation_round": new_round,
+                }
+            placeholders = ", ".join(["%s"] * len(eligible))
+            cursor.execute(
+                "SELECT DISTINCT coder_id FROM annotation_submissions "
+                f"WHERE category = %s AND task_type = %s AND sense_id IN ({placeholders}) "
+                "ORDER BY coder_id",
+                (category, task_type, *eligible),
+            )
+            coder_ids = [_as_int(r["coder_id"]) for r in cursor.fetchall()]
+            coder_ids = [c for c in coder_ids if c is not None and c > 0]
+            if not coder_ids:
+                return {
+                    "ok": True,
+                    "reannotation_round": new_round,
+                    "created": 0,
+                    "eligible_sense_ids": eligible,
+                    "skipped": skipped,
+                    "coder_ids": [],
+                    "note": (
+                        "受影响义位无历史标注提交，未创建重标任务"
+                        "（如需指派请用试标轮分派表单）"
+                    ),
+                    "error": None,
+                }
+            cursor.execute(
+                "SELECT DISTINCT headword FROM oald_senses "
+                f"WHERE id IN ({placeholders}) AND headword IS NOT NULL",
+                tuple(eligible),
+            )
+            verbs = [str(r["headword"]).strip() for r in cursor.fetchall()]
+            verbs = [v for v in verbs if v]
+    except pymysql.Error as e:
+        logger.error(f"重标闸核对失败（category={category}）: {e}")
+        return {"ok": False, "error": f"数据库错误: {e}", "created": 0}
+    except Exception as e:
+        logger.error(f"重标闸核对意外错误（category={category}）: {e}")
+        return {"ok": False, "error": f"意外错误: {e}", "created": 0}
+
+    scope_verbs = verbs if verbs else None
+    failed: List[int] = []
+    created = 0
+    for coder in coder_ids:
+        if assign_task(
+            coder, category, task_type, scope_verbs, admin,
+            round=new_round, training=None,
+        ):
+            created += 1
+        else:
+            failed.append(coder)
+    logger.info(
+        f"重标审计：范畴 {category}/{task_type} 轮次 {round}→{new_round}，"
+        f"义位 {eligible}，历史标注人 {coder_ids}，建任务 {created} 条"
+        f"（失败 {failed}，跳过 {skipped}），发起人 user {admin}，"
+        f"actor={getattr(actor, 'get', lambda k: None)('username')}"
+    )
+    return {
+        "ok": True,
+        "reannotation_round": new_round,
+        "created": created,
+        "failed_coder_ids": failed,
+        "eligible_sense_ids": eligible,
+        "skipped": skipped,
+        "coder_ids": coder_ids,
+        "note": None if not failed else "部分标注人建任务失败，详见服务端日志",
+        "error": None,
+    }

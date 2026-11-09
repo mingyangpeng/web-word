@@ -3,8 +3,10 @@
 本包是 ToolSpec 插件契约的家：
   * src/tools/registry.py —— 中央注册表（register/get_tool/list_tools/
     tools_for_stage 等公共符号在此导出）；
-  * src/tools/builtin/ —— 内置试点三工具（典型性 / 语义检索 / 模板），
-    导入 src.tools.builtin 即完成注册。
+  * src/tools/builtin/ —— 内置工具（FX-18 十类补全：admission/
+    feature_coding/alignment/reliability/clustering/typicality/schema/
+    template/semantic_search/corpus_evidence ＋ multimedia，run 均
+    薄包装委托既有实现），导入 src.tools.builtin 即完成注册。
 
 纯进程内注册表：不建表、不查库、零新依赖。
 

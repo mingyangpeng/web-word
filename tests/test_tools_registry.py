@@ -41,10 +41,11 @@ from src.tools.registry import (  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _isolate_registry():
-    """每用例前后快照/还原注册表、启用位与探针，测试互不污染。"""
+    """每用例前后快照/还原注册表、启用位、探针与 DB loader 缝，测试互不污染。"""
     snap_tools = dict(reg._REGISTRY)
     snap_enabled = set(reg._ENABLED)
     snap_probes = dict(reg._DEP_PROBES)
+    snap_loader = reg._DB_ENABLED_LOADER
     yield
     reg._REGISTRY.clear()
     reg._REGISTRY.update(snap_tools)
@@ -52,6 +53,7 @@ def _isolate_registry():
     reg._ENABLED.update(snap_enabled)
     reg._DEP_PROBES.clear()
     reg._DEP_PROBES.update(snap_probes)
+    reg.set_db_enabled_loader(snap_loader)
 
 
 def _spec(tool_id: str = "dummy", stage: str = "dummy_stage", **kw) -> ToolSpec:
@@ -298,7 +300,14 @@ class TestBuiltinTools:
         assert tool.params_schema                    # 参数 schema 非空
 
     def test_three_pilots_registered(self):
-        assert {t.id for t in list_tools()} == set(EXPECTED_BUILTIN_FIELDS)
+        # FX-18 十类补全后注册表共 11 工具（十类＋multimedia）；
+        # 试点三工具仍是全量注册集合的子集，工具总数由 test_fx18_fixes 钉死。
+        assert set(EXPECTED_BUILTIN_FIELDS) <= {t.id for t in list_tools()}
+        assert {t.id for t in list_tools()} == {
+            "admission", "alignment", "clustering", "corpus_evidence",
+            "feature_coding", "multimedia", "reliability", "schema",
+            "semantic_search", "template", "typicality",
+        }
 
     def test_stage_lookup_finds_pilots(self):
         assert "typicality" in {t.id for t in tools_for_stage("clustering")}

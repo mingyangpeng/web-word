@@ -6,6 +6,7 @@
 > FX-16（本台账核销＋README/ARCHITECTURE/DEPLOYMENT/CHANGELOG 成片刷新＋母本/spec 矛盾修复）。
 > 陈账核销：R2 全包、R1-1～R1-10（FX2，批次 12）、R3-1～R3-9（FX，批次 12 前置，1520 绿）、
 > RV-1 全包 13 项（FX-A，b421018）、RV-3 全包 8 项（RV3-1 由 FX8 f1e2c81，其余 FX-B b421018）、RV-5 全包 15 项（FX8 f1e2c81＋FX-C b421018）。
+> 批次 14（2026-11-09，FX-18/19/20）已入账：规范×实现对账①组「阶段 1 应落地未落」七项全落地——FX-18 工具激活链（两步激活 DB 位/内置工具 11 注册/pack 自检）、FX-19 协同度量五指标、FX-20 改派＋assignments round/training 列＋G2 重标闭环，详见文末「批次 14」节。
 > 未修项一律保留 [ ] 并在条目内注明状态；R5-11~14、R8-5~8/10 详情缺失于台账重构（见 R5/R8 各节）。
 > 本台账记录待修队列；每笔修复后勾销并标 agent/提交号。
 
@@ -81,9 +82,14 @@
 
 > FX-15 以 spec（平台架构设计规范 v5.1）逐条核对实现，三类差异原样入账：
 
-**① 阶段 1 应落地未落**：内置工具仅注册 3/10；两步激活缺 available 位与
-category_tool_settings/settings_audit 接线；pack 自检无；改派无入口；
-assignments 缺 round/training 列；协同度量缺 5 指标；G2 缺修订重标闭环与矩阵导出。
+**① 阶段 1 应落地未落**——七项已全部落地（批次 14，2026-11-09，逐项勾销如下）：
+- [x] ①1 两步激活缺 available 位与 category_tool_settings/settings_audit 接线——新建 src/tool_settings_db.py（两表入 CREATE_TABLES_SQL；available_set/unset=平台管理员、enabled_set/unset=词典管理员且 available 先行；审计行 who/when/action/old→new 全留痕）；registry 挂 _DB_ENABLED_LOADER 缝（DB 位优先回落进程位）＋reset_registry_state 复位钩子；新建范畴与工具页两区开关即写即审计（FX-18）
+- [x] ①2 内置工具仅注册 3/10——十类工具＋multimedia 共 11 个 ToolSpec 全注册：三标注工具（admission/feature_coding/alignment）以 task_type 委托 submit_annotation，其余八类薄包装委托既有数据层函数；页面接线归阶段 2，docstring 阶段口径沿用 R6-2 纪律（FX-18）
+- [x] ①3 pack 自检无——新建 src/tools/pack_check.py pack_selfcheck(category)：pack 引用 ⊆ 注册表＋启用态校验接 DB loader；无引用范畴返回「无工具引用，通过」（FX-18）
+- [x] ①4 改派无入口——annotation_flow.reassign_assignment 五道闸（actor 权限/状态 ∈ 可改派集（规范 draft/rejected 提法以码为准映射 open 态）/非现承包人/同项目在册＋账号在用/乐观并发 UPDATE WHERE status 复验）＋日志留痕；任务分配 tab 加改派操作（FX-20）
+- [x] ①5 assignments 缺 round/training 列——ALTER-only 幂等迁移（information_schema 探测缺列才加）：round INT NULL/training TINYINT(1) NULL（NULL 口径按 RV2-3）；分派表单轮次/试标轮可选输入＋看板 R2/试标徽章；重标任务 round+1 落列（**mysql_db.py ALTER-only 清单由 FX-21 并行补记**）（FX-20）
+- [x] ①6 协同度量缺 5 指标——新建 src/collab_metrics.py 接入协同度量页五卡：AI-人一致率（adopted÷已裁决草稿提案，modified 保守不入分子）/标注节省量（(采纳＋修改采纳)×3.0 分钟/条，工程估算徽章）/打回率（review_tasks verdict 只读：(打回＋否决)÷已出结论轮）有源即算；替换测试与体例质检通过率无数据源→灰注占位不编数字（FX-19）
+- [x] ①7 G2 缺修订重标闭环与矩阵导出——annotation_flow.create_reannotation_tasks（逐义位校验裁决状态（CAST 显式 COLLATE utf8mb4_unicode_ci 修 1267 混排）＋历史标注人各建 round+1 任务＋scope_verbs=受影响义位动词）＋任务分配 tab「发起重标」入口＋list_divided_senses 台账读面；特征矩阵导出核实已在码（入口在信度报告页，原述「缺导出」就此更正）（FX-20）
 
 **② 规范超前属阶段 2**：用户上下文 5 表 / 广播 / 登录三分支 / 七区分组 /
 AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清单。
@@ -182,3 +188,33 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] P3 RV12-6 streamlit>=1.41（options 收缩回落行为；requirements 侧 FX-11 落）
 - [x] P3 RV12-7 main() docstring「十六页」→「十七页（16 显式分支 + search 兜底）」
 - 口径定版：PAGE_KEYS=17（test_page_guides 锁死）；使用说明书「17 页」正确，验收报告「14 键」为批次 9 前旧口径（留档不改）
+
+## 批次 14（2026-11-09 · 规范对账①组落地：工具激活链/五指标/任务域）
+
+> 三路并行交付，「规范×实现对账」①组「阶段 1 应落地未落」七项全落地：
+> FX-18 工具激活链（tests/test_fx18_fixes.py **61 passed**，含两步激活往返/审计/越权拒/页面 AppTest）、
+> FX-19 协同度量（tests/test_fx19_fixes.py 新增 25＋test_collab_pages.py 43＝**68 passed**）、
+> FX-20 任务域（tests/test_fx20_fixes.py **69 passed**，含真库端到端）。
+> 三件新测试文件合计 155 passed；全量回归（现收集口径 2152 项）待收口统一跑，届时更新顶部总述数字。
+
+**FX-18 工具激活链**：
+- 两步激活 available 位持久化：新建 src/tool_settings_db.py——category_tool_settings＋settings_audit 两表入 CREATE_TABLES_SQL；available_set/unset=平台管理员、enabled_set/unset=词典管理员且 available 先行约束；审计行 who/when/action/old→new 全留痕
+- src/tools/registry.py 挂 _DB_ENABLED_LOADER 缝：DB 位优先、回落进程位；reset_registry_state 复位钩子
+- 新建 src/categories_tools_page.py（范畴与工具页）：available/enabled 两区开关即写即审计
+- 内置工具注册补全 3/10→11：十类工具＋multimedia 共 11 个 ToolSpec 全注册——三标注工具（admission/feature_coding/alignment）以 task_type 委托 submit_annotation，reliability/clustering/typicality/schema/template/semantic_search/corpus_evidence/multimedia 八类薄包装委托既有数据层函数；页面接线归阶段 2，docstring 阶段口径沿用 R6-2 纪律
+- pack 自检：新建 src/tools/pack_check.py pack_selfcheck(category)——pack 引用 ⊆ 注册表＋启用态校验接 DB loader；无引用范畴返回「无工具引用，通过」（测试含 tmp_path 沙箱 pack 与 loader 联动）
+
+**FX-19 协同度量**：
+- 新建 src/collab_metrics.py，协同度量页 _render_five_metrics 五卡接入（口径 tooltip＋数据源 caption＋DB 离线整卡降级）
+- 有源三指标即算：AI-人一致率（台账三值裁决口径：adopted÷已裁决草稿提案，modified 保守不入分子）；标注节省量（(采纳＋修改采纳)×3.0 分钟/条，工程估算徽章）；打回率（writing_db.review_tasks verdict 只读：(打回＋否决)÷已出结论轮）
+- 无数据源两指标（替换测试通过率/体例质检通过率）→灰注占位不编数字，宁缺毋假
+
+**FX-20 任务域**：
+- 改派入口：annotation_flow.reassign_assignment 五道闸（actor 权限/状态 ∈ 可改派集（规范 draft/rejected 提法以码为准映射 open 态）/非现承包人/同项目在册＋账号在用/乐观并发 UPDATE WHERE status 复验）＋日志留痕；任务分配 tab 改派操作（src/dict_admin_pages.py）
+- assignments round/training 列：ALTER-only 幂等迁移（information_schema 探测→缺列才加；round INT NULL/training TINYINT(1) NULL，NULL 口径按 RV2-3 规范：未设轮次=NULL）；分派表单轮次/试标轮可选输入＋看板 R2/试标徽章；重标任务 round+1 落列——**mysql_db.py ALTER-only 清单与 grant 脚本由 FX-21 并行补记**
+- G2 修订→重标闭环：annotation_flow.create_reannotation_tasks（category/sense_ids/旧轮→逐义位校验裁决状态（_CS_STATUS_SQL 映射，CAST 显式 COLLATE utf8mb4_unicode_ci 修 1267 混排）、历史标注人各建 round+1 任务、scope_verbs=受影响义位动词、None actor=系统作业）；任务分配 tab「发起重标」入口；list_divided_senses 台账读面（含 merged_into 列幂等补列哨兵）
+- 特征矩阵导出核实：信度报告页已有 ✅（①组原述「缺导出」就此更正——已在码，入口在信度报告页）
+
+**顺带修复两处**：
+- 🔴 src/tools/registry.py reset_registry_state 的 `_DB_ENABLED_LOADER = None` 原为函数局部赋值（缺 global），loader 解绑从未生效——FX-20 收尾时发现并修复
+- annotation_flow._query 补 docstring（fx5 契约）；test_fx20 修 3 处断言口径（迁移计数按 ALTER 计/整数串 id 合法清洗/杂类型 actor 用字符串构造）
