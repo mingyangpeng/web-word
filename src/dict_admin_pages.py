@@ -135,6 +135,15 @@ FX-26（体例质检 UI 入口，接 FX-25 引擎 src/style_check.py 的公开�
   「系统作业」（RV2-3 留痕口径）。本段只做渲染与执行入口，不重复实现任何
   检查逻辑；motion 现状（run #1：3 过/1 未过/1 警告，DEFINING_VOCAB 未过=
   词表待编者核定）由数据如实展示，不做特判文案。
+
+FX-30（规范 §8②组「项目广播」发布入口）：项目成员 tab 在项目自检之后追加
+  「📢 项目广播」段 _render_broadcast_section —— 词典管理员选中的项目下
+  标题＋正文 form 发布（调用点 guards.require_dict_admin 中央闸门，纵深防御
+  同页写路径口径；数据层 publish_broadcast 内 require_role＋项目在册校验
+  再兜一道），成功 ui_kit.flash ＋ st.rerun（RV12-2）；下方该项目广播历史
+  小表（broadcast_db.list_broadcasts 倒序，published_by=NULL 显示「系统作业」
+  RV2-3 口径），取数失败灰注、无广播引导文案；widget key 前缀 'dict_admin_bc_'
+  （本页自订规则）。展示面（收件箱顶部广播条）在 collab_pages（FX-30 同批）。
 """
 
 import hashlib
@@ -149,6 +158,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import streamlit as st
 
 from src import ai_ledger, annotation_flow, dict_admin_db, export_center, media_db, org_db
+from src import broadcast_db  # FX-30：项目广播数据层（发布入口在本页项目成员 tab）
 from src import mysql_db, writing_db  # FX-24：存疑义位/待我审校只读取数（不写这两层）
 from src import registry_db
 from src import pipeline_status, style_check, users_db  # style_check：FX-25 质检引擎（FX-26 UI 入口只调不实现）
@@ -1748,6 +1758,115 @@ def _render_members_tab(me: Dict[str, Any]) -> None:
         st.success("✓ 项目自检通过：chief 齐备且账号在用。")
     else:
         st.error("项目自检发现问题：" + "；".join(_esc(x) for x in problems))
+
+    # FX-30：项目广播发布入口（规范 §8②组；段口径见 _render_broadcast_section）
+    st.divider()
+    _render_broadcast_section(project_id, me)
+
+
+# ============================================
+# FX-30：项目广播（发布入口 ＋ 历史小表）
+# ============================================
+
+# 发布页广播历史小表条数（与 broadcast_db.LIST_LIMIT_DEFAULT 同口径收口）
+FX30_BROADCAST_HISTORY = 20
+
+
+def _broadcast_history_rows(items: List[Dict[str, Any]]) -> List[List[str]]:
+    """广播历史小表行：时间/标题/正文/发布者（正文截断防长文拖垮表格）。"""
+    rows: List[List[str]] = []
+    for it in items:
+        publisher = it.get("published_by")
+        if publisher is None:
+            publisher_text = "系统作业"          # RV2-3 留痕列第 1 类口径
+        else:
+            publisher_text = _esc(
+                it.get("publisher_display_name")
+                or it.get("publisher_username")
+                or f"#{publisher}",
+            )
+        body = str(it.get("body") or "")
+        if len(body) > 80:
+            body = body[:80] + "…"
+        rows.append([
+            _esc(str(it.get("created_at") or "")),
+            _esc(str(it.get("title") or "")),
+            _esc(body),
+            publisher_text,
+        ])
+    return rows
+
+
+def _render_broadcast_history(project_id: int) -> None:
+    """项目广播历史小表（list_broadcasts 倒序；三态：失败灰注/空引导/表格）。"""
+    items = broadcast_db.list_broadcasts(
+        project_id, limit=FX30_BROADCAST_HISTORY)
+    if not items:
+        # list_broadcasts 降级与「真 0 条」同形（都返回 []）：表格缺席即
+        # 空/降级态，引导文案如实注明两种可能，不编历史行（宁缺毋假）。
+        st.caption("📢 该项目暂无广播记录（或数据库暂不可用，稍后重试）。")
+        return
+    st.markdown(f"<h4 style='{HEADER_H3}'>🗂️ 该项目广播历史</h4>",
+                unsafe_allow_html=True)
+    st.caption(
+        f"共 {len(items)} 条（最新在前，上限 {FX30_BROADCAST_HISTORY} 条）；"
+        "发布者「系统作业」= 系统作业留痕（RV2-3 口径）。"
+    )
+    _render_table(["时间", "标题", "正文", "发布者"],
+                  _broadcast_history_rows(items))
+
+
+def _render_broadcast_section(project_id: int, me: Dict[str, Any]) -> None:
+    """📢 项目广播段（FX-30，规范 §8②组「项目广播」发布入口）。
+
+    词典管理员在本 tab 选中的项目下：标题＋正文 form 发布 → 数据层
+    publish_broadcast（内含 require_role 词典管理员闸＋项目在册校验），
+    调用点先过 guards.require_dict_admin 中央闸门（纵深防御，同页媒体/
+    快照写路径 R1-8 口径）；成功 ui_kit.flash ＋ st.rerun（RV12-2，
+    禁 st.success 回潮）；title/body 缺失/项目不在册/库失败按数据层
+    None 返回转 st.warning 灰注；PermissionError 转 st.error。
+    下方渲染该项目广播历史小表（本 tab 收起状态不阻塞渲染）。
+    """
+    st.markdown(f"<h4 style='{HEADER_H3}'>📢 项目广播（项目成员全员可见）</h4>",
+                unsafe_allow_html=True)
+    st.caption(
+        "广播面向该项目全体成员公示（规范 §8：项目广播归词典管理员；"
+        "成员在「🤖 AI 协作 → 📥 协作收件箱」顶部看到最新广播）。"
+    )
+    with st.form("dict_admin_broadcast_form", clear_on_submit=True):
+        title = st.text_input(
+            "广播标题（必填，≤200 字符）", key="dict_admin_bc_title",
+        )
+        body = st.text_area(
+            "广播正文（必填）", height=120, key="dict_admin_bc_body",
+        )
+        submitted = st.form_submit_button("📢 发布广播", use_container_width=True)
+    if not submitted:
+        _render_broadcast_history(project_id)
+        return
+    # R1-8：发布广播是项目公示写路径 —— 调用点中央闸门（同 add_member 口径）
+    try:
+        guards.require_dict_admin()
+        new_id = broadcast_db.publish_broadcast(project_id, title, body, actor=me)
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        _render_broadcast_history(project_id)
+        return
+    except Exception as e:  # 防御性转译：数据层理论不抛，异常不崩页
+        logger.warning(f"publish_broadcast 意外失败（project={project_id}）: {e}")
+        st.warning("广播未发布：数据层返回异常（详见服务端日志），请稍后重试。")
+        _render_broadcast_history(project_id)
+        return
+    if new_id is not None:
+        ui_kit.flash(f"📢 广播已发布（#{new_id}）：项目 {project_id} 成员将在"
+                     "协作收件箱顶部看到本条广播。")
+        logger.info(f"dict_admin {me.get('username')} 向项目 {project_id} "
+                    f"发布广播 #{new_id}")
+        st.rerun()
+    else:
+        st.warning("广播未发布：标题/正文为空、标题超 200 字符、项目不在册"
+                   "或数据库不可用（broadcast_db 已记日志）。")
+        _render_broadcast_history(project_id)
 
 
 # ============================================
@@ -3638,6 +3757,7 @@ def render_dict_admin_page() -> None:
     dict_admin_db.ensure_dict_admin_tables()
     media_db.ensure_media_tables()
     registry_db.ensure_resource_registry_tables()
+    broadcast_db.ensure_broadcast_table()  # FX-30：项目广播表随页面自举就位
 
     st.markdown(f"<h1 style='{HEADER_H1}'>📖 词典管理</h1>", unsafe_allow_html=True)
     st.markdown(

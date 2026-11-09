@@ -1,0 +1,376 @@
+"""FX-29 回归：登录落地三分支（规范②组）＋ corpus_evidence 工具页面接线。
+
+规范《平台架构设计规范.md》§9 L242-243 原文（实现以此为准）：
+  「登录落地三分支：有待办→协作收件箱；有续接点→上次位置（侧边栏「继续：…」）；
+    首次→搜索释义。……」
+
+五道锁：
+  1. 落地解析锁（单元，纯会话计算不触库）：三分支解析按规范语序 ——
+     有待办→ai_hub；有续接点→上次位置（loader 缝）；首次→search；
+     分支目标一律过 _visible_page_keys 角色可见集过滤（隐藏页视同未命中）；
+  2. 优先级锁：分支序即规范语序 —— 有待办压过续接点；
+  3. 落地写页锁（AppTest 真登录表单）：登录成功那一刻 session_state["page"]
+     按三分支写入（无待办→search；有待办→ai_hub，viewer 亦然 ——
+     ai_hub 六角色全可见）；
+  4. 不劫持锁（AppTest）：落地后手动切页（radio 点选）即生效并跨轮保持
+     —— 落地解析只在登录成功路径跑一次，不进每轮渲染；
+  5. 接线等价锁（AppTest＋打桩）：语料页搭配明细两处调用经 corpus_evidence
+     工具 run —— monkeypatch 数据层函数 mysql_db.get_corpus_collocations，
+     断言 tool.run 收到的正是原直调参数（verb/slot/limit 逐字段一致，含
+     params_schema 合并出的 slot=None 默认），返回行列表契约不变。
+
+口径注记（照实，不遮掩）：
+  * 分支 2「续接点」：用户上下文域（src/user_context_db，FX-31）的 user_state
+    为键值面，「键 → 落地页」的页级换算与 set_resume_page_loader 绑定归其
+    接线方 —— 本批只锁缝的行为（单元面测）。loader 缝只能在单元面测
+    （AppTest 以脚本形态执行 app.py，script 命名空间的模块级缝无法从测试
+    侧绑定）；AppTest 侧分支 2 恒不命中（由分支 1/3 用例覆盖）。
+  * semantic_search_tool 未在本批接线：其 search_similar_senses 调用点在
+    src/semantic_search.py（不在 app.py 托管面内），且 params_schema 不含
+    页面级缓存 index（merge_params 丢弃非 schema 键）—— 接线欠账归后续批
+    （需工具 owner 扩 params_schema 收 index 后补接）。
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
+
+import pytest  # noqa: E402
+
+import src.app as app_module  # noqa: E402
+import src.collab_pages as collab_pages  # noqa: E402
+import src.mysql_db as db  # noqa: E402
+from src.page_guides import PAGE_KEYS  # noqa: E402
+from src.users_db import create_user, ensure_user_tables  # noqa: E402
+
+# ============================================
+# 探针会话（纯会话计算，不触库；结构与 verify_login_full 输出一致）
+# ============================================
+_ADMIN = {"id": 901, "username": "fx29_admin", "display_name": "管理员",
+          "role": "admin", "roles": ["dict_admin", "sys_admin"]}
+_ANNOTATOR = {"id": 902, "username": "fx29_ann", "display_name": "标注员",
+              "role": "annotator", "roles": ["annotator"]}
+_VIEWER = {"id": 903, "username": "fx29_view", "display_name": "只读",
+           "role": "viewer", "roles": ["viewer"]}
+
+
+@pytest.fixture(autouse=True)
+def _reset_resume_loader():
+    """loader 缝复位（autouse）：模块级缝不跨用例泄漏。"""
+    yield
+    app_module.set_resume_page_loader(None)
+
+
+# ============================================
+# 1+2. 落地解析锁 / 优先级锁（单元，不触库）
+# ============================================
+
+@pytest.mark.parametrize("user", [_ADMIN, _ANNOTATOR, _VIEWER],
+                         ids=["admin", "annotator", "viewer"])
+def test_first_login_lands_search(user, monkeypatch):
+    """分支 3「首次」：无待办且无续接点 → 搜索释义（全角色）。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+    assert app_module._landing_page_for(user) == "search"
+
+
+@pytest.mark.parametrize("user", [_ADMIN, _ANNOTATOR, _VIEWER],
+                         ids=["admin", "annotator", "viewer"])
+def test_pending_todo_lands_collab_inbox(user, monkeypatch):
+    """分支 1「有待办」：pending(draft/audit) > 0 → 协作收件箱 ai_hub。
+
+    ai_hub 六角色全可见（_PAGE_ACCESS_SIX["ai_hub"]=NEW_ROLES），viewer 亦然；
+    待办信号源与侧边栏「🤖 AI 待办」徽章同一函数（pending_inbox_count）。
+    """
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 2)
+    assert app_module._landing_page_for(user) == "ai_hub"
+
+
+def test_pending_zero_counts_as_first_time(monkeypatch):
+    """pending_inbox_count()=0（库不可用/表未建/无待办的同口径）→ 非分支 1。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+    assert app_module._landing_page_for(_ANNOTATOR) == "search"
+
+
+def test_resume_point_lands_last_page(monkeypatch):
+    """分支 2「有续接点」：loader 读到上次工作页 → 落地该页（角色可见）。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+    app_module.set_resume_page_loader(lambda uid: "cluster")
+    assert app_module._landing_page_for(_ADMIN) == "cluster"
+
+
+def test_resume_none_means_first_time(monkeypatch):
+    """loader 未读到续接点（None）→ 视同首次 → 搜索释义。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+    app_module.set_resume_page_loader(lambda uid: None)
+    assert app_module._landing_page_for(_ADMIN) == "search"
+
+
+def test_pending_takes_priority_over_resume(monkeypatch):
+    """优先级锁（规范语序即分支序）：有待办压过续接点。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 1)
+    app_module.set_resume_page_loader(lambda uid: "cluster")
+    assert app_module._landing_page_for(_ADMIN) == "ai_hub"
+
+
+def test_resume_filtered_by_role_visibility(monkeypatch):
+    """续接点指向该角色不可见页（dict_admin 对 viewer 隐藏）→ 视同未命中，
+    顺序取分支 3；同一续接点对 dict_admin 可见则照常落地。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+    app_module.set_resume_page_loader(lambda uid: "dict_admin")
+    assert app_module._landing_page_for(_VIEWER) == "search"
+    assert app_module._landing_page_for(_ADMIN) == "dict_admin"
+
+
+def test_resume_junk_key_falls_through(monkeypatch):
+    """续接点为未知页键（不在 PAGE_KEYS，必不在可见集）→ 视同未命中。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+    app_module.set_resume_page_loader(lambda uid: "mystery")
+    assert app_module._landing_page_for(_ADMIN) == "search"
+
+
+def test_loader_failure_falls_through_to_search(monkeypatch):
+    """loader 抛异常 → 按无续接点降级（fail-open 到下一分支），不外抛。"""
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 0)
+
+    def _boom(uid):
+        raise RuntimeError("user_state 不可读")
+
+    app_module.set_resume_page_loader(_boom)
+    assert app_module._landing_page_for(_ADMIN) == "search"
+
+
+def test_landing_targets_always_valid_page_keys(monkeypatch):
+    """路由契约哨兵：三分支落地键必属 PAGE_KEYS（键集 17 键不变）。"""
+    assert len(PAGE_KEYS) == 17
+    monkeypatch.setattr(app_module, "pending_inbox_count", lambda: 2)
+    app_module.set_resume_page_loader(lambda uid: "cluster")
+    hits = {app_module._landing_page_for(u) for u in (_ADMIN, _ANNOTATOR, _VIEWER)}
+    assert hits <= set(PAGE_KEYS), f"落地键越出 PAGE_KEYS: {hits}"
+    assert hits == {"ai_hub"}  # 有待办压过续接点：三角色全落 ai_hub
+
+
+# ============================================
+# AppTest 测试库（建库失败 → 仅 AppTest 用例 skip；单元用例不受影响）
+# ============================================
+
+APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                   "src", "app.py")
+# 预授权测试库（scripts/grant_local_mysql.sql 授权覆盖，自建库名无 GRANT）。
+# 取 writing 系专库：web_word_users_test 被 users/apptest/r1/security 等七模块
+# 共用，与并行验证会话同跑时会出现「他方 fixture 删库 → 本方用户表清空 →
+# fail-closed 登出」的串库竞态；writing 库占用面最小，竞态窗口最小。
+# （pytest 串行约定下各模块 fixture 建库/删库互不重叠 —— 并行会话另论。）
+TEST_DB = "web_word_writing_test"
+TIMEOUT = 180
+
+_USERS = (("fx29_ann", "fx29-ann-pw", "标注员", "annotator"),
+          ("fx29_view", "fx29-view-pw", "只读用户", "viewer"))
+
+
+@pytest.fixture(scope="module")
+def fx29_db():
+    """模块级测试库（test_integration_apptest.r3_env 同约定）：建库→建表→
+    建号，结束后还原全局库名再删库。MySQL 不可用只 skip 依赖它的用例。"""
+    import pymysql
+
+    try:
+        conn = pymysql.connect(
+            host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
+            password=db.MYSQL_PASSWORD, charset=db.MYSQL_CHARSET,
+            cursorclass=pymysql.cursors.DictCursor, connect_timeout=3,
+            autocommit=True,
+        )
+        cur = conn.cursor()
+        cur.execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
+        cur.execute(
+            f"CREATE DATABASE {TEST_DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        )
+        conn.close()
+    except pymysql.err.OperationalError as e:
+        pytest.skip(f"MySQL 不可用或账号无建库权限，跳过 FX-29 AppTest 用例: {e}")
+
+    old_db = db.MYSQL_DATABASE
+    db.MYSQL_DATABASE = TEST_DB
+    try:
+        assert db.init_database(), "测试库初始化失败"
+        ensure_user_tables()
+        for username, password, display_name, role in _USERS:
+            uid = create_user(username, password, display_name, role)
+            assert isinstance(uid, int) and uid > 0, f"建测试账号失败: {username}"
+        yield
+    finally:
+        db.MYSQL_DATABASE = old_db  # 先还原全局再删库（与 r3_env 同约定）
+        conn = pymysql.connect(
+            host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
+            password=db.MYSQL_PASSWORD, charset=db.MYSQL_CHARSET,
+            cursorclass=pymysql.cursors.DictCursor, connect_timeout=3,
+            autocommit=True,
+        )
+        conn.cursor().execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
+        conn.close()
+
+
+def _new_at():
+    from streamlit.testing.v1 import AppTest
+
+    return AppTest.from_file(APP, default_timeout=TIMEOUT)
+
+
+def _pget(at, key, default=None):
+    """AppTest 会话读取（SafeSessionState 不支持 .get()）。"""
+    try:
+        return at.session_state[key]
+    except Exception:  # noqa: BLE001
+        return default
+
+
+def _form_login(at, username: str, password: str):
+    """侧边栏登录表单真实提交（与 test_integration_apptest 同一手法）。"""
+    inputs = {t.key: t for t in at.sidebar.text_input}
+    inputs["login_username"].set_value(username)
+    inputs["login_password"].set_value(password)
+    submit = [b for b in at.sidebar.button
+              if b.form_id and "登录" in str(b.label)]
+    assert submit, "登录提交按钮未找到"
+    submit[0].click()
+    at.run()
+    return at
+
+
+def _page_radio(at):
+    """侧边栏「页面」radio（key="page" 路由契约不变）。"""
+    radios = [r for r in at.sidebar.radio if r.label == "页面"]
+    assert radios, "页面 radio 未渲染"
+    return radios[0]
+
+
+# ============================================
+# 3. 落地写页锁（AppTest 真登录表单）
+# ============================================
+
+def test_login_first_time_lands_search(fx29_db, monkeypatch):
+    """真登录表单：无待办 → 落地搜索释义（分支 3「首次」）。"""
+    monkeypatch.setattr(collab_pages, "pending_inbox_count", lambda: 0)
+    at = _new_at()
+    at.run()
+    assert not at.exception, [str(e.value) for e in at.exception]
+    assert _pget(at, "user") is None
+    assert _pget(at, "page") == "search"  # 未登录残留页回退（既有口径）
+
+    at = _form_login(at, "fx29_ann", "fx29-ann-pw")
+    assert not at.exception, [str(e.value) for e in at.exception]
+    user = _pget(at, "user")
+    assert isinstance(user, dict) and user["username"] == "fx29_ann"
+    assert _pget(at, "page") == "search", "登录落地（首次）应为搜索释义"
+
+
+def test_login_with_pending_lands_ai_hub(fx29_db, monkeypatch):
+    """真登录表单：有待办 → 落地协作收件箱；viewer 亦然（ai_hub 全角色）。
+
+    登录前残留页为 search（未登录回退），登录后被落地改写为 ai_hub ——
+    证明「落地写页」确实发生在登录成功那一刻。
+    """
+    monkeypatch.setattr(collab_pages, "pending_inbox_count", lambda: 2)
+    at = _new_at()
+    at.run()
+    assert _pget(at, "page") == "search"
+
+    at = _form_login(at, "fx29_view", "fx29-view-pw")
+    assert not at.exception, [str(e.value) for e in at.exception]
+    user = _pget(at, "user")
+    assert isinstance(user, dict) and user["username"] == "fx29_view"
+    assert _pget(at, "page") == "ai_hub", "登录落地（有待办）应为协作收件箱"
+
+
+# ============================================
+# 4. 不劫持锁（AppTest：落地后手动切页）
+# ============================================
+
+def test_manual_page_switch_after_landing_not_hijacked(fx29_db, monkeypatch):
+    """落地后手动切页不被劫持：radio 点选即生效并跨轮保持。
+
+    落地解析只在登录成功路径跑一次 —— 切页、再跑一轮（无任何输入）后
+    页面停留在用户选择，不弹回 ai_hub。
+    """
+    monkeypatch.setattr(collab_pages, "pending_inbox_count", lambda: 2)
+    at = _new_at()
+    at.run()
+    at = _form_login(at, "fx29_ann", "fx29-ann-pw")
+    assert _pget(at, "page") == "ai_hub", "前置：登录落地协作收件箱"
+
+    _page_radio(at).set_value("search")
+    at.run()
+    assert _pget(at, "page") == "search", "手动切页即生效"
+
+    _page_radio(at).set_value("graph")
+    at.run()
+    assert _pget(at, "page") == "graph"
+
+    at.run()  # 再跑一轮（无输入）—— 不被劫持回 ai_hub
+    assert not at.exception, [str(e.value) for e in at.exception]
+    assert _pget(at, "page") == "graph", "落地不得劫持用户手动切页"
+
+
+# ============================================
+# 5. 接线等价锁（AppTest＋打桩：corpus_evidence tool.run 参数透传）
+# ============================================
+
+# 语料页只读面打桩的 canned 行（列结构与 mysql_db.get_corpus_collocations 一致）
+_COLLS = [
+    {"id": 1, "slot": 'objects of "%w"', "rank_in_slot": 1, "collocate": "table",
+     "logdice": 10.5, "cooccur_count": 120, "typical_combo": "",
+     "combo_freq": 0, "semantic_category": "", "keep_flag": ""},
+    {"id": 2, "slot": 'objects of "%w"', "rank_in_slot": 2, "collocate": "chair",
+     "logdice": 9.4, "cooccur_count": 80, "typical_combo": "",
+     "combo_freq": 0, "semantic_category": "", "keep_flag": ""},
+]
+
+_OVERVIEW_ROW = {"verb": "walk", "lpos": "V", "freq": 1000, "relfreq": 10.0,
+                 "slot_count": 2, "collocate_count": 50,
+                 "candidate_schema": "", "max_score": 0.5}
+
+
+def test_corpus_page_routes_through_registry_tool(fx29_db, monkeypatch):
+    """语料页搭配明细两处调用经 corpus_evidence 工具 run —— 页面原直调参数
+    原样透传（逐字段断言 tool.run → 数据层收到的 kwargs）：
+      * 全槽位枚举：get_corpus_collocations(picked, limit=2000)
+        → run({"verb": picked, "limit": 2000}) → 数据层 (verb, slot=None, 2000)
+        （slot=None 为 params_schema 默认值合并补齐，与原直调的形参默认等价）；
+      * 单槽位明细：get_corpus_collocations(picked, slot=slot, limit=100)
+        → run({"verb": picked, "slot": slot, "limit": 100})。
+    返回行列表契约不变：canned 行进入可编辑明细，页面渲染无异常。
+    """
+    calls = []
+
+    def fake_collocations(**kwargs):
+        calls.append(dict(kwargs))
+        return [dict(r) for r in _COLLS]
+
+    # 数据层打桩：工具 run 经 mysql_db 模块属性查找委托 → 桩必经 tool.run
+    monkeypatch.setattr(db, "get_corpus_collocations", fake_collocations)
+    # 页面其余只读面一并打桩（本用例聚焦接线等价性，不依赖语料库灌数）
+    monkeypatch.setattr(db, "corpus_dataset_ready", lambda: True)
+    monkeypatch.setattr(db, "get_corpus_overview", lambda: [dict(_OVERVIEW_ROW)])
+    monkeypatch.setattr(db, "get_corpus_word_stats",
+                        lambda verb: {"freq": 1000, "relfreq": 10.0,
+                                      "slot_count": 2, "collocate_count": 50})
+    monkeypatch.setattr(db, "get_corpus_schema_scores", lambda verb: [])
+    monkeypatch.setattr(db, "get_corpus_schema_evidence", lambda verb, top_n=5: [])
+
+    at = _new_at()
+    at.session_state["page"] = "corpus"
+    at.run()
+    assert not at.exception, [str(e.value) for e in at.exception]
+
+    # 页面恰好两处取数，全部经注册表工具（原调用点参数原样透传）
+    assert len(calls) == 2, f"搭配明细取数次数漂移: {calls}"
+    assert calls[0] == {"verb": "walk", "slot": None, "limit": 2000}
+    assert calls[1] == {"verb": "walk", "slot": 'objects of "%w"', "limit": 100}
+
+    # 返回值契约不变：明细 section 照常渲染（编辑入口在场）
+    captions = " ".join(str(c.value) for c in at.caption)
+    assert "PS 计算口径" in captions
+    assert "当前槽位：2 行" in captions

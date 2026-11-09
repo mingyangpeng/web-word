@@ -164,3 +164,9 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'127.0.0.1'
 GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- FX-31：用户上下文域 5 表测试库（tests/test_fx31_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;

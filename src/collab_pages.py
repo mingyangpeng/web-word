@@ -9,6 +9,9 @@ docs/help/平台功能使用说明.md §5（AI 协作区）与 §6.6（任务分
     —— probe 探针不进收件箱，这是数据层 docstring 的取数约定，本页遵守）＋
     「我的任务」（assignments 中当前用户 status≠closed 的行，只读）；词典管理员
     另见「全部 pending」视图（台账全部待决行，含收件箱未收录的探针通道）；
+    FX-30 起顶部另有「项目广播」条（broadcast_db.latest_for_user：登录用户
+    在册项目的最新广播，规范 §8「项目广播·收件箱类目」的展示面；无广播
+    不渲染段，库降级灰注）；
   * 📊 协同度量：ai_ledger.get_stats 总卡（总数/待裁决/采纳率，None 显示「—」
     不虚构）＋协同度量五指标卡（FX-19：AI-人一致率/标注节省量/打回率/
     替换测试通过率/体例质检通过率 —— 数据与口径出自 src/collab_metrics.py，
@@ -79,10 +82,11 @@ from src.ai_ledger import (
 )
 from src.annotation_flow import TASK_TYPES as ASSIGNMENT_TASK_TYPES
 from src.annotation_flow import TASK_TYPE_LABELS  # R6-8：单一导出，本模块改引
+from src import broadcast_db  # FX-30：项目广播数据层（收件箱顶部广播条）
 from src import collab_metrics  # FX-19：协同度量五指标数据层（本页薄渲染）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.data_pages import _escape_like  # R2-5：LIKE 转义与 data_pages 同源
-from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
+from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3, get_card_style  # 卡片样式：FX-30 广播条
 from src.mysql_db import get_db_cursor
 from src.org_db import get_projects_for_user
 from src import guards
@@ -965,14 +969,69 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
                   on_click=lambda: st.session_state.update(page="cluster"))
 
 
+# ============================================
+# FX-30 · 收件箱顶部「项目广播」条
+# ============================================
+
+def _render_broadcast_banner(me: Optional[Dict[str, Any]]) -> None:
+    """📢 项目广播条（FX-30，规范 §8「项目广播：…收件箱类目」展示面）。
+
+    登录用户在册项目的最新广播（broadcast_db.latest_for_user 聚合，每项目
+    一条：项目名＋标题＋正文＋时间＋发布者），渲染在收件箱最顶部 —— 广播
+    是「公示」不是「待办」，只读展示、无裁决按钮（发布入口在词典管理区·
+    项目成员 tab，词典管理员职责）。三态：
+      * 未登录/取数失败（None）→ 灰注 caption（库降级，如实注明）；
+      * 空清单（无在册项目或在册项目均无广播）→ 不渲染任何段（规范要求
+        无广播不占版面）；
+      * 非空 → 标题＋逐条卡片（markdown 卡片，插值全过 _html_escape）。
+    published_by=NULL 的广播发布者显示「系统作业」（RV2-3 留痕列第 1 类，
+    与 dict_admin_pages 广播历史小表同口径）。
+    """
+    if not isinstance(me, dict):
+        return                      # 未登录：入口已有登录门，此处兜底不渲染
+    latest = broadcast_db.latest_for_user(int(me.get("id") or 0))
+    if latest is None:
+        st.caption("📢 项目广播取数暂不可用（数据库未就绪），稍后重试。")
+        return
+    if not latest:
+        return                      # 无广播不渲染段（不占收件箱版面）
+    st.markdown(f"<h3 style='{HEADER_H3}'>📢 项目广播</h3>", unsafe_allow_html=True)
+    st.caption(
+        f"您在册项目共 {len(latest)} 条最新广播（每项目一条；发布入口在"
+        "词典管理区·项目成员 tab，词典管理员职责）。"
+    )
+    for b in latest:
+        publisher = b.get("published_by")
+        publisher_text = (
+            "系统作业" if publisher is None
+            else _html_escape(str(b.get("publisher_display_name")
+                                  or b.get("publisher_username")
+                                  or f"#{publisher}"))
+        )
+        card = (
+            f"<div style='{get_card_style()}'>"
+            f"<p style='margin:4px 0;font-weight:700;'>"
+            f"{_html_escape(str(b.get('title') or ''))}</p>"
+            f"<p style='margin:4px 0;white-space:pre-wrap;'>"
+            f"{_html_escape(str(b.get('body') or ''))}</p>"
+            f"<p style='margin:4px 0;color:#718096;font-size:0.9em;'>"
+            f"项目：{_html_escape(str(b.get('project_name') or b.get('project_id') or ''))}"
+            f" ｜ {b.get('created_at') or ''} ｜ 发布者：{publisher_text}</p>"
+            f"</div>"
+        )
+        st.markdown(card, unsafe_allow_html=True)
+
+
 def _render_inbox_tab(me: Dict[str, Any]) -> None:
-    """📥 协作收件箱：待裁决 AI 建议 ＋ 我的任务（＋管理员全部 pending 视图）。
+    """📥 协作收件箱：项目广播条（FX-30）＋ 待裁决 AI 建议 ＋ 我的任务
+    （＋管理员全部 pending 视图）。
 
     「全部 pending / 待我裁决」视图随 _is_admin_like 的六角色升级（R1-2
     同源口径）对授予式管理角色开放；裁决按钮区由 _render_pending_inbox
     按 _can_adjudicate_inbox 收口（R1-5）。
     """
     _pop_flash()
+    _render_broadcast_banner(me)    # FX-30：广播条置顶（公示面，非待办）
     pending = _render_pending_inbox(me)
     if _is_admin_like(me):
         _render_admin_all_pending(len(pending))

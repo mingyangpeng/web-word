@@ -612,8 +612,14 @@ def render_semantic_search_page() -> None:
             f"范畴 {category}（{LANGUAGE_LABELS.get(language, language)}侧）"
             "暂无义位数据。请先运行 scripts/load_category_study.py 灌入语义分析数据。")
         return
-    results = search_similar_senses(vector, category, language,
-                                    top_k=DEFAULT_TOP_K, index=index)
+    from src.tools.registry import get_tool
+    _tool = get_tool("semantic_search")
+    results = (_tool.run({"feature_vector": vector, "category": category,
+                          "language": language, "top_k": DEFAULT_TOP_K,
+                          "index": index})
+               if _tool is not None else
+               search_similar_senses(vector, category, language,
+                                     top_k=DEFAULT_TOP_K, index=index))
     if not results:
         st.warning("没有可与该向量比对的义位（该范畴 / 语言侧没有特征编码数据）。")
         return
