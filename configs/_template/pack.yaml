@@ -24,3 +24,14 @@ selfcheck:
   - schemas 非空且 annotation.mode 定义
   - schemas 引用的每个 evidence_slot 都在 corpus_map.slots 中
   - prompts/screening.txt 存在且含全部占位符
+
+# 工具引用（可省略）：本范畴包消费的工具 id 清单，必须 ⊆ 工具注册表
+# （src/tools/registry.py；架构 §4「pack 引用 ⊆ 注册表」自检，实现见
+# src/tools/pack_check.pack_selfcheck，入口在范畴与工具页）。声明后还须
+# 完成 two-step 激活（平台管理员 available → 词典管理员 enabled），
+# 未启用项自检只警示不阻断。列表项为字符串（工具 id）或 {id: ...} 映射。
+# 示例（按需取消注释并替换为实际启用的工具）：
+# tools:
+#   - typicality
+#   - template
+

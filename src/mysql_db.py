@@ -170,6 +170,9 @@ SCHEMA_VERSION = 11
 #   * users.must_change_password / users.created_by —— src/users_db.py
 #   * cs_clusters.locked / cs_clusters.merged_into —— src/cluster_analysis.py
 #     （G3 复核定稿位 / 簇合并软键，页面入口幂等演进）
+#   * assignments.round / assignments.training —— src/annotation_flow.py
+#     （FX-20 试标轮迁移：round INT NULL / training TINYINT(1) NULL DEFAULT NULL，
+#     _migrate_assignments_round_columns 幂等补列）
 
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
@@ -452,6 +455,52 @@ CREATE_TABLES_SQL = [
         PRIMARY KEY (word, sense_num, ex_num),
         FOREIGN KEY (word, sense_num) REFERENCES domain_family_senses(word, sense_num)
             ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 范畴×工具运行层配置（架构 §7 运行层 / §4 两步激活；D⑥ 资源发布域：
+    #     附录 A 新增表 category_tool_settings(tool_id VARCHAR＋version)）---
+    # 两步激活的两个持久化位同行存放：available（平台管理员：安装/依赖/
+    # selfcheck 就绪）→ enabled（词典管理员：工作方法决策，必须 available
+    # 先行，约束由 src/tool_settings_db.py 在应用层执行）。UNIQUE(category,
+    # tool_id) 保证一范畴一工具一行，置位走 UPDATE 幂等。
+    # 留痕列口径（RV2-3 第 1 类 INT NULL）：updated_by = users.id 软引用
+    # （无 FK —— 本清单在 init_database 建表时 users 表尚不存在，同
+    # ai_proposals.created_by 口径），NULL = 系统作业/无人。
+    """CREATE TABLE IF NOT EXISTS category_tool_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        category VARCHAR(64) NOT NULL COMMENT '范畴名（configs/<category>/ 目录名）',
+        tool_id VARCHAR(64) NOT NULL COMMENT '工具 id（注册表 ToolSpec.id；D⑥ 口径 tool_id VARCHAR）',
+        tool_version VARCHAR(40) NULL COMMENT '最近启用时的工具版本快照（D⑥ 口径 version；未启用为 NULL）',
+        available TINYINT(1) NOT NULL DEFAULT 0 COMMENT '平台管理员 available 位（两步激活第一步）',
+        enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '词典管理员 enabled 位（两步激活第二步，须 available=1）',
+        params JSON NULL COMMENT '运行参数（§7 运行层 enabled＋运行参数；未调参为 NULL）',
+        updated_by INT NULL COMMENT '最近操作人 users.id（软引用无 FK，NULL=系统作业/无人）',
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_category_tool (category, tool_id),
+        INDEX idx_cts_tool (tool_id),
+        INDEX idx_cts_enabled (enabled)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+
+    # --- 运行层操作审计（架构 §6 D⑥ settings_audit / §4 两步激活留痕）---
+    # 谁在何时对哪个 (category, tool_id) 做了什么动作（old→new）。审计日志
+    # 永久保留：actor_id 是软引用（无 FK，同 updated_by 口径），账号删除后
+    # 审计行不消失、id 列保持历史值、username 冗余列仍可读。
+    """CREATE TABLE IF NOT EXISTS settings_audit (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        scope VARCHAR(40) NOT NULL DEFAULT 'tool_settings'
+            COMMENT '审计范围（当前固定 tool_settings：范畴×工具运行层配置）',
+        category VARCHAR(64) NULL COMMENT '范畴名（全局动作无范畴为 NULL）',
+        tool_id VARCHAR(64) NULL COMMENT '工具 id',
+        action VARCHAR(40) NOT NULL COMMENT '动作：available_set/available_unset/enabled_set/enabled_unset',
+        old_value VARCHAR(255) NULL COMMENT '变更前值（JSON 文本；首次设置无旧值为 NULL）',
+        new_value VARCHAR(255) NULL COMMENT '变更后值（JSON 文本）',
+        actor_id INT NULL COMMENT '操作人 users.id（软引用无 FK，审计行永久保留）',
+        actor_username VARCHAR(64) NULL COMMENT '操作人 username 冗余留痕（删号后仍可读）',
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_sa_scope (scope, category, tool_id),
+        INDEX idx_sa_created_at (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
 ]
 

@@ -808,9 +808,11 @@ class TestAssignTask:
         assert assign_task(7, "motion", "admission", ["run", "walk"], 1) is True
         sql, params = cursor.executed[0]
         assert "INSERT INTO assignments" in sql
-        assignee, category, task_type, scope_json, assigned_by = params
+        # FX-20：INSERT 追加 round/training 两列（默认 None 不留痕，RV2-3 口径）
+        assignee, category, task_type, scope_json, assigned_by, round_val, training_val = params
         assert (assignee, category, task_type, assigned_by) == (7, "motion", "admission", 1)
         assert json.loads(scope_json) == ["run", "walk"]
+        assert round_val is None and training_val is None
 
     def test_scope_none_means_all_verbs(self, monkeypatch):
         cursor = _patch_cursor(monkeypatch)

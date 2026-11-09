@@ -10,7 +10,10 @@ docs/help/平台功能使用说明.md §5（AI 协作区）与 §6.6（任务分
     「我的任务」（assignments 中当前用户 status≠closed 的行，只读）；词典管理员
     另见「全部 pending」视图（台账全部待决行，含收件箱未收录的探针通道）；
   * 📊 协同度量：ai_ledger.get_stats 总卡（总数/待裁决/采纳率，None 显示「—」
-    不虚构）＋按工序（stage）下钻表；
+    不虚构）＋协同度量五指标卡（FX-19：AI-人一致率/标注节省量/打回率/
+    替换测试通过率/体例质检通过率 —— 数据与口径出自 src/collab_metrics.py，
+    有数据源算真值、没有的灰注占位不编数字，估算指标带「估算」徽章）
+    ＋按工序（stage）下钻表；
   * 📋 任务分配（词典管理员门）：选动词/义位（oald_senses × definitions 参数化
     只读搜索）→ 选标注员（users_db.list_users 过滤 role）→ task_type
     （admission/feature_coding/alignment）→ scope_verbs（可空 = 不限动词）→
@@ -76,6 +79,7 @@ from src.ai_ledger import (
 )
 from src.annotation_flow import TASK_TYPES as ASSIGNMENT_TASK_TYPES
 from src.annotation_flow import TASK_TYPE_LABELS  # R6-8：单一导出，本模块改引
+from src import collab_metrics  # FX-19：协同度量五指标数据层（本页薄渲染）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.data_pages import _escape_like  # R2-5：LIKE 转义与 data_pages 同源
 from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3
@@ -186,6 +190,11 @@ GUIDE = {
         "（draft/audit，按 uncertainty DESC, id ASC）、get_stats 供协同度量"
         "（总数/待裁决/采纳率＝adopted/(adopted+rejected+modified)、平均不确定度）、"
         "decide 写裁决留痕（理由＋裁决人＋时间，一次性不可改）。",
+        "src/collab_metrics.py（FX-19 五指标数据层，口径单一事实源）：AI-人一致率"
+        "（ai_proposals kind='draft' 已裁决提案，完全一致=adopted÷分母）、标注节省量"
+        "（(采纳+修改后采纳)×3.0 分钟/条，工程估算非实测，页面带「估算」徽章）、"
+        "打回率（writing_db.review_tasks verdict，按审校轮次）—— 替换测试通过率与"
+        "体例质检通过率暂无执行结果数据源，页面灰注占位不编数字。",
         "assignments 表（annotation_flow.ensure_flow_tables 建，DDL 见多人标注系统"
         "设计规范 §2）：「我的任务」查当前用户 status≠closed 的行；「任务分配」"
         "（词典管理区标签页复用本模块）INSERT 新行（assigned_by=当前登录词典管理员）"
@@ -210,7 +219,9 @@ GUIDE = {
         "收件箱「我的任务」段查看分派给自己的在途任务（状态≠已关闭）：任务类型/范畴/"
         "范围动词/状态一览；标注与提交请到「语义建模 → 标注任务」页完成（本页只读）。",
         "协同度量：顶部三卡看全库提案总数/待裁决/采纳率（尚无已裁决提案时采纳率显示"
-        "「—」而不是 0%）；下方按工序（stage）下钻表看各工序的计数与平均不确定度。",
+        "「—」而不是 0%）；其下是协同度量五指标卡（AI-人一致率/标注节省量/打回率/"
+        "替换测试通过率/体例质检通过率，每卡带口径 tooltip 与数据源说明）；"
+        "底部按工序（stage）下钻表看各工序的计数与平均不确定度。",
         "任务分配（词典管理员，词典管理区「📋 任务分配」标签页）：① 输入关键词搜索"
         "动词/义位并多选范围动词（一个不选＝不限动词，任务覆盖全库）；② 选标注员；"
         "③ 选任务类型（准入/特征编码/英汉对齐）；④ 点「创建分派」—— 通过任务×角色"
@@ -220,6 +231,11 @@ GUIDE = {
         "采纳率口径：分母是已裁决提案数（pending 不计）；「—」＝还没有已裁决提案，"
         "不要读成 0%；平均不确定度按全部提案（含已裁决）平均 —— 度量的是信号本身"
         "的质量，不是当前积压。",
+        "协同度量五指标口径（FX-19）：AI-人一致率＝完全一致（原样采纳）÷已裁决草稿提案，"
+        "修改后采纳计部分一致不入分子；标注节省量是工程估算（3.0 分钟/条假设，非实测，"
+        "卡片带「估算」徽章）；打回率＝（打回修订＋直接否决）÷已出结论的审校轮；"
+        "替换测试通过率与体例质检通过率暂无执行结果数据源 —— 卡片灰注占位不编数字，"
+        "是「尚未接入」，不是 0%。",
         "收件箱只收 draft/audit 两通道；probe 探针问答不入裁决流（数据层约定），"
         "词典管理员可在页底「全部 pending」视图追溯全部待决台账。",
         "裁决是不可变留痕：重复裁决（含两人同时裁决同一条）只有首次生效；裁决失败"
@@ -229,8 +245,8 @@ GUIDE = {
         "任务分配在词典管理区「📋 任务分配」标签页：创建前自动过三重校验"
         "（任务×角色矩阵/负荷上限/回避制——审校类任务批次 4 接入，当前占位放行）；"
         "范畴 category 暂取表默认 motion，簇粒度分派后续接入。",
-        "数据库不可用时收件箱显示为空、度量卡为 0 口径 —— 是降级渲染，"
-        "不代表没有数据。",
+        "数据库不可用时收件箱显示为空、度量卡为 0 口径，五指标卡整卡灰注"
+        "（值「—」＋降级文案）—— 是降级渲染，不代表没有数据。",
     ],
 }
 
@@ -969,8 +985,93 @@ def _render_inbox_tab(me: Dict[str, Any]) -> None:
 # tab 2 · 协同度量
 # ============================================
 
+# FX-19「估算」徽章（R4-6 MOCK 来源徽章同款纪律：估算/兜底数据在 UI 上必须
+# 可辨识，不得看起来像实测 —— 琥珀深档 #9c4221 白字，对比 6.53:1 达 AA，
+# 与 app._mock_source_badge_html 同源样式）。插值仅来自 collab_metrics 常量
+# （float），无用户输入参与。
+_ESTIMATE_BADGE_STYLE = (
+    "background-color:#9c4221;color:#ffffff;padding:2px 10px;"
+    "border-radius:10px;font-size:0.85em;"
+)
+
+# 灰注占位两卡的口径 tooltip（执行数据源未接入，详见 collab_metrics docstring）
+_SUBSTITUTION_TOOLTIP = (
+    "口径：替换测试通过数 ÷ 抽样测试数（双向替换判据见 configs/style.yaml "
+    "substitution_test，阈值待编者核定）；当前无执行结果数据源，本卡占位不编数字。"
+)
+_STYLE_CHECK_TOOLTIP = (
+    "口径：质检通过项 ÷ 质检执行项（§5 质检通道 ai_proposals kind='audit'）；"
+    "当前无质检执行记录数据源（AI 体例质检批次 8 接入），本卡占位不编数字。"
+)
+
+
+def _render_five_metrics() -> None:
+    """协同度量五指标卡（FX-19；规范 §5 度量清单补齐，页面薄渲染）。
+
+    数据与口径全部出自 src/collab_metrics.py（勘察表见其模块 docstring）：
+    有数据源的算真值（AI-人一致率/标注节省量/打回率），没有的如实灰注
+    （替换测试通过率/体例质检通过率）—— 宁缺毋假，绝不编数字。
+    降级纪律：数据库不可用时整卡灰注（值「—」＋降级文案），不是 0%。
+    """
+    st.markdown(f"<h3 style='{HEADER_H3}'>🤝 协同度量五指标（规范 §5 · FX-19 补齐）</h3>",
+                unsafe_allow_html=True)
+    agreement = collab_metrics.ai_human_agreement_rate()
+    savings = collab_metrics.annotation_savings()
+    rejection = collab_metrics.writing_rejection_rate()
+    substitution = collab_metrics.substitution_test_status()
+    style_check = collab_metrics.style_check_status()
+
+    row1 = st.columns(3)
+    with row1[0]:
+        st.metric(
+            "AI-人一致率", _fmt_rate(agreement.get("agreement_rate")),
+            help=collab_metrics.AGREEMENT_NOTE,
+        )
+        if agreement.get("available"):
+            st.caption("数据源：ai_proposals kind='draft' 已裁决提案"
+                       "（分母＝adopted+rejected+modified，pending 不计）。")
+        else:
+            st.caption(f"灰注：{agreement.get('note')}")
+    with row1[1]:
+        savings_value = (
+            f"{savings.get('hours_saved', 0):.2f} 小时"
+            if savings.get("available") else "—"
+        )
+        st.metric("标注节省量", savings_value, help=collab_metrics.SAVINGS_NOTE)
+        if savings.get("available"):
+            # 估算徽章：本指标是工程估算（3.0 分钟/条假设），不是实测（R4-6 同款纪律）
+            st.markdown(
+                f'<span style="{_ESTIMATE_BADGE_STYLE}">估算'
+                f'（工程假设 {savings.get("minutes_per_item", 0):.1f} 分钟/条 · 非实测）'
+                f"</span>",
+                unsafe_allow_html=True,
+            )
+            st.caption("数据源：ai_proposals kind='draft' 的 adopted+modified 计数。")
+        else:
+            st.caption(f"灰注：{savings.get('note')}")
+    with row1[2]:
+        st.metric(
+            "打回率", _fmt_rate(rejection.get("rejection_rate")),
+            help=collab_metrics.REJECTION_NOTE,
+        )
+        if rejection.get("available"):
+            st.caption("数据源：writing_db.review_tasks verdict（按审校轮次，"
+                       "verdict≠pending 计入分母）。")
+        else:
+            st.caption(f"灰注：{rejection.get('note')}")
+
+    row2 = st.columns(2)
+    with row2[0]:
+        st.metric("替换测试通过率", "—", help=_SUBSTITUTION_TOOLTIP)
+        st.caption(str(substitution.get("reason") or collab_metrics.SUBSTITUTION_NOTE))
+    with row2[1]:
+        st.metric("体例质检通过率", "—", help=_STYLE_CHECK_TOOLTIP)
+        st.caption(str(style_check.get("reason") or collab_metrics.STYLE_CHECK_NOTE))
+
+
 def _render_metrics_tab() -> None:
-    """📊 协同度量：get_stats 总卡（None 显示「—」不虚构）＋按工序下钻表。"""
+    """📊 协同度量：get_stats 总卡（None 显示「—」不虚构）＋五指标卡（FX-19）
+    ＋按工序下钻表。"""
     st.markdown(f"<h3 style='{HEADER_H3}'>📈 提案台账总览（全库口径）</h3>",
                 unsafe_allow_html=True)
     stats = get_stats()  # 数据库不可用时返回全 0 口径 dict（比率 None）
@@ -982,6 +1083,10 @@ def _render_metrics_tab() -> None:
         "采纳率＝采纳 ÷（采纳＋否决＋修改后采纳），分母是已裁决提案（pending 不计）；"
         "「—」＝尚无已裁决提案，不是 0%。"
     )
+
+    # FX-19：协同度量五指标（AI-人一致率/标注节省量/打回率/替换测试通过率/
+    # 体例质检通过率）—— 新卡排后，采纳率总览卡保持不动
+    _render_five_metrics()
 
     st.markdown(f"<h3 style='{HEADER_H3}'>🔬 按工序下钻</h3>", unsafe_allow_html=True)
     stages = _list_proposal_stages()

@@ -9,6 +9,10 @@
 数据链：
     纯进程内 dict（tool_id → ToolSpec），**不建表、不查库、不触网**；依赖
     探针（register_dep_probe）由批次 2 按需登记，探针自身查什么与注册表无关。
+    FX-18 增设 enabled 位的外接缝 set_db_enabled_loader：持久化位读数函数
+    由 src/tool_settings_db.bind_registry_loader() 绑入（两步激活落库
+    category_tool_settings），注册表自身仍零 DB 依赖——loader 未绑定时
+    行为与纯进程内实现逐字节一致（兼容测试打桩）。
 
 接口（阶段 1 施工规范 §3-B）::
 
@@ -49,6 +53,8 @@ __all__ = [
     "list_tools",
     "tools_for_stage",
     "set_enabled",
+    "set_db_enabled_loader",
+    "reset_registry_state",
     "register_dep_probe",
     "selfcheck",
     "merge_params",
@@ -119,8 +125,13 @@ class ToolSpec:
 # ============================================
 
 _REGISTRY: Dict[str, ToolSpec] = {}
-_ENABLED: set = set()                       # 两步激活的 enabled 位（tool_id 集合）
+_ENABLED: set = set()                       # 两步激活的 enabled 位（tool_id 集合，进程内）
 _DEP_PROBES: Dict[str, Callable[[], bool]] = {}
+# DB 持久化位 loader 缝（FX-18）：None = 未绑定（行为与纯进程内实现一致）。
+# 绑定后 _is_enabled 先问 loader——返回 True/False 以 DB 为准，返回 None
+# （无持久化行/库不可用）回落 _ENABLED。绑定入口在 src/tool_settings_db.py
+# 的 bind_registry_loader（函数指针赋值，import 永不触库，零启动成本）。
+_DB_ENABLED_LOADER: Optional[Callable[[str], Optional[bool]]] = None
 _LOCK = threading.RLock()
 
 
@@ -173,11 +184,31 @@ def get_tool(tool_id: str) -> Optional[ToolSpec]:
     return _REGISTRY.get(tool_id)
 
 
+def _is_enabled(tool_id: str) -> bool:
+    """enabled 位判定（FX-18 接线口径）：DB 持久化位优先，读不到回落进程内。
+
+    - loader 已绑定且对 tool_id 给出 True/False → 以 DB 持久化位为准
+      （两步激活落 category_tool_settings，重启不丢）；
+    - loader 未绑定 / 对该 tool_id 无持久化行 / loader 抛异常 → 回落进程内
+      _ENABLED（兼容既有测试打桩与热置位）。
+    """
+    loader = _DB_ENABLED_LOADER
+    if loader is not None:
+        try:
+            persisted = loader(tool_id)
+        except Exception:  # noqa: BLE001 loader 故障按「读不到」回落
+            persisted = None
+        if persisted is not None:
+            return bool(persisted)
+    return tool_id in _ENABLED
+
+
 def list_tools(enabled_only: bool = False) -> List[ToolSpec]:
-    """列出工具（按 id 排序保证顺序稳定）；enabled_only 只返回已点亮工具。"""
+    """列出工具（按 id 排序保证顺序稳定）；enabled_only 只返回已点亮工具
+    （判定走 _is_enabled：DB 持久化位优先，读不到回落进程内 _ENABLED）。"""
     with _LOCK:
         specs = [t for t in _REGISTRY.values()
-                 if not enabled_only or t.id in _ENABLED]
+                 if not enabled_only or _is_enabled(t.id)]
     return sorted(specs, key=lambda t: t.id)
 
 
@@ -189,7 +220,13 @@ def tools_for_stage(stage: str) -> List[ToolSpec]:
 
 
 def set_enabled(tool_id: str, enabled: bool = True) -> bool:
-    """两步激活的 enabled 位（词典管理员「点亮」，架构 §4）；id 不存在返回 False。"""
+    """两步激活的 enabled 位·进程内面（词典管理员「点亮」，架构 §4）。
+
+    id 不存在返回 False。FX-18 之后这只是**进程内**位：持久化写路径归
+    src/tool_settings_db.enabled_set（权限闸门＋两步激活约束＋审计落库），
+    写库成功后由其回调本函数刷新进程内位；loader 已绑定时 DB 位优先，
+    本位只作「无持久化行」的回落（兼容测试打桩）。
+    """
     with _LOCK:
         if tool_id not in _REGISTRY:
             return False
@@ -198,6 +235,30 @@ def set_enabled(tool_id: str, enabled: bool = True) -> bool:
         else:
             _ENABLED.discard(tool_id)
     return True
+
+
+def set_db_enabled_loader(loader: Optional[Callable[[str], Optional[bool]]]) -> None:
+    """绑定/解绑 DB 持久化位 loader（FX-18 缝）。
+
+    loader 签名：loader(tool_id) → True/False（DB 位）或 None（读不到，
+    回落进程内 _ENABLED）。传 None 解绑。只做函数指针赋值，不触库。
+    生产绑定入口：src/tool_settings_db.bind_registry_loader()。
+    """
+    global _DB_ENABLED_LOADER
+    with _LOCK:
+        _DB_ENABLED_LOADER = loader
+
+
+def reset_registry_state() -> None:
+    """进程内运行态复位（测试钩子）：清 enabled 位、解绑 DB loader、
+    清依赖探针。**不动 _REGISTRY**（内置工具靠 import 时注册，注册表
+    重复注册抛 RegistryError，清了就回不来）。测试隔离用，生产勿调。
+    """
+    global _DB_ENABLED_LOADER
+    with _LOCK:
+        _ENABLED.clear()
+        _DEP_PROBES.clear()
+        _DB_ENABLED_LOADER = None
 
 
 def unregister(tool_id: str) -> bool:

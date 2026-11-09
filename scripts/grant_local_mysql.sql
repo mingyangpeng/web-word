@@ -140,3 +140,21 @@ FLUSH PRIVILEGES;
 GRANT ALL PRIVILEGES ON `web\_word\_llm\_providers\_test`.* TO 'web_word_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON `web\_word\_llm\_providers\_test`.* TO 'web_word_user'@'localhost';
 FLUSH PRIVILEGES;
+
+-- FX-18：范畴×工具两步激活持久化测试库（tests/test_fx18_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx18\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx18\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx18\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
+
+-- FX-19：协同度量五指标测试库（tests/test_fx19_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx19\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx19\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx19\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
+
+-- FX-20：改派 / 试标轮两列 / 重标闭环测试库（tests/test_fx20_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx20\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx20\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx20\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;

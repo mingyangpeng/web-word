@@ -83,6 +83,21 @@ PAGE_GUIDES['dict_admin']）；本模块不修改 app.py / page_guides.py。
   注明）；新增 🗂️ 资源登记块（纯函数 _registry_form_error ＋
   _render_registry_form / _render_registry_table，写路径 guards 闸门后调
   registry_db.register_resource，UNIQUE(name, version) 去重）。
+FX-20（规范×实现对账 ①组收口）：任务分配 tab 补充段 _render_assign_ops_tab
+  （主分派表单 collab_pages._render_assign_tab 之后追加，本模块所有权内）——
+  ① 分派台账 _render_assignment_ledger：assignments 轮次/试标徽章（R{n}/
+  「试标」，RV2-3 留痕列 NULL 口径）；② 改派 _render_reassign_section：仅
+  open 分派可改派（REASSIGNABLE_ASSIGNMENT_STATUSES，规范「draft/rejected」
+  以码为准映射）、目标须为所选项目在册在用成员且非现承包人、审计在
+  annotation_flow.reassign_assignment（日志留痕）；③ 试标轮分派
+  _render_training_assign_section：round/training 可选留痕（留空=正式轮），
+  三重校验复用 collab_pages 单一实现；④ 发起重标 _render_reannotation_section：
+  G2 修订→重标闭环（仅已裁决 merged/split 义位可发，任务建于 round+1、派给
+  历史标注人、旧轮提交保留作历史；数据层 create_reannotation_tasks，裁决
+  落库点 cluster_analysis.execute_sense_division 只读消费不越权接线）。
+  G2 特征矩阵导出已在信度报告页（reliability.py _export_csv + download_button，
+  app.py「📐 信度报告」），驾驶舱漏斗 G2 灰注加指路说明（本模块只加文字，
+  reliability.py 不动）。
 """
 
 import hashlib
@@ -96,7 +111,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import streamlit as st
 
-from src import ai_ledger, dict_admin_db, export_center, media_db, org_db
+from src import ai_ledger, annotation_flow, dict_admin_db, export_center, media_db, org_db
 from src import registry_db
 from src import pipeline_status, users_db
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
@@ -879,6 +894,9 @@ def _render_cockpit_tab() -> None:
         st.caption(
             "灰色行为缺数段（表未建 / 无数据 / 数据库不可用），如实缺数不给假数据；"
             "信度段 α 的达标线为 0.7（闸门 G2），分立复核 merged/split 由复核流程写入。"
+            "G2 不达标走「规范修订→重标」闭环（重标发起入口在「📋 任务分配」tab）；"
+            "特征矩阵导出已在「🏷️ 语义建模 → 📐 信度报告」页（逐特征 α＋分歧清单 "
+            "CSV，reliability 页下载按钮）。"
         )
 
     st.markdown(f"<h3 style='{HEADER_H3}'>🩺 项目自检（≥1 名在用 chief 等约束）</h3>",
@@ -2552,6 +2570,414 @@ def _render_publication_tab(me: Dict[str, Any]) -> None:
 
 
 # ============================================
+# FX-20：任务分配 tab 补充段 —— 分派台账（轮次徽章）· 改派 · 试标轮分派 ·
+#        发起重标（G2 修订→重标闭环）
+# ============================================
+# 口径：主分派表单与三重校验仍是 collab_pages._render_assign_tab（本页
+# render_dict_admin_page 的 tab_assign 首段）；本段补齐「规范×实现对账」①组
+# 其余入口 —— 数据层全部走 annotation_flow（FX-20 新函数）：
+#   * 分派台账：assignments.round/training 可视化（R{n}/「试标」徽章，
+#     RV2-3 留痕列 NULL 口径：未设=「—」，不用 0 冒充）；
+#   * 改派：仅 status ∈ REASSIGNABLE_ASSIGNMENT_STATUSES（'open'，规范
+#     「draft/rejected」以码为准的映射）可改派；目标须为所选项目在册在用
+#     成员（project_members 校验）且非现承包人；审计与在途保护见
+#     reassign_assignment docstring；
+#   * 试标轮分派：round/training 可选留痕（留空=正式轮），复用 collab_pages
+#     分派候选与三重校验（任务×角色矩阵/负荷上限/回避制同口径）；
+#   * 发起重标：G2 闭环 —— 仅已裁决 merged/split 的义位可发（数据层逐义位
+#     闸），任务建于「被失效轮次+1」，派给历史标注人，旧轮提交保留作历史。
+# 权限：tab 已在 render_dict_admin_page 入口过词典管理员门；各写路径调用点
+# 再过 guards.require_dict_admin（API 级闸门，纵深防御与同页成员/快照写路径
+# 同口径）；成功反馈一律 ui_kit.flash + st.rerun（RV12-2 纪律，成功提示不丢）。
+
+_ASSIGNMENT_STATUS_LABELS = {
+    "open": "未动工",
+    "in_progress": "进行中",
+    "submitted": "已提交",
+    "closed": "已闭环",
+}
+_ASSIGNMENT_STATUS_BADGE_COLORS = {
+    "open": "#2f855a",
+    "in_progress": "#975a16",
+    "submitted": "#2b6cb0",
+    "closed": "#718096",
+}
+
+
+def _assignment_round_badges(item: Dict[str, Any]) -> str:
+    """分派行的轮次徽章 HTML（R{n}=第 n 轮；「试标」=training 试标轮位）。
+
+    item 为 annotation_flow.list_assignments_admin 行；round/training 均
+    None（正式轮未留痕）时返回「—」。数值已 int 化，无用户文本，免转义。
+    """
+    badges = ""
+    round_no = item.get("round")
+    if round_no:
+        badges += _badge(f"R{int(round_no)}", "#553c9a")
+    if item.get("training"):
+        badges += _badge("试标", "#975a16")
+    return badges if badges else "—"
+
+
+def _render_assignment_ledger() -> None:
+    """分派台账（FX-20）：assignments 行 + 轮次/试标徽章（只读降级渲染）。"""
+    st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ 分派台账（轮次/试标徽章）</h3>",
+                unsafe_allow_html=True)
+    ledger = annotation_flow.list_assignments_admin(limit=50)
+    if not ledger:
+        st.caption(
+            "暂无分派（或 assignments 表/轮次列未就绪）——上方主表单创建后在此列示。"
+        )
+        return
+    rows: List[List[str]] = []
+    for a in ledger:
+        assignee = a.get("display_name") or a.get("username") or str(a.get("assignee_id"))
+        status = str(a.get("status") or "")
+        task_type = str(a.get("task_type") or "")
+        rows.append([
+            str(int(a.get("id") or 0)),
+            _esc(assignee),
+            _esc(a.get("category") or ""),
+            _esc(annotation_flow.TASK_TYPE_LABELS.get(task_type, task_type)),
+            _badge(_esc(_ASSIGNMENT_STATUS_LABELS.get(status, status)),
+                   _ASSIGNMENT_STATUS_BADGE_COLORS.get(status, "#718096")),
+            _assignment_round_badges(a),
+            _esc(a.get("created_at") or ""),
+        ])
+    _render_table(
+        ["ID", "承包人", "范畴", "任务类型", "状态", "轮次", "创建时间"],
+        rows,
+    )
+    st.caption(
+        "轮次列：R{n}=第 n 轮标注（round 留痕）＋「试标」=training 试标轮位；"
+        "「—」=正式轮未留痕（RV2-3 留痕列 NULL 口径，不用 0 冒充）。"
+    )
+
+
+def _render_reassign_section(me: Dict[str, Any]) -> None:
+    """改派表单（FX-20）：仅 open 分派可改派；目标=所选项目在册在用成员。"""
+    with st.expander("🔁 改派分派（仅未动工 open 的分派可改派）"):
+        st.caption(
+            "规范 §8「改派仅限 draft/rejected」以码为准：assignments 实际枚举为 "
+            "open/in_progress/submitted/closed（无 draft/rejected 字面值），"
+            "draft≈open（已分派未动工）；in_progress（动工中）/submitted（已交付"
+            "待审）/closed（已闭环）一律拒绝。改派目标必须是所选项目在册在用成员"
+            "（project_members 校验）且非现承包人；原承包人的成员资格与其余在途"
+            "任务不受影响（在途保护沿用 remove_member 纪律）。改派写审计日志"
+            "（谁改的）。"
+        )
+        projects = org_db.list_projects()
+        if not projects:
+            st.info("尚无词典项目：先在「🧭 主编驾驶舱」建壳（改派目标须挂项目在册）。")
+            return
+        project_opts = _project_options(projects)
+        project_label = st.selectbox(
+            "目标校验项目（新承包人须为其在册成员）",
+            list(project_opts.keys()),
+            key="dict_admin_fx20_reassign_project",
+        )
+        project_id = project_opts[project_label]
+        reassignable = annotation_flow.list_assignments_admin(
+            statuses=annotation_flow.REASSIGNABLE_ASSIGNMENT_STATUSES,
+        )
+        if not reassignable:
+            st.info("没有可改派的分派（status='open' 的分派为空）。")
+            return
+        assign_opts = {}
+        for a in reassignable:
+            assignee = (a.get("display_name") or a.get("username")
+                        or str(a.get("assignee_id")))
+            task_type = str(a.get("task_type") or "")
+            assign_opts[
+                f"#{a['id']} · {a.get('category')} · "
+                f"{annotation_flow.TASK_TYPE_LABELS.get(task_type, task_type)} · "
+                f"承包人 {assignee}"
+            ] = a
+        assign_label = st.selectbox(
+            "选择分派（仅列出可改派状态）",
+            list(assign_opts.keys()),
+            key="dict_admin_fx20_reassign_assignment",
+        )
+        target = assign_opts[assign_label]
+        members = [
+            m for m in org_db.get_members(project_id)
+            if int(m.get("user_id") or 0) != int(target.get("assignee_id") or 0)
+            and int(m.get("active") or 0)
+        ]
+        if not members:
+            st.warning(
+                "该项目没有除现承包人外的在册在用成员——请先在「👥 项目成员」入册。"
+            )
+            return
+        member_opts = {
+            f"{m.get('username')}（{m.get('display_name') or m.get('username')}）· "
+            f"{PROJECT_ROLE_LABELS.get(m.get('project_role'), m.get('project_role'))}":
+                {"user_id": int(m.get("user_id") or 0), "username": m.get("username")}
+            for m in members
+        }
+        member_label = st.selectbox(
+            "新承包人（在册在用、非现承包人）",
+            list(member_opts.keys()),
+            key="dict_admin_fx20_reassign_member",
+        )
+        if st.button("🔁 确认改派", type="primary",
+                     key="dict_admin_fx20_reassign_submit"):
+            try:
+                actor = guards.require_dict_admin()
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
+            new_member = member_opts[member_label]
+            ok = annotation_flow.reassign_assignment(
+                int(target.get("id") or 0),
+                project_id,
+                new_member["user_id"],
+                int(actor.get("id") or 0),
+                actor=actor,
+            )
+            if ok:
+                ui_kit.flash(
+                    f"分派 #{target.get('id')} 已改派给 "
+                    f"{new_member.get('username')}（原承包人 "
+                    f"{target.get('display_name') or target.get('username')}）"
+                    "——改派审计已留痕。"
+                )
+                st.rerun()
+            else:
+                st.error(
+                    "改派失败：分派状态可能已被并发推进（仅 open 可改派）、目标非"
+                    "该项目在册在用成员或数据库错误，详见服务端日志。"
+                )
+
+
+def _render_training_assign_section(me: Dict[str, Any]) -> None:
+    """试标轮分派表单（FX-20）：round/training 可选留痕，默认留空=正式轮。"""
+    with st.expander("🎯 试标轮分派（轮次/试标位留痕，默认留空=正式轮）"):
+        st.caption(
+            "round=第几轮标注（INT，留空=NULL 不留痕，不用 0 冒充）；"
+            "training=试标轮位（试标轮勾选后留 1）。规范 §8：抽样 15–20% 试标轮"
+            "金标比对达标才开正式轮。本表单聚焦轮次留痕（范围动词走上方主分派"
+            "表单，scope_verbs=NULL=全部动词）；创建前三重校验与主表单同口径"
+            "（任务×角色矩阵/负荷上限/回避制）。"
+        )
+        import src.collab_pages as collab_pages  # 复用分派候选与三重校验（tab 本体同源）
+
+        users = users_db.list_users()
+        candidates = collab_pages._candidate_assignees(users)
+        if not candidates:
+            st.info(
+                "没有可分派的标注员（annotator 及以上）——请先在「👥 账号管理」授角色。"
+            )
+            return
+        with st.form("dict_admin_fx20_training_form", clear_on_submit=True):
+            category = st.text_input("范畴（如 motion）", value="motion",
+                                     key="dict_admin_fx20_train_category")
+            task_type = st.selectbox(
+                "任务类型（assignments.task_type 枚举）",
+                list(annotation_flow.TASK_TYPES),
+                format_func=lambda t: annotation_flow.TASK_TYPE_LABELS.get(t, t),
+                key="dict_admin_fx20_train_task_type",
+            )
+            assignee_label = st.selectbox(
+                "选择标注员（在用账号、annotator 及以上）",
+                list(candidates.keys()),
+                key="dict_admin_fx20_train_assignee",
+            )
+            round_text = st.text_input(
+                "轮次 round（第几轮标注；留空=正式轮不留痕）",
+                key="dict_admin_fx20_train_round",
+                max_chars=8,
+                placeholder="如 2；留空=正式轮",
+            )
+            training_label = st.selectbox(
+                "试标轮 training",
+                ["正式轮（training 不留痕）", "试标轮（training=1）"],
+                key="dict_admin_fx20_train_training",
+            )
+            submitted = st.form_submit_button("🎯 创建分派（含轮次留痕）")
+        if not submitted:
+            return
+        training_val: Optional[bool] = (
+            True if "试标轮" in str(training_label) else None
+        )
+        round_val: Optional[int] = None
+        if round_text.strip():
+            try:
+                round_val = int(round_text.strip())
+            except ValueError:
+                st.error("轮次须为 ≥1 的整数，或留空表示正式轮（不留痕）。")
+                return
+            if round_val < 1:
+                st.error("轮次须为 ≥1 的整数（第几轮标注），不能是 0 或负数。")
+                return
+        assignee_id = candidates[assignee_label]
+        # 与主分派表单同一三重校验口径（collab_pages 单一实现，不在本页复刻）
+        legacy_role = collab_pages._legacy_role_map(users).get(assignee_id)
+        assignee_roles = sorted(
+            {r for r in [*users_db.list_roles(assignee_id), legacy_role] if r}
+        )
+        reasons = [
+            reason
+            for reason in (
+                collab_pages._check_role_matrix(task_type, assignee_roles),
+                collab_pages._check_load_limit(assignee_id),
+                collab_pages._check_recusal(
+                    task_type, assignee_id, int(me.get("id") or 0)
+                ),
+            )
+            if reason
+        ]
+        if reasons:
+            for reason in reasons:
+                st.warning(reason)
+            return
+        try:
+            actor = guards.require_dict_admin()
+        except PermissionError as e:
+            st.error(f"⛔ {e}")
+            return
+        created = annotation_flow.assign_task(
+            assignee_id,
+            category.strip() or "motion",
+            task_type,
+            None,
+            int(actor.get("id") or 0),
+            round=round_val,
+            training=training_val,
+        )
+        if created:
+            round_text_shown = f"R{round_val}" if round_val else "未留痕"
+            training_text = "试标轮" if training_val else "正式轮"
+            ui_kit.flash(
+                f"已创建分派（{assignee_label.split('（')[0]} · "
+                f"{annotation_flow.TASK_TYPE_LABELS.get(task_type, task_type)} · "
+                f"{training_text} · 轮次 {round_text_shown}）—— 台账已带轮次徽章。"
+            )
+            st.rerun()
+        else:
+            st.error(
+                "创建失败：标注员不存在或数据库错误（round/training 列须先经 "
+                "ensure_flow_tables 迁移补齐），详见服务端日志。"
+            )
+
+
+def _render_reannotation_section(me: Dict[str, Any]) -> None:
+    """发起重标（FX-20，G2 修订→重标闭环）：仅已裁决 merged/split 义位可发。"""
+    with st.expander("♻️ 发起重标（G2 修订→重标闭环，仅已裁决 merged/split 可发）"):
+        st.caption(
+            "分立复核裁决（merge/split）落地后，受影响义位的旧轮标注按轮次语义"
+            "失效：本入口创建「被失效轮次+1」的重标任务（派给历史标注人），"
+            "旧轮提交原样保留作历史（annotation_submissions 零写入）。闸门："
+            "逐义位把标注侧 sense_id（oald_senses.id）映射到 cs_senses，状态须为 "
+            "merged/split，未裁决/映射不上的一律跳过并列明。裁决落库点在 "
+            "cluster_analysis.execute_sense_division（本区只读消费，不越权接线）。"
+        )
+        divided = annotation_flow.list_divided_senses()
+        if not divided:
+            st.info(
+                "尚无 merged/split 裁决（cs_senses）——分立复核采纳落地后此处才可用。"
+            )
+            return
+        divided_rows = [
+            [
+                str(int(d.get("id") or 0)),
+                _esc(d.get("sense_no") or ""),
+                _esc(d.get("sense_label") or ""),
+                _esc(d.get("status") or ""),
+                str(int(d["merged_into"])) if d.get("merged_into") else "—",
+            ]
+            for d in divided
+        ]
+        _render_table(
+            ["cs_senses#", "义项号", "义位标签", "裁决", "并入目标"],
+            divided_rows,
+        )
+        st.caption(
+            "上表是裁决证据面（cs_senses 空间）；重标按标注侧 sense_id 发起"
+            "（标注提交的 oald_senses.id 空间，见义位脊柱映射），数据层逐义位"
+            "复核裁决状态。"
+        )
+        with st.form("dict_admin_fx20_reannotation_form", clear_on_submit=True):
+            category = st.text_input("范畴（包名 motion 或研究代号 RUN）",
+                                     value="motion",
+                                     key="dict_admin_fx20_reann_category")
+            task_type = st.selectbox(
+                "重标任务类型（默认 feature_coding=工序5 特征标注重标）",
+                list(annotation_flow.TASK_TYPES),
+                format_func=lambda t: annotation_flow.TASK_TYPE_LABELS.get(t, t),
+                key="dict_admin_fx20_reann_task_type",
+            )
+            round_no = st.number_input(
+                "被失效的当前轮次 round（重标任务建于 round+1）",
+                min_value=1, value=1, step=1,
+                key="dict_admin_fx20_reann_round",
+            )
+            ids_text = st.text_input(
+                "受影响义位 id（标注侧 oald_senses.id，逗号分隔）",
+                key="dict_admin_fx20_reann_senses",
+                placeholder="如 101, 102",
+            )
+            submitted = st.form_submit_button("♻️ 发起重标")
+        if not submitted:
+            return
+        sense_ids: List[int] = []
+        for part in ids_text.replace("，", ",").split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                value = int(part)
+            except ValueError:
+                st.error(f"义位 id 须为正整数（标注侧 oald_senses.id）：{part!r} 不是。")
+                return
+            if value <= 0:
+                st.error(f"义位 id 须为正整数：{value} 非法。")
+                return
+            if value not in sense_ids:
+                sense_ids.append(value)
+        if not sense_ids:
+            st.error("请填写至少一个受影响义位 id（逗号分隔的正整数）。")
+            return
+        try:
+            actor = guards.require_dict_admin()
+        except PermissionError as e:
+            st.error(f"⛔ {e}")
+            return
+        result = annotation_flow.create_reannotation_tasks(
+            category.strip(),
+            sense_ids,
+            int(round_no),
+            int(actor.get("id") or 0),
+            actor=actor,
+            task_type=task_type,
+        )
+        if result.get("ok"):
+            skipped = result.get("skipped") or []
+            skipped_note = f"，跳过 {len(skipped)} 个未过闸义位" if skipped else ""
+            ui_kit.flash(
+                f"重标任务已发起：轮次 {result.get('reannotation_round')}"
+                f"（= {int(round_no)}+1），创建 {result.get('created')} 条"
+                f"{skipped_note}；旧轮提交保留作历史。"
+                + str(result.get("note") or "")
+            )
+            st.rerun()
+        else:
+            st.error(f"发起失败：{result.get('error') or '未知原因'}")
+
+
+def _render_assign_ops_tab(me: Dict[str, Any]) -> None:
+    """📋 任务分配 tab 的 FX-20 补充段（主分派表单之后追加，见段注释口径）。"""
+    if not _is_dict_admin(me):
+        # render_dict_admin_page 入口已门（纵深防御再判一次）：非词典管理员
+        # 不渲染补充段（tab 本体 collab_pages._render_assign_tab 已给警告）。
+        return
+    _render_assignment_ledger()
+    _render_reassign_section(me)
+    _render_training_assign_section(me)
+    _render_reannotation_section(me)
+
+
+# ============================================
 # 页面入口
 # ============================================
 
@@ -2592,7 +3018,8 @@ def render_dict_admin_page() -> None:
     st.caption(
         "主编驾驶舱（自检 + AI 台账指标 + 进度漏斗）· 项目成员（三级权限链第二级）· "
         "定制属性（EAV 字段与锚值）· 数据导入（业务写入已接线，批次回滚）· "
-        "词条浏览器 · 任务分配（三重校验已接入）· "
+        "词条浏览器 · 任务分配（三重校验已接入＋FX-20 轮次/试标留痕、改派、"
+        "G2 发起重标）· "
         "媒体库（上传/登记/绑定/审定，双轨登记）· 出版导出（G6 闸门执行页＋"
         "资源登记数据面，批次 11 三卡灰注转硬检）。"
     )
@@ -2627,6 +3054,9 @@ def render_dict_admin_page() -> None:
         data_pages.render_browser_page()
     with tab_assign:
         collab_pages._render_assign_tab(me)
+        # FX-20：分派台账（轮次徽章）· 改派 · 试标轮分派 · 发起重标（G2）
+        # —— 主分派表单之后的补充段（数据层 annotation_flow，见段注释口径）。
+        _render_assign_ops_tab(me)
     with tab_media:
         _render_media_tab(me)
     with tab_publish:
