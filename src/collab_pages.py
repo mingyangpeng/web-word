@@ -1020,6 +1020,31 @@ def _render_broadcast_banner(me: Optional[Dict[str, Any]]) -> None:
             f"</div>"
         )
         st.markdown(card, unsafe_allow_html=True)
+        # RV21-2：公示兜底面——收件角色可自助回看该项目全部广播（此前只显
+        # 每项目最新一条，旧广播对收件人不可达为信息丢失）
+        pid = b.get("project_id")
+        try:
+            pid = int(pid) if pid is not None else None
+        except (TypeError, ValueError):
+            pid = None
+        if pid is not None:
+            with st.expander(f"📜 查看项目「{b.get('project_name') or pid}」全部广播"):
+                history = broadcast_db.list_broadcasts(pid, limit=20)
+                if not history:
+                    st.caption("暂无更多广播记录（或数据库暂不可用）。")
+                for h in history:
+                    hp = ("系统作业" if h.get("published_by") is None
+                          else _html_escape(str(h.get("publisher_display_name")
+                                                  or h.get("publisher_username")
+                                                  or f"#{h.get('published_by')}")))
+                    st.markdown(
+                        f"- {h.get('created_at') or ''} ｜ "
+                        f"<strong>{_html_escape(str(h.get('title') or ''))}</strong>"
+                        f"（发布者：{hp}）<br/>"
+                        f"<span style='color:#718096;white-space:pre-wrap;'>"
+                        f"{_html_escape(str(h.get('body') or ''))}</span>",
+                        unsafe_allow_html=True,
+                    )
 
 
 def _render_inbox_tab(me: Dict[str, Any]) -> None:

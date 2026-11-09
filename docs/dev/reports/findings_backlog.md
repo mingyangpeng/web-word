@@ -237,3 +237,24 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] ALTER-only 清单补记 usage_logs.user_id（FX-27 报备→合并缝合）
 
 **②组余量（阶段 2 继续）**：登录落地三分支、项目广播、用户上下文 5 表、工具 run() 页面接线。
+
+## 批次 17（1d94ccf · 阶段2②组收官）
+
+> 三路交付＋缝合：FX-29 登录落地三分支（规范 §9 L242 原文：有待办→收件箱/续接点→上次位置/首次→搜索释义，set_resume_page_loader 缝）＋corpus_evidence_tool 接线；FX-30 项目广播域（project_broadcasts＋发布入口＋收件箱横幅）；FX-31 用户上下文域 5 表（自带 DDL 惰性 ensure、own-rows-only 会话派生 CRUD）。缝合：semantic_search_tool 扩 params_schema 收 index（页面缓存透传）＋以句搜义页经工具接线＋续接点端到端（登出落 user_state＋适配器白名单）。全量 2447 passed。
+
+## 批次 18（2026-11-10 · 十镜头 review：25 findings 全修＋文档收口＋回归固化）
+
+> 镜头 13~22 共十镜审批次 14~17 新功能面，四波跑完边审边修。终版全量 **2576 passed / 0 failed**（批次 17 基线 2447 → +129）。
+
+- [x] RV-13 权限（6 P3）——改派原子复验（EXISTS 在册+active）/重标 active 复核/留痕一致性闸/docstring 降格/guards.require_role_interactive＋口径表/_is_dict_admin 收口（FX-32/33）
+- [x] RV-14 一致性（3 P2+6 P3）——重标同轮幂等闸（dedup）/user_context 5 表 FK CASCADE/两步激活原子复验+1062 幂等/迁移 1060 白名单×3/长度闸+逐因/改派前值复验/双口径归一/坏 JSON 告警/空行幂等（FX-32/33）
+- [x] RV-15 会话态（1 P2+3 P3）——落地分支 1 按可裁决角色过滤（分支 2 复活）/广播表单项目作用域化/「继续」flash/新查询无缓存留档（FX-33）
+- [x] RV-16 性能（5 P3）——count_pending_reviews COUNT 专查替代 200 行宽取数；其余留档（驾驶舱聚合/detail_json 多拉/users 双读/list_ 无 LIMIT 潜伏/工具层无共享缓存）
+- [x] RV-17 降级（1 P2+3 P3）——广播在册闸连通探测（断库不再误归因不在册）/横幅逐因/登出 warning/α 标签插值
+- [x] RV-18 测试质量（7 P3）——grant 补 r1_probe+fx30_test/续接点胶水真测试（适配器白名单+登出源钉）/fx31 死变量/fx27 桩初始化；桩分叉/钉板扩散留档监控
+- [x] RV-19 安全（6 P3 加固）——重标批量 ≤500 上限+日志截断/质检异常归一（detail 不落 DB 原文）/reason 相对路径化/vocab_file 绝对路径拒读+1MB 闸/upsert_draft 50000 闸/limit 上界；注入/越权/泄露面 ✅ 无 P1/P2
+- [x] RV-20 文档（18 findings）——FX-34 文档收口：说明书 §四七区十七行重写＋落地三分支行为/母本补 6.11 质检 6.12 广播 6.6 改派重标＋三处枚举改真/CHANGELOG 补 14~17+waves 五条/README 三数字＋模块树/spec 三处对齐注＋附录 A 26 张/DEPLOYMENT §1.5 测试库初始化＋TESTING 分层口径；范畴与工具页接线（users_admin 页内段，RV20-1 P2 消）
+- [x] RV-21 UX（2 P2+5 P3）——质检范畴下拉移出表单（切换即刷新）/收件箱广播历史 expander（公示兜底面信息丢失消）/重标 500 提示/广播改派空态引导；flash 就近/风险行跳转按钮留档
+- [x] RV-22 回归固化——tests/test_review_r18.py 六链端到端（两步激活链/质检→指标链/广播→收件箱链/改派→重标链/落地三分支 AppTest e2e/跨设备续接）＋grant r18 授权
+
+**遗留观察项**（P3 留档）：驾驶舱聚合无缓存（量级小）/list_* 无 LIMIT 潜伏/工具层无共享缓存/源码钉板扩散监控/风险行跳转按钮（on_click 先例已在码）。「落定项无文档」清单全部消（FX-34）。

@@ -1537,14 +1537,14 @@ def _render_style_check_section() -> None:
         return
     st.markdown(f"<h3 style='{HEADER_H3}'>🧪 体例质检（AI 机械准绳）</h3>",
                 unsafe_allow_html=True)
-    with st.form("dict_admin_style_check_form", clear_on_submit=False):
-        cat = st.selectbox(
-            "质检范畴（configs/<category>/style.yaml，范畴级缺席回退词典层）",
-            _funnel_category_options(),
-            key="dict_admin_style_check_category",
-        )
-        submitted = st.form_submit_button("▶ 运行体例质检")
-    if submitted:
+    # RV21-1：范畴下拉在表单外——切换即 rerun 刷新结果/历史（表单内控件
+    # 变更不触发 rerun，导致切范畴零反馈、看历史被迫走写路径）
+    cat = st.selectbox(
+        "质检范畴（configs/<category>/style.yaml，范畴级缺席回退词典层）",
+        _funnel_category_options(),
+        key="dict_admin_style_check_category",
+    )
+    if st.button("▶ 运行体例质检", key="dict_admin_style_check_run"):
         _style_check_run_clicked(str(cat or ""), me)
 
     runs = style_check.list_recent_runs(category=str(cat or ""),
@@ -3639,6 +3639,7 @@ def _render_reannotation_section(me: Dict[str, Any]) -> None:
             "逐义位把标注侧 sense_id（oald_senses.id）映射到 cs_senses，状态须为 "
             "merged/split，未裁决/映射不上的一律跳过并列明。裁决落库点在 "
             "cluster_analysis.execute_sense_division（本区只读消费，不越权接线）。"
+            "单次至多 500 个义位 id，超限请分批发起。"
         )
         divided = annotation_flow.list_divided_senses()
         if not divided:

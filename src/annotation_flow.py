@@ -1560,6 +1560,19 @@ def create_reannotation_tasks(
             "error": f"非法 task_type: {task_type!r}（须为 {TASK_TYPES} 之一）",
             "created": 0,
         }
+    # RV19-1：批量义位上限（防 10000 id 触发逐义位闸核对往返＋巨型 IN＋日志洪流）
+    REANNOTATION_MAX_SENSE_IDS = 500
+    dedup_ids = list(dict.fromkeys(
+        sid for sid in (sense_ids or [])
+        if isinstance(sid, int) and not isinstance(sid, bool) and sid > 0
+    )) if isinstance(sense_ids, list) else []
+    if len(dedup_ids) > REANNOTATION_MAX_SENSE_IDS:
+        return {
+            "ok": False,
+            "error": (f"sense_ids 批量超限（{len(dedup_ids)} > "
+                      f"{REANNOTATION_MAX_SENSE_IDS}）——分批发起"),
+            "created": 0,
+        }
     if isinstance(round, bool) or not isinstance(round, int) or round < 1:
         return {
             "ok": False,
@@ -1712,9 +1725,11 @@ def create_reannotation_tasks(
         notes.append("部分标注人建任务失败，详见服务端日志")
     if dedup:
         notes.append(f"{dedup} 名标注人本轮重标任务已存在（幂等跳过）")
+    _brief = lambda seq, n=20: (seq[:n] + [f"…共{len(seq)}"] if len(seq) > n else seq)  # noqa: E731
     logger.info(
         f"重标审计：范畴 {category}/{task_type} 轮次 {round}→{new_round}，"
-        f"义位 {eligible}，历史标注人 {coder_ids}，建任务 {created} 条"
+        f"义位 {_brief(eligible)}，历史标注人 {_brief(coder_ids)}，"
+        f"建任务 {created} 条"
         f"（幂等跳过 {dedup}，失败 {failed}，跳过 {skipped}），"
         f"发起人 user {admin}，"
         f"actor={getattr(actor, 'get', lambda k: None)('username')}"

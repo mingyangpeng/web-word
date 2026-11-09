@@ -90,6 +90,11 @@ class _StubSt:
         self.buttons.append((args[0] if args else "", kwargs))
         return self.submit
 
+    def button(self, *args, **kwargs):
+        # RV21-1：质检段改普通按钮后桩同面（点击路径与 form 提交等价）
+        self.buttons.append((args[0] if args else "", kwargs))
+        return self.submit
+
     def markdown(self, *args, **kwargs):
         self.messages.append(("markdown", args[0] if args else ""))
 
@@ -437,10 +442,11 @@ def test_run_feedback_uses_flash_not_st_success():
 
 
 def test_section_widget_keys_prefixed():
-    """widget key 一律 'dict_admin_' 前缀（页面自订规则；质检段两键）。"""
+    """widget key 一律 'dict_admin_' 前缀（页面自订规则；质检段两键——
+    RV21-1 后范畴下拉移出表单、运行按钮直置）。"""
     src = inspect.getsource(_render_style_check_section)
     assert 'key="dict_admin_style_check_category"' in src
-    assert '"dict_admin_style_check_form"' in src
+    assert 'key="dict_admin_style_check_run"' in src
 
 
 # ============================================

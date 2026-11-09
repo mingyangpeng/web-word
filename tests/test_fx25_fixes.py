@@ -270,10 +270,12 @@ class TestLoadStyleConfig:
         assert "style.yaml 不在场" in err and "体例文件未研制" in err
 
     def test_parse_failure_reports_reason(self, configs_root):
-        """YAML 解析失败 → 归因带路径与异常摘要。"""
+        """YAML 解析失败 → 归因相对路径＋异常类型（RV19-3：绝对路径与异常
+        原文不再上 UI 面——磁盘布局披露收口；细节归服务端日志）。"""
         root = configs_root("substitution_test: [坏缩进\n  -: {")
         style, path, err = sc.load_style_config("motion")
-        assert style is None and path.startswith(root)
+        assert style is None and path == "configs/style.yaml"
+        assert "解析失败" in err and "原因类型" in err
         assert "解析失败" in err
 
     def test_non_mapping_top_level_reports_reason(self, configs_root):

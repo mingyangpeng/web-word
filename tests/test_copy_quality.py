@@ -273,8 +273,14 @@ class TestOtherCopyLocks:
         清零；词类歧义改「范畴项目」；编号体例无 1.6/6.6b/6.6c。"""
         text = _read_mother()
         for old in ("编撰", "词头", "滑杆", "假绿灯", "dump", "production",
-                    "training", "gold", "caption", "payload"):
+                    "gold", "caption", "payload"):
             assert old not in text, f"母本仍含 {old}"
+        # training 例外：作为 assignments 列名（反引号代码引用）合法出现，
+        # 散文形态（无反引号包裹）仍然禁止 —— 批次 14 试标轮列文档为先例
+        import re as _re
+        bare = [m for m in _re.findall(r".{0,2}training.{0,2}", text)
+                if "`" not in m]
+        assert not bare, f"母本仍含裸 training: {bare}"
         squash = _squash(text)
         assert "范畴项目" in squash
         assert "词类" not in squash

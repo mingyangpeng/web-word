@@ -591,6 +591,14 @@ def upsert_draft(form_key: str, state: Any) -> bool:
         # json.dumps 放 try 内：循环引用等罕见脏结构也走统一降级（False）
         payload = (json.dumps(state, ensure_ascii=False)
                    if state is not None else None)
+        # RV19-5：dumps 后长度闸（对齐 _upsert_kv 50000 口径；深层嵌套可产出
+        # 数 MB payload，JSON 列物理上限只剩 max_allowed_packet——接线前补防）
+        if payload is not None and len(payload) > 50000:
+            logger.warning(
+                f"upsert_draft 拒绝：payload 超长（{len(payload)} > 50000，"
+                f"form={clean_key!r}）"
+            )
+            return False
         with get_db_cursor() as cursor:
             cursor.execute(
                 """INSERT INTO draft_states (user_id, form_key, state_json)

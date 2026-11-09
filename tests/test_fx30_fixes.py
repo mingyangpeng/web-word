@@ -147,6 +147,19 @@ class _StubSt:
     def form_submit_button(self, *args, **kwargs):
         return self.submit
 
+    class _ExpCtx:
+        """expander 上下文桩（RV21-2 广播历史可达面）。"""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def expander(self, *args, **kwargs):
+        self.messages.append(("expander", args[0] if args else ""))
+        return _StubSt._ExpCtx()
+
     def markdown(self, *args, **kwargs):
         self.messages.append(("markdown", args[0] if args else ""))
 

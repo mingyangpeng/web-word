@@ -39,6 +39,28 @@
 | 13 | 备份验证 | 每月抽一份 `*.sql.gz` 在沙箱实例恢复演练 |
 | 14 | G6 备份新鲜卡 | 部署后确认词典管理→出版导出→备份新鲜卡显示 ✅ |
 
+### 1.5 测试库初始化（本地开发/CI 用，生产部署可跳过）
+
+pytest 的真库集成模块（迁移集成/e2e 工作流/各批次 fixes 集成段）需要 `web_word_user`
+对各自的测试库有建库删库权限。`scripts/grant_local_mysql.sql` 一次性幂等完成：
+
+- **1 个应用库**：`web_word_db`；
+- **23 个测试库**：迁移集成（`web_word_migration_test`）＋按模块分库的集成测试库
+  （users/flow/ai_ledger/media/wordforms/org/dict_admin/collab/writing/lexical/
+  stage1_e2e/review_regression/llm_providers）＋批次 14~17 及 review waves 逐批补入的
+  fx18/fx19/fx20/fx25/fx27(r1_probe)/fx30/fx31/fx32/fx33 测试库——合计授权 **24 库**
+  （脚本内注释逐库标注归属模块）。
+
+```bash
+mysql -u root -p < scripts/grant_local_mysql.sql   # 幂等；库名一律 `\_` 转义（防 GRANT 通配符误授权）
+MYSQL_HOST=127.0.0.1 pytest                        # 真库集成段即真跑
+```
+
+> **无授权自动 skip 口径**：未执行授权（或连不上 MySQL）时，真库集成用例**自动 skip
+> 而非 fail**——这是环境能力问题，不是代码缺陷；单元层用例不受影响照常跑。
+> CI（.github/workflows/ci-cd.yml）已加 MySQL 8 service 并在 job 内执行授权脚本，
+> 真库用例在 CI 上真跑。测试库互不共用（按模块分库，防并行 pytest 互删）。
+
 ## 二、部署中
 
 | # | 步骤 | 命令/操作 |
@@ -103,5 +125,5 @@
 | Streamlit 单进程并发上限 | P2 | 查阅端走只读静态镜像；编纂端低并发可接受 |
 | `/app/static/*` 无鉴权 | P3 | 图谱数据敏感度低；如需收紧改路由 |
 | `.env` 历史含旧凭据 | P1 | 轮换后旧值失效即消解；filter-repo 可选 |
-| requests >=2.31 下限 | P3 | requirements 已提至 >=2.32.4；CI 加 pip-audit（待实施） |
+| requests >=2.31 下限 | P3 | requirements 已提至 >=2.32.4；CI 已加 pip-audit 依赖审计（advisory 提示级，不阻断合并——审计结果按当时漏洞库解析，命中须人工评估） |
 | 宿主机 3306 已被原生 MySQL 占用（双栈开发机） | P3 | 本地加 docker-compose.override.yml（gitignored）：services.mysql.ports: !reset []（Compose v2.24+），容器库仅内部网络可达，应用走 service name 不受影响 |

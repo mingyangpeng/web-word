@@ -203,7 +203,10 @@ class TestR725Changelog:
         headings = [
             ln for ln in text.splitlines() if ln.startswith("## ")]
         assert headings, "CHANGELOG 无条目标题"
-        assert "批次 13" in headings[0], headings[0]
+        # 置顶条目随批次滚动更新（FX-16 先例：每批入账置顶）——
+        # 现最新为 review waves 1-2（f85e5e6），要求置顶为日期前缀新条目
+        assert headings[0].startswith("## 2026-"), headings[0]
+        assert "批次 13" not in headings[0], "批次 13 条目应已非置顶"
 
     def test_no_seven_tab_left(self):
         """「七 tab」口径清零（词典管理区实际八 tab，dict_admin_pages 页内八 tab）。"""

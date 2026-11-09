@@ -192,3 +192,10 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx30\_test`.* TO 'web_word_user'@'127.0.0.1'
 GRANT ALL PRIVILEGES ON `web\_word\_fx30\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx30\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- RV-22：批次 14~17 新功能端到端回归固化测试库（tests/test_review_r18.py，
+-- 六链跨模块固化：工具两步激活/质检→指标/广播→收件箱/改派→重标/落地三分支/跨设备续接）
+GRANT ALL PRIVILEGES ON `web\_word\_review\_r18\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_review\_r18\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_review\_r18\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
