@@ -98,6 +98,23 @@ FX-20（规范×实现对账 ①组收口）：任务分配 tab 补充段 _rende
   G2 特征矩阵导出已在信度报告页（reliability.py _export_csv + download_button，
   app.py「📐 信度报告」），驾驶舱漏斗 G2 灰注加指路说明（本模块只加文字，
   reliability.py 不动）。
+
+FX-24（规范×实现对账 ②组「驾驶舱风险清单＋待我裁决汇总」末项）：驾驶舱 tab
+  在进度漏斗/项目自检之后追加两段（本模块所有权内，全部只读、零写路径）：
+  ① ⚠️ 风险清单 _render_risk_list_section —— 五个风险面逐项一行（事项/数量/
+  处理入口指路文案，本批不做跳转链接），逐项独立兜底（一项失败不拖垮其余）：
+  存疑义位（mysql_db.get_annotation_progress 的 flagged 合计，标注平台「待复核
+  清单」同口径）；信度未达标（reliability_runs 每 (category, task_type) 最近一次
+  运行 overall_alpha < G2 线，reliability.LOW_ALPHA_THRESHOLD 单一事实源）；
+  分立复核积压（cs_senses status ∈ DIVIDED_SENSE_STATUSES，list_divided_senses
+  同口径）；撰写侧积压（review_tasks pending 超 FX24_STALE_DAYS 天的审校轮，
+  COUNT(DISTINCT version_id, round)）；验收期风险（export_batches ready 未流转
+  超 FX24_STALE_DAYS 天）。零风险如实「✅ 无」，取数失败按 R4 灰注
+  「数据不可用：<原因>」，宁缺毋假。
+  ② 📥 待我裁决汇总 _render_my_decisions_section —— ai_proposals pending 按
+  kind（draft/audit/probe）分列计数（轻量 GROUP BY，精确无截断）＋ 待我审校
+  （writing_db.list_pending_reviews 当前用户受派口径）；st.metric 计数卡，
+  caption 注明处理入口（AI 协作页/释义撰写与审校页）。
 """
 
 import hashlib
@@ -112,6 +129,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import streamlit as st
 
 from src import ai_ledger, annotation_flow, dict_admin_db, export_center, media_db, org_db
+from src import mysql_db, writing_db  # FX-24：存疑义位/待我审校只读取数（不写这两层）
 from src import registry_db
 from src import pipeline_status, users_db
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
@@ -203,7 +221,11 @@ GUIDE: Dict[str, Any] = {
         "进入「📖 词典管理」先看主编驾驶舱：顶部指标卡给项目数/成员人次/AI 提案总数/"
         "待裁决/采纳率/平均不确定度；下方「⛓️ 进度漏斗」（语义分析段 工序4–8 ＋编纂"
         "成文占位，可切范畴）逐段看进度，缺数段灰色如实标注；再下逐项目自检清单——"
-        "绿 ✓ 无阻塞，红条目即需处理的问题（无 chief、chief 账号全部停用、数据库不可用）。",
+        "绿 ✓ 无阻塞，红条目即需处理的问题（无 chief、chief 账号全部停用、数据库不可用）；"
+        "自检之后是「⚠️ 风险清单」（五个风险面逐项一行：存疑义位/信度未达标/分立复核"
+        "积压/撰写侧积压/验收期快照滞留，零风险如实「✅ 无」，取数失败灰注「数据不可用」）"
+        "与「📥 待我裁决汇总」（AI 提案 pending 按草稿/质检/探针分列 ＋ 待我审校计数卡，"
+        "处理入口在卡下注明）。",
         "「👥 项目成员」选项目：成员表（chief 置顶）看职能与授权人；「添加成员」选人 + "
         "选项目内职能后入册，对已入册者重入即改授职能；「移出项目」选成员执行移除——"
         "chief 或有在途任务者被数据层拒绝时页面以黄色警告转述原因。",
@@ -275,6 +297,12 @@ GUIDE: Dict[str, Any] = {
         "资源登记（批次 11）的数据面边界：登记=词典管理员（guards 中央闸门后调 "
         "registry_db.register_resource）；「双人双签」（技术录入＋许可审定两条签署"
         "线）为批次 12 工单，本版登记行以 registered_by 留痕，审定态字段未开。",
+        "驾驶舱「⚠️ 风险清单 / 📥 待我裁决汇总」（FX-24）全部只读、零写路径：五项"
+        "风险（存疑义位/信度未达标/分立复核积压/撰写审校轮积压/ready 快照滞留，"
+        "积压与滞留的「超过 N 天」口径 N=7）逐项独立取数，单项失败不拖垮整段；"
+        "「✅ 无」= 真 0，「数据不可用：<原因>」= 取数失败（R4 归因，宁缺毋假）；"
+        "待我审校按当前用户为受派审校人（review_tasks.reviewer_id）计。两段只给"
+        "指路文案，本批不做页内跳转链接。",
     ],
 }
 
@@ -737,10 +765,14 @@ def _funnel_category_options() -> List[str]:
 
 
 # R4-3：驾驶舱连通探测的表名（模块常量白名单 —— SQL 文本只拼常量，不收
-# 调用方原文；同 _g6_license_stats 的常量表名先例）
+# 调用方原文；同 _g6_license_stats 的常量表名先例）。FX-24 风险清单扩容
+# cs_senses / review_tasks：分立积压与待我审校的空结果要区分「真 0」与
+# 「取数失败」（对应数据层把库不可用折叠成 []/0，页面单凭返回值分不清）。
 _COCKPIT_PROBE_TABLES = {
     "projects": "dictionary_projects",
     "ai_proposals": "ai_proposals",
+    "cs_senses": "cs_senses",
+    "review_tasks": "review_tasks",
 }
 
 
@@ -843,7 +875,8 @@ def _render_cockpit_metrics(projects: List[Dict[str, Any]],
 
 
 def _render_cockpit_tab() -> None:
-    """驾驶舱：规模与台账指标卡（st.metric）+ 十五工序漏斗 + 逐项目自检清单。
+    """驾驶舱：规模与台账指标卡（st.metric）+ 十五工序漏斗 + 逐项目自检清单
+    ＋ FX-24 两段（⚠️ 风险清单 / 📥 待我裁决汇总，见段注释口径）。
 
     进度漏斗（批次 3 Agent I）：src/pipeline_status.get_cluster_pipeline_status
     聚合语义分析段（工序 4–8）＋编纂成文占位段，format_funnel_segments 出渲染行；
@@ -958,6 +991,361 @@ def _render_cockpit_tab() -> None:
         else:
             detail = "；".join(_esc(x) for x in problems)
             st.error(f"✗ {_esc(name)}：{detail}")
+
+    # FX-24（规范×实现对账 ②组末项）：风险清单 ＋ 待我裁决汇总（全部只读，
+    # 权限沿用本页入口两级角色门，两段内部再各自兜底，见各函数 docstring）。
+    _render_risk_list_section()
+    _render_my_decisions_section()
+
+
+# ============================================
+# FX-24：驾驶舱「⚠️ 风险清单」＋「📥 待我裁决汇总」（规范×实现对账 ②组末项）
+# ============================================
+# 纪律：全部只读（既有公开函数/轻量 SQL），零写路径（无 flash/rerun 需求）；
+# 权限沿用驾驶舱既有权限门（render_dict_admin_page 入口两级角色门），两段
+# 内部再过一次 _is_dict_admin(_current_user()) 兜底（纵深防御，同
+# _render_assign_ops_tab 先例）；R4 归因口径：取数失败灰注
+# 「数据不可用：<原因>」，零风险如实「✅ 无」，宁缺毋假。
+
+# 「超过 N 天」口径常量（任务书 N=7）：撰写侧审校轮积压与验收期快照滞留
+# 共用一个常量；口径注在 _fx24_collect_risk_items docstring。
+FX24_STALE_DAYS = 7
+
+# 风险行颜色：正常深灰正文 / 取数失败灰注（同漏斗缺数段的 _INACTIVE_GRAY）。
+_FX24_RISK_INK = "#2d3748"
+
+
+def _fx24_brief_reason(e: BaseException) -> str:
+    """R4 归因口径的短原因文本（异常类名＋首行消息，截断防堆栈刷屏）。"""
+    lines = str(e).strip().splitlines()
+    head = lines[0][:120] if lines else ""
+    return f"{type(e).__name__}: {head}".strip()
+
+
+def _fx24_alpha_threshold() -> float:
+    """G2 信度达标线（单一事实源 reliability.LOW_ALPHA_THRESHOLD；回退 0.7）。
+
+    懒导入：reliability 链路拖 numpy/krippendorff，不值得在模块加载期付；
+    导入失败按规范默认 0.7 兜底并记日志（阈值是常量，失败只可能是环境异常）。
+    """
+    try:
+        from src.reliability import LOW_ALPHA_THRESHOLD
+        return float(LOW_ALPHA_THRESHOLD)
+    except Exception as e:  # noqa: BLE001 —— 常量拿不到按规范默认值兜底
+        logger.warning(f"读取 G2 信度达标线失败，回退 0.7: {e}")
+        return 0.7
+
+
+def _fx24_scalar_count(sql: str, params: Tuple[Any, ...]) -> Tuple[bool, Any]:
+    """轻量只读计数兜底（R4）：返回 (ok, value)。
+
+    ok=True 时 value 为 int（真 0 如实给 0）；ok=False 时 value 为失败原因
+    文本（页面按「数据不可用：<原因>」灰注，不编数）。SQL 一律为模块内
+    常量文本＋参数化占位，不收调用方原文（同 _cockpit_db_ready 纪律）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, params)
+            row = cursor.fetchone()
+    except Exception as e:  # noqa: BLE001 —— 库不可用/表缺失折叠为取数失败
+        logger.warning(f"驾驶舱风险清单轻量计数失败: {e}")
+        return False, _fx24_brief_reason(e)
+    if not row:
+        return False, "查询无结果行"
+    raw = row.get("n") if isinstance(row, dict) else row[0]
+    try:
+        return True, int(raw or 0)
+    except (TypeError, ValueError):
+        return False, f"计数结果非整数: {raw!r}"
+
+
+def _fx24_collect_doubt_senses() -> Tuple[bool, Any]:
+    """存疑义位数（标注侧既有查询 get_annotation_progress 的 flagged 合计）。
+
+    口径：oald_senses.needs_review=1（标注平台「待复核/存疑清单」❓ 同口径，
+    「复核后仍存疑、需进仲裁清单」）；get_annotation_progress 为 R4-1
+    fail-closed —— None=查询失败（数据不可用），list=逐动词行取 flagged 合计。
+    """
+    try:
+        progress = mysql_db.get_annotation_progress()
+    except Exception as e:  # noqa: BLE001 —— 数据层理论不抛，防御性兜一层
+        logger.warning(f"驾驶舱风险清单存疑义位取数异常: {e}")
+        return False, _fx24_brief_reason(e)
+    if progress is None:
+        return False, "标注进度查询失败（详见服务端日志）"
+    if not isinstance(progress, list):
+        return False, f"返回异常形态: {type(progress).__name__}"
+    total = 0
+    for row in progress:
+        try:
+            total += int(row.get("flagged") or 0)
+        except (TypeError, ValueError):
+            return False, "flagged 列非整数"
+    return True, total
+
+
+def _fx24_collect_low_alpha() -> Tuple[bool, Any]:
+    """信度未达标的 (category, task_type) 计数（reliability_runs 只读）。
+
+    口径：每 (category, task_type) 取最近一次运行（MAX(id)），overall_alpha
+    非空且 < G2 线（_fx24_alpha_threshold）即未达标；α 为 NULL（计算失败
+    留痕）不计入未达标 —— 宁缺毋假，不把「未知」说成「未达标」。
+    Returns (True, rows list[dict]) | (False, reason)。
+    """
+    sql = (
+        "SELECT category, task_type, overall_alpha FROM reliability_runs r "
+        "WHERE r.id IN (SELECT MAX(id) FROM reliability_runs "
+        "GROUP BY category, task_type) "
+        "AND overall_alpha IS NOT NULL AND overall_alpha < %s "
+        "ORDER BY overall_alpha ASC LIMIT 50"
+    )
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, (_fx24_alpha_threshold(),))
+            rows = list(cursor.fetchall() or [])
+    except Exception as e:  # noqa: BLE001 —— 表未建/库不可用折叠为取数失败
+        logger.warning(f"驾驶舱风险清单信度取数失败: {e}")
+        return False, _fx24_brief_reason(e)
+    return True, [dict(r) for r in rows if isinstance(r, dict)]
+
+
+def _fx24_collect_divided_backlog() -> Tuple[bool, Any]:
+    """分立复核积压数（cs_senses merged/split，list_divided_senses 同口径）。
+
+    口径：cs_senses.status ∈ DIVIDED_SENSE_STATUSES（merged/split，裁决落地
+    于 cluster_analysis.execute_sense_division）的行数 —— 轻量 COUNT 取精确值
+    （list_divided_senses 默认 limit=200 有截断，计数面不用它）；空结果再过
+    cs_senses 连通探测区分「真 0」与「取数失败」（R4-3）。
+    """
+    ok, value = _fx24_scalar_count(
+        "SELECT COUNT(*) AS n FROM cs_senses WHERE status IN (%s, %s)",
+        tuple(annotation_flow.DIVIDED_SENSE_STATUSES),
+    )
+    if ok and int(value) == 0 and not _cockpit_db_ready("cs_senses"):
+        return False, "cs_senses 表未建或数据库不可用"
+    return ok, value
+
+
+def _fx24_collect_stale_reviews() -> Tuple[bool, Any]:
+    """撰写侧积压：pending 超 FX24_STALE_DAYS 天的审校轮数（review_tasks 只读）。
+
+    口径：review_tasks.verdict='pending' 且 created_at 早于 NOW()-7 天，
+    按 (version_id, round) 去重计「审校轮」（一版一轮一条任务，任务书口径
+    「pending 超过 N 天的审校轮」；N=FX24_STALE_DAYS=7，模块常量）。
+    """
+    return _fx24_scalar_count(
+        "SELECT COUNT(DISTINCT t.version_id, t.round) AS n "
+        "FROM review_tasks t WHERE t.verdict = %s "
+        "AND t.created_at < NOW() - INTERVAL %s DAY",
+        (writing_db.VERDICT_PENDING, FX24_STALE_DAYS),
+    )
+
+
+def _fx24_collect_stale_snapshots() -> Tuple[bool, Any]:
+    """验收期风险：ready 未发布超 FX24_STALE_DAYS 天的快照数（export_batches）。
+
+    口径：status='ready'（生成后未 published/revoked 流转）且 created_at 早于
+    NOW()-7 天；快照滞留说明出版闭环（G6→published 或 revoked 退出）未走完。
+    """
+    return _fx24_scalar_count(
+        "SELECT COUNT(*) AS n FROM export_batches "
+        "WHERE status = %s AND created_at < NOW() - INTERVAL %s DAY",
+        (export_center.EXPORT_STATUS_READY, FX24_STALE_DAYS),
+    )
+
+
+def _fx24_collect_pending_by_kind() -> Tuple[Optional[Dict[str, int]], Optional[str]]:
+    """ai_proposals pending 按 kind 分列计数（轻量 GROUP BY，精确无截断）。
+
+    不用 ai_ledger.list_pending 逐通道 len()：它受 MAX_LIST_LIMIT(500) 截断，
+    计数面以 GROUP BY 取精确值（同一张表同一 predicate，只读）。counts 恒含
+    ai_ledger.KINDS 三键（无提案的通道如实 0）。
+    Returns (counts, None) | (None, 失败原因)。
+    """
+    sql = "SELECT kind, COUNT(*) AS n FROM ai_proposals WHERE status = %s GROUP BY kind"
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, (ai_ledger.STATUS_PENDING,))
+            rows = list(cursor.fetchall() or [])
+    except Exception as e:  # noqa: BLE001 —— 表未建/库不可用折叠为取数失败
+        logger.warning(f"驾驶舱待我裁决 pending 分通道计数失败: {e}")
+        return None, _fx24_brief_reason(e)
+    counts: Dict[str, int] = {k: 0 for k in ai_ledger.KINDS}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        kind = str(row.get("kind") or "")
+        if kind in counts:
+            try:
+                counts[kind] = int(row.get("n") or 0)
+            except (TypeError, ValueError):
+                return None, f"计数结果非整数: {row.get('n')!r}"
+    return counts, None
+
+
+def _fx24_collect_my_reviews(me_id: Any) -> Tuple[Optional[int], Optional[str]]:
+    """待我审校数（writing_db.list_pending_reviews 当前用户受派审校人口径）。
+
+    list_pending_reviews 把库不可用折叠成 []（R4 分不清真 0 与失败）—— 空结果
+    再过 review_tasks 连通探测：探测不过按取数失败灰注，探测通过如实 0。
+    """
+    try:
+        rows = writing_db.list_pending_reviews(reviewer_id=int(me_id))
+    except (TypeError, ValueError):
+        return None, "当前用户 id 非法（受派审校人口径无法计算）"
+    except Exception as e:  # noqa: BLE001 —— 数据层理论不抛，防御性兜一层
+        logger.warning(f"驾驶舱待我审校取数异常: {e}")
+        return None, _fx24_brief_reason(e)
+    if not isinstance(rows, list):
+        return None, f"返回异常形态: {type(rows).__name__}"
+    if not rows and not _cockpit_db_ready("review_tasks"):
+        return None, "review_tasks 表未建或数据库不可用"
+    return len(rows), None
+
+
+def _fx24_collect_risk_items() -> List[Dict[str, str]]:
+    """⚠️ 风险清单五项的数据采集（全部只读；逐项独立兜底，一项失败不拖垮其余）。
+
+    每项 {"item", "value", "pointer", "tone"}：tone ∈
+    "risk"（有数）/ "zero"（真 0 → 「✅ 无」）/ "off"（取数失败 → 灰注）。
+    五项口径：
+      1. 存疑义位 —— _fx24_collect_doubt_senses（标注平台 flagged 同口径）；
+      2. 信度未达标 —— _fx24_collect_low_alpha（reliability_runs 最近一次
+         运行 α<G2 线，跨范畴聚合，数量格带至多两条明细）；
+      3. 分立复核积压 —— _fx24_collect_divided_backlog（merged/split 同
+         list_divided_senses 口径）；
+      4. 撰写侧积压 —— _fx24_collect_stale_reviews（pending>7 天审校轮）；
+      5. 验收期风险 —— _fx24_collect_stale_snapshots（ready>7 天快照）。
+    """
+    items: List[Dict[str, str]] = []
+
+    def _add(label: str, result: Tuple[bool, Any], pointer: str,
+             zero_text: str = "✅ 无") -> None:
+        """单行归一：取数失败→灰注（off）/ 真 0→「✅ 无」（zero）/ 有数→计数（risk）。"""
+        ok, value = result
+        if not ok:
+            items.append({"item": label, "value": f"数据不可用：{value}",
+                          "pointer": pointer, "tone": "off"})
+        elif isinstance(value, str):
+            # 已是展示文本（如带明细的「n（…）」计数）：非空即按 risk 行渲染
+            items.append({"item": label, "value": value,
+                          "pointer": pointer, "tone": "risk"})
+        elif int(value) == 0:
+            items.append({"item": label, "value": zero_text,
+                          "pointer": pointer, "tone": "zero"})
+        else:
+            items.append({"item": label, "value": str(int(value)),
+                          "pointer": pointer, "tone": "risk"})
+
+    _add("存疑义位（❓ needs_review=1，待复核/存疑清单）",
+         _fx24_collect_doubt_senses(), "🏷️ 标注平台（管理员快速通道视图）")
+    _add("信度未达标（最近一次运行 α<G2 线 0.7）",
+         _fx24_collect_low_alpha_detail(), "📐 信度报告（逐特征 α＋分歧清单）")
+    _add("分立复核积压（merged/split 已裁决待处理）",
+         _fx24_collect_divided_backlog(),
+         "📊 语义分析（分立复核）· 📖 词典管理→📋 任务分配→♻️ 发起重标")
+    _add(f"撰写侧积压（pending 超 {FX24_STALE_DAYS} 天的审校轮）",
+         _fx24_collect_stale_reviews(), "✍️ 释义撰写与审校（审校台）")
+    _add(f"验收期风险（ready 未发布超 {FX24_STALE_DAYS} 天的快照）",
+         _fx24_collect_stale_snapshots(), "📖 词典管理→📤 出版导出（G6 流转）")
+    return items
+
+
+def _fx24_collect_low_alpha_detail() -> Tuple[bool, Any]:
+    """信度未达标的计数＋明细包装（数量格给「n（明细…）」，明细至多两条）。"""
+    ok, rows = _fx24_collect_low_alpha()
+    if not ok:
+        return False, rows
+    if not rows:
+        return True, 0
+    details = []
+    for r in rows[:2]:
+        alpha = r.get("overall_alpha")
+        try:
+            alpha_text = f"{float(alpha):.3f}".rstrip("0").rstrip(".")
+        except (TypeError, ValueError):
+            alpha_text = str(alpha)
+        details.append(f"{r.get('category')}·{r.get('task_type')} α={alpha_text}")
+    more = len(rows) - len(details)
+    suffix = f" 等{more}项" if more > 0 else ""
+    return True, f"{len(rows)}（{'；'.join(details)}{suffix}）"
+
+
+def _render_risk_list_section() -> None:
+    """⚠️ 风险清单（FX-24）：需要词典管理员关注的事项聚合（每项一行，只读）。
+
+    每行 = 事项/数量/处理入口指路（本批只给指路文案，不做页内跳转链接）；
+    零风险如实「✅ 无」；取数失败按 R4 归因灰注「数据不可用：<原因>」，
+    不编数、不因单项失败整段消失。权限：沿用驾驶舱既有权限门，函数内再过
+    一次角色兜底（非词典管理员不渲染）。
+    """
+    me = _current_user()
+    if not me or not _is_dict_admin(me):
+        return
+    st.markdown(
+        f"<h3 style='{HEADER_H3}'>⚠️ 风险清单（需词典管理员关注的事项）</h3>",
+        unsafe_allow_html=True,
+    )
+    items = _fx24_collect_risk_items()
+    rows = []
+    for it in items:
+        color = _FX24_RISK_INK if it["tone"] != "off" else _INACTIVE_GRAY
+        rows.append(
+            "<div style='display:flex;padding:7px 0;"
+            "border-bottom:1px solid #edf2f7;'>"
+            f"<span style='min-width:340px;font-weight:600;'>{_esc(it['item'])}</span>"
+            f"<span style='min-width:220px;color:{color};'>{_esc(it['value'])}</span>"
+            f"<span style='color:{_INACTIVE_GRAY};'>→ {_esc(it['pointer'])}</span></div>"
+        )
+    st.markdown(
+        f"<div style='{get_card_style()}'>{''.join(rows)}</div>",
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "只读聚合（本页零写路径）：各行为既有公开函数/轻量 SQL 的如实计数，"
+        "灰注行=取数失败（不代表没有风险，R4 归因口径），「✅ 无」= 真 0；"
+        "「处理入口」为指路文案，本批不做跳转链接。"
+    )
+
+
+def _render_my_decisions_section() -> None:
+    """📥 待我裁决汇总（FX-24）：AI 提案 pending 按 kind 分列 ＋ 待我审校。
+
+    计数卡（st.metric）：草稿/质检/探针三通道 pending（轻量 GROUP BY 精确
+    计数）＋ 当前用户为受派审校人的待审数（writing_db.list_pending_reviews）。
+    取数失败画「—」并内联降级披露（R4：—为取数失败，不代表没有数据）；
+    处理入口在 caption 注明（AI 协作页收件箱 / 释义撰写与审校页审校台；
+    probe 不入裁决流，ai_ledger.list_pending 取数约定口径）。
+    """
+    me = _current_user()
+    if not me or not _is_dict_admin(me):
+        return
+    st.markdown(f"<h3 style='{HEADER_H3}'>📥 待我裁决汇总</h3>", unsafe_allow_html=True)
+    counts, kind_reason = _fx24_collect_pending_by_kind()
+    me_id = me.get("id")
+    my_n, my_reason = _fx24_collect_my_reviews(me_id)
+    if kind_reason is not None or my_reason is not None:
+        st.warning(
+            "数据库暂不可用，部分指标为降级渲染 ——「—」为取数失败（不代表没有"
+            "数据），0 为真实计数；库恢复后刷新即回真值。"
+        )
+    cols = st.columns(4)
+    with cols[0]:
+        st.metric("AI 提案·草稿（draft）待裁决",
+                  "—" if kind_reason else int(counts[ai_ledger.KIND_DRAFT]))
+    with cols[1]:
+        st.metric("AI 提案·质检（audit）待裁决",
+                  "—" if kind_reason else int(counts[ai_ledger.KIND_AUDIT]))
+    with cols[2]:
+        st.metric("AI 提案·探针（probe）待裁决",
+                  "—" if kind_reason else int(counts[ai_ledger.KIND_PROBE]))
+    with cols[3]:
+        st.metric("待我审校（受派审校人）", "—" if my_reason is not None else int(my_n))
+    st.caption(
+        "处理入口：草稿/质检 →「🤖 AI 协作」页收件箱；待我审校 →"
+        "「✍️ 释义撰写与审校」页审校台；探针通常不入裁决流（仅在探针问答页"
+        "按需查询，ai_ledger.list_pending 取数约定）。"
+    )
 
 
 # ============================================

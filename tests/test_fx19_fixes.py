@@ -169,12 +169,24 @@ class TestNoDataSourceMetrics:
         assert r["pass_rate"] is None           # 绝不编数字
         assert "尚未接入" in r["reason"] and "不编数字" in r["reason"]
 
-    def test_style_check_grey_note_and_no_fabricated_number(self):
-        """体例质检：available=False、pass_rate=None、灰注文案。"""
+    def test_style_check_grey_note_and_no_fabricated_number(self, monkeypatch):
+        """体例质检：无 run 记录/取数不可用 → 灰注、pass_rate=None、不编数字。
+
+        FX-25 契约变更注：本指标已接真数据源（style_check_runs，取数函数
+        list_recent_runs）——「无 run → 灰注」仍成立，但与开发库内容无关了
+        （真值路径见 tests/test_fx25_fixes.py），这里打桩取数层固定三态。
+        """
+        monkeypatch.setattr(cm, "list_recent_runs",
+                            lambda category=None, limit=5: [])
         r = cm.style_check_status()
         assert r["available"] is False
-        assert r["pass_rate"] is None
+        assert r["pass_rate"] is None           # 绝不编数字
         assert "尚未接入" in r["reason"]
+        monkeypatch.setattr(cm, "list_recent_runs",
+                            lambda category=None, limit=5: None)
+        r2 = cm.style_check_status()
+        assert r2["available"] is False and r2["pass_rate"] is None
+        assert "数据库不可用" in r2["reason"]
 
     def test_substitution_config_detection(self, tmp_path, monkeypatch):
         """配置探测：正常 YAML 命中键 → configured=True，reason 换「配置已就绪」。"""

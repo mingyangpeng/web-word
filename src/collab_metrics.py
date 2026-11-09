@@ -19,8 +19,8 @@
                     .verdict（按审校轮次）                    （verdict≠pending 的轮次）
   替换测试通过率    configs/style.yaml           灰注        配置就绪、无执行结果数据源 →
                     substitution_test（配置）                 占位不编数字
-  体例质检通过率    （无执行记录表）             灰注        AI 体例质检批次 8 接入 → 占位
-                                                            不编数字
+  体例质检通过率    style_check_runs（FX-25）    可算**/灰注  最近 1 次 run：passed÷(passed+
+                    无 run 记录 → 灰注                        failed)，warn 单列不入分母
   ================  ===========================  ==========  ==============================
 
   * AI-人一致率的「可算」是**台账三值裁决口径**的退路实现：annotation_submissions
@@ -31,6 +31,13 @@
     不一致=rejected）。局限：台账只存三值裁决，该口径数值上等同 draft 通道
     「严格采纳率」（采纳率分子计入 modified，本指标不计，二者有别）；待
     annotation_submissions 留存 AI 草稿快照后应升级为逐特征一致率。
+
+  ** 体例质检通过率的「可算」自 FX-25 起：数据源 style_check_runs（引擎
+    src/style_check.run_style_check 落库，通过率公式与 warn 口径单一事实源
+    见其模块 docstring）。取**最近 1 次 run** 而非最近 5 次聚合 —— 体例以
+    style.yaml 现行版本为准，历史 run 属旧版本配置下的结果，跨版本聚合
+    分子分母不可比；list_recent_runs(limit=5) 供历史清单展示。无 run 记录
+    /数据库不可用仍灰注（宁缺毋假）。
 
 模块纪律（同 ai_ledger / collab_pages 口径）：
   1. SQL 一律参数化（本模块查询文本全是常量，无一处值拼接）；对 writing_db
@@ -48,6 +55,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from src.mysql_db import get_db_cursor
+from src.style_check import list_recent_runs, pass_rate_from_counts
 
 logger = logging.getLogger(__name__)
 
@@ -87,11 +95,22 @@ SUBSTITUTION_NOTE = (
     "指标位占位，不编数字。"
 )
 
-# 体例质检通过率 · 灰注文案（无质检执行记录数据源 —— 宁缺毋假，不编数字）
+# 体例质检通过率 · 灰注文案（style_check_runs 无 run 记录 —— 宁缺毋假，不编数字；
+# FX-25 起数据源已接入，引擎 src/style_check.run_style_check 落库，本卡有 run 即转真值）
 STYLE_CHECK_NOTE = (
-    "尚未接入体例质检执行数据（style.yaml ai_audit 挂接点已就绪；AI 体例质检"
-    "执行记录批次 8 接入，ai_proposals kind='audit' 通道尚无业务写入），"
-    "指标位占位，不编数字。"
+    "尚未接入体例质检执行数据（style_check_runs 尚无该范畴 run 记录；质检引擎"
+    " src/style_check.run_style_check 已就绪）—— 运行一次后本卡转真值，"
+    "当前占位不编数字。"
+)
+
+# 体例质检通过率 · 真值口径（页面 caption/tooltip 引用；口径单一事实源
+# style_check 模块 docstring，此处同文案）
+STYLE_CHECK_RATE_NOTE = (
+    "口径：最近 1 次体例质检 run 的通过项 ÷（通过项＋失败项）—— warn 单列"
+    "（自动化比对未覆盖/暂无数据可检类观察项），不计入分子也不计入分母；"
+    "数据源 style_check_runs（引擎 src/style_check.run_style_check 落库，"
+    "FX-25）。取最近 1 次而非多次聚合：体例以 style.yaml 现行版本为准，"
+    "历史 run 属旧版本配置，跨版本聚合分子分母不可比。"
 )
 
 # 降级通用文案（数据库不可用/表未建 —— 是「不可用」不是「0」）
@@ -407,25 +426,67 @@ def substitution_test_status() -> Dict[str, Any]:
     }
 
 
-def style_check_status() -> Dict[str, Any]:
-    """体例质检通过率（指标 5）—— **无执行记录数据源，灰注占位不编数字**。
+def style_check_pass_rate_from_counts(passed: Any, failed: Any) -> Optional[float]:
+    """体例质检通过率纯函数（指标 5 分子/分母在这里算，测试直接断言）。
 
-    勘察结论（FX-19）：configs/style.yaml 的 ai_audit 挂接点已就绪
-    （质检通道挂接「体例质检-定义词表检查」），但全库无 style check 执行
-    记录表；writing_pages 明注「定义词表合规检查（AI 体例质检）批次 8 接入」，
-    ai_proposals kind='audit' 通道尚无业务写入。按「宁缺毋假」纪律返回
-    available=False ＋ reason 文案，pass_rate 恒 None。
+    口径（style_check 模块 docstring 同源，委托其单一实现）：
+    passed/(passed+failed)；warn 单列，不入分子也不入分母；分母 0 → None
+    （「还没有可比项」≠ 0%）。
+    """
+    return pass_rate_from_counts(passed, failed)
+
+
+def style_check_status(category: Optional[str] = None) -> Dict[str, Any]:
+    """体例质检通过率（指标 5；FX-25 接真数据源，口径见 STYLE_CHECK_RATE_NOTE）。
+
+    口径选择（模块 docstring 勘察表 ** 注同源）：取**最近 1 次 run** ——
+    体例以 style.yaml 现行版本为准，历史 run 属旧版本配置，跨版本聚合
+    分子分母不可比。三态：
+      * 数据库不可用/表未建 → available=False ＋ DB_UNAVAILABLE_NOTE（灰注）；
+      * 无 run 记录 → available=False ＋ STYLE_CHECK_NOTE（灰注，不编数字）；
+      * 有 run → available=True，pass_rate=passed/(passed+failed)
+        （warn 单列不入分母），附 run_id/范畴/三态计数。
+
+    Args:
+        category: 范畴名；None → 跨范畴取最近 1 次（协同度量页无范畴
+            上下文），给定 → 该范畴最近 1 次。
 
     Returns:
-        dict: {available(恒 False), configured, pass_rate(恒 None), reason,
-        note}。
+        dict: {available, configured, pass_rate, run_id, run_category,
+        passed, failed, warned, total, reason, note}。
     """
-    configured = _style_yaml_config("ai_audit")
-    reason = STYLE_CHECK_NOTE
+    configured = _style_yaml_config("style_version")
+    rows = list_recent_runs(category, limit=1)
+    if rows is None:
+        return {
+            "available": False,
+            "configured": configured,
+            "pass_rate": None, "run_id": None, "run_category": None,
+            "passed": 0, "failed": 0, "warned": 0, "total": 0,
+            "reason": DB_UNAVAILABLE_NOTE,
+            "note": DB_UNAVAILABLE_NOTE,
+        }
+    if not rows:
+        return {
+            "available": False,
+            "configured": configured,
+            "pass_rate": None, "run_id": None, "run_category": None,
+            "passed": 0, "failed": 0, "warned": 0, "total": 0,
+            "reason": STYLE_CHECK_NOTE,
+            "note": STYLE_CHECK_NOTE,
+        }
+    run = rows[0]
+    passed = _count(run.get("passed"))
+    failed = _count(run.get("failed"))
+    warned = _count(run.get("warned"))
     return {
-        "available": False,
+        "available": True,
         "configured": configured,
-        "pass_rate": None,
-        "reason": reason,
-        "note": reason,
+        "pass_rate": style_check_pass_rate_from_counts(passed, failed),
+        "run_id": run.get("id"),
+        "run_category": run.get("category"),
+        "passed": passed, "failed": failed, "warned": warned,
+        "total": _count(run.get("total")),
+        "reason": STYLE_CHECK_RATE_NOTE,
+        "note": STYLE_CHECK_RATE_NOTE,
     }

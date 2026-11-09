@@ -34,7 +34,7 @@ from src.model_settings_pages import render_model_settings_page
 from src.collab_pages import pending_inbox_count, render_collab_page
 from src import ui_kit  # RV12-2：一次性提示统一收口（main() 每轮渲染弹出）
 from html import escape as _html_escape
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator, sanitize_csv_dataframe
 
@@ -82,7 +82,7 @@ from src.design_system import (
     BACKGROUND_COLOR,
     SPACE_SM, SPACE_LG,
     get_card_style,
-    get_section_spacing, SECTION_SPACING_STYLE, get_badge_style, hex_to_rgba
+    get_section_spacing, get_badge_style, hex_to_rgba
 )
 
 # ============================================
@@ -375,6 +375,66 @@ def _visible_page_keys(user: Optional[Dict[str, Any]]) -> List[str]:
         if allowed is None or (effective and set(allowed) & effective):
             keys.append(key)
     return keys
+
+
+# ============================================
+# 侧边栏七区菜单分组（规范②组「七区菜单分组」；docs/使用说明书.md §四 界面导览口径）
+# ============================================
+# 分组只改**呈现**，不改权限：可见集仍由 _visible_page_keys 按六角色权限表
+# 过滤（上文，单一事实来源），这里只定义 ——
+#   * 区序（组间按本表顺序，组内稳定保持 PAGE_KEYS 相对序，见 _group_keys_by_zone）；
+#   * 区名前缀（radio 选项标签 = 【区名】+ page_label，页名仍与使用说明同源）。
+# 归区照实（不迁就分区改权限门）：
+#   * semantic（以句搜义）按文档口径归「查阅展示」区，但权限在 _PAGE_ACCESS_SIX
+#     （NEW_ROLES，登录可见）—— 未登录侧边栏不出现，页面层登录门不变；
+#   * model_settings 权限门仅 dict_admin，照实归「词典管理」区；
+#   * help 帮助中心不计权限表（全员可见的兜底路由页），照实归「系统管理」区尾 ——
+#     未登录也会随可见集出现在该区（帮助中心入口保持可达）；
+#   * annotate 标注平台是基础页（权限表外，页面层 require_login 拦未登录），
+#     照实归「语义建模」区 —— 未登录仍出现在侧边栏（现状口径，点击见「请先登录」）。
+_SIDEBAR_ZONES: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+    ("🔍 查阅展示", ("search", "graph", "corpus", "domain", "semantic")),
+    ("🏷️ 语义建模", ("annotate", "submission", "reliability")),
+    ("📊 语义分析", ("cluster",)),
+    ("✍️ 编纂产出", ("template", "writing", "lexical")),
+    ("🤖 AI 协作", ("ai_hub",)),
+    ("📖 词典管理", ("dict_admin", "model_settings")),
+    ("🔧 系统管理", ("users_admin", "help")),
+)
+
+# 区名前缀（radio 选项标签用）：选项按七区连续排列后，区名前缀成块出现即分组
+# 标题（「单 radio 选项加分区前缀」方案 —— 无多 radio 的 key 冲突/多选残留，
+# 无 rerun 环路，key="page" 路由契约不变）。漏配区的键无前缀（防御未知页）。
+_PAGE_ZONE_PREFIX: Dict[str, str] = {
+    key: f"【{zone}】"
+    for zone, zone_keys in _SIDEBAR_ZONES
+    for key in zone_keys
+}
+
+# 区序号（重排用）：未知键取 len(_SIDEBAR_ZONES)，稳定沉到列表尾。
+_ZONE_ORDER: Dict[str, int] = {
+    key: i
+    for i, (_zone, zone_keys) in enumerate(_SIDEBAR_ZONES)
+    for key in zone_keys
+}
+
+
+def _group_keys_by_zone(keys: List[str]) -> List[str]:
+    """把可见页键按七区重排（组间按 _SIDEBAR_ZONES 序，组内稳定保持原序）。
+
+    只重排不改键集：sorted 稳定，组内相对序与漏配区键（沉尾）的相对序都
+    保持入参顺序；session_state["page"] 的键集契约（PAGE_KEYS 17 键）不受影响。
+    """
+    return sorted(keys, key=lambda k: (_ZONE_ORDER.get(k, len(_ZONE_ORDER)),))
+
+
+def sidebar_option_label(page_key: str) -> str:
+    """侧边栏 radio 选项标签：七区名前缀 ＋ page_label（页名与使用说明同源）。
+
+    分组呈现走「单 radio 选项加分区前缀」：format_func 组合区名前缀与
+    page_label，不复制页名文案；未登记区的键原样返回 page_label（防御）。
+    """
+    return f"{_PAGE_ZONE_PREFIX.get(page_key, '')}{page_label(page_key)}"
 
 
 def _ensure_flow_tables_once() -> None:
@@ -1781,12 +1841,16 @@ def render_sidebar():
     visible_keys = _visible_page_keys(_current_user())
     if st.session_state.get("page") not in visible_keys:
         st.session_state["page"] = "search"
+    # 七区菜单分组（规范②组，FX-23）：仅展示重排 —— 组间按 _SIDEBAR_ZONES 序、
+    # 组内保持 PAGE_KEYS 相对序，键集与权限过滤不变；标签加区名前缀
+    # （sidebar_option_label），区名前缀成块出现即分组标题。
+    # 不再 horizontal=True：选项标签变为「【区名】页名」两段式，竖排成组可读。
+    visible_keys = _group_keys_by_zone(visible_keys)
     st.sidebar.radio(
         "页面",
         options=visible_keys,
-        format_func=page_label,
+        format_func=sidebar_option_label,
         key="page",
-        horizontal=True,
     )
     st.sidebar.divider()
 

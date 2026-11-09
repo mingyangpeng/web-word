@@ -110,7 +110,6 @@ def test_every_guide_has_required_fields():
 
 def test_guide_render_rejects_unknown_key():
     """未知键给出警告而不是静默空白（AppTest 外的兜底路径）。"""
-    import streamlit as st
     # 不在 ScriptRunContext 下调用会打警告但不崩 —— 只验证键查找逻辑
     assert PAGE_GUIDES.get("nonexistent") is None
     assert page_label("nonexistent") == "nonexistent"
@@ -174,7 +173,12 @@ def test_sidebar_radio_uses_page_guides():
     assert "def _visible_page_keys" in app_src, "缺角色可见性过滤函数"
     # 过滤必须以 PAGE_KEYS 为基准（防硬编码页面清单）
     assert "PAGE_KEYS" in app_src
-    assert "format_func=page_label" in app_src
+    # FX-23 七区菜单分组：format_func 换为 sidebar_option_label（区名前缀 +
+    # page_label 组合），页名仍须经 page_label 取（与使用说明同源，不复制文案）。
+    assert "format_func=sidebar_option_label" in app_src, \
+        "侧边栏选项标签未接七区前缀格式化（分组断链）"
+    assert "def sidebar_option_label" in app_src, "缺七区标签格式化函数"
+    assert "page_label(page_key)" in app_src, "七区标签绕过 page_label（页名漂移）"
     # 每个页面渲染函数都调用了 render_page_usage_guide
     for key in APP_PAGES:
         assert f'render_page_usage_guide("{key}")' in app_src, key
