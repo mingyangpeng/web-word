@@ -153,9 +153,16 @@ web-word/
 │   ├── semantic_search.py      # 以句搜义（自然语言 → 特征向量 → Gower 最近邻）
 │   ├── page_guides.py          # 页面使用说明（原理/数据来源/操作/注意，与页面一一对应）
 │   ├── users_db.py             # 多用户账号体系（角色权限/启停，内置 admin）
-│   ├── users_admin_page.py     # 用户管理页（管理员专用）
-│   ├── annotation_flow.py      # 标注提交流（提交/分歧检测/仲裁/任务统计）
+│   ├── users_admin_page.py     # 账号管理页（管理员专用）
+│   ├── annotation_flow.py      # 标注提交流（提交/分歧检测/仲裁/改派/重标/任务统计）
 │   ├── reliability.py          # Krippendorff's α 信度引擎与报告页
+│   ├── collab_metrics.py       # 协同度量五指标数据层（AI-人一致率/标注节省量/打回率/替换测试/体例质检通过率）
+│   ├── style_check.py          # AI 体例质检引擎（五检查项机械检查＋style_check_runs 落库）
+│   ├── tool_settings_db.py     # 工具两步激活持久化（category_tool_settings＋settings_audit 审计）
+│   ├── broadcast_db.py         # 项目广播数据层（project_broadcasts：发布/列表/收件箱横幅取数）
+│   ├── user_context_db.py      # 用户上下文域 5 表（profiles/state/bookmarks/notes/draft_states）
+│   ├── categories_tools_page.py # 范畴与工具页（available/enabled 两区开关即写即审计）
+│   ├── tools/                  # 工具插件域（registry 注册表＋pack_check 范畴包自检）
 │   ├── category_pack.py        # 范畴包加载器（configs/motion/ 六件套 YAML）
 │   ├── mysql_db.py             # MySQL 8.0 数据访问层（连接、建表、迁移、CRUD、统计）
 │   ├── llm_api.py              # 多供应商 LLM 封装（zhipu/openai/deepseek 路由、调用、解析、MySQL 缓存、兜底释义）
@@ -522,7 +529,7 @@ graphify god-nodes --top 10                # 架构枢纽节点
 MySQL 8.0。全部表结构的权威是各数据层模块的 DDL（`src/mysql_db.py` 的
 `CREATE_TABLES_SQL` 与 users_db / annotation_flow / reliability / category_study /
 zh_dict / media_db / writing_db / lexical_db / llm_providers_db / registry_db 等
-协作与编纂域模块各自的建表语句），共 **49 张表**（`CREATE TABLE` 语句去重口径，含
+协作与编纂域模块各自的建表语句），共 **58 张表**（`CREATE TABLE` 语句去重口径，含
 `schema_migrations` 版本表）＋ 1 个对照视图（`init_db.sql` **不再复制建表语句**，
 只建库与授权，避免两份会漂移的 DDL）。`./start doctor` 对其中 **22 张核心内容表**
 执行行数验收基线（12 项种子数据在位性另行核对）。
@@ -585,8 +592,11 @@ zh_dict / media_db / writing_db / lexical_db / llm_providers_db / registry_db �
 
 ### 操作
 
-1. **登录**：启动后侧边栏顶部输入用户名/密码；未登录仅见查阅展示区（只读）。
-2. **管理员**：`👥 用户管理` 页创建标注员/审核员账号、分配角色、启停账号。
+1. **登录**：启动后侧边栏顶部输入用户名/密码；未登录可见 6 键（查阅展示区 4 页
+   搜索释义/知识图谱/语料数据集/域系初判＋标注平台＋帮助中心；「🧠 以句搜义」
+   属查阅展示区但登录可见），管理类页面不出现在侧边栏。
+2. **管理员**：`👥 账号管理` 页创建标注员/审核员账号、分配角色、启停账号
+   （页内含「🧩 范畴与工具」段——工具两步激活）。
 3. **标注员**：`📥 标注提交` 页选择动词→义位，核对英文释义、语法码与真实例句（判定证据），
    参考 LLM 初筛草稿完成判定并提交；`🏷️ 标注平台` 页可继续既有单标注工作流。
 4. **审核员/管理员**：`📥 标注提交` 管理员视图查看全部分歧，提交仲裁意见；
@@ -703,7 +713,7 @@ pytest tests/test_security.py
 开启 `--cov` 后，覆盖率 HTML 报告输出到 `htmlcov/index.html`。绝大多数测试用 `monkeypatch` 隔离外部依赖，
 不会真实调用智谱 API 或 MySQL。
 
-套件规模（2026-11-09 口径）：**59 个测试模块、1997 项**（`pytest --collect-only`）。
+套件规模（2026-11-10 口径）：**74 个测试模块、2569 项**（`pytest --collect-only`）。
 真库集成用例（如 `test_migration_integration.py`、e2e 工作流）在无库环境**自动 skip**
 （不是 fail）；CI 已加 MySQL 8 服务承载真库用例。
 

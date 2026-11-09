@@ -7,6 +7,71 @@
 > 早期版本（2026-05-30 之前）没有独立版本号，条目按实际完成时间归入 v1.0。
 
 
+## 2026-11-10 · review waves 1-2：十镜头 review 20 findings 全修（f85e5e6）
+
+第一波（RV-13 权限／RV-14 一致性／RV-15 会话态）＋第二波（RV-16 性能／RV-17 降级／
+RV-18 测试质量），合计 20 findings 全修：
+
+- 重标同轮幂等闸（dedup 返回体，防负荷上限污染）、改派原子复验（EXISTS 在册＋前值，
+  含 active 复验）、两步激活 UPDATE 原子复验＋1062 转幂等（TOCTOU 消除）
+- 落地分支 1 按可裁决角色过滤（viewer/annotator/editor 不再系统性够不到分支 2）；
+  广播表单项目作用域化＋横幅在册闸连通探测（断库不误归因「不在册」）＋逐因提示
+- 用户上下文 5 表补 FK CASCADE；待我审校 COUNT 专查替代 200 行宽取数；
+  迁移 1060 白名单／长度闸归因／坏 JSON 告警等
+- 测试质量：grant 脚本补 r1_probe/fx30_test 等测试库、续接点端到端真测试
+  （适配器白名单＋登出源钉）；全量 **2569 passed / 0 failed**
+
+## 2026-11-10 · 批次 17：阶段 2② 组收官——登录落地三分支／项目广播／用户上下文域／工具页面接线（1d94ccf）
+
+- **登录落地三分支**（FX-29，规范 §9 L242）：有待办→协作收件箱；有续接点→上次位置
+  （flash「已回到上次工作位置：X」）；首次→搜索释义。续接点登出落 `user_state`、
+  登录经适配器读取，端到端打通
+- **项目广播**（FX-30）：`project_broadcasts` 表＋发布入口（词典管理·项目成员 tab
+  「📢 项目广播」，标题 ≤200／正文 ≤10000，校验逐因提示）＋收件箱置顶横幅展示
+- **用户上下文域 5 表**（FX-31）：user_profiles／user_state／user_bookmarks／
+  user_notes／draft_states（自带 DDL 惰性 ensure，own-rows-only，fail-closed）
+- **工具页面接线**：corpus_evidence_tool 页面接线（逐字节等价）；semantic_search_tool
+  扩 params_schema 收 index（以句搜义页经工具接线）
+- 全量 **2447 passed / 0 failed**（批次 16 基线 2289＋158）
+
+## 2026-11-10 · 批次 16：质检 UI 入口／查询归因／G3 锁定撰写侧消费／docstring 清欠（e458e8a）
+
+- **🧪 体例质检 UI 入口**（FX-26）：主编驾驶舱段——运行按钮＋逐项三色徽章表＋
+  最近 5 次历史＋通过率口径注（form_submit_button 提交、flash 纪律、R4 归因灰注）
+- **查询归因**（FX-27）：usage_logs.user_id ALTER-only 幂等迁移（NULL＝未登录／
+  系统作业）＋log_usage 向后兼容签名＋搜索写路径登录态归因
+- **G3 locked 撰写侧消费**（FX-28）：get_cluster_lock_state 锁态读面（fail-open）＋
+  撰写台「🔒 词簇已定稿锁定」徽章＋模板页「定稿基线」标识——锁定＝放行撰写非禁写
+- R6-11 docstring 全仓清欠（fx5 契约全绿）；ALTER-only 清单补记 usage_logs.user_id
+- 全量 **2289 passed / 0 failed**
+
+## 2026-11-10 · 批次 15：阶段 2 第一批——七区菜单分组／驾驶舱风险与裁决汇总／体例质检引擎（2e2d795）
+
+- **七区菜单分组**（FX-23）：侧边栏 17 页按使用说明书七区分组（单 radio＋分区前缀
+  标签方案：路由契约 PAGE_KEYS 不变、权限门零改动、无 rerun 环路；未登录态照实 6 键）
+- **驾驶舱「⚠️ 风险清单＋📥 待我裁决汇总」**（FX-24）：风险五项（存疑义位／信度未达标／
+  分立积压／审校超时 7 天口径／快照滞留）只读逐项兜底＋AI 提案 pending 按草稿/质检/
+  探针分列＋待我审校计数卡
+- **体例质检引擎**（FX-25）：src/style_check.py 五检查项（配置完备性/定义词表/排序规则/
+  spine 覆盖/媒体绑定）＋style_check_runs 表＋协同度量体例质检通过率接真三态
+  （motion 实跑 3 过/1 未过：DEFINING_VOCAB fail＝词表待编者核定的如实结论）
+- 全量回归 **2289 passed / 0 failed**（批次 15/16 合并复跑口径，较批次 14 基线 2152＋137）
+
+## 2026-11-09 · 批次 14：规范对账①组「阶段 1 应落地未落」七项全落地——工具激活链／协同度量五指标／任务域（da062a5）
+
+- **工具激活链**（FX-18）：tool_settings_db（category_tool_settings＋settings_audit
+  两表）两步激活 available→enabled 持久化＋审计全留痕；registry 挂 DB loader 缝；
+  categories_tools_page 两区开关；内置工具 3/10→11 全注册＋pack_selfcheck 引用自检
+- **协同度量五指标**（FX-19）：collab_metrics——AI-人一致率／标注节省量（估算徽章）／
+  打回率有源即算；替换测试与体例质检无数据源灰注占位不编数字（宁缺毋假）
+- **任务域**（FX-20）：改派入口（五道闸，open 态分派）＋assignments round/training
+  两列 ALTER-only 幂等迁移＋分派表单轮次/试标徽章＋G2 修订→重标闭环
+  （create_reannotation_tasks：历史标注人各建 round+1 任务）＋分立台账读面；
+  顺带修 registry.reset_registry_state 缺 global 的真 bug
+- 收尾：mysql_db ALTER-only 清单补记＋grant 脚本补 fx18/19/20 测试库；
+  全量 **2152 passed / 0 failed**（批次 13 基线 1997＋新测试 155）
+
+
 ## 2026-11-08 · 批次 13 系统性修复：性能 N+1／启动链加固／中文学术文案定名
 
 三路并行（FX-13 性能 / FX-14 启动链 / FX-15 文档定名）＋台账大核销与成片文档刷新（FX-16）。

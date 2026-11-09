@@ -79,6 +79,10 @@ class _StubSt:
     def form_submit_button(self, *args, **kwargs):
         return False
 
+    def button(self, *args, **kwargs):
+        # RV21-1：质检段改普通按钮后桩同面（渲染面不点击）
+        return False
+
     def metric(self, label, value=None, **kwargs):
         self.metrics.append((label, value))
 

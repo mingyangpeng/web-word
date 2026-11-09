@@ -153,10 +153,13 @@ def load_style_config(
         with open(path, "r", encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
     except Exception as exc:  # noqa: BLE001 —— 解析失败要带原因归因
-        return None, str(path), f"style.yaml 解析失败（{path}）: {exc}"
+        return None, "configs/style.yaml", (
+            f"style.yaml 解析失败（详见服务端日志）—— 原因类型: "
+            f"{type(exc).__name__}"
+        )
     if not isinstance(data, dict):
-        return None, str(path), (
-            f"style.yaml 顶层必须是映射（dict），实际为 {type(data).__name__}（{path}）"
+        return None, "configs/style.yaml", (
+            f"style.yaml 顶层必须是映射（dict），实际为 {type(data).__name__}"
         )
     return data, str(path), None
 
@@ -212,13 +215,16 @@ def _extract_vocab_words(
         name = vocab_file.strip()
         vf = Path(name)
         if vf.is_absolute():
-            if vf.is_file():
-                return _read_vocab_file(vf, name)
-        else:
-            for base in search_dirs:
-                candidate = base / vf
-                if candidate.is_file():
-                    return _read_vocab_file(candidate, name)
+            # RV19-4：绝对路径拒读（对齐 RV4-3 媒体路径闸纪律——style.yaml 是
+            # 仓库侧配置，防配置注入式任意文件读成为未来同型新面）
+            return [], (
+                f"vocab_file 为绝对路径（{name!r}）——按路径闸纪律拒读，"
+                "请改为相对 configs/ 的文件名"
+            )
+        for base in search_dirs:
+            candidate = base / vf
+            if candidate.is_file():
+                return _read_vocab_file(candidate, name)
         return [], (
             f"vocab_file 未落盘（vocab_file={name!r} —— 「待编者核定」"
             "类占位按未配置处理）"
@@ -229,9 +235,13 @@ def _extract_vocab_words(
 def _read_vocab_file(path: Path, declared: str) -> Tuple[List[str], str]:
     """读词表文件（每行一词；空行与 # 注释行跳过）。"""
     try:
-        lines = path.read_text(encoding="utf-8").splitlines()
+        raw = path.read_text(encoding="utf-8")
     except OSError as exc:
-        return [], f"vocab_file 读取失败（{declared}）: {exc}"
+        logger.warning(f"style_check: vocab_file 读取失败（{declared}）: {exc}")
+        return [], "vocab_file 读取失败（详见服务端日志）"
+    if len(raw) > 1_000_000:  # RV19-4 读取上限：1MB/十万行防配置注入式巨文件
+        return [], f"vocab_file 过大（>1MB，{declared}）——拒绝读取"
+    lines = raw.splitlines()
     words = [
         line.strip() for line in lines
         if line.strip() and not line.strip().startswith("#")
@@ -360,7 +370,7 @@ def check_microstructure_spine(style: Dict[str, Any]) -> Dict[str, str]:
         logger.warning(f"style_check: spine 七段面读取失败: {exc}")
         return _item(
             "MICROSTRUCTURE_SPINE", rule, "warn",
-            f"自动化比对未覆盖：spine 七段面读取失败（{exc}）；"
+            f"自动化比对未覆盖：spine 七段面读取失败（详见服务端日志）；"
             f"声明键 {len(declared)} 个未比对",
         )
     if len(titles) != SPINE_SECTION_COUNT:
@@ -445,7 +455,7 @@ def check_multimedia_bindings(style: Dict[str, Any]) -> Dict[str, str]:
         logger.warning(f"style_check: 媒体绑定抽查查询失败: {exc}")
         return _item(
             "MULTIMEDIA_BINDINGS", rule, "warn",
-            f"暂无媒体绑定可检（media 两表未建或查询失败：{exc}）；"
+            f"暂无媒体绑定可检（media 两表未建或查询失败，详见服务端日志）；"
             f"规则声明 caption_required={caption_required}、"
             f"license_gate={license_gate}",
         )
@@ -639,7 +649,7 @@ def list_recent_runs(
         params.append(str(category))
     sql += " ORDER BY id DESC LIMIT %s"
     try:
-        capped = max(1, int(limit))
+        capped = max(1, min(int(limit), 50))
     except (TypeError, ValueError):
         capped = 1
     params.append(capped)

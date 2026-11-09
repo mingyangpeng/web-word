@@ -3631,9 +3631,18 @@ def main():
 
 
 def render_users_admin_entry() -> None:
-    """👥 用户管理入口：使用说明 + Agent A 页面（函数内部另有 admin role gate）。"""
+    """👥 系统管理入口：使用说明 + 账号管理页 + 范畴与工具段（RV20-1 接线）。
+
+    两段各自带函数内角色门（账号管理 sys_admin/dict_admin；范畴与工具
+    sys_admin/dict_admin，两区开关再细分 sys_admin/dict_admin 职责）；
+    账号管理段空库早退不影响范畴与工具段独立渲染。
+    """
     render_page_usage_guide("users_admin")
     render_users_admin_page()
+    st.markdown("")
+    from src.categories_tools_page import render_categories_tools_page
+
+    render_categories_tools_page()
 
 
 def render_reliability_entry() -> None:

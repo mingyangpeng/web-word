@@ -42,11 +42,22 @@ pytest tests/test_phase5.py -k degradation
 带 `--cov=src` 运行后，终端会打印覆盖率摘要，同时生成 HTML 报告：打开
 `htmlcov/index.html` 即可查看逐行覆盖情况。
 
-## 测试隔离约定
+## 测试隔离约定（现行口径，2026-11-10 更新）
 
-测试**不得**真实访问智谱 API 或 MySQL。`tests/test_phase5.py` 用 autouse fixture 把所有外部
-依赖默认替换为「不可达」，任何漏掉的 patch 都会立刻显式失败，而不是静默触网或连库。
-新增涉及外部调用的用例请沿用这一约定。
+分两层，不再一刀切「不得访问 MySQL」：
+
+- **单元层不访问外部依赖**：涉及 LLM/MySQL 的单元用例一律 monkeypatch 隔离。
+  `tests/test_phase5.py` 用 autouse fixture 把所有外部依赖默认替换为「不可达」，
+  任何漏掉的 patch 都会立刻显式失败，而不是静默触网或连库。
+- **集成层真库用例自动降级**：迁移集成/e2e 工作流/各批次 fixes 集成段在真 MySQL 上
+  真跑；无库或 `web_word_user` 未授权（见 `docs/DEPLOYMENT.md` §1.5 测试库初始化，
+  `scripts/grant_local_mysql.sql` 幂等授权 1 应用库＋23 测试库）时**自动 skip 而
+  非 fail**——环境能力问题，不是代码缺陷。
+- **CI 有 MySQL 8 service**：`.github/workflows/ci-cd.yml` 起了 `mysql:8` 服务并执行
+  授权脚本，真库用例在 CI 上真跑（不 skip）。
+
+新增涉及外部调用的单元用例请沿用 monkeypatch 约定；新增真库集成模块请按模块分库
+（`web_word_<module>_test` 命名，防并行 pytest 互删）并在 grant 脚本补授权行。
 
 ## 测试文件一览
 
@@ -76,4 +87,5 @@ black src/      # 格式化
 ```
 
 CI（`.github/workflows/ci-cd.yml`）在 push 与 PR 时运行 `pytest -v`、`flake8 src/`、
-`mypy src/`；其中的 Hugging Face 部署任务当前已注释禁用（原因见该文件内的 TODO）。
+`mypy src/`，并跑 **pip-audit 依赖漏洞审计**（advisory 提示级）与 **MySQL 8 service**
+上的真库集成段；其中的 Hugging Face 部署任务当前已注释禁用（原因见该文件内的 TODO）。
