@@ -57,6 +57,9 @@ class SemanticSearchTool(ToolSpec):
         "category": {"type": "string", "default": "motion"},
         "language": {"type": "string", "enum": ["en", "zh"], "default": "en"},
         "top_k": {"type": "integer", "default": semantic_search.DEFAULT_TOP_K},
+        # 预装载索引（页面级 st.cache_data 产物）透传：页面缓存纪律在接线时保留
+        # ——不给 index 则 search_similar_senses 自行现场装载（原函数口径）
+        "index": {"type": "object", "nullable": True, "default": None},
     })
     ai_hooks: List[str] = field(default_factory=lambda: [
         "draft",  # LLM 把自然语言查询解析成特征向量（失败回退规则层）

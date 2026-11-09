@@ -353,8 +353,9 @@ class TestBuiltinTools:
         monkeypatch.setattr(semantic_search, "search_similar_senses", fake_search)
         tool = get_tool("semantic_search")
         assert tool.run({"feature_vector": vector, "top_k": 3}) is sentinel
+        # FX-29 接线扩面：index 进 schema（页面缓存透传；缺省 None=自装载）
         assert captured == {"feature_vector": vector, "category": "motion",
-                            "language": "en", "top_k": 3}
+                            "language": "en", "top_k": 3, "index": None}
 
     def test_semantic_search_run_requires_vector(self, monkeypatch):
         # 必填参数缺失：merge_params 抛 RegistryError，不触原函数

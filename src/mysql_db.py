@@ -192,6 +192,19 @@ STYLE_CHECK_RUNS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS style_check_runs (
         INDEX idx_scr_category_id (category, id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
+# 项目广播（FX-30，规范 §8②组「项目广播」）表 DDL —— 单一事实源在本常量：
+# CREATE_TABLES_SQL 末位引用它随全量建表执行；src/broadcast_db.ensure_broadcast_table
+# 引用同一常量做数据侧幂等建表（收件箱可先行渲染，两路同源）。
+PROJECT_BROADCASTS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS project_broadcasts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL COMMENT '词典项目 id（软引用 org 域 dictionary_projects，无 FK —— 广播是留痕公示，项目壳变动不级联删史）',
+        title VARCHAR(200) NOT NULL COMMENT '广播标题',
+        body TEXT NOT NULL COMMENT '广播正文',
+        published_by INT NULL COMMENT '发布人 users.id（软引用无 FK；NULL=系统作业 —— RV2-3 留痕列第 1 类口径）',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pb_project_id (project_id, id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
+
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
     """CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -524,6 +537,10 @@ CREATE_TABLES_SQL = [
     # --- AI 体例质检执行记录（FX-25；DDL 单一事实源 STYLE_CHECK_RUNS_TABLE_SQL，
     #     注释与口径说明见其定义处）---
     STYLE_CHECK_RUNS_TABLE_SQL,
+
+    # --- 项目广播（FX-30；DDL 单一事实源 PROJECT_BROADCASTS_TABLE_SQL，
+    #     注释与口径说明见其定义处）---
+    PROJECT_BROADCASTS_TABLE_SQL,
 ]
 
 # 只读视图：用「簇成员两两配对」推导完全图，作为 word_relations 物化表的对照实现。

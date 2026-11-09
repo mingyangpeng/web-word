@@ -18,7 +18,7 @@ from src.mysql_db import (
     log_usage, get_synonyms, get_cluster_graph, get_cluster_graph_by_id,
     get_full_word_graph, get_senses, get_oald_senses,
     get_corpus_overview, get_corpus_word_stats, get_corpus_schema_scores,
-    get_corpus_schema_evidence, get_corpus_collocations, corpus_dataset_ready,
+    get_corpus_schema_evidence, corpus_dataset_ready,
     get_annotation_progress, update_sense_annotation, get_annotation_export_rows,
     update_collocation_annotations, count_feedbacks, cache_scope_key,
     domain_family_ready, get_domain_family_overview, get_domain_family_senses,
@@ -34,7 +34,7 @@ from src.model_settings_pages import render_model_settings_page
 from src.collab_pages import pending_inbox_count, render_collab_page
 from src import ui_kit  # RV12-2：一次性提示统一收口（main() 每轮渲染弹出）
 from html import escape as _html_escape
-from typing import Optional, Dict, List, Any, Tuple
+from typing import Callable, Optional, Dict, List, Any, Tuple
 from src.llm_api import get_definition, get_fallback_definition
 from src.security import InputValidator, sanitize_csv_dataframe
 
@@ -72,6 +72,12 @@ from src.template_engine import render_template_page
 from src.semantic_search import render_semantic_search_page
 from src.users_admin_page import render_users_admin_page, ROLE_LABELS, ROLE_BADGE_COLORS
 from src.category_pack import CATEGORIES, load_pack
+# FX-29 工具页面接线（架构 §4/§9「页面经中央注册表调工具」）：导入内置工具包
+# 即把 ToolSpec 注册进中央注册表；页面按 tool_id 经 get_tool 取工具调 run()
+# （薄包装 —— merge_params 合并 params_schema 默认值后委托原数据层函数，行为
+# 与直调逐字节一致；run 不查 enabled 位，启用位是界面开关语义，FX-18）。
+from src.tools.registry import get_tool
+from src.tools.builtin import corpus_evidence_tool  # noqa: F401  导入即注册
 
 # ============================================
 # 设计系统导入
@@ -221,6 +227,16 @@ def _logout() -> None:
     消费转 st.warning「…请先登录…」）—— 与旧版「残留页登出门提示请先
     登录」同一用户可见语义（集成断言锁定），只是提示不再依赖残留页。
     """
+    # 续接点落盘（FX-29/FX-31 对接：上次位置=上次登出时所在页；写库失败
+    # fail-open 不阻断登出——续接点是便利不是承诺）
+    try:
+        from src.user_context_db import upsert_state
+
+        _page = st.session_state.get("page")
+        if isinstance(_page, str) and _page in PAGE_KEYS:
+            upsert_state("resume_page", _page)
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"登出续接点落盘失败（忽略）: {e}")
     for key in list(st.session_state.keys()):
         if key not in _LOGOUT_KEEP_KEYS:
             st.session_state.pop(key)
@@ -1754,6 +1770,100 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
         st.sidebar.error("修改失败（数据库未写入），请重试。")
 
 
+# ============================================
+# 登录落地三分支（规范②组；规范 §9「登录落地三分支」原文口径）
+# ============================================
+# 规范《平台架构设计规范.md》§9 原文（L242-243）：
+#   「登录落地三分支：有待办→协作收件箱；有续接点→上次位置（侧边栏「继续：…」）；
+#     首次→搜索释义。用户上下文（profiles/state/bookmarks/notes/draft_states）
+#     跨设备续接……」
+# 实现口径（FX-29，逐条对照规范文字）：
+#   * 只改**登录成功那一刻**的初始 page 设置（写 session_state["page"]）——
+#     不动七区分组与路由契约（PAGE_KEYS 键集不变）；用户随后手动切页不被劫持
+#     （落地解析只在登录成功路径调用一次，不进每轮渲染）；
+#   * 「有待办」＝ ai_proposals 台账 pending 的 draft/audit 提议数 > 0
+#     （pending_inbox_count —— 与侧边栏「🤖 AI 待办 N 条 · 去处理」徽章同一
+#     信号源；库不可用/表未建按 0 计，自然落到后续分支）→ 协作收件箱 ai_hub
+#     （六角色全可见，_PAGE_ACCESS_SIX["ai_hub"]=NEW_ROLES）；
+#   * 「有续接点」＝ 用户上下文域 user_state（工作位置/续接点，规范 §8-⑨）
+#     读到上次工作页 —— 页级续接点读取尚未接线（src/user_context_db 的
+#     user_state 为键值面，「键 → 落地页」的换算归其接线方），本模块留
+#     set_resume_page_loader 缝（FX-18 set_db_enabled_loader 同款两步绑定），
+#     未绑定/读不到 ＝ 无续接点，顺序取下一分支；
+#   * 「首次」（无待办且无续接点）→ 搜索释义 search；
+#   * 各分支目标先过 _visible_page_keys 角色可见性过滤：落地页不得是该角色
+#     radio 之外的隐藏页（不可见视同该分支未命中，顺序取下一分支）。
+_RESUME_PAGE_LOADER: Optional[Callable[[int], Optional[str]]] = None
+
+
+def set_resume_page_loader(
+        loader: Optional[Callable[[int], Optional[str]]]) -> None:
+    """绑定/解绑续接点 loader（FX-29 缝）：loader(user_id) → 上次工作页键或 None。
+
+    生产绑定入口：用户上下文域（src/user_context_db，FX-31）把 user_state 的
+    页级续接点换算成页键后仿 src/tool_settings_db.bind_registry_loader 的
+    两步激活绑入；本模块自身零 DB 依赖，loader 未绑定时落地分支 2 恒不命中
+    （行为与纯会话内实现一致，兼容测试打桩）。传 None 解绑。
+    """
+    global _RESUME_PAGE_LOADER
+    _RESUME_PAGE_LOADER = loader
+
+
+def _resume_work_page(user: Dict[str, Any]) -> Optional[str]:
+    """读续接点（上次工作页键）：loader 未绑定/读不到/异常 → None。
+
+    异常吞掉补留痕（R6-10 同款口径）—— 落地不该因续接点读数失败而断，
+    fail-open 顺序取下一分支。
+    """
+    loader = _RESUME_PAGE_LOADER
+    if loader is None:
+        return None
+    try:
+        return loader(as_int(user.get("id")))
+    except Exception as e:  # noqa: BLE001 —— 续接点读数失败按无续接点降级
+        logger.warning(f"登录落地：续接点读取失败（按无续接点降级）: {e}")
+        return None
+
+
+def _resume_page_loader(user_id: int) -> Optional[str]:
+    """user_state 续接点适配器（FX-31 对接）：登录瞬间会话用户==user_id，
+    故走会话派生 CRUD（user_context_db 权限面不收 user_id 入参）读
+    resume_page；loader 缝签名由 set_resume_page_loader 约定。"""
+    try:
+        from src.user_context_db import list_states
+
+        for row in list_states():
+            if row.get("state_key") == "resume_page":
+                page_key = row.get("state_value")
+                return page_key if isinstance(page_key, str) else None
+        return None
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"续接点适配器读取失败（按无续接点降级）: {e}")
+        return None
+
+
+set_resume_page_loader(_resume_page_loader)
+
+
+def _landing_page_for(user: Dict[str, Any]) -> str:
+    """登录落地三分支解析（规范 §9 L242 原文口径，逐条对照见本区注释）。
+
+    分支顺序即规范语序：有待办→协作收件箱；有续接点→上次位置；首次→搜索释义。
+    仅在登录成功路径调用一次（_render_login_section）；返回键必属该角色可见集
+    （_visible_page_keys ⊆ PAGE_KEYS），七区路由契约不受影响。
+    """
+    visible = _visible_page_keys(user)
+    # 分支 1：有待办 → 协作收件箱（ai_hub 六角色全可见）
+    if "ai_hub" in visible and pending_inbox_count() > 0:
+        return "ai_hub"
+    # 分支 2：有续接点 → 上次位置（user_state 续接点；侧边栏「继续：…」同源）
+    resume = _resume_work_page(user)
+    if resume is not None and resume in visible:
+        return resume
+    # 分支 3：首次（无待办且无续接点）→ 搜索释义
+    return "search"
+
+
 def _render_login_section() -> None:
     """侧边栏登录区（规范 §5）：未登录显示登录表单，已登录显示用户名+角色徽章+退出。
 
@@ -1808,6 +1918,12 @@ def _render_login_section() -> None:
         if info:
             st.session_state["user"] = info
             st.session_state[_USER_DB_BACKED_KEY] = True
+            # 登录落地三分支（FX-29，规范 §9 L242）：有待办→协作收件箱；
+            # 有续接点→上次位置；首次→搜索释义。只在登录成功这一刻写初始
+            # page（radio key="page" 尚未实例化，st.rerun() 后以其值实例化，
+            # 七区路由契约不变）；用户随后手动切页不被劫持 —— 解析不进每轮
+            # 渲染，残留页回退逻辑（render_sidebar）原样保留。
+            st.session_state["page"] = _landing_page_for(info)
             st.rerun()
         else:
             st.sidebar.error("用户名或密码错误，或账号已停用。")
@@ -2383,11 +2499,19 @@ def render_corpus_dataset_page() -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>搭配明细（按槽位，可编辑）</h3>", unsafe_allow_html=True)
     st.caption("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
                "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。")
-    slots = sorted({r["slot"] for r in get_corpus_collocations(picked, limit=2000)})
+    # FX-29 接线（架构 §4/§9 页面经中央注册表调工具）：搭配明细查询改经
+    # corpus_evidence 工具 run —— 薄包装 merge_params 按 params_schema 合并
+    # 默认值（verb/slot/limit 全在 schema 内）后委托 mysql_db.get_corpus_
+    # collocations；本页两处原直调参数原样进 ctx，返回行列表契约不变，行为
+    # 与直调逐字节一致（run 不查 enabled 位）。原调用点无 st.cache_data，
+    # tool.run 不缓存 —— 缓存纪律无涉；人工标注回写（保存按钮）不经工具，
+    # 仍走 update_collocation_annotations 写路径。
+    _corpus_tool = get_tool("corpus_evidence")
+    slots = sorted({r["slot"] for r in _corpus_tool.run({"verb": picked, "limit": 2000})})
     if slots:
         default_slot = "objects of \"%w\"" if "objects of \"%w\"" in slots else slots[0]
         slot = st.selectbox("选择槽位", options=slots, index=slots.index(default_slot))
-        colls = get_corpus_collocations(picked, slot=slot, limit=100)
+        colls = _corpus_tool.run({"verb": picked, "slot": slot, "limit": 100})
         coll_df = pd.DataFrame(colls).rename(columns={
             "id": "_id", "slot": "槽位", "rank_in_slot": "排名", "collocate": "搭配词",
             "logdice": "logDice", "cooccur_count": "搭配频次",
