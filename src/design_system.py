@@ -249,7 +249,9 @@ def get_card_style() -> str:
     padding: {SPACE_MD}px;
     border-radius: 12px;
     border: 1px solid {BORDER_COLOR};
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 2px rgba(26, 32, 44, 0.04),
+                0 4px 16px rgba(26, 32, 44, 0.06);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
     """
 
 
@@ -784,3 +786,128 @@ def initialize_design_system() -> None:
 if __name__ == "__main__":
     # Run initialization when module is executed directly
     initialize_design_system()
+
+# ============================================
+# 全局主题 CSS（批次 21 界面美化）
+# ============================================
+def get_global_theme_css() -> str:
+    """全局主题层：注入一次，作用于 Streamlit 真实 DOM（装饰性升级）。
+
+    纪律（批次 21 界面美化）：
+      * **零文本/背景色对变更**——语义色板被 test_rv1_fixes 逐值锁定
+        （WCAG 深档），本层只做阴影/圆角/过渡/边框/字距等装饰升级，
+        对比度矩阵不受影响；
+      * 全部选择器走 Streamlit data-testid/稳定 class，不含用户数据插值；
+      * 暗色主题兼容：叠加面用 rgba 半透明，不钉死浅底深字（唯一例外沿用
+        RV1-3 既有常亮面纪律）。
+    """
+    return f"""
+<style>
+/* ── 按钮：圆角、过渡、悬停抬升 ─────────────────────────────
+   primary 型用主色渐变（两端 #4a5568→#2c5282 白字均 ≥7:1，WCAG 不降） */
+.stButton > button {{
+    border-radius: 10px;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.2s ease,
+                filter 0.2s ease;
+}}
+.stButton > button:hover {{
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 32, 44, 0.15);
+}}
+.stButton > button[kind="primary"] {{
+    background-image: linear-gradient(135deg, {PRIMARY_COLOR}, {SECONDARY_COLOR});
+    border: none;
+}}
+.stButton > button[kind="primary"]:hover {{
+    filter: brightness(1.08);
+}}
+
+/* ── 指标卡：卡片化（驾驶舱四卡/风险汇总） ────────────────── */
+[data-testid="stMetric"] {{
+    background-color: {CARD_COLOR};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 2px rgba(26, 32, 44, 0.04);
+}}
+[data-testid="stMetricLabel"] p {{
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}}
+
+/* ── Tabs：活动下划线主题色＋悬停反馈（词典管理八 tab/语义分析九 tab） ── */
+[data-testid="stTabs"] [role="tab"] {{
+    font-weight: 600;
+    transition: color 0.15s ease;
+}}
+[data-testid="stTabs"] [role="tab"]:hover {{
+    color: {SECONDARY_COLOR};
+}}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] p {{
+    color: {SECONDARY_COLOR};
+}}
+
+/* ── Expander：圆角＋边框柔化 ─────────────────────────────── */
+[data-testid="stExpander"] details {{
+    border-radius: 10px;
+    border-color: {BORDER_COLOR};
+}}
+[data-testid="stExpander"] summary {{
+    border-radius: 10px;
+}}
+
+/* ── DataFrame：圆角＋边框 ────────────────────────────────── */
+[data-testid="stDataFrame"] {{
+    border-radius: 10px;
+    border: 1px solid {BORDER_COLOR};
+    overflow: hidden;
+}}
+
+/* ── 告警条（info/warning/error/success）：左侧主题色强调线 ── */
+[data-testid="stAlert"] {{
+    border-radius: 10px;
+    border-left: 4px solid {INFO_COLOR};
+}}
+[data-testid="stAlert"][kind="stError"] {{ border-left-color: {ERROR_COLOR}; }}
+[data-testid="stAlert"][kind="stWarning"] {{ border-left-color: {WARNING_COLOR}; }}
+[data-testid="stAlert"][kind="stSuccess"] {{ border-left-color: {SUCCESS_COLOR}; }}
+
+/* ── 标题字距与主标下划线（页面 h1） ──────────────────────── */
+.main h1, [data-testid="stMain"] h1 {{
+    letter-spacing: -0.01em;
+    padding-bottom: 6px;
+    border-bottom: 2px solid rgba(44, 82, 130, 0.15);
+}}
+.main h2, [data-testid="stMain"] h2 {{
+    letter-spacing: -0.005em;
+}}
+
+/* ── 侧边栏：右缘细分割＋标题间距 ────────────────────────── */
+[data-testid="stSidebar"] {{
+    border-right: 1px solid {BORDER_COLOR};
+}}
+[data-testid="stSidebar"] h2 {{
+    letter-spacing: 0.02em;
+}}
+
+/* ── 滚动条：细圆角（WebKit 系） ─────────────────────────── */
+::-webkit-scrollbar {{
+    width: 8px;
+    height: 8px;
+}}
+::-webkit-scrollbar-thumb {{
+    background: rgba(74, 85, 104, 0.35);
+    border-radius: 8px;
+}}
+::-webkit-scrollbar-thumb:hover {{
+    background: rgba(74, 85, 104, 0.55);
+}}
+
+/* ── 分隔线柔化 ──────────────────────────────────────────── */
+hr {{
+    border: none;
+    border-top: 1px solid {BORDER_COLOR};
+}}
+</style>
+"""

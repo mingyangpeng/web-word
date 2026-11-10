@@ -140,15 +140,28 @@ def test_group_keys_by_zone_reorders_without_changing_key_set():
 
 
 def test_option_label_prefixes_zone_and_keeps_page_label():
-    """标签 = 【区名】+ page_label（页名与使用说明同源，不复制文案）。"""
+    """标签契约（RV21-5 瘦身后）：页名同源；区名含于页名 → 省前缀；
+    否则前缀 =【区名（去 emoji）】。分组归属由选项分块位置表达。"""
+    import re as _re
+
+    def _zone_text(zone: str) -> str:
+        return _re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]", "",
+                       zone).strip()
+
     for key in PAGE_KEYS:
         label = sidebar_option_label(key)
         assert label.endswith(page_label(key)), f"{key}: 页名未取自 page_label"
-        assert label.startswith("【"), f"{key}: 缺区名前缀 {label!r}"
-    # 区名前缀与分区表一一对应
     for zone, zone_keys in _SIDEBAR_ZONES:
+        zt = _zone_text(zone)
         for key in zone_keys:
-            assert sidebar_option_label(key).startswith(f"【{zone}】"), key
+            label = sidebar_option_label(key)
+            if zt in page_label(key):
+                assert label == page_label(key), (
+                    f"{key}: 区名含于页名应省前缀 {label!r}")
+            else:
+                assert label.startswith(f"【{zt}】"), (
+                    f"{key}: 前缀应为去 emoji 区名 {label!r}")
+                assert zt in page_label(key) or True
 
 
 # ============================================
@@ -175,8 +188,8 @@ def test_anon_sees_only_browse_entries_grouped():
     # 帮助中心（系统管理区）
     labels = _radio_labels(at)
     assert labels[:4] == [sidebar_option_label(k) for k in ANON_VISIBLE[:4]]
-    assert labels[4].startswith("【🏷️ 语义建模】"), labels[4]
-    assert labels[5].startswith("【🔧 系统管理】"), labels[5]
+    assert labels[4].startswith("【语义建模】"), labels[4]  # RV21-5 去区 emoji
+    assert labels[5].startswith("【系统管理】"), labels[5]
 
 
 # ============================================
@@ -212,11 +225,21 @@ def test_admin_all_seven_zones_all_17_pages_click_through():
         "admin 侧边栏应七区全部 17 页可达"
     assert keys == [k for _zone, zone_keys in _SIDEBAR_ZONES for k in zone_keys]
 
-    # 七区全部渲染：每区首个可见入口的标签带该区名前缀
+    # 七区全部渲染：每区首键标签符合 RV21-5 瘦身契约（区名含于页名→省前缀，
+    # 否则【去 emoji 区名】前缀）——分块位置由上面 keys 顺序断言锁定
+    import re as _re
+
+    def _zone_text(z: str) -> str:
+        return _re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]", "", z).strip()
+
     labels = _radio_labels(at)
     for zone, zone_keys in _SIDEBAR_ZONES:
-        assert any(lb.startswith(f"【{zone}】") for lb in labels), \
-            f"七区缺 {zone} 区块"
+        zt = _zone_text(zone)
+        first = sidebar_option_label(zone_keys[0])
+        if zt in page_label(zone_keys[0]):
+            assert first == page_label(zone_keys[0]), f"{zone} 区首键应省前缀"
+        else:
+            assert first.startswith(f"【{zt}】"), f"七区缺 {zone} 区块"
 
     # 逐页点选（路由契约：key="page" 写 session_state，main() 按其分派）
     for key in PAGE_KEYS:

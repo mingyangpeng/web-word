@@ -284,3 +284,12 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] RV16-1 list_recent_runs 瘦身——include_detail=False 消费（历史小表不再拉 MEDIUMTEXT）
 - [x] page_guides「 vs 」行话消缺（copy_quality 契约）
 - [ ] 留档：ui.default_category 范畴下拉消费点（semantic/cluster/template 页——app.py 无该控件，勘察如实）；sense/entry 锚跳转（依赖页面上下文）；localStorage 合并
+
+## 批次 21（2026-11-11 · 界面美化：全局主题层＋标签瘦身）
+
+> 全量 **2756 passed / 0 failed**（批次 20 基线 2754 → +2）。
+
+- [x] **全局主题 CSS**（design_system.get_global_theme_css，app.py 模块级注入）——按钮圆角/过渡/悬停抬升＋primary 渐变（两端色白字均 ≥7:1 不降 WCAG）／指标卡卡片化／tabs 活动下划线主题色／expander 与 DataFrame 圆角／告警条左侧主题色强调线／标题字距＋h1 下划线／侧边栏右缘分割／滚动条细圆角——**零色板变更**（语义色板逐值锁定不动，对比度矩阵不受影响）
+- [x] get_card_style 阴影升级——单层→双层（1px 贴合＋4px 环境光）＋transition（RV1-3 钉板子串全保留）
+- [x] RV21-5 标签瘦身——前缀括号内去区 emoji（页名自带 emoji 相邻重复消）＋区名含于页名时省前缀（语义分析/AI 协作/词典管理三处单行化）；fx23 契约测试同步适配（分块位置断言锁定分组归属）
+- 浏览器实测：未登录 6 键单行紧凑、h1 下划线、侧栏右缘分割线在码；登录后各面指标卡/质检段吃全局主题

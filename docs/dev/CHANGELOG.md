@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2026-11-11 · 批次 21：界面美化——全局主题层＋侧边栏标签瘦身
+
+- design_system.get_global_theme_css：按钮过渡/primary 渐变/指标卡/tabs 活动下划线/expander/DataFrame/告警条强调线/标题字距/侧边栏分割/滚动条——全装饰性零色板变更（WCAG 对比度矩阵不动）
+- get_card_style 阴影双层升级；侧边栏标签瘦身（前缀去区 emoji＋区名含于页名省前缀，RV21-5）
+- 全量 **2756 passed / 0 failed**
+
 ## 2026-11-11 · 批次 20：偏好消费＋书签列表＋草稿暂存＋驾驶舱打磨（FX-38/39/40）
 
 - **偏好键消费**：get_pref 读面＋语料页 limit 接 ui.rows_per_page（clamp [10,200]）；范畴下拉消费点勘察后如实挂账（app.py 无该控件）
