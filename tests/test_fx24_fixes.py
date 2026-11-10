@@ -20,6 +20,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+import pytest  # noqa: E402
+
 import src.dict_admin_pages as dp  # noqa: E402
 from src.dict_admin_pages import (  # noqa: E402
     FX24_STALE_DAYS,
@@ -42,11 +44,44 @@ from src.dict_admin_pages import (  # noqa: E402
 # 假体：st 假体（含 metric/上下文管理器）与路由式假 cursor
 # ============================================
 
+@pytest.fixture(autouse=True)
+def _clear_fx24_progress_cache():
+    """每用例清驾驶舱进度缓存（批次 20 手写 TTL——跨用例污染防线）。"""
+    dp._FX24_PROGRESS_CACHE.clear()
+    yield
+    dp._FX24_PROGRESS_CACHE.clear()
+
+
 class _StubCol:
     def __enter__(self):
         return self
 
     def __exit__(self, *exc):
+        return False
+
+
+class _StubContainer:
+    """st.container(border=True) 桩（FX-40 风险行容器）。"""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def columns(self, spec, **kwargs):
+        return [_StubCol() for _ in range(spec if isinstance(spec, int) else len(spec))]
+
+    def markdown(self, *args, **kwargs):
+        pass
+
+    def caption(self, *args, **kwargs):
+        pass
+
+    def container(self, *args, **kwargs):
+        return _StubContainer()
+
+    def button(self, *args, **kwargs):
         return False
 
 
@@ -57,7 +92,14 @@ class _StubSt:
         self.messages = []       # (kind, text)
         self.metrics = []        # (label, value)
 
-    # —— 上下文管理器族（columns/expander/form）——
+    # —— 上下文管理器族（columns/expander/form/container）——
+    def container(self, *args, **kwargs):
+        return _StubContainer()
+
+    def button(self, *args, **kwargs):
+        # 渲染面不点击（_StubSt 语义：只验渲染形态）
+        return False
+
     def columns(self, spec, **kwargs):
         n = len(spec) if isinstance(spec, (list, tuple)) else int(spec)
         return [_StubCol() for _ in range(n)]
@@ -407,9 +449,9 @@ def test_cockpit_metric_values_correct(monkeypatch):
 
 
 def _risk_card_text(stub):
-    """取风险清单卡片本体（含行 div 的 markdown），排除段头/说明 caption。"""
+    """取风险清单行 markdown（批次 20 起为行容器 span：font-weight:600 标记）。"""
     return "\n".join(t for k, t in stub.messages
-                     if k == "markdown" and "border-bottom" in t)
+                     if k == "markdown" and "font-weight:600" in t)
 
 
 def test_risk_card_renders_counts_and_jump_hints(monkeypatch):
@@ -423,8 +465,13 @@ def test_risk_card_renders_counts_and_jump_hints(monkeypatch):
     assert ">992</span>" in card
     assert card.count("✅ 无") == 4
     assert "数据不可用" not in card
-    assert "标注平台" in card and "信度报告" in card
-    assert "发起重标" in card and "出版导出" in card
+    # 单目标行（存疑/信度/分立）改「前往 →」按钮（RV21-3）——指路文字不进
+    # 行卡，按钮由桩 button 记录面覆盖（源级钉板见 test_sections_have_no_write_path）
+    # 文字指路仅剩两行：撰写侧积压（审校台）＋快照滞留（出版导出）
+    blob = card + " ".join(
+        t for k, t in stub.messages if k in ("caption", "button"))
+    assert "出版导出" in blob and "释义撰写与审校" in blob
+    assert "发起重标" not in blob and "标注平台" not in blob
 
 
 # ============================================
@@ -491,14 +538,23 @@ def test_sections_hidden_without_dict_admin(monkeypatch):
 # ============================================
 
 def test_sections_have_no_write_path_and_no_links():
-    """两段渲染器零写路径（无 rerun/flash/success）且无跳转控件（本批指路口径）。"""
+    """两段渲染器零写路径（无 rerun/flash/success）；导航按钮=纯 page 路由
+    （批次 20 RV21-3：on_click 仅写 session_state["page"]，无业务写路径），
+    st.link_button（外链）仍禁止。"""
     for fn in (_render_risk_list_section, _render_my_decisions_section):
         src = inspect.getsource(fn)
         assert "st.rerun" not in src, fn.__name__
         assert "ui_kit.flash" not in src, fn.__name__
         assert "st.success" not in src, fn.__name__
-        assert "st.button" not in src, fn.__name__
         assert "st.link_button" not in src, fn.__name__
+        if "st.button" in src:  # 导航按钮只准写 page 键（RV12-1 回调纪律）
+            import re as _re
+            goto_writes = _re.findall(
+                r"st\.session_state\.update\(page=([^)]+)\)", src)
+            assert goto_writes, f"{fn.__name__} 有按钮但无 page 路由"
+            for w in goto_writes:
+                assert w.strip() == "pk", (
+                    f"{fn.__name__} 按钮路由出现非 page 写: {w}")  # 回调闭包变量 pk
 
 
 def test_risk_collectors_are_read_only_sql():

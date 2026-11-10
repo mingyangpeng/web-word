@@ -16,7 +16,12 @@ reviewed→revised→approved→final→published。编纂协作与标注协作�
               簇才放行撰写；merged 义位禁选）→ 模板预览（template_engine，
               占位容错：不在建模覆盖内不拦撰写）→ text_area 成文编辑 →
               保存草稿（create_draft / update_draft 乐观锁）→ 提交初审
-              （选审校人，回避制数据层硬校验）；
+              （选审校人，回避制数据层硬校验）；另有「💾 暂存草稿（不提交
+              审校）」（FX-39 任务 2）：成文/体例版本快照进 user_context_db
+              的 draft_states 域（form_key='writing_draft_{cs_sense_id}'），
+              重开撰写台自动恢复为表单默认值，提交审校成功后自动清除——
+              暂存只动表单默认值与会话存储，不碰乐观锁/作者校验/回避制
+              三闸（照旧作用于保存/提交路径）；
   ⚖️ 审校台   list_pending_reviews 待审列表 → expander 释义内容 ＋ ai_draft
               对照 → 意见线（add_comment / list_comments）→ 裁决
               （request_revision 打回 / approve 通过——终审即 final MVP）；
@@ -52,6 +57,7 @@ expander 选项文本由 Streamlit 自带转义，不再手工转。widget key �
 'writing_' 前缀。
 """
 
+import json
 import logging
 from html import escape as _html_escape
 from typing import Any, Dict, List, Optional, Tuple
@@ -59,6 +65,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import streamlit as st
 
 import src.writing_db as writing_db
+from src import ui_kit  # RV12-2：FX-39 暂存成功提示走 flash + rerun（不回潮）
+from src import user_context_db  # FX-39 任务 2：draft_states 域（暂存/恢复/提交清除）
 from src import users_db
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.design_system import (
@@ -131,7 +139,10 @@ GUIDE: Dict[str, Any] = {
         "语料原文），可选填体例版本（如 style.yaml@v1）。",
         "点「💾 保存草稿」落库（首版自动建 v1；在途自有草稿走乐观锁更新；打回"
         "重提自动 version+1 并挂 based_on_version）；再选审校人（回避制：列表已"
-        "滤掉自己）点「📨 提交初审」—— draft → in_review，任务进入对方审校台。",
+        "滤掉自己）点「📨 提交初审」—— draft → in_review，任务进入对方审校台。"
+        "写到一半想离开时点「💾 暂存草稿（不提交审校）」：成文快照存入个人"
+        "暂存（draft_states，跨设备续接、不进版本链），重开撰写台自动恢复为"
+        "表单默认值，提交审校成功后自动清除。",
         "切「⚖️ 审校台」查看待我审校列表（词典管理员可勾选总览全部）：expander 里"
         "对照释义内容与 AI/模板草稿快照，先「💬 挂意见」逐条留痕，再裁决 —— "
         "「⛔ 要求修订」给理由打回（in_review → rejected），「✅ 通过」即终审定稿"
@@ -230,6 +241,20 @@ LOCK_BANNER_NOTE = (
     "定稿基线；释义修订仍可撰写并提交走审校 —— 锁定不是禁写，是「基线已"
     "定稿」的提示口径。"
 )
+
+# FX-39 任务 2：撰写台暂存 form_key 约定（draft_states.form_key，单义位一
+# 把）。'页面缩写_动作_{义位主锚}' = 'writing_draft_{cs_sense_id}' —— 义位
+# 主锚取 cs_senses.id（撰写台义位下拉每行的稳定主键，下拉近滤后恒为正整数；
+# 不用 OALD 锚 —— 0 占位时跨义位不唯一，也不用 sense_ref —— OALD 锚解析
+# 变化会孤儿化暂存）。暂存快照 state 统一 dict：
+#   {"content": 成文, "style_version": 体例版本|None,
+#    "based_on_version": 暂存当时的基线版号|None}
+# （based_on_version 是恢复期的基线前进判定依据，不是可编辑控件）。提交
+# 审校成功即 delete_draft 清除（「已恢复暂存草稿——提交后自动清除」口径）。
+STASH_FORM_KEY_PREFIX = "writing_draft_"
+
+# 暂存成功 flash 文案（RV12：ui_kit.flash + rerun；测试断言对齐）。
+STASH_FLASH_TEXT = "草稿已暂存（未提交审校）。"
 
 
 # ============================================
@@ -526,6 +551,64 @@ def _build_ai_draft_snapshot(template: Any) -> Optional[Dict[str, Any]]:
     }
 
 
+def _apply_stash_defaults(
+    stashed: Optional[Dict[str, Any]],
+    target: Dict[str, Any],
+    latest: Optional[Dict[str, Any]],
+) -> Tuple[str, str, Optional[str], Optional[str]]:
+    """暂存快照 → 撰写表单默认值与恢复提示（纯函数；FX-39 恢复口径单一实现点）。
+
+    Args:
+        stashed: _load_stashed_writing_draft 的返回（{"state": dict,
+            "updated_at": 暂存时间}）；None = 无暂存（照旧）。
+        target: _resolve_edit_target 的返回（只读 prefill / mode）。
+        latest: get_latest_version 的返回（只读 version / style_version）。
+
+    Returns:
+        tuple: (content_default, style_default, restore_caption, base_caption)。
+        有暂存且快照 content 非空白 → 默认值改用暂存值（style 同理，暂存值
+        非空白才覆盖）；restore_caption = 「📥 已恢复暂存草稿（{updated_at}）
+        ——提交后自动清除」；暂存 based_on_version 与当前最新版号不一致
+        （基线已前进）→ base_caption = 「注意：基线版本可能已前进…恢复值仅
+        作草稿底稿」。
+
+    冲突纪律（FX-39）：本函数只产出**视图默认值与提示文案** —— 乐观锁
+    （expect_version）、作者校验、回避制的输入全部仍来自
+    _resolve_edit_target / 会话 / 数据层，暂存恢复不参与任何闸门判定；
+    基线前进时恢复值仅作草稿底稿，保存/提交照旧走全闸路径。
+    """
+    content_default = str(target.get("prefill") or "")
+    style_default = ""
+    if target.get("mode") == "update" and latest:
+        style_default = str(latest.get("style_version") or "")
+    if not isinstance(stashed, dict):
+        return content_default, style_default, None, None
+    state = stashed.get("state")
+    if not isinstance(state, dict):
+        return content_default, style_default, None, None
+    stashed_content = str(state.get("content") or "")
+    if not stashed_content.strip():
+        return content_default, style_default, None, None
+    content_default = stashed_content
+    stashed_style = str(state.get("style_version") or "")
+    if stashed_style.strip():
+        style_default = stashed_style
+    stored_base = _safe_int(state.get("based_on_version"))
+    latest_no = _safe_int((latest or {}).get("version"))
+    base_caption = None
+    if (stored_base is not None and latest_no is not None
+            and stored_base != latest_no):
+        base_caption = (
+            f"⚠️ 注意：基线版本可能已前进（暂存基于 v{stored_base}，当前最新 "
+            f"v{latest_no}）——恢复值仅作草稿底稿，提交前请核对最新版本。"
+        )
+    restore_caption = (
+        f"📥 已恢复暂存草稿（{_format_dt(stashed.get('updated_at'))}）"
+        "——提交后自动清除"
+    )
+    return content_default, style_default, restore_caption, base_caption
+
+
 # ============================================
 # 私有只读查询（sense_spine _fetch_* 风格：独立降级，绝不编数）
 # ============================================
@@ -690,6 +773,39 @@ def _reviewer_options(me: Dict[str, Any]) -> List[Dict[str, Any]]:
     return options
 
 
+def _load_stashed_writing_draft(form_key: str) -> Optional[Dict[str, Any]]:
+    """读当前用户在某 form_key 上的暂存快照（**只读**；FX-39 任务 2）。
+
+    user_context_db 未提供 draft 单键直读（本批不改该模块），走 list_drafts
+    全量（行数闸 500，单人暂存量级极小）按 form_key 过滤。state_json 主流
+    驱动回 str（pymysql 不解 JSON 列），兼容 bytes/已解析 dict；解析失败或
+    非 dict → None（快照损坏按「无暂存」渲染，绝不猜态）。未登录/库不可用
+    → list_drafts 降级 [] → None（fail-closed）。命中返回 {"state": dict,
+    "updated_at": 行时间}；无此键返回 None。
+    """
+    try:
+        rows = user_context_db.list_drafts()
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.warning(f"writing_pages: 暂存草稿读取失败（form={form_key!r}）: {e}")
+        return None
+    for row in rows:
+        if str(row.get("form_key") or "") != form_key:
+            continue
+        raw = row.get("state_json")
+        if isinstance(raw, (bytes, bytearray)):
+            raw = bytes(raw).decode("utf-8", "replace")
+        state: Any = raw
+        if isinstance(raw, str):
+            try:
+                state = json.loads(raw)
+            except (TypeError, ValueError):
+                state = None
+        if not isinstance(state, dict):
+            return None
+        return {"state": state, "updated_at": row.get("updated_at")}
+    return None
+
+
 # ============================================
 # tab 渲染
 # ============================================
@@ -788,24 +904,36 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
             )
     ai_snapshot = _build_ai_draft_snapshot(preview)
 
+    # FX-39 任务 2：暂存恢复（draft_states 域）。有暂存 → 表单默认值用暂存值
+    # ＋恢复 caption；基线前进 → 附加警示 caption（恢复值仅作草稿底稿）。
+    # 冲突纪律：暂存只动表单默认值与会话存储 —— 乐观锁 expect_version 仍由
+    # _resolve_edit_target 决定，作者校验/回避制照旧作用于保存/提交路径。
+    stash_form_key = f"{STASH_FORM_KEY_PREFIX}{cs_id}"
+    content_default, style_default, restore_caption, base_caption = (
+        _apply_stash_defaults(
+            _load_stashed_writing_draft(stash_form_key), target, latest,
+        )
+    )
+
     st.markdown("#### ✍️ 成文编辑")
+    if restore_caption:
+        st.caption(restore_caption)
+    if base_caption:
+        st.caption(base_caption)
     content_key = (
         f"writing_content_{target['target_id'] or 0}_"
         f"{_safe_int((latest or {}).get('version')) or 0}"
     )
     content = st.text_area(
         "释义成文",
-        value=target["prefill"],
+        value=content_default,
         height=220,
         key=content_key,
         help="替换性测试口径：释义须可代回语料原文（学习词典通行标准）；"
         "定义词表合规检查（AI 体例质检）批次 8 接入。",
     )
-    default_style = ""
-    if target["mode"] == "update" and latest:
-        default_style = str(latest.get("style_version") or "")
     style_version = st.text_input(
-        "体例版本（可选，如 style.yaml@v1）", value=default_style,
+        "体例版本（可选，如 style.yaml@v1）", value=style_default,
         key="writing_style_version",
     )
 
@@ -873,6 +1001,10 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                     int(target["target_id"]), int(reviewer["id"])
                 )
                 if ok:
+                    # FX-39 任务 2：提交成功自动清除该义位暂存（与恢复 caption
+                    # 「提交后自动清除」闭环）。无暂存时 delete 返回 False，
+                    # 纯 housekeeping 静默即可（数据层内部已留痕）。
+                    user_context_db.delete_draft(stash_form_key)
                     st.success(
                         "已提交初审（draft → in_review）：任务已派给所选审校人，"
                         "可在「📚 版本历史」跟踪状态。"
@@ -882,6 +1014,24 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                         "提交失败：草稿状态已变化，或回避制拦截（审校人=撰写人）——"
                         "请刷新后重试。"
                     )
+        # FX-39 任务 2：💾 暂存草稿（与「提交审校」并列；落 draft_states 用户
+        # 上下文域，**不进版本链、不触发审校流转**）。乐观锁/作者校验/回避制
+        # 三闸不经过此路径 —— 暂存只写会话存储域快照，恢复只作表单默认值。
+        if st.button("💾 暂存草稿（不提交审校）", key="writing_stash_draft"):
+            if not content.strip():
+                st.warning("释义成文为空：暂存前请先撰写内容。")
+            elif user_context_db.upsert_draft(stash_form_key, {
+                "content": content,
+                "style_version": style_version or None,
+                "based_on_version": target.get("based_on_version"),
+            }):
+                ui_kit.flash(STASH_FLASH_TEXT)
+                st.rerun()
+            else:
+                st.error(
+                    "暂存失败：数据库不可用或快照超长（50000 字符上限），"
+                    "请稍后重试。"
+                )
 
 
 def _render_review_tab(me: Dict[str, Any]) -> None:

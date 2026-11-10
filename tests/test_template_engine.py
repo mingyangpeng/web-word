@@ -605,3 +605,72 @@ class TestRealRunData:
             for cell in row:
                 assert not str(cell).startswith("=")
         json.loads(te.build_export_json(payload))
+
+
+# ============================================
+# FX-38：同簇并排总览行构造（纯函数）+ CSV 优化要点回填
+# ============================================
+
+class TestOverviewRows:
+    """overview_rows：并排总览行构造（不碰 st./DB，纯函数）。"""
+
+    def _tpl(self, sense_id, lemma="run", sense_no="1", label="足部奔跑义",
+             definition="to move using your legs", text="【图式：方式伴随图式】…"):
+        return {
+            "sense_id": sense_id, "lemma": lemma, "sense_no": sense_no,
+            "sense_label": label, "template_text": text,
+            "oald": {"source": "OALD10", "grammar": "intransitive",
+                     "definition": definition},
+        }
+
+    def test_rows_basic_fields_and_engine_baseline_mark(self):
+        rows = te.overview_rows([self._tpl(1)])
+        assert len(rows) == 1
+        r = rows[0]
+        assert r["义位"] == "run1（足部奔跑义）"
+        assert r["词典原文释义"] == "to move using your legs"
+        assert r["模板化释义（引擎）"].startswith("【图式：")
+        assert r["人工修订版（最新）"] == "—"
+        assert r["修订标记"] == "引擎基线"
+
+    def test_revision_overrides_and_mark(self):
+        revs = {1: {"version": 2, "revision_text": "人工修订后的模板文本",
+                    "note": "要点"}}
+        rows = te.overview_rows([self._tpl(1)], revs)
+        assert rows[0]["人工修订版（最新）"] == "人工修订后的模板文本"
+        assert rows[0]["修订标记"] == "已修订（v2）"
+
+    def test_missing_revision_placeholder_and_bad_input(self):
+        """无修订义位占位"—"；非 dict 模板行跳过；revisions 非法入参退化。"""
+        rows = te.overview_rows([self._tpl(1), "bad", None], {2: {"version": 1}})
+        assert len(rows) == 1  # "bad"/None 跳过；sense_id=1 无修订 → 占位
+        assert rows[0]["人工修订版（最新）"] == "—"
+        assert te.overview_rows([], None) == []
+        assert te.overview_rows([self._tpl(1)], "not-a-dict")[0][
+            "人工修订版（最新）"] == "—"
+
+    def test_mixed_revisions_only_annotated_rows_marked(self):
+        rows = te.overview_rows([self._tpl(1), self._tpl(2, lemma="jog")],
+                                {2: {"version": 1, "revision_text": "jog 修订"}})
+        assert rows[0]["修订标记"] == "引擎基线"
+        assert rows[1]["修订标记"] == "已修订（v1）"
+        assert rows[1]["义位"].startswith("jog")
+
+
+class TestExportNotes:
+    """build_export_csv 的 notes 回填：列结构不变，优化要点按义位回填。"""
+
+    def test_notes_backfill_by_sense_id(self, feature_meta):
+        tpls = _export_templates(feature_meta)
+        notes = {1: "速度档与 OALD 措辞差异提示", 2: "恶意样本要点"}
+        csv_text = te.build_export_csv(tpls, notes)
+        rows = list(csv.reader(io.StringIO(csv_text)))
+        assert rows[0][-1] == "优化要点（编者填写）"  # 列结构不变
+        assert rows[1][-1] == "速度档与 OALD 措辞差异提示"
+        assert rows[2][-1] == "恶意样本要点"
+
+    def test_notes_none_keeps_legacy_blank_column(self, feature_meta):
+        """缺省 None → 优化要点全空，与历史版本输出逐字节一致（兼容旧断言）。"""
+        legacy = te.build_export_csv(_export_templates(feature_meta))
+        rows = list(csv.reader(io.StringIO(legacy)))
+        assert all(row[-1] == "" for row in rows[1:])

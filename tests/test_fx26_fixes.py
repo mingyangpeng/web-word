@@ -343,7 +343,7 @@ def _patch_section_world(monkeypatch, stub, runs="unset", submit=False):
                         lambda: [{"id": 7, "username": "c", "display_name": "主编甲"}])
     if runs != "unset":
         monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                            lambda category=None, limit=5: runs)
+                            lambda category=None, limit=5, include_detail=True: runs)
     return stub
 
 
@@ -465,7 +465,7 @@ def test_apptest_smoke_render_and_run_button(monkeypatch):
     """AppTest 冒烟：段渲染不抛异常、提交按钮在场；点击后 flash 经
     pop_and_render_flash 弹出（引擎打桩，不触真库不落假 run）。"""
     monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                        lambda category=None, limit=5: _fake_runs())
+                        lambda category=None, limit=5, include_detail=True: _fake_runs())
     monkeypatch.setattr(
         dp.style_check, "run_style_check",
         lambda category, actor=None: {"ok": True, "run_id": 9,

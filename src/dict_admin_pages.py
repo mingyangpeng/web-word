@@ -1094,6 +1094,30 @@ def _fx24_scalar_count(sql: str, params: Tuple[Any, ...]) -> Tuple[bool, Any]:
         return False, f"计数结果非整数: {raw!r}"
 
 
+_FX24_PROGRESS_TTL = 60
+_FX24_PROGRESS_CACHE: dict = {}  # scope -> (monotonic_ts, value)
+
+
+def _fx24_annotation_progress_cached(_scope: str):
+    """标注进度聚合缓存（RV16-1 留档项消缺，批次 20）。
+
+    手写 TTL 而非 st.cache_data：**None（R4 失败）不缓存**——断库归因
+    「查询失败」必须即时可见（cache_data 会把 None 钉 60s，归因延迟且
+    污染测试）；成功值缓存 60s。首参 _scope=cache_scope_key()（S1 教训：
+    换库场景隔离）。测试清 _FX24_PROGRESS_CACHE 即可完全复位。
+    """
+    import time as _time
+
+    now = _time.monotonic()
+    hit = _FX24_PROGRESS_CACHE.get(_scope)
+    if hit is not None and now - hit[0] < _FX24_PROGRESS_TTL:
+        return hit[1]
+    value = mysql_db.get_annotation_progress()
+    if value is not None:  # R4 口径：失败不缓存，恢复即时可见
+        _FX24_PROGRESS_CACHE[_scope] = (now, value)
+    return value
+
+
 def _fx24_collect_doubt_senses() -> Tuple[bool, Any]:
     """存疑义位数（标注侧既有查询 get_annotation_progress 的 flagged 合计）。
 
@@ -1102,7 +1126,8 @@ def _fx24_collect_doubt_senses() -> Tuple[bool, Any]:
     fail-closed —— None=查询失败（数据不可用），list=逐动词行取 flagged 合计。
     """
     try:
-        progress = mysql_db.get_annotation_progress()
+        progress = _fx24_annotation_progress_cached(
+            mysql_db.cache_scope_key())
     except Exception as e:  # noqa: BLE001 —— 数据层理论不抛，防御性兜一层
         logger.warning(f"驾驶舱风险清单存疑义位取数异常: {e}")
         return False, _fx24_brief_reason(e)
@@ -1256,30 +1281,33 @@ def _fx24_collect_risk_items() -> List[Dict[str, str]]:
     items: List[Dict[str, str]] = []
 
     def _add(label: str, result: Tuple[bool, Any], pointer: str,
-             zero_text: str = "✅ 无") -> None:
+             zero_text: str = "✅ 无", goto: Optional[str] = None) -> None:
         """单行归一：取数失败→灰注（off）/ 真 0→「✅ 无」（zero）/ 有数→计数（risk）。"""
         ok, value = result
         if not ok:
             items.append({"item": label, "value": f"数据不可用：{value}",
-                          "pointer": pointer, "tone": "off"})
+                          "pointer": pointer, "tone": "off", "goto": goto})
         elif isinstance(value, str):
             # 已是展示文本（如带明细的「n（…）」计数）：非空即按 risk 行渲染
             items.append({"item": label, "value": value,
-                          "pointer": pointer, "tone": "risk"})
+                          "pointer": pointer, "tone": "risk", "goto": goto})
         elif int(value) == 0:
             items.append({"item": label, "value": zero_text,
-                          "pointer": pointer, "tone": "zero"})
+                          "pointer": pointer, "tone": "zero", "goto": goto})
         else:
             items.append({"item": label, "value": str(int(value)),
-                          "pointer": pointer, "tone": "risk"})
+                          "pointer": pointer, "tone": "risk", "goto": goto})
 
     _add("存疑义位（❓ needs_review=1，待复核/存疑清单）",
-         _fx24_collect_doubt_senses(), "🏷️ 标注平台（管理员快速通道视图）")
+         _fx24_collect_doubt_senses(), "🏷️ 标注平台（管理员快速通道视图）",
+         goto="annotate")
     _add(f"信度未达标（最近一次运行 α<G2 线 {_fx24_alpha_threshold():g}）",
-         _fx24_collect_low_alpha_detail(), "📐 信度报告（逐特征 α＋分歧清单）")
+         _fx24_collect_low_alpha_detail(), "📐 信度报告（逐特征 α＋分歧清单）",
+         goto="reliability")
     _add("分立复核积压（merged/split 已裁决待处理）",
          _fx24_collect_divided_backlog(),
-         "📊 语义分析（分立复核）· 📖 词典管理→📋 任务分配→♻️ 发起重标")
+         "📊 语义分析（分立复核）· 📖 词典管理→📋 任务分配→♻️ 发起重标",
+         goto="cluster")
     _add(f"撰写侧积压（pending 超 {FX24_STALE_DAYS} 天的审校轮）",
          _fx24_collect_stale_reviews(), "✍️ 释义撰写与审校（审校台）")
     _add(f"验收期风险（ready 未发布超 {FX24_STALE_DAYS} 天的快照）",
@@ -1323,24 +1351,30 @@ def _render_risk_list_section() -> None:
         unsafe_allow_html=True,
     )
     items = _fx24_collect_risk_items()
-    rows = []
     for it in items:
         color = _FX24_RISK_INK if it["tone"] != "off" else _INACTIVE_GRAY
-        rows.append(
-            "<div style='display:flex;padding:7px 0;"
-            "border-bottom:1px solid #edf2f7;'>"
-            f"<span style='min-width:340px;font-weight:600;'>{_esc(it['item'])}</span>"
-            f"<span style='min-width:220px;color:{color};'>{_esc(it['value'])}</span>"
-            f"<span style='color:{_INACTIVE_GRAY};'>→ {_esc(it['pointer'])}</span></div>"
-        )
-    st.markdown(
-        f"<div style='{get_card_style()}'>{''.join(rows)}</div>",
-        unsafe_allow_html=True,
-    )
+        with st.container(border=True):
+            row = st.columns([6, 2])
+            with row[0]:
+                st.markdown(
+                    f"<span style='font-weight:600;color:{color};'>"
+                    f"{_esc(it['item'])}</span>"
+                    f"&nbsp;&nbsp;"
+                    f"<span style='color:{color};'>{_esc(it['value'])}</span>",
+                    unsafe_allow_html=True)
+            with row[1]:
+                if it.get("goto") and it["tone"] != "off":
+                    _pk = it["goto"]
+                    st.button(
+                        "前往 →", key=f"fx24_goto_{_pk}",
+                        on_click=(lambda pk=_pk: st.session_state.update(page=pk)),
+                    )
+                else:
+                    st.caption(f"→ {_esc(it['pointer'])}")
     st.caption(
         "只读聚合（本页零写路径）：各行为既有公开函数/轻量 SQL 的如实计数，"
         "灰注行=取数失败（不代表没有风险，R4 归因口径），「✅ 无」= 真 0；"
-        "「处理入口」为指路文案，本批不做跳转链接。"
+        "单目标行可一键前往（RV21-3），复合路径行为文字指路。"
     )
 
 
@@ -1548,7 +1582,8 @@ def _render_style_check_section() -> None:
         _style_check_run_clicked(str(cat or ""), me)
 
     runs = style_check.list_recent_runs(category=str(cat or ""),
-                                        limit=FX26_STYLE_CHECK_HISTORY)
+                                        limit=FX26_STYLE_CHECK_HISTORY,
+                                        include_detail=False)
     if runs is None:
         st.warning(
             "质检记录数据不可用：style_check_runs 读取失败（数据库不可用或"

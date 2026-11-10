@@ -80,11 +80,16 @@ CRUD 面（每表 upsert / list / delete 一组，函数名同构）：
 为取一行而 list 全量）：
   get_profile(key)   偏好单键直读（值可为 NULL=键已建未设值，与「无键」
                      以 row 本身是否为 None 区分）；
+  get_pref(key, default=None)
+                     偏好**值**级直读（批次 20 补消费面，设置项消费方
+                     用：无键/值 NULL/未登录/库不可用/键非法一律返回
+                     default，见函数 docstring）；
   get_bookmark(anchor_type, anchor_id)
                      收藏态判定直读（义位脊柱 📌 toggle 用，不走全量）；
   get_note(sense_id) 义位笔记直读（脊柱 📝 我的笔记段用）。
   三件与同表 upsert/delete 同一套入参校验，非法入参/未登录/库不可用一律
-  None（fail-closed，绝不猜态）。
+  None（fail-closed，绝不猜态）；get_pref 同口径，只是兜底值由调用方给
+  （消费面可按各自语义带不同 default，数据层不替消费方猜语义）。
 
   * upsert 一律 INSERT ... ON DUPLICATE KEY UPDATE（唯一键兜底并发），返回
     True=落库成功——**刻意不沿用 dict_admin_db.set_value 的 rowcount 语义**
@@ -458,6 +463,51 @@ def get_profile(key: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"读 user_profiles 单条意外错误（key={clean!r}）: {e}")
         return None
+
+
+def get_pref(key: str, default: Optional[str] = None) -> Optional[str]:
+    """值级直读当前用户的一个偏好键（批次 20 补消费面，UI 设置项接线用）。
+
+    与 get_profile（行级，以 row 本身区分「无键」与「键在值空」）不同，
+    本函数面向**消费方**（下拉默认选中值 / 每页行数等设置项读取）：只
+    关心值 —— 键不存在 / 值为 NULL（RV2-3 第 2 类「键已建未设值」）/
+    未登录 / 库不可用 / 键非法 → 一律返回 default（fail-closed，绝不
+    猜态不抛错）。值的语义清洗（是否在选项集、数值 clamp 等）归消费
+    侧 —— 同一键在不同消费面可带不同 default，数据层不替消费方猜语义。
+
+    返回恒为 str（原样，不 strip —— 值是设置项但本层不替用户清洗，与
+    upsert 口径一致）或 default 本身；pref_value 非 str（脏数据）按
+    无值处理回 default（fx29「state_value 非字符串 → None」同口径）。
+    键名清洗照 _check_key（strip 后非空 ≤120，非法不触库）；调用频度
+    面消费点每轮渲染至多一次（selectbox 默认值/行数常量类），直读不
+    缓存 —— 偏好登录后极少变，缓存收益归零、失效风险（S1 教训：缓存
+    键须含库作用域）不值。
+    """
+    clean = _check_key(key, 120)
+    if clean is None:
+        return default
+    uid = _resolve_user_id()
+    if uid is None:
+        return default
+    ensure_user_context_tables()
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT pref_value FROM user_profiles "
+                "WHERE user_id = %s AND pref_key = %s LIMIT 1",
+                (uid, clean),
+            )
+            row = cursor.fetchone()
+            if not isinstance(row, dict):
+                return default
+            val = row.get("pref_value")
+            return val if isinstance(val, str) else default
+    except pymysql.Error as e:
+        logger.error(f"读 user_profiles 偏好值失败（key={clean!r}）: {e}")
+        return default
+    except Exception as e:
+        logger.error(f"读 user_profiles 偏好值意外错误（key={clean!r}）: {e}")
+        return default
 
 
 def delete_profile(key: str) -> bool:
