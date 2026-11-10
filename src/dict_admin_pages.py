@@ -926,9 +926,25 @@ def _render_cockpit_tab() -> None:
         f"<h3 style='{HEADER_H3}'>⛓️ 进度漏斗（语义分析段 工序4–8 ＋ 编纂成文占位）</h3>",
         unsafe_allow_html=True,
     )
+    funnel_options = _funnel_category_options()
+    # FX-41（批次 20 挂账项）：ui.default_category 偏好接线 —— 偏好命中
+    # 选项集才改首建 index；未登录/断库/无键/值空由 get_pref fail-closed
+    # 返 None，偏好不在选项集回退 0（本下拉原无 index 参数，默认即首项，
+    # 行为不变；ImportError 兜底并行读面未落），不崩页面。widget key 不变，
+    # index 只作用于首次实例化，不劫持用户手选。
+    funnel_idx = 0
+    try:
+        from src.user_context_db import get_pref
+
+        pref = get_pref("ui.default_category")
+        if pref in funnel_options:
+            funnel_idx = funnel_options.index(pref)
+    except ImportError:  # 并行读面未落 → 按无偏好降级
+        pass
     funnel_cat = st.selectbox(
         "漏斗范畴（范畴包 configs/<category>/）",
-        _funnel_category_options(),
+        funnel_options,
+        index=funnel_idx,
         key="dict_admin_cockpit_category",
     )
     funnel_status = pipeline_status.get_cluster_pipeline_status(funnel_cat)
@@ -1261,7 +1277,6 @@ def _fx24_collect_my_reviews(me_id: Any) -> Tuple[Optional[int], Optional[str]]:
     if n is None:
         return None, "计数取数失败（见服务端日志）"
     return int(n), None
-    return len(rows), None
 
 
 def _fx24_collect_risk_items() -> List[Dict[str, str]]:
@@ -1573,9 +1588,25 @@ def _render_style_check_section() -> None:
                 unsafe_allow_html=True)
     # RV21-1：范畴下拉在表单外——切换即 rerun 刷新结果/历史（表单内控件
     # 变更不触发 rerun，导致切范畴零反馈、看历史被迫走写路径）
+    check_options = _funnel_category_options()
+    # FX-41（批次 20 挂账项）：ui.default_category 偏好接线 —— 偏好命中
+    # 选项集才改首建 index；未登录/断库/无键/值空由 get_pref fail-closed
+    # 返 None，偏好不在选项集回退 0（本下拉原无 index 参数，默认即首项，
+    # 行为不变；ImportError 兜底并行读面未落），不崩页面。widget key 不变，
+    # index 只作用于首次实例化，不劫持用户手选。
+    check_idx = 0
+    try:
+        from src.user_context_db import get_pref
+
+        pref = get_pref("ui.default_category")
+        if pref in check_options:
+            check_idx = check_options.index(pref)
+    except ImportError:  # 并行读面未落 → 按无偏好降级
+        pass
     cat = st.selectbox(
         "质检范畴（configs/<category>/style.yaml，范畴级缺席回退词典层）",
-        _funnel_category_options(),
+        check_options,
+        index=check_idx,
         key="dict_admin_style_check_category",
     )
     if st.button("▶ 运行体例质检", key="dict_admin_style_check_run"):

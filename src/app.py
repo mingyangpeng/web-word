@@ -3108,9 +3108,17 @@ def _render_annotation_admin_view() -> None:
     if pilot_only and PILOT_VERBS:
         verbs = [v for v in verbs if v in PILOT_VERBS] or verbs
 
+    # FX-42：加 key="annotate_verb"（行为不变——首渲染 index 回退 walk 照旧）。
+    # 键使会话预置可行：users_admin 书签 sense 锚「前往 →」回调在本 selectbox
+    # 实例化前写 session_state["annotate_verb"]=<verb>（Streamlit 官方程序化
+    # 设值，预置值在 options 内则生效、实测 1.57 优先于 index）。verb 不在
+    # options（仅试点过滤收缩/词库缺词）时实测 1.57 静默回落 index 默认值，
+    # 不抛异常；key 存在后 index 仅首渲染生效（AppTest 连跑无异常，
+    # submission_verb key 先例同款）。
     picked_verb = st.selectbox("选择动词", options=verbs,
                                format_func=lambda v: label_map.get(v, v),
-                               index=verbs.index("walk") if "walk" in verbs else 0)
+                               index=verbs.index("walk") if "walk" in verbs else 0,
+                               key="annotate_verb")
 
     senses = get_oald_senses(picked_verb)
     if senses is None:

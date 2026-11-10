@@ -242,11 +242,12 @@ class TestMyBookmarksSection:
         assert "2026-11-10 08:00:00" in joined   # 收藏时间列
         for label in ("类型", "标题", "锚", "收藏时间", "操作"):
             assert f"**{label}**" in joined      # 表头行
-        # 列间跳转口径如实注明（sense/entry 本批不跳）
-        assert any("归第二批" in c for c in stub.captions)
+        # 列间跳转口径如实注明（FX-42 起义位锚可跳；词条锚仍挂账暂不支持）
+        assert any("词条锚" in c and "挂账" in c for c in stub.captions)
 
     def test_page_anchor_only_jump_button(self, monkeypatch):
-        """仅 page 锚出「🔗 前往」；sense/entry 锚只有「🗑 取消收藏」。"""
+        """page 锚出「🔗 前往」（FX-42 起 sense 锚另有「前往 →」，标签不同
+        不入本断言；entry 锚仍只有「🗑 取消收藏」）。"""
         stub, _, _ = self._render(monkeypatch)
         goto_btns = [kw for label, kw in stub.buttons if label == "🔗 前往"]
         assert [kw["key"] for kw in goto_btns] == ["bm_goto_3"]
