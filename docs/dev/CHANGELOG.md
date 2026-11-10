@@ -1,5 +1,17 @@
 # 更新日志
 
+## 2026-11-11 · 批次 22：范畴偏好跨页消费＋书签 sense 锚跳转（FX-41/42）
+
+- ui.default_category 五处范畴下拉消费（semantic/cluster/template/dict_admin 漏斗＋质检）；widget key 不动、首建后手选不劫持
+- 书签 sense 锚跳转：标注平台动词 selectbox 加 key＋回调写 page/annotate_verb 两键（verb 自 title 提取）；entry 锚挂账
+- 全量 **2805 passed / 0 failed**
+
+## 2026-11-11 · 批次 21-2：视觉定稿——Apple 设计语言（get_global_theme_css v3）
+
+- 全量重写主题层：#F5F5F7 页底＋纯白内容＋发丝线；单一强调色 #0071E3；药丸按钮；分段式 tabs；毛玻璃侧边栏＋选中 accent 药丸；大标题紧字距；v2 学术风（深侧栏/衬线/渐变）废弃
+- 语义色板八色锁定不动（WCAG 契约保持）；全对文本对比 ≥4.5:1
+- 全量 **2756 passed / 0 failed**（零功能变更）
+
 ## 2026-11-11 · 批次 21：界面美化——全局主题层＋侧边栏标签瘦身
 
 - design_system.get_global_theme_css：按钮过渡/primary 渐变/指标卡/tabs 活动下划线/expander/DataFrame/告警条强调线/标题字距/侧边栏分割/滚动条——全装饰性零色板变更（WCAG 对比度矩阵不动）

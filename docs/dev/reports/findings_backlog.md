@@ -293,3 +293,20 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] get_card_style 阴影升级——单层→双层（1px 贴合＋4px 环境光）＋transition（RV1-3 钉板子串全保留）
 - [x] RV21-5 标签瘦身——前缀括号内去区 emoji（页名自带 emoji 相邻重复消）＋区名含于页名时省前缀（语义分析/AI 协作/词典管理三处单行化）；fx23 契约测试同步适配（分块位置断言锁定分组归属）
 - 浏览器实测：未登录 6 键单行紧凑、h1 下划线、侧栏右缘分割线在码；登录后各面指标卡/质检段吃全局主题
+
+## 批次 21-2（2026-11-11 · 视觉 2.0 定稿：Apple 设计语言）
+
+> 用户反馈 v2 学术风「太丑」→ 重写为 **Apple 设计语言**（get_global_theme_css v3 全量替换）。全量 **2756 passed / 0 failed**（零功能变更）。
+
+- [x] **设计语言定稿（Apple HIG 网页风格）**：页面底 #F5F5F7＋内容纯白／单一强调色 Apple Blue #0071E3（白字 4.7:1 ✓）／药丸按钮（980px 圆角，apple.com 同款）／分段式 tabs（灰槽白段选中）／毛玻璃侧边栏（backdrop-blur 20px）＋选中项 accent 填充药丸白字／大标题无衬线粗体 -0.02em／发丝线分隔／极简滚动条
+- [x] v2 学术风废弃（深色侧栏/衬线 h1/渐变下划线/靛蓝 accent 全部撤）；语义色板八色锁定不动（test_rv1 契约保持）；对比度全对 ≥4.5:1（#1D1D1F/#6E6E73/#0071E3 白字组合）
+- [x] 细节：搜索栏全药丸化／tabs 红色下划线残余移除／指标卡白卡大数字紧字距
+- 浏览器实测三轮：未登录/登录/驾驶舱——分段时间线、药丸按钮、白卡层级在码
+
+## 批次 22（2026-11-11 · 范畴偏好跨页消费＋书签锚跳转）
+
+> 两路交付（FX-41/42）。全量 **2805 passed / 0 failed**（批次 21-2 基线 2756 → +49）。
+
+- [x] ui.default_category 跨页消费——五处范畴下拉接 get_pref（semantic ss_category／cluster ca_category／template cat_code 补 index／dict_admin 漏斗＋质检两处）；widget key 不动、偏好不在选项集回退、首建后手选不劫持（FX-41，25 测试）
+- [x] 书签 sense 锚跳转——标注平台动词选择加 key="annotate_verb"＋书签回调写两键（page=annotate＋annotate_verb；verb 从 title「walk-S1 …」提取，Pilot 集外行为如实测试）；entry 锚维持挂账（FX-42，24 测试）
+- [x] 顺带：dict_admin_pages 基线 F821 死行清除（FX-41）

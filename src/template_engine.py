@@ -1310,8 +1310,23 @@ def render_template_page() -> None:
         st.warning("数据库中没有范畴记录。")
         return
 
+    cat_options = [c["code"] for c in categories]
+    # FX-41（批次 20 挂账项）：ui.default_category 偏好接线 —— 偏好命中
+    # 选项集才改首建 index；未登录/断库/无键/值空由 get_pref fail-closed
+    # 返 None，偏好不在选项集回退 0（本下拉原无 index 参数，默认即首项，
+    # 行为不变；ImportError 兜底并行读面未落），不崩页面。format_func
+    # 口径保持；index 只作用于首次实例化，不劫持用户手选。
+    default_idx = 0
+    try:
+        from src.user_context_db import get_pref
+
+        pref = get_pref("ui.default_category")
+        if pref in cat_options:
+            default_idx = cat_options.index(pref)
+    except ImportError:  # 并行读面未落 → 按无偏好降级
+        pass
     cat_code = st.selectbox(
-        "范畴", options=[c["code"] for c in categories],
+        "范畴", options=cat_options, index=default_idx,
         format_func=lambda code: next(
             f"{c['code']} {c['name_cn']}" for c in categories if c["code"] == code))
     language = st.radio(

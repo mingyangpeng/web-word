@@ -2642,6 +2642,19 @@ def render_semantic_analysis_page() -> None:
     # —— 谱系侧选择器与数据（原 render_cluster_analysis_page 装载逻辑原样）——
     packs = list(CATEGORIES()) or ["motion"]
     default_idx = packs.index("motion") if "motion" in packs else 0
+    # FX-41（批次 20 挂账项）：ui.default_category 偏好接线 —— 偏好命中
+    # 选项集才改首建 index；未登录/断库/无键/值空由 get_pref fail-closed
+    # 返 None，偏好不在选项集保持原 motion 默认（ImportError 兜底并行读面
+    # 未落），不崩页面。widget key 不变，index 只作用于首次实例化，
+    # 不劫持用户手选。
+    try:
+        from src.user_context_db import get_pref
+
+        pref = get_pref("ui.default_category")
+        if pref in packs:
+            default_idx = packs.index(pref)
+    except ImportError:  # 并行读面未落 → 按无偏好降级
+        pass
     category = st.selectbox("范畴", options=packs, index=default_idx,
                             key="ca_category")
     language = st.selectbox("语言", options=list(LANGUAGES),

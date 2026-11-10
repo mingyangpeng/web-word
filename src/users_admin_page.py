@@ -44,12 +44,17 @@ FX-39 任务 1 新增「📌 我的书签」段（偏好段之后，页面末尾
 user_bookmarks 列表消费面（list_bookmarks，own-rows-only 同源）——三锚
 （sense/entry/page）表格渲染（类型/标题/锚/收藏时间/操作）、每行「🗑 取消
 收藏」（delete_bookmark）、page 锚「🔗 前往」按钮跳转（on_click 回调内写
-session_state["page"]，RV12-1 口径照 collab_pages「去分立复核」先例；
-sense/entry 锚本批不跳，caption 如实注明——跳转依赖页面上下文，归第二批）。
-空态引导去义项脊柱收藏；未登录整段不渲染（同偏好段纪律）。
+session_state["page"]，RV12-1 口径照 collab_pages「去分立复核」先例）。
+FX-42：sense 锚「前往 →」跳转落地（回调写 page=annotate ＋预置
+annotate_verb=<verb>，动词提取见 _extract_verb_from_title；提取不到/目标页
+不可达降级为只切页＋flash，见 _goto_sense_callback）；entry 锚本批仍不跳
+（词条浏览器上下文同理复杂，caption 如实挂账）。app.py 标注平台动词
+selectbox 同批加 key="annotate_verb"（键使会话预置可行）。空态引导去义项
+脊柱收藏；未登录整段不渲染（同偏好段纪律）。
 """
 
 import logging
+import re
 from html import escape as _html_escape
 from typing import Any, Dict, List, Optional
 
@@ -731,15 +736,102 @@ def _goto_page_callback(page_key: str):
     return _go
 
 
+# FX-42：sense 锚书签 title 的「 · S<n>」义项段标记（sense_spine._sense_label
+# 落库格式「walk · S1（#42）」；'-S' 直连格式见 _extract_verb_from_title）。
+_SENSE_TITLE_MARK_RE = re.compile(r"^(.+?)\s*·\s*S\d")
+
+
+def _extract_verb_from_title(title: Any) -> Optional[str]:
+    """sense 锚书签 title 提取动词（预置 annotate_verb 用；FX-42）。
+
+    在库两种格式（同一「动词-Sn」义项段标记语义，page_guides SenseID 结构
+    CONCAT(word, '-S', sense_num) 同约定）：
+      * 「walk-S1 足部奔跑义」——'-S' 直连：split("-S")[0] = 'walk'（FX-42
+        任务口径，逐字实现）；
+      * 「walk · S1（#42）」——sense_spine._sense_label 实际落库格式
+        （' · ' 分隔），正则提取标记前动词段，实测书签全部落此格式。
+    提取不到（无义项段标记：标题回退锚值 '42'/'义位 #42'/未命名等）→ None
+    ——跳转降级为只切页＋flash 引导手选（_goto_sense_callback）。空动词段
+    （'-S1' 开头等脏 title）同样 None，绝不预置空值。
+    """
+    text = str(title or "").strip()
+    if not text:
+        return None
+    if "-S" in text:  # FX-42 任务口径：title.split("-S")[0]
+        return text.split("-S")[0].strip() or None
+    m = _SENSE_TITLE_MARK_RE.match(text)
+    if m:
+        return m.group(1).strip() or None
+    return None
+
+
+def _annotate_target_visible(me: Any) -> bool:
+    """sense 锚跳转目标页（annotate）可达性闸（FX-42；纵深防御）。
+
+    annotate 是基础页：app.py _PAGE_ACCESS_SIX 权限表外 → 侧边栏
+    _visible_page_keys 对登录用户恒可见，页面层 require_login ＋ 六角色门
+    （render_annotation_page：有效集 - viewer 非空）再兜一层。本模块不可
+    反向 import app（app 顶层 import 本模块，会循环）——「该用户可见集」
+    以可判定的同源事实收口：路由键 ∈ PAGE_KEYS（page 锚同一闸，单一事实源
+    page_guides）且用户有效六角色集满足 annotate 页面层角色门。书签段本身
+    有登录门，两闸对现役用户集恒过——闸保留为纵深防御（annotate 日后收进
+    权限表/路由键变更时立即生效，跳转不悄悄坏）。
+    """
+    if "annotate" not in PAGE_KEYS:
+        return False
+    return bool(effective_six_roles(me) - {"viewer"})
+
+
+def _goto_sense_callback(me: Any, display_title: str):
+    """sense 锚「前往 →」on_click 回调工厂（FX-42；照 _goto_page_callback
+    先例，RV12-1：切页/预置只在回调内写会话，正文期直写在 Streamlit 1.57
+    必崩页）。
+
+    回调先于下轮脚本执行，flash 走 ui_kit 队列（RV12-2：main() 下一轮
+    pop_and_render_flash 消费，提示落在标注平台页顶部）。三分支：
+
+      * annotate 不可达（_annotate_target_visible=False，防御分支）→ 回退
+        page 锚行为：只写 page=annotate（目标页不可见时 app 侧栏渲染前的
+        残留页回退逻辑折回搜索页，同样不崩），flash 说明不预置动词；
+      * verb 提取到 → 写两键 page=annotate ＋ annotate_verb=<verb>。键在
+        标注平台动词 selectbox（key="annotate_verb"）实例化前写入 = Streamlit
+        官方「程序化设值」，下一轮选中该动词；verb 不在 options（仅试点
+        过滤收缩等）时 Streamlit 1.57 实测静默回落 index 默认值，不抛异常；
+      * 提取不到（title 无义项段标记）→ 只写 page ＋ flash「请在标注平台
+        选择动词 {title}」引导手选。
+    """
+
+    def _go() -> None:
+        """重跑开始前执行（on_click 时机）：合法键写入＋一次性提示入队。"""
+        if not _annotate_target_visible(me):
+            st.session_state.update(page="annotate")
+            ui_kit.flash(
+                "标注平台对当前账号不可见——已回退页面锚跳转（仅切页，"
+                "不预置动词）。",
+                level="warning",
+            )
+            return
+        verb = _extract_verb_from_title(display_title)
+        if verb:
+            st.session_state.update(page="annotate", annotate_verb=verb)
+        else:
+            st.session_state.update(page="annotate")
+            ui_kit.flash(f"请在标注平台选择动词 {display_title}", level="info")
+
+    return _go
+
+
 def _render_my_bookmarks() -> None:
     """📌 我的书签段（FX-39 任务 1；「⚙️ 我的偏好」段之后，页面末尾收尾）。
 
     user_bookmarks 的列表消费面（list_bookmarks，own-rows-only 同源——
     user_id 会话派生，连越权入口都没有）：三锚表格渲染（类型徽章/标题/
-    锚/收藏时间/操作）＋逐行「🗑 取消收藏」（delete_bookmark）＋ page 锚
-    「🔗 前往」跳转（RV12-1 on_click 回调，见 _goto_page_callback）。
-    sense/entry 锚本批不跳（跳转依赖页面上下文——须先在对应页打开该对象，
-    归第二批，caption 如实注明，不做假按钮）。
+    锚/收藏时间/操作）＋逐行「🗑 取消收藏」（delete_bookmark）＋跳转——
+    page 锚「🔗 前往」（RV12-1 on_click 回调，见 _goto_page_callback）；
+    FX-42 起 sense 锚「前往 →」同样可跳（on_click 回调写 page=annotate
+    ＋预置 annotate_verb=<verb>，verb 提取与降级分支见 _goto_sense_callback，
+    目标页可达性闸见 _annotate_target_visible）。entry 锚仍不跳（词条浏览
+    器上下文同理复杂，caption 如实挂账，不做假按钮）。
 
     口径：
       * 未登录整段不渲染（同偏好段纪律：上下文域是登录态功能，fail-closed
@@ -759,8 +851,8 @@ def _render_my_bookmarks() -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>📌 我的书签</h3>", unsafe_allow_html=True)
     st.caption(
         "收藏的义位/词条/页面快捷位（user_bookmarks 表，跨设备续接；仅自己可见）。"
-        "页面锚可一键跳转；义位/词条锚跳转需先在对应页打开该对象——跳转依赖"
-        "页面上下文，归第二批。"
+        "页面锚、义位锚可一键跳转（义位锚自动预选标注平台动词，提取不到时引导"
+        "手选）；词条锚跳转依赖词条浏览器页面上下文，挂账暂不支持。"
     )
     try:
         rows = user_context_db.list_bookmarks()
@@ -800,7 +892,21 @@ def _render_my_bookmarks() -> None:
         with row_cols[3]:
             st.markdown(_format_dt(row.get("created_at")))
         with row_cols[4]:
-            if can_jump:
+            if anchor_type == "sense":
+                # FX-42：sense 锚「前往 →」（跳标注平台＋预选动词）。回调内
+                # 判可达性与 verb 提取（提取不到/不可达降级 flash，见
+                # _goto_sense_callback）；RV12-1：写会话只在 on_click 回调，
+                # 正文期直写在 Streamlit 1.57 必崩页。
+                goto_col, del_col = st.columns(2)
+                with goto_col:
+                    st.button(
+                        "前往 →", key=f"bm_goto_s_{row_id}",
+                        on_click=_goto_sense_callback(me, display_title),
+                    )
+                with del_col:
+                    if st.button("🗑 取消收藏", key=f"bm_del_{row_id}"):
+                        _delete_bookmark_row(anchor_type, anchor_id, display_title)
+            elif can_jump:
                 # RV12-1：跳转经 on_click 回调写会话（先例：collab_pages
                 # 「去分立复核」；正文期直写在 Streamlit 1.57 必崩页）。
                 goto_col, del_col = st.columns(2)
