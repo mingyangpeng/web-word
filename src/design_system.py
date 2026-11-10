@@ -791,123 +791,239 @@ if __name__ == "__main__":
 # 全局主题 CSS（批次 21 界面美化）
 # ============================================
 def get_global_theme_css() -> str:
-    """全局主题层：注入一次，作用于 Streamlit 真实 DOM（装饰性升级）。
+    """全局主题层 v3（批次 21 界面美化·Apple 设计语言）。
 
-    纪律（批次 21 界面美化）：
-      * **零文本/背景色对变更**——语义色板被 test_rv1_fixes 逐值锁定
-        （WCAG 深档），本层只做阴影/圆角/过渡/边框/字距等装饰升级，
-        对比度矩阵不受影响；
-      * 全部选择器走 Streamlit data-testid/稳定 class，不含用户数据插值；
-      * 暗色主题兼容：叠加面用 rgba 半透明，不钉死浅底深字（唯一例外沿用
-        RV1-3 既有常亮面纪律）。
+    设计语言（Apple HIG 网页风格）：
+      * 大面积留白：内容区纯白、页面底 #F5F5F7、发丝线分隔；
+      * 单一强调色 Apple Blue #0071E3（白字 4.7:1 ✓）——primary 按钮、
+        侧边栏选中项、激活态；其余全中性灰阶；
+      * 药丸按钮（980px 圆角，apple.com 同款）＋分段式 tabs（灰槽白段）；
+      * 毛玻璃侧边栏（#F5F5F7 半透明＋backdrop-blur，macOS 同款）＋
+        选中项 accent 填充药丸；
+      * 大标题无衬线粗体紧字距（-0.02em）——不用衬线（v2 试验废弃）；
+      * 卡片 14~18px 圆角＋极轻阴影（靠底色对比不靠投影）。
+
+    纪律：
+      * **零语义色板变更**——test_rv1_fixes 逐值锁定的八色不动；Apple Blue
+        只用于 UI chrome（按钮/激活态/强调），语义状态色仍用锁定色板；
+      * 文本对比：#1D1D1F on #F5F5F7/白 ≥14:1；#6E6E73 on 白 5.6:1；
+        白 on #0071E3 4.7:1——全部 ≥4.5:1；
+      * 暗色主题兼容：叠加面用半透明白/黑，不钉死深字浅底（RV1-3 例外面
+        保持既有纪律）。
     """
     return f"""
 <style>
-/* ── 按钮：圆角、过渡、悬停抬升 ─────────────────────────────
-   primary 型用主色渐变（两端 #4a5568→#2c5282 白字均 ≥7:1，WCAG 不降） */
-.stButton > button {{
-    border-radius: 10px;
-    font-weight: 600;
-    transition: transform 0.15s ease, box-shadow 0.2s ease,
-                filter 0.2s ease;
-}}
-.stButton > button:hover {{
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(26, 32, 44, 0.15);
-}}
-.stButton > button[kind="primary"] {{
-    background-image: linear-gradient(135deg, {PRIMARY_COLOR}, {SECONDARY_COLOR});
-    border: none;
-}}
-.stButton > button[kind="primary"]:hover {{
-    filter: brightness(1.08);
+:root {{
+    --ls-accent: #0071E3;
+    --ls-accent-hover: #0077ED;
+    --ls-text: #1D1D1F;
+    --ls-text-2: #6E6E73;
+    --ls-page: #F5F5F7;
+    --ls-hairline: rgba(0, 0, 0, 0.08);
+    --ls-pill: 980px;
 }}
 
-/* ── 指标卡：卡片化（驾驶舱四卡/风险汇总） ────────────────── */
-[data-testid="stMetric"] {{
-    background-color: {CARD_COLOR};
-    border: 1px solid {BORDER_COLOR};
+/* ══════════ 底色：页面浅灰、内容白 ══════════ */
+.stApp {{ background: var(--ls-page); }}
+[data-testid="stMain"] {{ background: #ffffff; }}
+
+/* ══════════ 标题：大标紧字距（无衬线、无下划线——Apple 大标题） ══ */
+[data-testid="stMain"] h1 {{
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ls-text);
+    border-bottom: none;
+    padding-bottom: 0;
+    background-image: none;
+}}
+[data-testid="stMain"] h2, [data-testid="stMain"] h3 {{
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ls-text);
+}}
+p, li {{ color: var(--ls-text); }}
+
+/* ══════════ 按钮：药丸（apple.com 同款 980px 圆角） ══════════ */
+.stButton > button {{
+    border-radius: var(--ls-pill);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: background 0.2s ease, transform 0.15s ease,
+                box-shadow 0.2s ease;
+}}
+.stButton > button:hover {{ transform: scale(1.015); }}
+.stButton > button[kind="primary"] {{
+    background: var(--ls-accent);
+    border: none;
+    box-shadow: none;
+}}
+.stButton > button[kind="primary"]:hover {{
+    background: var(--ls-accent-hover);
+    box-shadow: 0 4px 14px rgba(0, 113, 227, 0.28);
+}}
+.stButton > button[kind="secondary"] {{
+    background: #E8E8ED;
+    color: var(--ls-text);
+    border: none;
+}}
+.stButton > button[kind="secondary"]:hover {{ background: #DEDEE3; }}
+
+/* ══════════ 侧边栏：毛玻璃浅灰（macOS 同款） ══════════ */
+[data-testid="stSidebar"] {{
+    background: rgba(245, 245, 247, 0.92);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border-right: 1px solid var(--ls-hairline);
+    box-shadow: none;
+}}
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] label {{
+    color: var(--ls-text);
+}}
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {{
+    color: var(--ls-text);
+    font-weight: 700;
+}}
+[data-testid="stSidebar"] hr {{
+    border: none;
+    border-top: 1px solid var(--ls-hairline);
+}}
+
+/* 侧边栏输入框：白底细边（毛玻璃面上的白卡） */
+[data-testid="stSidebar"] .stTextInput input,
+[data-testid="stSidebar"] .stTextArea textarea {{
+    background: #ffffff;
+    color: var(--ls-text);
+    -webkit-text-fill-color: var(--ls-text);
+    border: 1px solid var(--ls-hairline);
+    border-radius: 10px;
+}}
+
+/* 侧边栏按钮：白底药丸 */
+[data-testid="stSidebar"] .stButton > button {{
+    background: #ffffff;
+    color: var(--ls-text);
+    border: 1px solid var(--ls-hairline);
+    border-radius: var(--ls-pill);
+}}
+
+/* 侧边栏 radio：Apple 侧栏选中项——accent 填充药丸白字 */
+[data-testid="stSidebar"] label:has(input[type="radio"]) {{
+    padding: 5px 10px;
+    margin: 1px 0;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}}
+[data-testid="stSidebar"] label:has(input[type="radio"]:hover) {{
+    background: rgba(0, 0, 0, 0.045);
+}}
+[data-testid="stSidebar"] label:has(input[type="radio"]:checked) {{
+    background: var(--ls-accent);
+}}
+[data-testid="stSidebar"] label:has(input[type="radio"]:checked) p,
+[data-testid="stSidebar"] label:has(input[type="radio"]:checked) span {{
+    color: #ffffff;
+    font-weight: 600;
+}}
+
+/* 侧边栏指标卡（实验统计）：白卡发丝边 */
+[data-testid="stSidebar"] [data-testid="stMetric"] {{
+    background: #ffffff;
+    border: 1px solid var(--ls-hairline);
     border-radius: 12px;
-    padding: 14px 18px;
-    box-shadow: 0 1px 2px rgba(26, 32, 44, 0.04);
+    box-shadow: none;
+}}
+
+/* ══════════ Tabs：分段式控件（灰槽白段） ══════════ */
+[data-testid="stTabs"] [role="tablist"] {{
+    background: #E8E8ED;
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+    border-bottom: none;
+}}
+[data-testid="stTabs"] [role="tab"] {{
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-weight: 600;
+    flex: 1 1 0;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}}
+[data-testid="stTabs"] [role="tab"] p {{
+    color: var(--ls-text);
+    opacity: 0.72;
+}}
+[data-testid="stTabs"] [role="tab"]:hover p {{ opacity: 1; }}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] p {{
+    color: var(--ls-text);
+    opacity: 1;
+}}
+[data-testid="stTabs"] [data-testid="stTabsSpacer"] {{ display: none; }}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+    border-bottom: none;
+}}
+
+/* 搜索栏：全药丸（与按钮族同圆角语言） */
+.st-key-search_bar {{
+    border-radius: var(--ls-pill);
+}}
+
+/* ══════════ 指标卡：白卡大数字 ══════════ */
+[data-testid="stMetric"] {{
+    background: #ffffff;
+    border: 1px solid var(--ls-hairline);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }}
 [data-testid="stMetricLabel"] p {{
     font-weight: 600;
-    letter-spacing: 0.01em;
+    color: var(--ls-text-2);
+}}
+[data-testid="stMetricValue"] {{
+    color: var(--ls-text);
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }}
 
-/* ── Tabs：活动下划线主题色＋悬停反馈（词典管理八 tab/语义分析九 tab） ── */
-[data-testid="stTabs"] [role="tab"] {{
-    font-weight: 600;
-    transition: color 0.15s ease;
-}}
-[data-testid="stTabs"] [role="tab"]:hover {{
-    color: {SECONDARY_COLOR};
-}}
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] p {{
-    color: {SECONDARY_COLOR};
-}}
-
-/* ── Expander：圆角＋边框柔化 ─────────────────────────────── */
+/* ══════════ Expander / DataFrame / 告警条 ══════════ */
 [data-testid="stExpander"] details {{
-    border-radius: 10px;
-    border-color: {BORDER_COLOR};
+    border-radius: 14px;
+    border-color: var(--ls-hairline);
+    background: #ffffff;
 }}
-[data-testid="stExpander"] summary {{
-    border-radius: 10px;
-}}
-
-/* ── DataFrame：圆角＋边框 ────────────────────────────────── */
 [data-testid="stDataFrame"] {{
-    border-radius: 10px;
-    border: 1px solid {BORDER_COLOR};
+    border-radius: 14px;
+    border: 1px solid var(--ls-hairline);
     overflow: hidden;
+    background: #ffffff;
 }}
-
-/* ── 告警条（info/warning/error/success）：左侧主题色强调线 ── */
 [data-testid="stAlert"] {{
-    border-radius: 10px;
-    border-left: 4px solid {INFO_COLOR};
-}}
-[data-testid="stAlert"][kind="stError"] {{ border-left-color: {ERROR_COLOR}; }}
-[data-testid="stAlert"][kind="stWarning"] {{ border-left-color: {WARNING_COLOR}; }}
-[data-testid="stAlert"][kind="stSuccess"] {{ border-left-color: {SUCCESS_COLOR}; }}
-
-/* ── 标题字距与主标下划线（页面 h1） ──────────────────────── */
-.main h1, [data-testid="stMain"] h1 {{
-    letter-spacing: -0.01em;
-    padding-bottom: 6px;
-    border-bottom: 2px solid rgba(44, 82, 130, 0.15);
-}}
-.main h2, [data-testid="stMain"] h2 {{
-    letter-spacing: -0.005em;
+    border-radius: 14px;
+    border: 1px solid var(--ls-hairline);
+    border-left: none;
 }}
 
-/* ── 侧边栏：右缘细分割＋标题间距 ────────────────────────── */
-[data-testid="stSidebar"] {{
-    border-right: 1px solid {BORDER_COLOR};
-}}
-[data-testid="stSidebar"] h2 {{
-    letter-spacing: 0.02em;
-}}
-
-/* ── 滚动条：细圆角（WebKit 系） ─────────────────────────── */
-::-webkit-scrollbar {{
-    width: 8px;
-    height: 8px;
-}}
+/* ══════════ 滚动条：极简 overlay 风格 ══════════ */
+::-webkit-scrollbar {{ width: 6px; height: 6px; }}
 ::-webkit-scrollbar-thumb {{
-    background: rgba(74, 85, 104, 0.35);
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 6px;
 }}
-::-webkit-scrollbar-thumb:hover {{
-    background: rgba(74, 85, 104, 0.55);
-}}
+::-webkit-scrollbar-thumb:hover {{ background: rgba(0, 0, 0, 0.32); }}
+::-webkit-scrollbar-track {{ background: transparent; }}
 
-/* ── 分隔线柔化 ──────────────────────────────────────────── */
+/* ══════════ 分隔线：发丝线 ══════════ */
 hr {{
     border: none;
-    border-top: 1px solid {BORDER_COLOR};
+    border-top: 1px solid var(--ls-hairline);
 }}
 </style>
 """
