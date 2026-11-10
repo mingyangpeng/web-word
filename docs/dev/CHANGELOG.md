@@ -1,5 +1,21 @@
 # 更新日志
 
+## 2026-11-11 · 批次 20：偏好消费＋书签列表＋草稿暂存＋驾驶舱打磨（FX-38/39/40）
+
+- **偏好键消费**：get_pref 读面＋语料页 limit 接 ui.rows_per_page（clamp [10,200]）；范畴下拉消费点勘察后如实挂账（app.py 无该控件）
+- **📌 我的书签列表**（账号管理页）：page 锚一键前往＋删除＋空态引导；sense/entry 锚跳转挂账
+- **撰写台草稿暂存/恢复**：draft_states 激活——暂存按钮＋打开恢复＋提交自动清除；乐观锁/回避制零破坏
+- **驾驶舱打磨**：风险行「前往 →」按钮（单目标三项，on_click page 路由）＋进度聚合手写 TTL 缓存（None 不缓存）＋list_recent_runs include_detail 瘦身
+- page_guides「 vs 」行话消缺；全量 **2754 passed / 0 failed**
+
+## 2026-11-11 · 批次 20：释义模板页「同簇并排总览＋在线人工修订」（FX-38）
+
+- **同簇并排总览**（对应 261110 葛批注「同词族分开释义、模式不一」的平台落点）：母图式卡片下新增整簇一屏对照表——词典原文（各自成条、模式不一）vs 模板化释义（同一母图式按参数分档）逐行并排，修订过的行带「已修订（vN）」标记；`overview_rows` 纯函数 + `st.dataframe` TextColumn 长文本列（域系页先例同款）
+- **在线人工修订**（补齐论文 §6.2「编者可增删槽位、调整框架描述、修改文字释义」的平台实现）：编纂职能 editor/reviewer/dict_admin 在模板页直接改模板文本＋填优化要点，保存即生成新版本；`template_revisions` 表按 (category, language, sense_id, version) UNIQUE 留痕，版本号单语句原子自增（INSERT…SELECT COALESCE(MAX)+1，无先读后写竞态）；历史在面板下方可查；引擎确定性输出始终并存为基线，锁定簇的修订不改变撰写域基线（G3 口径「锁定＝放行撰写，不是禁写」不变）
+- 数据层 `src/template_revision_db.py`：数据层 require_role 闸（tool_settings_db 先例）＋页面 require_role_interactive 交互闸双层；读面 fail-open（库离线 → 并排总览修订列占位"—"、面板降级只读、页面不崩）；建表走 flow-tables 先例（模块内 ensure，首用幂等建，不入 mysql_db 全量清单）
+- CSV「优化要点」列自动回填：有修订的义位导出时填入其最新 note，列结构 10 列不变（缺省 None 与历史输出逐字节一致）；同簇并排/修订面板/回填全程不新增页面、不动路由
+- 测试：`tests/test_template_revision_db.py`（守卫/清洗 10 项不碰库＋集成 6 项，独立库 web_word_template_revision_test，grant 脚本已补三 host 授权）＋ test_template_engine.py 增 TestOverviewRows/TestExportNotes；帮助母本与 page_guides 同步（锚点「母图式」「确定性槽位拼装」保持命中）
+
 ## 2026-11-10 · 批次 19：工具接线收官 11/11＋用户上下文域 UI（FX-35/36/37）
 
 - **工具 run() 页面接线 11/11 全通**（②组最后挂账项消）：admission/reliability/clustering/typicality/schema/template/multimedia 八处新接（+semantic_search/corpus_evidence），全部「get_tool→run、registry 未加载回落直调逐字节等价」先例形态，缓存语义零变化

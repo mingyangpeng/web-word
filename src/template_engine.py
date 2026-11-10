@@ -1020,8 +1020,12 @@ def collect_cluster_templates(category: str, language: str,
     }
 
 
-def _csv_row(tpl: Dict[str, Any]) -> List[Any]:
-    """一条模板 → §6.4 列结构的一行。"""
+def _csv_row(tpl: Dict[str, Any], note: Optional[str] = None) -> List[Any]:
+    """一条模板 → §6.4 列结构的一行。
+
+    note：该义位最新人工修订的优化要点（FX-38 回填"优化要点"列；
+    None → 留空，与旧口径逐字兼容——列仍由编者在导出表上续填）。
+    """
     dims = tpl["图式维度"]
     semantic = "；".join(
         f"{p['label']}={p['value_label']}"
@@ -1041,12 +1045,18 @@ def _csv_row(tpl: Dict[str, Any]) -> List[Any]:
         "（空槽待填）" if not tpl["对齐预留维度"]["filled"] else "已回填",
         dims.get("cluster_no"),
         dims.get("cluster_name"),
-        "",  # 优化要点：编者填写列
+        note or "",  # 优化要点：有在线修订取其 note，否则留空由编者续填
     ]
 
 
-def build_export_csv(templates: List[Dict[str, Any]]) -> str:
-    """模板列表 → CSV 文本（§6.4 列结构）。
+def build_export_csv(templates: List[Dict[str, Any]],
+                     notes: Optional[Dict[int, str]] = None) -> str:
+    """模板列表 → CSV 文本（§6.4 列结构；列序固定 10 列不变）。
+
+    notes（FX-38 可选）：{sense_id: 优化要点}——有在线人工修订的义位把
+    其 note 回填进"优化要点"列，无则留空（编者续填口径不变）。缺省 None
+    时行为与历史版本逐字节一致（tests/test_template_engine.py TestExport
+    的旧断言兼容）。
 
     每个单元格过 src/security.sanitize_csv_value：以 = + - @ \\t 开头的
     文本前置单引号，防 Excel/WPS 公式注入（CSV Injection）。
@@ -1054,9 +1064,56 @@ def build_export_csv(templates: List[Dict[str, Any]]) -> str:
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(TEMPLATE_CSV_COLUMNS)
+    _notes = notes if isinstance(notes, dict) else {}
     for tpl in templates:
-        writer.writerow([sanitize_csv_value(cell) for cell in _csv_row(tpl)])
+        note = _notes.get(tpl.get("sense_id"))
+        writer.writerow(
+            [sanitize_csv_value(cell) for cell in _csv_row(tpl, note)])
     return buf.getvalue()
+
+
+def overview_rows(templates: List[Dict[str, Any]],
+                  revisions: Optional[Dict[int, Dict[str, Any]]] = None,
+                  ) -> List[Dict[str, Any]]:
+    """同簇并排总览行构造（FX-38 纯函数，tests 直接测，不碰 st./DB）。
+
+    Args:
+        templates: build_template 产物列表（含 sense_id / lemma / sense_no /
+            sense_label / oald / template_text）；
+        revisions: {sense_id: 最新修订行}（template_revision_db 读面产物）；
+            None / 缺条目 / 库不可用空字典 → 修订列占位"—"（fail-open）。
+
+    Returns:
+        行 dict 列表：义位 / 词典原文释义 / 模板化释义（引擎） /
+        人工修订版（最新） / 修订标记。
+    """
+    revs = revisions if isinstance(revisions, dict) else {}
+    rows: List[Dict[str, Any]] = []
+    for tpl in templates or []:
+        if not isinstance(tpl, dict):
+            continue
+        sid_raw = tpl.get("sense_id")
+        try:
+            sid = int(sid_raw) if sid_raw is not None else None
+        except (TypeError, ValueError):
+            sid = None
+        rev = revs.get(sid) if sid is not None else None
+        rev_text = ""
+        rev_ver = None
+        if isinstance(rev, dict):
+            rev_text = str(rev.get("revision_text") or "").strip()
+            rev_ver = rev.get("version")
+        lemma_no = f"{tpl.get('lemma') or ''}{tpl.get('sense_no') or ''}"
+        rows.append({
+            "义位": f"{lemma_no}（{tpl.get('sense_label') or ''}）",
+            "词典原文释义": (tpl.get("oald") or {}).get("definition") or "",
+            "模板化释义（引擎）": tpl.get("template_text") or "",
+            "人工修订版（最新）": rev_text or "—",
+            "修订标记": (
+                f"已修订（v{rev_ver}）"
+                if rev_text and rev_ver is not None else "引擎基线"),
+        })
+    return rows
 
 
 def build_export_json(payload: Dict[str, Any]) -> str:
@@ -1095,22 +1152,154 @@ def template_lock_note(lock_state: Any) -> Optional[str]:
 # Streamlit 页（页面接入由集成步骤统一做：app.py 只需调本函数）
 # ============================================
 
+def _ensure_revision_tables_once() -> None:
+    """FX-38：首次进入模板页幂等建 template_revisions（flow-tables 先例）。
+
+    建表失败按「修订不可用」降级不崩页：读面在 template_revision_db 内
+    fail-open 返回空，写面返回 {"ok": False, "reason": ...}。
+    """
+    import streamlit as st
+
+    if st.session_state.get("_template_rev_ready"):
+        return
+    try:
+        from src.template_revision_db import ensure_template_revision_tables
+
+        ensure_template_revision_tables()
+        st.session_state["_template_rev_ready"] = True
+    except Exception as e:  # noqa: BLE001 — 建表失败降级，不阻断页面其余功能
+        logger.warning(f"render_template_page: 修订表建表降级: {e}")
+
+
+def _load_latest_revisions(category: Any, language: Any,
+                           sense_ids: List[Any]) -> Dict[int, Dict[str, Any]]:
+    """FX-38：批義位最新修订（fail-open：任何异常 → 空字典，页面照常渲染）。"""
+    try:
+        from src.template_revision_db import get_latest_revisions
+
+        return get_latest_revisions(str(category), str(language), sense_ids)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"render_template_page: 修订批量读取降级: {e}")
+        return {}
+
+
+def _render_revision_panel(category: Any, language: Any, sense_id: int,
+                           tpl: Dict[str, Any], cluster_locked: bool) -> None:
+    """FX-38：单义位人工修订面板（编辑 + 历史；页面交互闸 + 数据层二次闸）。
+
+    权限：编纂职能 editor/reviewer/dict_admin（CAN_REVISE_ROLES 单一事实源
+    在 template_revision_db）；无权限只读展示引擎基线与既有修订。
+    G3 口径沿用 FX-28：「锁定＝放行撰写，不是禁写」——锁定簇不拦修订，
+    仅加注记说明修订不改变撰写域已采用的基线。
+    """
+    import streamlit as st
+
+    from src.guards import require_role_interactive
+    from src.template_revision_db import (CAN_REVISE_ROLES, get_latest_revision,
+                                          list_revisions, save_revision)
+    from src.ui_kit import flash
+    from src.users_db import effective_six_roles
+
+    st.markdown("##### 人工修订（编者定稿层）")
+    st.caption("在引擎基线上增删槽位、调整措辞、补充句法说明；按版本留痕，"
+               "引擎输出并存，可逐版对照。")
+    try:
+        latest = get_latest_revision(str(category), str(language), sense_id)
+    except Exception as e:  # noqa: BLE001 — 读面意外按无修订降级
+        logger.warning(f"render_template_page: 修订读取降级: {e}")
+        latest = None
+    if cluster_locked:
+        st.caption("🔒 本簇已锁定（G3 分立复核定稿）：锁定＝放行撰写、不是禁写；"
+                   "此处的修订不改变撰写域已采用的基线。")
+    if isinstance(latest, dict) and latest:
+        who = latest.get("edited_by_name") or "—"
+        note = latest.get("note")
+        st.info(f"现行人工修订：v{latest.get('version')}（{who}）"
+                + (f" · 优化要点：{note}" if note else ""))
+
+    user = st.session_state.get("user")
+    roles = effective_six_roles(user) if user else set()
+    can_revise = bool(roles & CAN_REVISE_ROLES)
+    if not can_revise:
+        st.caption("✍️ 修订权限：编纂职能（editor / reviewer / dict_admin）。"
+                   "当前账号无修订权限，可查看引擎基线与既有修订。")
+        if isinstance(latest, dict) and latest:
+            st.markdown("**人工修订版（现行）**")
+            st.markdown(latest.get("revision_text") or "")
+        return
+
+    default_text = ((latest or {}).get("revision_text")
+                    if isinstance(latest, dict) and latest else None) \
+        or tpl.get("template_text") or ""
+    default_note = ((latest or {}).get("note")
+                    if isinstance(latest, dict) and latest else "") or ""
+    with st.form("template_revision_form", clear_on_submit=False):
+        st.markdown("**修订文本**（预填现行文本：引擎基线或最新修订）")
+        # key 按义位隔离（FX-38 review 修复）：Streamlit widget 会话值优先于
+        # value= 预填——若跨义位共用 key，切换义位后面板残留上一义位文本，
+        # 编者会把 A 义位的修订串写进 B 义位。
+        rev_text = st.text_area("修订文本", value=default_text, height=200,
+                                key=f"template_rev_text_{sense_id}",
+                                label_visibility="collapsed")
+        note_val = st.text_input(
+            "优化要点（≤500 字；随修订留痕，随 CSV「优化要点」列导出）",
+            value=default_note, key=f"template_rev_note_{sense_id}")
+        submitted = st.form_submit_button("保存修订（生成新版本）")
+    if not submitted:
+        if isinstance(latest, dict) and latest:
+            with st.expander("修订历史"):
+                hist = list_revisions(str(category), str(language), sense_id)
+                if hist:
+                    st.dataframe([{
+                        "版本": f"v{h.get('version')}",
+                        "修订人": h.get("edited_by_name") or "—",
+                        "时间": str(h.get("created_at") or ""),
+                        "优化要点": h.get("note") or "",
+                    } for h in hist], hide_index=True)
+                else:
+                    st.caption("（暂无历史）")
+        return
+    try:
+        require_role_interactive(
+            user, CAN_REVISE_ROLES, action="模板人工修订")
+    except PermissionError as e:
+        st.error(f"⛔ {e}")
+        return
+    sense_ref = f"{tpl.get('lemma') or ''}{tpl.get('sense_no') or ''}" or None
+    result = save_revision(str(category), str(language), sense_id,
+                           rev_text, user, note=note_val or None,
+                           sense_ref=sense_ref)
+    if not isinstance(result, dict) or not result.get("ok"):
+        reason = (result or {}).get("reason") or "未知原因"
+        st.error(f"❌ 修订未保存：{reason}")
+        return
+    flash(f"✅ 已保存人工修订 v{result.get('version')}"
+          f"（引擎基线并存，可逐版对照）")
+    st.rerun()
+
+
 def render_template_page() -> None:
-    """「释义模板引擎」页：母图式卡片 → 实例化模板卡片 → OALD 对照 → 批量导出。
+    """「释义模板引擎」页：母图式卡片 → 同簇并排总览 → 实例化模板卡片
+    → OALD 对照 → 人工修订 → 批量导出。
 
     G3 消费（FX-28）：locked 词簇的模板实例化结果上方加「🔒 定稿基线」
     标识（取数经 writing_db.get_cluster_lock_state 锁态读面，fail-open
     降级不加标识）；不禁止查看/导出。
+    FX-38 增能：簇级「同簇并排总览」（整簇 OALD 分散释义 vs 统一母图式
+    模板一屏对照）＋ 单义位「在线人工修订」（编纂职能 editor+，按版本
+    留痕，引擎输出并存为基线；修订不可用时整块降级，页面其余功能不受影响）。
     """
     import streamlit as st
 
     from src.category_study import category_study_ready, get_categories
 
+    _ensure_revision_tables_once()
     st.subheader("释义模板引擎 · 母图式提炼与槽位实例化")
     st.caption(
         "聚类子簇 → 共享事件母图式（核心要素）+ 可变参数槽位 → 单义位四维模板 "
-        "（图式 / 语义参数 / 句法 / 对齐预留）→ 与 OALD10 原文并排对照 → 批量导出。"
-        "全程确定性规则拼装，不调用 LLM；模板定稿权在编者（论文 §6.2 人机协同）。")
+        "（图式 / 语义参数 / 句法 / 对齐预留）→ 与 OALD10 原文并排对照 → 同簇并排"
+        "总览 → 批量导出。全程确定性规则拼装，不调用 LLM；模板定稿权在编者"
+        "（在线人工修订，按版本留痕——论文 §6.2 人机协同）。")
 
     if not category_study_ready():
         st.info("范畴深挖数据尚未灌入：先运行 scripts/load_category_study.py，"
@@ -1170,6 +1359,31 @@ def render_template_page() -> None:
     if cl.get("members"):
         with st.expander(f"簇成员（{len(cl['members'])} 条）"):
             st.dataframe(cl["members"], hide_index=True)
+
+    # ---- 同簇并排总览（FX-38：范畴化释义对照——整簇一屏看「分散释义 → 统一模式」）----
+    overview_members = cl.get("members") or []
+    if overview_members:
+        overview_ids = [int(m["sense_id"]) for m in overview_members]
+        overview_tpls = instantiate_templates(
+            cat_code, language, overview_ids, engine_schema=schemas)
+        overview_revs = _load_latest_revisions(cat_code, language, overview_ids)
+        rows = overview_rows(
+            [overview_tpls[i] for i in overview_ids
+             if isinstance(overview_tpls, dict) and overview_tpls.get(i)],
+            overview_revs)
+        st.markdown("##### 同簇并排总览（范畴化释义对照）")
+        st.caption(
+            "整簇一屏对照：左列词典原文各自成条、模式不一；右列同一母图式下按参数"
+            "分档——同族共享什么、成员差异在哪一目了然（论文 §6.4 弧线的平台落点；"
+            f"词典原文来源：{'OALD10' if language == 'en' else '现汉7'}）。")
+        st.dataframe(
+            rows, hide_index=True,
+            column_config={
+                "词典原文释义": st.column_config.TextColumn(width="large"),
+                "模板化释义（引擎）": st.column_config.TextColumn(width="large"),
+                "人工修订版（最新）": st.column_config.TextColumn(width="large"),
+            },
+        )
 
     st.divider()
 
@@ -1242,6 +1456,9 @@ def render_template_page() -> None:
         st.markdown("**LexiSchema 模板化释义**")
         st.markdown(tpl["template_text"])
 
+    # ---- 人工修订面板（FX-38：编者在线修订，版本留痕；引擎输出并存为基线）----
+    _render_revision_panel(cat_code, language, sense_id, tpl, cluster_locked)
+
     st.divider()
 
     # ---- 批量导出（当前簇全部义位）----
@@ -1278,7 +1495,19 @@ def render_template_page() -> None:
         st.caption(
             f"已生成 {n} 条模板（簇{payload['cluster'].get('cluster_no')}）"
             f"{baseline}。")
-        csv_bytes = build_export_csv(payload["templates"]).encode("utf-8-sig")
+        try:
+            # FX-38：有在线修订的义位把其优化要点回填进 CSV「优化要点」列
+            # （fail-open：库不可用 → 空字典，列留空由编者续填，口径不变）
+            from src.template_revision_db import get_latest_notes
+
+            _notes = get_latest_notes(
+                str(cat_code), str(language),
+                [t.get("sense_id") for t in payload["templates"]])
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"render_template_page: CSV 优化要点回填降级: {e}")
+            _notes = {}
+        csv_bytes = build_export_csv(
+            payload["templates"], _notes).encode("utf-8-sig")
         json_bytes = build_export_json(payload).encode("utf-8")
         dl1, dl2 = st.columns(2)
         with dl1:

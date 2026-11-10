@@ -271,3 +271,16 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] 等价性测试：test_fx35（admission 落库行为/三分支）、test_fx36（八处源级钉板＋schema/multimedia 透传行为＋registry 空回落）、test_fx37（笔记/书签/偏好/未登录）
 
 **②组全部关闭**。剩余阶段 2 大件：查阅端只读静态镜像、localStorage 合并、第二标注人/speech（等数据）。
+
+## 批次 20（2026-11-11 · 用户上下文消费落地＋驾驶舱打磨批）
+
+> 三路交付（FX-38/39 agent＋FX-40 合并手工）。全量 **2754 passed / 0 failed**（批次 19 基线 2668 → +86）。
+
+- [x] 偏好键消费（FX-38）——user_context_db.get_pref 读面（fail-closed）＋app.py 消费点：语料页搭配明细 limit 接 ui.rows_per_page（clamp [10,200]）；勘察结论「app.py 无范畴下拉消费点」如实挂账（semantic/cluster/template 页归后续）
+- [x] 📌 我的书签列表段（FX-39）——账号管理页：五列表格＋page 锚 on_click 跳转（RV12-1 回调纪律）＋删除＋空态引导；sense/entry 锚跳转如实挂账
+- [x] 撰写台草稿暂存/恢复（FX-39）——draft_states 域激活：「💾 暂存草稿」+恢复默认值+提交自动清除；乐观锁/作者校验/回避制零破坏（测试实证）；form_key=writing_draft_{cs_sense_id}
+- [x] RV21-3 风险行跳转按钮——单目标三项「前往 →」（on_click 写 page，复合路径两行文字指路）；行渲染改容器布局
+- [x] RV16-1 驾驶舱聚合缓存——手写 TTL 60s（**None 不缓存**，R4 归因即时可见；测试清缓存 fixture 配套）
+- [x] RV16-1 list_recent_runs 瘦身——include_detail=False 消费（历史小表不再拉 MEDIUMTEXT）
+- [x] page_guides「 vs 」行话消缺（copy_quality 契约）
+- [ ] 留档：ui.default_category 范畴下拉消费点（semantic/cluster/template 页——app.py 无该控件，勘察如实）；sense/entry 锚跳转（依赖页面上下文）；localStorage 合并

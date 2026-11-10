@@ -39,6 +39,14 @@ LEGACY_ROLE_TO_NEW_ROLES 映射必然两位一体，升级前后行为逐字节�
 ui.rows_per_page 两个示例键＋自定义键增删；**只做读写 UI，不改页面行为**
 —— 键的消费接线归下批（docstring 内注明），保存/删除成功一律 ui_kit.flash
 + rerun（RV12 口径）。
+
+FX-39 任务 1 新增「📌 我的书签」段（偏好段之后，页面末尾收尾）：
+user_bookmarks 列表消费面（list_bookmarks，own-rows-only 同源）——三锚
+（sense/entry/page）表格渲染（类型/标题/锚/收藏时间/操作）、每行「🗑 取消
+收藏」（delete_bookmark）、page 锚「🔗 前往」按钮跳转（on_click 回调内写
+session_state["page"]，RV12-1 口径照 collab_pages「去分立复核」先例；
+sense/entry 锚本批不跳，caption 如实注明——跳转依赖页面上下文，归第二批）。
+空态引导去义项脊柱收藏；未登录整段不渲染（同偏好段纪律）。
 """
 
 import logging
@@ -56,6 +64,7 @@ from src import guards
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src import user_context_db  # 批次 19：我的偏好读写（own-rows-only）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
+from src.page_guides import PAGE_KEYS  # FX-39：page 锚跳转合法性闸（路由键单一事实源）
 from src.users_db import (
     NEW_ROLES,
     ROLES,
@@ -109,6 +118,22 @@ _PREF_PRESET_KEYS = (
     ("ui.default_category", "默认范畴下拉值（如 motion）"),
     ("ui.rows_per_page", "每页行数（如 20）"),
 )
+
+# FX-39 任务 1「📌 我的书签」段：anchor_type ENUM 三值的中文与徽章配色
+# （与 user_bookmarks DDL 同值同序；未知值展示原文＋灰徽章兜底，不崩段）。
+_BOOKMARK_TYPE_LABELS = {
+    "sense": "义位",
+    "entry": "词条",
+    "page": "页面",
+}
+_BOOKMARK_TYPE_BADGE_COLORS = {
+    "sense": "#553c9a",
+    "entry": "#2b6cb0",
+    "page": "#2f855a",
+}
+
+# 书签行列表列宽（类型/标题/锚/收藏时间/操作；操作列放按钮略宽）。
+_BOOKMARK_COL_RATIOS = (0.9, 2.0, 1.5, 1.6, 2.2)
 
 # ============================================
 # 提权硬闸门（批次 4-N 立，批次 6-T 收口到中央闸门 guards.require_role）
@@ -678,6 +703,134 @@ def _render_my_preferences() -> None:
         st.caption("暂无已存偏好键（保存上方预设键或新增自定义键后可删）。")
 
 
+def _format_dt(value: Any) -> str:
+    """datetime 展示口径：None → '—'，datetime → 'YYYY-MM-DD HH:MM'，脏值原样。"""
+    if value is None:
+        return "—"
+    try:
+        return value.strftime("%Y-%m-%d %H:%M")
+    except AttributeError:
+        return str(value)
+
+
+def _goto_page_callback(page_key: str):
+    """page 锚跳转 on_click 回调工厂（RV12-1：切页只在回调内写会话）。
+
+    collab_pages「去分立复核」先例同款：本页控件渲染时机晚于侧栏
+    radio(key="page")，正文期直写 st.session_state["page"] 在 Streamlit 1.57
+    抛 StreamlitAPIException —— 必须经 on_click 回调（重跑开始前执行）改
+    会话。回调体用 st.session_state.update（键值合法：page_key 已过
+    PAGE_KEYS 闸；若目标页对当前角色不可见，app 侧栏渲染前的残留页回退
+    逻辑会折回搜索页，同样不崩）。
+    """
+
+    def _go() -> None:
+        """重跑开始前执行（on_click 时机）：合法路由键写入会话切页。"""
+        st.session_state.update(page=page_key)
+
+    return _go
+
+
+def _render_my_bookmarks() -> None:
+    """📌 我的书签段（FX-39 任务 1；「⚙️ 我的偏好」段之后，页面末尾收尾）。
+
+    user_bookmarks 的列表消费面（list_bookmarks，own-rows-only 同源——
+    user_id 会话派生，连越权入口都没有）：三锚表格渲染（类型徽章/标题/
+    锚/收藏时间/操作）＋逐行「🗑 取消收藏」（delete_bookmark）＋ page 锚
+    「🔗 前往」跳转（RV12-1 on_click 回调，见 _goto_page_callback）。
+    sense/entry 锚本批不跳（跳转依赖页面上下文——须先在对应页打开该对象，
+    归第二批，caption 如实注明，不做假按钮）。
+
+    口径：
+      * 未登录整段不渲染（同偏好段纪律：上下文域是登录态功能，fail-closed
+        的 UI 表达；本页入口本有登录门，这里再兜一层纵深防御）；
+      * 标题回退（RV2-3 第 2 类）：title NULL（含空白归一）→ 展示锚值，
+        flash 文案同源；
+      * page 锚合法性闸：仅 anchor_id ∈ PAGE_KEYS（page_guides 路由键单一
+        事实源）才渲染跳转按钮 —— 键集外的脏锚（含历史残留）不写会话，
+        只如实展示锚值；
+      * 成功一律 ui_kit.flash + rerun（RV12），失败 st.error 本轮直出；
+      * 读取降级：list_bookmarks 库不可用返回 []（数据层口径），段照常渲染
+        空态 —— 不因读降级藏段。
+    """
+    me = _current_user()
+    if not isinstance(me, dict):
+        return
+    st.markdown(f"<h3 style='{HEADER_H3}'>📌 我的书签</h3>", unsafe_allow_html=True)
+    st.caption(
+        "收藏的义位/词条/页面快捷位（user_bookmarks 表，跨设备续接；仅自己可见）。"
+        "页面锚可一键跳转；义位/词条锚跳转需先在对应页打开该对象——跳转依赖"
+        "页面上下文，归第二批。"
+    )
+    try:
+        rows = user_context_db.list_bookmarks()
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.error(f"我的书签读取失败（降级为空态）: {e}")
+        rows = []
+    if not rows:
+        st.caption("尚无书签——在义项脊柱点『📌 收藏本义位』即可收藏。")
+        return
+
+    header_cols = st.columns(_BOOKMARK_COL_RATIOS)
+    for col, label in zip(header_cols, ("类型", "标题", "锚", "收藏时间", "操作")):
+        with col:
+            st.markdown(f"**{label}**")
+
+    for row in rows:
+        anchor_type = str(row.get("anchor_type") or "")
+        anchor_id = str(row.get("anchor_id") or "")
+        row_id = int(row.get("id") or 0)
+        # 标题回退锚值（DDL 口径：NULL=未命名，展示时回退锚值）
+        display_title = str(row.get("title") or "") or anchor_id or "（未命名）"
+        can_jump = anchor_type == "page" and anchor_id in PAGE_KEYS
+
+        row_cols = st.columns(_BOOKMARK_COL_RATIOS)
+        with row_cols[0]:
+            st.markdown(
+                _badge(
+                    _html_escape(_BOOKMARK_TYPE_LABELS.get(anchor_type, anchor_type or "未知")),
+                    _BOOKMARK_TYPE_BADGE_COLORS.get(anchor_type, "#4a5568"),
+                ),
+                unsafe_allow_html=True,
+            )
+        with row_cols[1]:
+            st.markdown(display_title)
+        with row_cols[2]:
+            st.markdown(f"`{anchor_id}`" if anchor_id else "—")
+        with row_cols[3]:
+            st.markdown(_format_dt(row.get("created_at")))
+        with row_cols[4]:
+            if can_jump:
+                # RV12-1：跳转经 on_click 回调写会话（先例：collab_pages
+                # 「去分立复核」；正文期直写在 Streamlit 1.57 必崩页）。
+                goto_col, del_col = st.columns(2)
+                with goto_col:
+                    st.button(
+                        "🔗 前往", key=f"bm_goto_{row_id}",
+                        on_click=_goto_page_callback(anchor_id),
+                    )
+                with del_col:
+                    if st.button("🗑 取消收藏", key=f"bm_del_{row_id}"):
+                        _delete_bookmark_row(anchor_type, anchor_id, display_title)
+            else:
+                if st.button("🗑 取消收藏", key=f"bm_del_{row_id}"):
+                    _delete_bookmark_row(anchor_type, anchor_id, display_title)
+
+
+def _delete_bookmark_row(anchor_type: str, anchor_id: str, display_title: str) -> None:
+    """单行取消收藏（FX-39：delete_bookmark 转译；成功 flash + rerun，RV12）。
+
+    own-rows-only：数据层 WHERE 恒带会话派生 user_id，删别人的收藏在本
+    会话即「无此行」→ False（0 行命中），与本行已被自己另一标签页取消的
+    并发同口径 —— 转译 st.error 不静默、不 rerun。
+    """
+    if user_context_db.delete_bookmark(anchor_type, anchor_id):
+        ui_kit.flash(f"已取消收藏「{display_title}」。")
+        st.rerun()
+    else:
+        st.error("取消收藏失败（数据库不可用或收藏已不存在），请稍后重试。")
+
+
 def render_users_admin_page() -> None:
     """
     用户管理页入口（规范 §5：侧边栏「👥 用户管理」）。
@@ -691,6 +844,8 @@ def render_users_admin_page() -> None:
 
     批次 19：页面末尾（新建用户表单之后）追加「⚙️ 我的偏好」段
     （_render_my_preferences，user_profiles 个人键值读写，见其 docstring）。
+    FX-39 任务 1：偏好段之后追加「📌 我的书签」段（_render_my_bookmarks，
+    user_bookmarks 三锚列表＋删除＋page 锚跳转，见其 docstring）。
     """
     me = _current_user()
     if not me:
@@ -745,3 +900,8 @@ def render_users_admin_page() -> None:
     # 收在账号页自身末尾，不动 app.py 接线）。
     st.markdown("")
     _render_my_preferences()
+
+    # FX-39 任务 1：偏好段之后追加「📌 我的书签」段（user_bookmarks 列表：
+    # 三锚渲染 / 删除 / page 锚跳转；登录门与空态见 _render_my_bookmarks）。
+    st.markdown("")
+    _render_my_bookmarks()

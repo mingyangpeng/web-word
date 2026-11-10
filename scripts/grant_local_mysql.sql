@@ -199,3 +199,9 @@ GRANT ALL PRIVILEGES ON `web\_word\_review\_r18\_test`.* TO 'web_word_user'@'127
 GRANT ALL PRIVILEGES ON `web\_word\_review\_r18\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_review\_r18\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- FX-38：模板人工修订测试库（tests/test_template_revision_db.py）
+GRANT ALL PRIVILEGES ON `web\_word\_template\_revision\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_template\_revision\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_template\_revision\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;

@@ -2438,6 +2438,41 @@ def _pick_cluster_verb(cluster_id: int) -> None:
 # ============================================
 # 语料数据集页（Sketch Engine enTenTen21 → 页面展示）
 # ============================================
+def _rows_per_page_pref(default: int = 100) -> int:
+    """ui.rows_per_page 偏好 → 语料页搭配明细每表行数（批次 20 消费点）。
+
+    键源：账号管理页「⚙️ 我的偏好」段预置键 ui.rows_per_page（批次 19
+    只做读写 UI，本批接线消费）。读取与清洗口径：
+
+      * user_context_db.get_pref（会话派生 fail-closed：未登录/断库/
+        键在值空 → None）—— 本页是 app.py 托管面唯一行数消费点，每轮
+        渲染至多读一次，直读无缓存（偏好登录后极少变，缓存失效风险
+        不值，S1 教训见 user_context_db.get_pref docstring）；
+      * None / 非字符串 / 非整数字符串（脏值如 "motion"）/ 空白串 →
+        default=100（= 本页既有硬编码行为：无偏好/脏偏好不改变页面
+        行为，fx29 接线等价锁的 limit=100 口径在未登录面不漂移）；
+      * 合法整数 → clamp 到 [10, 200]（偏好值域上下限：防 1 行看不见
+        列表、防万行拖崩页面）。
+
+    函数内导入照 _logout / _resume_page_loader 先例（user_context_db 是
+    app.py 的功能件非启动依赖，读取失败按无偏好降级，不拖垮语料页）。
+    """
+    try:
+        from src.user_context_db import get_pref
+
+        raw = get_pref("ui.rows_per_page")
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"读取 ui.rows_per_page 偏好失败（按默认 {default} 行降级）: {e}")
+        return default
+    if not isinstance(raw, str):
+        return default
+    try:
+        val = int(raw.strip())
+    except ValueError:
+        return default
+    return max(10, min(200, val))
+
+
 def render_corpus_dataset_page() -> None:
     """📊 语料数据集：136 动词的词频、四图式重心得分与搭配明细浏览。
 
@@ -2550,7 +2585,12 @@ def render_corpus_dataset_page() -> None:
     if slots:
         default_slot = "objects of \"%w\"" if "objects of \"%w\"" in slots else slots[0]
         slot = st.selectbox("选择槽位", options=slots, index=slots.index(default_slot))
-        colls = _corpus_tool.run({"verb": picked, "slot": slot, "limit": 100})
+        # FX-38（批次 20）：明细条数消费 ui.rows_per_page 偏好（clamp
+        # [10,200]，无偏好/脏值回退既有默认 100，fx29 等价锁口径不变）；
+        # 上行 limit=2000 是槽位枚举全量扫描（构建槽位下拉选项集），非
+        # 展示行数 —— 不消费行数偏好（clamp 会截断槽位发现），保持原样。
+        colls = _corpus_tool.run(
+            {"verb": picked, "slot": slot, "limit": _rows_per_page_pref()})
         coll_df = pd.DataFrame(colls).rename(columns={
             "id": "_id", "slot": "槽位", "rank_in_slot": "排名", "collocate": "搭配词",
             "logdice": "logDice", "cooccur_count": "搭配频次",

@@ -625,7 +625,8 @@ def run_style_check(category: str, actor: Any = None) -> Dict[str, Any]:
 
 
 def list_recent_runs(
-    category: Optional[str] = None, limit: int = 5
+    category: Optional[str] = None, limit: int = 5,
+    include_detail: bool = True,
 ) -> Optional[List[Dict[str, Any]]]:
     """读最近 N 次体例质检 run（id 降序＝新在前；数据库不可用/表未建返回
     None —— R4 归因，调用方据此灰注）。
@@ -633,16 +634,19 @@ def list_recent_runs(
     Args:
         category: None → 跨范畴取最近 limit 次；给定 → 该范畴最近 limit 次。
         limit: 返回条数上限（默认 5；非正数按 1）。
+        include_detail: 是否取 detail_json（RV16-1 瘦身：历史计数小表只需
+            计数列，False 时行不含 detail_json 键——省 MEDIUMTEXT 拉取与
+            逐行 JSON 解析；默认 True 保持既有契约）。
 
     Returns:
         list[dict] | None：行含 id/category/run_by/passed/failed/warned/
         total/detail_json/created_at，另附 ``items``（detail_json 解析后的
         逐项数组；解析失败或空为 None，不抛异常）。
     """
-    sql = (
-        "SELECT id, category, run_by, passed, failed, warned, total, "
-        "detail_json, created_at FROM style_check_runs"
-    )
+    cols = ("id, category, run_by, passed, failed, warned, total, "
+            "detail_json, created_at" if include_detail else
+            "id, category, run_by, passed, failed, warned, total, created_at")
+    sql = f"SELECT {cols} FROM style_check_runs"
     params: List[Any] = []
     if category is not None:
         sql += " WHERE category = %s"
@@ -671,5 +675,7 @@ def list_recent_runs(
             except (ValueError, TypeError):
                 parsed = None
         item["items"] = parsed if isinstance(parsed, list) else None
+        if not include_detail:
+            item.pop("detail_json", None)  # 瘦身面不回传 MEDIUMTEXT 原文
         out.append(item)
     return out
