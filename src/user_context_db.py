@@ -76,13 +76,26 @@ CRUD 面（每表 upsert / list / delete 一组，函数名同构）：
   upsert_note    / list_notes    / delete_note             （user_notes）
   upsert_draft   / list_drafts   / delete_draft             （draft_states）
 
+单条直读面（批次 19 补，用户上下文域 UI 接线用：每行一次键级直读，避免
+为取一行而 list 全量）：
+  get_profile(key)   偏好单键直读（值可为 NULL=键已建未设值，与「无键」
+                     以 row 本身是否为 None 区分）；
+  get_bookmark(anchor_type, anchor_id)
+                     收藏态判定直读（义位脊柱 📌 toggle 用，不走全量）；
+  get_note(sense_id) 义位笔记直读（脊柱 📝 我的笔记段用）。
+  三件与同表 upsert/delete 同一套入参校验，非法入参/未登录/库不可用一律
+  None（fail-closed，绝不猜态）。
+
   * upsert 一律 INSERT ... ON DUPLICATE KEY UPDATE（唯一键兜底并发），返回
     True=落库成功——**刻意不沿用 dict_admin_db.set_value 的 rowcount 语义**
     （值未变化的重复写 rowcount=0 会报 False）：用户偏好「再存一次没变化」
     是幂等成功不是失败；
   * 入参校验在任何 DB 访问之前生效（应用层先拒，非法值不进数据库，
     llm_providers_db 同款纪律）；键类参数 strip 后存（标识符，非用户原文），
-    值/笔记/备注类参数原样存（用户数据，不替用户做清洗）。
+    值/笔记/备注类参数原样存（用户数据，不替用户做清洗）；
+  * list_* 行数闸（RV16-4 留档项消缺，批次 19）：_list_rows 统一 LIMIT
+    （DEFAULT_LIST_LIMIT=500，list_* 同名参数透传，非法/越界回退默认，
+    LIMIT 走参数化占位符不拼 SQL）。
 """
 
 import json
@@ -182,6 +195,13 @@ BOOKMARK_ANCHOR_TYPES = ("sense", "entry", "page")
 # 多字节最坏情形（50000 字符 × 4 字节 < 64KB 余量充足）。
 MAX_KV_VALUE_LEN = 50000
 MAX_NOTE_LEN = 50000
+
+# list_* 的行数闸（RV16-4 留档项消缺，批次 19）：_list_rows 统一加 LIMIT
+# （默认 500，调用方可传）—— 上下文域随使用量增长（最近足迹/书签/笔记都
+# 可能上百行），无界 SELECT 只记在 DDL 不在 SQL。LIMIT 走参数化占位符
+# 传参（不拼 SQL）；非法/越界 limit 回退默认，不抛异常（读路径降级口径）。
+DEFAULT_LIST_LIMIT = 500
+_MAX_LIST_LIMIT = 10000
 
 
 # ============================================
@@ -318,8 +338,30 @@ def _upsert_kv(table: str, key_col: str, value_col: str, key: Any, value: Any,
         return False
 
 
-def _list_rows(table: str, columns: str, order_by: str) -> List[Dict[str, Any]]:
-    """list 内核：只读会话主人的行；库不可用/未登录返回 []（fail-closed）。"""
+def _clamp_limit(limit: Any) -> int:
+    """LIMIT 参数清洗（RV16-4 加固）：非法 / 非正 / 越上限 → 默认 500。
+
+    bool 先拦（int 子类，True 会折算成 1 当 limit 用，与 as_int 同口径）；
+    返回值恒为安全 int，供参数化占位符传参（绝不拼进 SQL 文本）。
+    """
+    if isinstance(limit, bool):
+        return DEFAULT_LIST_LIMIT
+    try:
+        val = int(limit)
+    except (TypeError, ValueError):
+        return DEFAULT_LIST_LIMIT
+    if val <= 0 or val > _MAX_LIST_LIMIT:
+        return DEFAULT_LIST_LIMIT
+    return val
+
+
+def _list_rows(table: str, columns: str, order_by: str,
+               limit: int = DEFAULT_LIST_LIMIT) -> List[Dict[str, Any]]:
+    """list 内核：只读会话主人的行；库不可用/未登录返回 []（fail-closed）。
+
+    limit（RV16-4）：统一行数闸，默认 DEFAULT_LIST_LIMIT=500，调用方按面
+    需要传（如列表页分页上限）；非法值经 _clamp_limit 回退默认。
+    """
     uid = _resolve_user_id()
     if uid is None:
         return []
@@ -327,8 +369,9 @@ def _list_rows(table: str, columns: str, order_by: str) -> List[Dict[str, Any]]:
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
-                f"SELECT {columns} FROM {table} WHERE user_id = %s ORDER BY {order_by}",
-                (uid,),
+                f"SELECT {columns} FROM {table} WHERE user_id = %s "
+                f"ORDER BY {order_by} LIMIT %s",
+                (uid, _clamp_limit(limit)),
             )
             return list(cursor.fetchall())
     except pymysql.Error as e:
@@ -373,13 +416,48 @@ def upsert_profile(key: str, value: Optional[str]) -> bool:
                       key, value, 120)
 
 
-def list_profiles() -> List[Dict[str, Any]]:
-    """当前用户的全部偏好（按 pref_key 稳定序，UI 渲染免再排）。"""
+def list_profiles(limit: int = DEFAULT_LIST_LIMIT) -> List[Dict[str, Any]]:
+    """当前用户的全部偏好（按 pref_key 稳定序，UI 渲染免再排）。
+
+    limit：行数闸（RV16-4），默认 500，见 _list_rows docstring。
+    """
     return _list_rows(
         "user_profiles",
         "id, pref_key, pref_value, created_at, updated_at",
         "pref_key ASC",
+        limit,
     )
+
+
+def get_profile(key: str) -> Optional[Dict[str, Any]]:
+    """单条直读当前用户的一个偏好键（避免 list 全量；批次 19 补读面）。
+
+    无此键 / 未登录 / 库不可用 / 键非法 → None；键存在但值为 NULL（键已建
+    未设值，RV2-3 第 2 类）返回含 pref_value=None 的行 —— 「无键」与「键在
+    值空」以此区分，调用方判 row["pref_value"] 而非 row 本身。
+    """
+    clean = _check_key(key, 120)
+    if clean is None:
+        return None
+    uid = _resolve_user_id()
+    if uid is None:
+        return None
+    ensure_user_context_tables()
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, pref_key, pref_value, created_at, updated_at "
+                "FROM user_profiles WHERE user_id = %s AND pref_key = %s LIMIT 1",
+                (uid, clean),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+    except pymysql.Error as e:
+        logger.error(f"读 user_profiles 单条失败（key={clean!r}）: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"读 user_profiles 单条意外错误（key={clean!r}）: {e}")
+        return None
 
 
 def delete_profile(key: str) -> bool:
@@ -400,12 +478,16 @@ def upsert_state(key: str, value: Optional[str]) -> bool:
                       key, value, 120)
 
 
-def list_states() -> List[Dict[str, Any]]:
-    """当前用户的全部状态键值（按 updated_at 降序，最新续接点在前）。"""
+def list_states(limit: int = DEFAULT_LIST_LIMIT) -> List[Dict[str, Any]]:
+    """当前用户的全部状态键值（按 updated_at 降序，最新续接点在前）。
+
+    limit：行数闸（RV16-4），默认 500，见 _list_rows docstring。
+    """
     return _list_rows(
         "user_state",
         "id, state_key, state_value, created_at, updated_at",
         "updated_at DESC, id DESC",
+        limit,
     )
 
 
@@ -472,13 +554,56 @@ def upsert_bookmark(anchor_type: str, anchor_id: str,
         return False
 
 
-def list_bookmarks() -> List[Dict[str, Any]]:
-    """当前用户的全部收藏（按 updated_at 降序，最近收藏在前）。"""
+def list_bookmarks(limit: int = DEFAULT_LIST_LIMIT) -> List[Dict[str, Any]]:
+    """当前用户的全部收藏（按 updated_at 降序，最近收藏在前）。
+
+    limit：行数闸（RV16-4），默认 500，见 _list_rows docstring。书签列表
+    独立消费页归用户上下文域 UI 第二批（批次 19 只落地义位脊柱 toggle，
+    其收藏态判定走 get_bookmark 单条直读，不走本函数全量）。
+    """
     return _list_rows(
         "user_bookmarks",
         "id, anchor_type, anchor_id, title, note, created_at, updated_at",
         "updated_at DESC, id DESC",
+        limit,
     )
+
+
+def get_bookmark(anchor_type: str, anchor_id: str) -> Optional[Dict[str, Any]]:
+    """单条直读当前用户在某锚上的收藏（批次 19 补读面；toggle 态判定用）。
+
+    与 upsert_bookmark / delete_bookmark 同一套入参校验（anchor_type 白名单
+    ＋ anchor_id 非空 ≤120）——非法锚直接 None 不触库。无此锚 / 未登录 /
+    库不可用 → None（义位脊柱按「未收藏」渲染 toggle，绝不猜态）。
+    """
+    if anchor_type not in BOOKMARK_ANCHOR_TYPES or not isinstance(anchor_id, str):
+        return None
+    anchor_id = anchor_id.strip()
+    if not anchor_id or len(anchor_id) > 120:
+        return None
+    uid = _resolve_user_id()
+    if uid is None:
+        return None
+    ensure_user_context_tables()
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, anchor_type, anchor_id, title, note, "
+                "created_at, updated_at "
+                "FROM user_bookmarks WHERE user_id = %s "
+                "AND anchor_type = %s AND anchor_id = %s LIMIT 1",
+                (uid, anchor_type, anchor_id),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+    except pymysql.Error as e:
+        logger.error(f"读 user_bookmarks 单条失败（anchor={anchor_type}:"
+                     f"{anchor_id!r}）: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"读 user_bookmarks 单条意外错误（anchor={anchor_type}:"
+                     f"{anchor_id!r}）: {e}")
+        return None
 
 
 def delete_bookmark(anchor_type: str, anchor_id: str) -> bool:
@@ -550,13 +675,50 @@ def upsert_note(sense_id: Any, note: str) -> bool:
         return False
 
 
-def list_notes() -> List[Dict[str, Any]]:
-    """当前用户的全部义位笔记（按 updated_at 降序，最近编辑在前）。"""
+def list_notes(limit: int = DEFAULT_LIST_LIMIT) -> List[Dict[str, Any]]:
+    """当前用户的全部义位笔记（按 updated_at 降序，最近编辑在前）。
+
+    limit：行数闸（RV16-4），默认 500，见 _list_rows docstring。
+    """
     return _list_rows(
         "user_notes",
         "id, sense_id, note, created_at, updated_at",
         "updated_at DESC, id DESC",
+        limit,
     )
+
+
+def get_note(sense_id: Any) -> Optional[Dict[str, Any]]:
+    """单条直读当前用户在某义位的笔记（批次 19 补读面，避免 list 全量）。
+
+    义位脊柱「📝 我的笔记」段的取数源：每义位一次主键级直读（UNIQUE 键
+    user_id+sense_id），替代 list_notes 全量再过滤。sense_id 非法（as_int
+    拒收 / ≤0）、未登录、无此行、库不可用 → None（调用方按「暂无笔记」
+    渲染，绝不猜态）。note NOT NULL（''=显式清空但保留行，RV2-3 第 3 类）
+    —— 返回行的 note 恒为 str。
+    """
+    sid = as_int(sense_id)
+    if sid is None or sid <= 0:
+        return None
+    uid = _resolve_user_id()
+    if uid is None:
+        return None
+    ensure_user_context_tables()
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id, sense_id, note, created_at, updated_at "
+                "FROM user_notes WHERE user_id = %s AND sense_id = %s LIMIT 1",
+                (uid, sid),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+    except pymysql.Error as e:
+        logger.error(f"读 user_notes 单条失败（sense_id={sid}）: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"读 user_notes 单条意外错误（sense_id={sid}）: {e}")
+        return None
 
 
 def delete_note(sense_id: Any) -> bool:
@@ -617,12 +779,16 @@ def upsert_draft(form_key: str, state: Any) -> bool:
         return False
 
 
-def list_drafts() -> List[Dict[str, Any]]:
-    """当前用户的全部表单快照（按 updated_at 降序，最近自动保存在前）。"""
+def list_drafts(limit: int = DEFAULT_LIST_LIMIT) -> List[Dict[str, Any]]:
+    """当前用户的全部表单快照（按 updated_at 降序，最近自动保存在前）。
+
+    limit：行数闸（RV16-4），默认 500，见 _list_rows docstring。
+    """
     return _list_rows(
         "draft_states",
         "id, form_key, state_json, created_at, updated_at",
         "updated_at DESC, id DESC",
+        limit,
     )
 
 

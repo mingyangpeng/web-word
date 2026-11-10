@@ -412,8 +412,26 @@ def test_corpus_page_routes_through_registry_tool(fx29_db, monkeypatch):
     assert "PS 计算口径" in captions
     assert "当前槽位：2 行" in captions
 
+
 class TestResumeGlue:
     """RV18-3：续接点胶水层真适配器＋登出写路径行为覆盖（此前仅 lambda 桩喂缝）。"""
+
+    # FX-35 适配（非接线失联，照实注明）：本类跑在模块专属库
+    # web_word_writing_test 上，而 user_context_db 的惰性建表哨兵
+    # _TABLES_ENSURED 是**进程级**的 —— 任何先行模块在自己的测试库上触发过
+    # 惰性建表（如 test_integration_apptest 登录落地 → _resume_page_loader →
+    # list_states），本类再调 ensure_user_context_tables() 就被哨兵直通跳过
+    # DDL，user_state 在本模块库中不存在 → 误报失败（与被测代码无关的用例
+    # 顺序脆弱性；全量字母序 fx29 先于 integration 故基线未暴露）。照
+    # fx31/fx33 既有哨兵手法（存值→置 False 强制重走 DDL→还原）补隔离。
+    @pytest.fixture(autouse=True)
+    def _force_context_ddl(self):
+        import src.user_context_db as ucdb
+
+        sentinel_before = ucdb._TABLES_ENSURED
+        ucdb._TABLES_ENSURED = False  # 强制重走 DDL 路径（本模块专属库）
+        yield
+        ucdb._TABLES_ENSURED = sentinel_before
 
     def test_adapter_reads_own_state_row(self, fx29_db, monkeypatch):
         """真适配器：会话派生 list_states 读 resume_page；未写/删除后返 None。"""
@@ -457,4 +475,3 @@ class TestResumeGlue:
         assert "upsert_state" in src
         assert '"resume_page"' in src
         assert "PAGE_KEYS" in src  # 页键白名单守卫在场
-

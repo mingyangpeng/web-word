@@ -258,3 +258,16 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] RV-22 回归固化——tests/test_review_r18.py 六链端到端（两步激活链/质检→指标链/广播→收件箱链/改派→重标链/落地三分支 AppTest e2e/跨设备续接）＋grant r18 授权
 
 **遗留观察项**（P3 留档）：驾驶舱聚合无缓存（量级小）/list_* 无 LIMIT 潜伏/工具层无共享缓存/源码钉板扩散监控/风险行跳转按钮（on_click 先例已在码）。「落定项无文档」清单全部消（FX-34）。
+
+## 批次 19（2026-11-10 · 工具接线收官＋用户上下文 UI＋RV16-4 消缺）
+
+> 三路交付（FX-35/37 agent＋FX-36 合并手工）：**工具 run() 页面接线 11/11 全通**（②组最后挂账项消）。
+> 全量 **2668 passed / 0 failed**（批次 18 基线 2576 → +92）。
+
+- [x] ②工具 run() 接线余 9 个 ✅ 全通——admission（app.py:3432 准入提交）/reliability（页面渲染 :891）/clustering+typicality（cluster_analysis :1929/:1917 同模块自委托）/schema（template_engine :700/:933＋entry_assembly :422）/template（:1244）/multimedia（entry_assembly :497＋lexical_pages :627）；八处全部「get_tool→run、registry 未加载回落直调逐字节等价」先例形态；缓存语义零变化
+- [x] 用户上下文域 UI 落地——义项脊柱「📝 我的笔记」（upsert/delete＋updated_at 显示）＋「📌 书签」toggle（'sense' 锚）；账号管理页「⚙️ 我的偏好」段（user_profiles 键值读写，预置 ui.* 两键）；未登录不渲染（fail-closed UI 表达）（FX-37）
+- [x] user_context_db 读面补强——get_note/get_profile/get_bookmark 单条直读＋list_* LIMIT 500 行数闸（RV16-4 消缺，参数化占位符）
+- [x] RV15-3 侧边栏「↩︎ 续接上次：X」灰注（落地分支 2 命中旗标，radio 上方；登出全清回收）（FX-35）
+- [x] 等价性测试：test_fx35（admission 落库行为/三分支）、test_fx36（八处源级钉板＋schema/multimedia 透传行为＋registry 空回落）、test_fx37（笔记/书签/偏好/未登录）
+
+**②组全部关闭**。剩余阶段 2 大件：查阅端只读静态镜像、localStorage 合并、第二标注人/speech（等数据）。

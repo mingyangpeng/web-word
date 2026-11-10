@@ -39,6 +39,10 @@ annotation_submissions → cs_cluster_runs → definition_versions）与 §9 U
       「暂无数据：missing_reason」）。取数一律经模块级 _fetch_* /
       _resolve_* 薄适配层，测试 monkeypatch 这些名字即可构造全缺数 /
       部分有数 / 脏数据场景，不需要真实数据库。
+  批次 19 追加渲染件（有 st. 副作用，不入纯编排）：
+      _render_bookmark_toggle(sense_id) / _render_my_notes_section(sense_id)
+      —— 登录态专属（会话门 _context_uid = user_context_db
+      ._resolve_user_id 单一实现），测试 monkeypatch 数据层与 st 桩。
 
 降级（每段独立 try/except，段头照常渲染）：
   数据层函数自身已把数据库不可用折叠为 []/None（只记日志），本模块把
@@ -64,6 +68,28 @@ annotation_submissions → cs_cluster_runs → definition_versions）与 §9 U
 merged 状态经 _fetch_cs_sense_state（cs_senses 现状，只读）随 ④⑤ 共用的
 cs_sense 映射取得；映射失败/行缺失/列缺失（迁移未跑）时按普通义位渲染
 （不猜 merged，绝不把取数故障谎报成「已并入」）。
+
+批次 19（用户上下文域 UI 落地，施工规范批次 19）：七段静态面之外新增两件
+**登录态专属**的私人上下文控件（用户上下文域 = 登录态功能，fail-closed
+口径的 UI 表达 —— 未登录整段/整钮不渲染，而不是渲染出灰提示）：
+  * 📌 书签 toggle（段前动作位）：user_bookmarks 锚 'sense'+str(sense_id)，
+    已收藏态经 get_bookmark 单条直读判定（批次 19 补读面，不走全量）；
+    未收藏「📌 收藏本义位」→ upsert_bookmark（title=义位标签），已收藏
+    「📍 已收藏·取消」→ delete_bookmark。own-rows-only（user_id 会话派生，
+    天然只读写自己的），六角色皆可用（私人数据）。书签列表独立页归第二批
+    （list_bookmarks 消费入口建议：侧边栏「继续/收藏」区或账号管理页，
+    见 user_context_db.list_bookmarks docstring）。
+  * 📝 我的笔记段（⑦ 定制属性段之后，七段面末尾）：user_notes 该用户 ×
+    该义位的私人笔记 —— 已存笔记显示（updated_at 时间戳）＋ text_area
+    编辑 ＋「💾 保存笔记」（upsert_note；'' 提交=显式清空但保留行，RV2-3
+    第 3 类口径）＋「🗑 删除笔记」（delete_note）。
+  两者成功提示一律 ui_kit.flash + st.rerun（RV12：rerun 会丢本轮渲染，
+  禁止 st.success+st.rerun 回潮）；失败 st.error 留在本轮不 rerun。
+  控件键一律带 sense_id 后缀（同一词条页可展开多个义位脊柱，widget 键
+  必须互斥）。两件都走 _render_* 渲染层（有 st. 副作用，不入
+  _spine_sections 纯编排——SpineSection 是纯文本载荷，塞不进 widget）；
+  会话门复用 user_context_db._resolve_user_id 单一实现（UI 门与数据层门
+  同一口径，无第二套判定）。
 """
 
 import json
@@ -72,7 +98,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import streamlit as st
 
-from src import annotation_flow, media_db
+from src import annotation_flow, media_db, ui_kit, user_context_db
 from src.annotation_flow import TASK_TYPE_LABELS  # R6-8：单一导出
 from src.db_utils import as_int as _as_int  # R6-4：公共小件单一实现点
 from src.cluster_analysis import (
@@ -84,6 +110,7 @@ from src.dict_admin_db import get_values_for_anchor
 from src.design_system import HEADER_H4
 from src.mysql_db import get_db_cursor
 from src.template_engine import instantiate_template
+from src.user_context_db import MAX_NOTE_LEN, _resolve_user_id as _context_uid
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +140,18 @@ _MERGED_STATUS = "merged"
 # payload 摘要与例句展示的截断上限（防长文本撑爆脊柱段）
 _SUMMARY_MAX_LEN = 120
 _EXAMPLES_SHOW = 3
+
+# 批次 19 用户上下文域 UI：段头文案与笔记展示截断（全文在下方编辑框，
+# 展示行截断防 50000 字符笔记撑爆脊柱段；截断是有损展示不是丢数据）
+_MY_NOTES_TITLE = "📝 我的笔记（user_notes · 私人）"
+_NOTE_DISPLAY_MAX_LEN = 500
+
+# 书签 toggle 与笔记控件键前缀（键带 sense_id 后缀：同一词条页可展开
+# 多个义位脊柱，widget 键必须互斥）
+_BOOKMARK_KEY_ON = "sense_spine_bm_on_{sid}"
+_BOOKMARK_KEY_OFF = "sense_spine_bm_off_{sid}"
+_NOTE_FORM_KEY = "sense_spine_note_form_{sid}"
+_NOTE_INPUT_KEY = "sense_spine_note_input_{sid}"
 
 
 class SpineSection(NamedTuple):
@@ -488,6 +527,45 @@ def _fetch_custom_values(sense_id: int) -> List[Dict[str, Any]]:
         return []
 
 
+def _fetch_my_note(sense_id: int) -> Optional[Dict[str, Any]]:
+    """📝 我的笔记取数（**只读**）：user_context_db.get_note（批次 19 补读面，
+    会话派生 user_id 单条直读，未登录/无行/库不可用 → None）。"""
+    try:
+        return user_context_db.get_note(int(sense_id))
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.error(f"sense_spine: 私人笔记读取失败（sense_id={sense_id}）: {e}")
+        return None
+
+
+def _fetch_my_bookmark(sense_id: int) -> Optional[Dict[str, Any]]:
+    """📌 书签态取数（**只读**）：user_context_db.get_bookmark('sense', str(id))
+    （批次 19 补读面，单条直读判 toggle 态，不走 list_bookmarks 全量）。"""
+    try:
+        return user_context_db.get_bookmark("sense", str(int(sense_id)))
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.error(f"sense_spine: 书签态读取失败（sense_id={sense_id}）: {e}")
+        return None
+
+
+def _sense_label(sense_id: int) -> str:
+    """义位显示标签（书签 title 用）：'verb · S{index}（#id）'；义项行取不到
+    回退 '义位 #id'（title 可空，展示时数据层回退锚值；这里给全尽量可读）。"""
+    fallback = f"义位 #{sense_id}"
+    try:
+        row = _fetch_sense_row(sense_id)
+    except Exception as e:  # noqa: BLE001 — 取数失败按无标签
+        logger.warning(f"sense_spine: 书签标题取数失败（id={sense_id}）: {e}")
+        return fallback
+    if not row:
+        return fallback
+    verb = str(row.get("verb") or "").strip()
+    index = str(row.get("sense_index") or "").strip()
+    parts = [p for p in (verb, f"S{index}" if index else "") if p]
+    if not parts:
+        return fallback
+    return f"{' · '.join(parts)}（#{sense_id}）"
+
+
 def _resolve_cs_sense(sense_id: int, category: str, language: str,
                       sense_row: Optional[Dict[str, Any]],
                       ) -> Tuple[Optional[int], Optional[str], Optional[str]]:
@@ -799,6 +877,109 @@ def _section_custom_values(sense_id: int) -> SpineSection:
 
 
 # ============================================
+# 用户上下文域 UI（批次 19）：📌 书签 toggle ＋ 📝 我的笔记段
+# （登录态专属 —— 会话门复用数据层 _resolve_user_id 单一口径，未登录
+#   整段/整钮不渲染；写成功走 ui_kit.flash + rerun（RV12），失败 st.error
+#   留在本轮；数据层 own-rows-only，六角色皆可用（私人数据））
+# ============================================
+
+def _render_bookmark_toggle(sense_id: int) -> None:
+    """📌 书签 toggle（登录态专属；置于七段之前的动作位）。
+
+    已收藏态经 _fetch_my_bookmark 单条直读判定（get_bookmark，批次 19 补
+    读面）；两态：未收藏「📌 收藏本义位」→ upsert_bookmark（title=义位
+    标签），已收藏「📍 已收藏·取消」→ delete_bookmark。取数异常时收藏态
+    不可知 → 不渲染控件（fail-closed，不猜态）。书签列表独立页归第二批
+    （list_bookmarks 消费入口见 user_context_db docstring 建议）。
+    """
+    if _context_uid() is None:
+        return
+    sid = int(sense_id)
+    try:
+        bookmarked = _fetch_my_bookmark(sid) is not None
+    except Exception as e:  # noqa: BLE001 — 态不可知不渲染，不猜
+        logger.error(f"sense_spine: 书签态判定失败（id={sid}），控件不渲染: {e}")
+        return
+    if bookmarked:
+        if st.button("📍 已收藏·取消", key=_BOOKMARK_KEY_OFF.format(sid=sid)):
+            if user_context_db.delete_bookmark("sense", str(sid)):
+                ui_kit.flash("已取消收藏该义位。")
+                st.rerun()
+            else:
+                st.error("取消收藏失败（数据库不可用），请稍后重试。")
+    else:
+        if st.button("📌 收藏本义位", key=_BOOKMARK_KEY_ON.format(sid=sid)):
+            if user_context_db.upsert_bookmark("sense", str(sid),
+                                               title=_sense_label(sid)):
+                ui_kit.flash("已收藏该义位（个人书签，跨设备续接）。")
+                st.rerun()
+            else:
+                st.error("收藏失败（数据库不可用），请稍后重试。")
+
+
+def _render_my_notes_section(sense_id: int) -> None:
+    """📝 我的笔记段（登录态专属；⑦ 定制属性段之后，七段面末尾）。
+
+    user_notes 该用户 × 该义位私人笔记：已存笔记显示（updated_at 时间戳；
+    展示行截断 _NOTE_DISPLAY_MAX_LEN，全文在下方编辑框）＋ text_area 编辑
+    ＋「💾 保存笔记」/「🗑 删除笔记」（form 内双 submit：保存=upsert_note，
+    '' 提交=显式清空但保留行 RV2-3 第 3 类；删除=delete_note，无行先提示
+    不触库）。成功 ui_kit.flash + rerun（RV12），失败 st.error 本轮直出。
+    段内异常折叠为灰提示，绝不打崩整页（与七段同款降级口径）。
+    """
+    if _context_uid() is None:
+        return
+    sid = int(sense_id)
+    try:
+        st.markdown(f"<h4 style='{HEADER_H4}'>{_MY_NOTES_TITLE}</h4>",
+                    unsafe_allow_html=True)
+        note_row = _fetch_my_note(sid)
+        existing = str((note_row or {}).get("note") or "")
+        if note_row is None:
+            st.caption("该义位还没有私人笔记（仅自己可见；保存后跨设备续接）。")
+        elif existing.strip():
+            shown = (existing if len(existing) <= _NOTE_DISPLAY_MAX_LEN
+                     else existing[:_NOTE_DISPLAY_MAX_LEN] + "…")
+            st.markdown(shown)
+            st.caption(f"最近更新：{note_row.get('updated_at') or '—'}"
+                       "（全文见下方编辑框）。")
+        else:
+            st.caption("当前笔记为空（''=显式清空但保留行）。")
+        with st.form(_NOTE_FORM_KEY.format(sid=sid), clear_on_submit=False):
+            text = st.text_area(
+                "笔记内容（'' 提交=显式清空；≤50000 字符）",
+                value=existing,
+                max_chars=MAX_NOTE_LEN,
+                key=_NOTE_INPUT_KEY.format(sid=sid),
+            )
+            save_col, delete_col = st.columns(2)
+            with save_col:
+                save_clicked = st.form_submit_button("💾 保存笔记",
+                                                     use_container_width=True)
+            with delete_col:
+                delete_clicked = st.form_submit_button("🗑 删除笔记",
+                                                       use_container_width=True)
+        if save_clicked:
+            if user_context_db.upsert_note(sid, text):
+                ui_kit.flash("笔记已保存（私人，跨设备续接）。")
+                st.rerun()
+            else:
+                st.error("保存失败：会话失效、正文超长或数据库不可用。")
+        if delete_clicked:
+            if note_row is None:
+                st.info("该义位还没有笔记可删。")
+            elif user_context_db.delete_note(sid):
+                st.session_state.pop(_NOTE_INPUT_KEY.format(sid=sid), None)
+                ui_kit.flash("已删除该义位的私人笔记。")
+                st.rerun()
+            else:
+                st.error("删除失败（数据库不可用），请稍后重试。")
+    except Exception as e:  # noqa: BLE001 — 段渲染失败不拖垮整页（七段同款）
+        logger.warning(f"sense_spine: 我的笔记段渲染失败: {e}")
+        st.caption("暂无数据：我的笔记段渲染异常（详见服务端日志）。")
+
+
+# ============================================
 # 纯编排与渲染入口
 # ============================================
 
@@ -862,6 +1043,11 @@ def render_sense_spine(sense_id: int, category: str = "motion",
     每段：段头（h4）＋ 有数文本（st.markdown，Streamlit 自动转义）或
     缺数灰提示（st.caption「暂无数据：<原因>」）。单段异常已在
     _spine_sections 折叠为灰段，这里再兜一层，保证整页不崩。
+
+    批次 19：七段之外加两件登录态专属私人上下文控件 —— 📌 书签 toggle
+    （段前动作位）与 📝 我的笔记段（⑦ 之后，七段面末尾）；未登录两者皆
+    不渲染（上下文域是登录态功能，fail-closed 口径的 UI 表达）。sense_id
+    先归一（_as_int），脏 id 跳过两件控件（七段的 bad-id 灰段照旧）。
     """
     st.caption(
         f"义项脊柱 · 义位唯一锚 oald_senses.id = {sense_id} · 范畴 "
@@ -873,6 +1059,13 @@ def render_sense_spine(sense_id: int, category: str = "motion",
         logger.error(f"sense_spine: 脊柱编排意外失败（id={sense_id}）: {e}")
         st.warning("义项脊柱暂时不可用（编排异常，详见服务端日志）。")
         return
+    ctx_sid = _as_int(sense_id)
+    if ctx_sid is not None and ctx_sid > 0:
+        try:
+            _render_bookmark_toggle(ctx_sid)
+        except Exception as e:  # noqa: BLE001 — 控件失败不拖垮七段
+            logger.warning(f"sense_spine: 书签控件渲染失败（id={ctx_sid}）: {e}")
+            st.caption("暂无数据：书签控件渲染异常（详见服务端日志）。")
     for section in sections:
         try:
             st.markdown(
@@ -886,3 +1079,9 @@ def render_sense_spine(sense_id: int, category: str = "motion",
         except Exception as e:  # noqa: BLE001 — 单段渲染失败不拖垮其余段
             logger.warning(f"sense_spine: 段渲染失败（{section.title}）: {e}")
             st.caption(f"暂无数据：段渲染异常（{section.title}）")
+    if ctx_sid is not None and ctx_sid > 0:
+        try:
+            _render_my_notes_section(ctx_sid)
+        except Exception as e:  # noqa: BLE001 — 控件失败不拖垮整页
+            logger.warning(f"sense_spine: 我的笔记控件渲染失败（id={ctx_sid}）: {e}")
+            st.caption("暂无数据：我的笔记段渲染异常（详见服务端日志）。")
