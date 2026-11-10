@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 import json
 import datetime
+import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -427,6 +428,8 @@ _PAGE_ZONE_PREFIX: Dict[str, str] = {
     for zone, zone_keys in _SIDEBAR_ZONES
     for key in zone_keys
 }
+# 区 emoji 清洗（RV21-5 标签瘦身：前缀括号内去区 emoji，页名自带 emoji 不重复）
+_ZONE_EMOJI_RE = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]")
 
 # 区序号（重排用）：未知键取 len(_SIDEBAR_ZONES)，稳定沉到列表尾。
 _ZONE_ORDER: Dict[str, int] = {
@@ -450,8 +453,20 @@ def sidebar_option_label(page_key: str) -> str:
 
     分组呈现走「单 radio 选项加分区前缀」：format_func 组合区名前缀与
     page_label，不复制页名文案；未登记区的键原样返回 page_label（防御）。
+
+    RV21-5 标签瘦身（批次 21）：①前缀括号内去区 emoji（页名自带 emoji，
+    相邻重复是纯噪音）；②页名已含区名（如「📊 语义分析」∈「语义分析」区）
+    时省略前缀——分组归属由选项在列表中的分块位置表达，重复文字只加折行。
     """
-    return f"{_PAGE_ZONE_PREFIX.get(page_key, '')}{page_label(page_key)}"
+    zone = _PAGE_ZONE_PREFIX.get(page_key, "")
+    label = page_label(page_key)
+    if not zone:
+        return label
+    zone_display = zone.strip("【】")
+    zone_text = _ZONE_EMOJI_RE.sub("", zone_display).strip()
+    if zone_text and zone_text in label:
+        return label                     # 区名已含于页名 → 省前缀
+    return f"【{zone_text}】{label}" if zone_text else label
 
 
 def _ensure_flow_tables_once() -> None:
@@ -524,6 +539,15 @@ st.markdown(f"""
 }}
 </style>
 """, unsafe_allow_html=True)
+
+# ============================================
+# 全局主题层（批次 21 界面美化）：design_system.get_global_theme_css
+# 按钮过渡/指标卡/tabs/expander/DataFrame/告警条/标题/侧边栏/滚动条——
+# 全装饰性（零色板变更，WCAG 对比度矩阵不受影响）；模块级注入一次。
+# ============================================
+from src.design_system import get_global_theme_css
+
+st.markdown(get_global_theme_css(), unsafe_allow_html=True)
 
 # ============================================
 # 卡片头样式：把折叠按钮做成渐变标题条
