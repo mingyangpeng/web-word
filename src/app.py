@@ -1805,6 +1805,13 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
 #     radio 之外的隐藏页（不可见视同该分支未命中，顺序取下一分支）。
 _RESUME_PAGE_LOADER: Optional[Callable[[int], Optional[str]]] = None
 
+# RV15-3（FX-35）：侧边栏「继续：…」灰注的一次性旗标键 —— 登录落地分支 2
+# （续接点命中）此刻落 session_state（落地解析只在登录成功路径调用一次，
+# 旗标自然只写一次、随后只读不写）；render_sidebar 在页面 radio 上方读旗标
+# 渲染灰注。非 widget 键（RV12-1 只读纪律无涉），且不在 _LOGOUT_KEEP_KEYS
+# —— 登出全清自然回收（共享终端换人不留上一人的续接痕迹）。
+_RESUME_HINT_KEY = "_resume_hint_page"
+
 
 def set_resume_page_loader(
         loader: Optional[Callable[[int], Optional[str]]]) -> None:
@@ -1876,9 +1883,13 @@ def _landing_page_for(user: Dict[str, Any]) -> str:
         return "ai_hub"
     # 分支 2：有续接点 → 上次位置（user_state 续接点；侧边栏「继续：…」同源）。
     # RV15-3：命中即 flash（规范「继续：…」可见面；main() 下一轮渲染消费）。
+    # FX-35：命中同时把 resume 页键落一次性旗标（_RESUME_HINT_KEY），
+    # render_sidebar 在 radio 上方渲染「↩︎ 续接上次：…」灰注（侧边栏可见面
+    # 最小件）；旗标写一次后只读，登出全清自然回收。
     resume = _resume_work_page(user)
     if resume is not None and resume in visible:
         ui_kit.flash(f"已回到上次工作位置：{page_label(resume)}")
+        st.session_state[_RESUME_HINT_KEY] = resume
         return resume
     # 分支 3：首次（无待办且无续接点）→ 搜索释义（不 flash）
     return "search"
@@ -1986,6 +1997,14 @@ def render_sidebar():
     visible_keys = _visible_page_keys(_current_user())
     if st.session_state.get("page") not in visible_keys:
         st.session_state["page"] = "search"
+    # RV15-3（FX-35）：登录落地分支 2（续接点命中）落的灰注旗标 —— radio 上方
+    # 一行 caption「↩︎ 续接上次：{页名}」。仅当续接点命中时显示：旗标由
+    # _landing_page_for 在登录那一刻写一次（落地解析不进每轮渲染），本处只读
+    # 不写（RV12-1：不直写 widget 键）；旗标页键仍需在当前角色可见集内
+    # （会话中途角色收窄则随 radio 回退一起隐藏），登出全清自然回收。
+    _resume_hint = st.session_state.get(_RESUME_HINT_KEY)
+    if _resume_hint in visible_keys:
+        st.sidebar.caption(f"↩︎ 续接上次：{page_label(_resume_hint)}")
     # 七区菜单分组（规范②组，FX-23）：仅展示重排 —— 组间按 _SIDEBAR_ZONES 序、
     # 组内保持 PAGE_KEYS 相对序，键集与权限过滤不变；标签加区名前缀
     # （sidebar_option_label），区名前缀成块出现即分组标题。
@@ -3402,7 +3421,22 @@ def render_submission_flow() -> None:
                     payload["cn_syntax"] = cn_syn.strip()
                 if strategy.strip():
                     payload["strategy"] = strategy.strip()
-                if submit_annotation("motion", sid, "admission", coder_id, payload):
+                # FX-35 工具页面接线（规范 §4「页面经中央注册表调工具」，照
+                # semantic_search.py 接线先例）：准入提交改经 get_tool("admission")
+                # .run(...) —— merge_params 按 params_schema 合并默认值后以
+                # task_type="admission" 固定委托 submit_annotation；registry 查
+                # 不到回落原直调，两路逐字节等价（category/sense_id/coder_id/
+                # payload 全在 schema 内；task_type 是工具身份不入 ctx，页面原
+                # 直调传的也是字面 "admission"；ai_assisted schema 默认 True 与
+                # 直调形参默认同值）。原调用点无 st.cache_data，缓存纪律无涉。
+                _admission_tool = get_tool("admission")
+                _submitted = (
+                    _admission_tool.run({"category": "motion", "sense_id": sid,
+                                         "coder_id": coder_id, "payload": payload})
+                    if _admission_tool is not None else
+                    submit_annotation("motion", sid, "admission", coder_id, payload)
+                )
+                if _submitted:
                     st.success(f"✅ {sense_id_label} 提交成功"
                                f"（同一义位重复提交=覆盖更新，覆盖后需重新审核）")
                 else:

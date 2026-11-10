@@ -32,6 +32,13 @@ LEGACY_ROLE_TO_NEW_ROLES 映射必然两位一体，升级前后行为逐字节�
     管理员把自己锁在门外后，系统再无入口。
 
 由 app.py 集成步骤挂载（规范 §5：侧边栏「👥 用户管理」，六角色口径见上）。
+
+批次 19（用户上下文域 UI 落地）新增「⚙️ 我的偏好」段（页面末尾，新建用户
+表单之后）：user_profiles 键值对的个人读写面（user_context_db，own-rows-only
+—— user_id 会话派生，天然只读写自己的键）。预置 ui.default_category /
+ui.rows_per_page 两个示例键＋自定义键增删；**只做读写 UI，不改页面行为**
+—— 键的消费接线归下批（docstring 内注明），保存/删除成功一律 ui_kit.flash
++ rerun（RV12 口径）。
 """
 
 import logging
@@ -47,6 +54,7 @@ from src.design_system import (
 )
 from src import guards
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
+from src import user_context_db  # 批次 19：我的偏好读写（own-rows-only）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.users_db import (
     NEW_ROLES,
@@ -93,6 +101,14 @@ ROLE_BADGE_COLORS = {
 _ACTIVE_GREEN = "#2f855a"
 # RV1-2：停用红取深档（白字 5.47:1；旧 #e53e3e 4.13:1 不达 AA）。
 _INACTIVE_RED = "#c53030"
+
+# 批次 19「⚙️ 我的偏好」预置示例键（user_context_db 键名约定 'ui.*' = 界面
+# 设置）：**只做读写 UI，不改页面行为** —— 消费接线归下批（届时由消费方
+# 读 get_profile/list_profiles 调整默认范畴下拉值/列表行数，本页不做）。
+_PREF_PRESET_KEYS = (
+    ("ui.default_category", "默认范畴下拉值（如 motion）"),
+    ("ui.rows_per_page", "每页行数（如 20）"),
+)
 
 # ============================================
 # 提权硬闸门（批次 4-N 立，批次 6-T 收口到中央闸门 guards.require_role）
@@ -561,6 +577,107 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 st.error("撤销未生效：该用户未持有该角色、用户不存在或数据库错误。")
 
 
+def _render_my_preferences() -> None:
+    """⚙️ 我的偏好（批次 19，用户上下文域 UI 落地；页面末尾段）。
+
+    user_profiles 键值对的个人读写面：预置 _PREF_PRESET_KEYS 两键的编辑
+    （预填已存值）＋自定义键新增/覆盖＋任意已存键删除。**只做读写 UI，
+    不改页面行为**（消费接线归下批）；own-rows-only（user_context_db 会话
+    派生 user_id，连越权入口都没有），六角色皆可用（私人数据）。
+
+    未登录整段不渲染（上下文域是登录态功能 —— fail-closed 口径的 UI 表达；
+    本页入口本有登录门，这里再兜一层纵深防御）。空值口径：提交空白=未设值
+    （upsert_profile(key, None)，RV2-3 第 2 类「键已建未设值」；页面文案
+    注明）。值两端空白由 UI 层去除（偏好值是设置项非用户原文，与键同类
+    清洗；数据层仍原样存，不替用户做清洗）。成功一律 ui_kit.flash + rerun
+    （RV12），失败 st.error 本轮直出。
+
+    读取降级：list_profiles 库不可用返回 []（数据层口径），段照常渲染
+    （编辑框为空值态），保存时才报错 —— 不因读降级就把整段藏掉。
+    """
+    me = _current_user()
+    if not isinstance(me, dict):
+        return
+    st.markdown(f"<h3 style='{HEADER_H3}'>⚙️ 我的偏好</h3>", unsafe_allow_html=True)
+    st.caption(
+        "个人偏好键值对（user_profiles 表，跨设备续接；仅自己可读写）。"
+        "本段只做读写 UI：预设键暂不改变页面行为（消费接线归下批）。"
+        "值两端空白会去除；空白提交=未设值。"
+    )
+    try:
+        rows = user_context_db.list_profiles()
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.error(f"我的偏好读取失败（降级为空值态）: {e}")
+        rows = []
+    stored = {
+        str(r.get("pref_key")): r.get("pref_value")
+        for r in rows if r.get("pref_key")
+    }
+
+    # -- 预置两键编辑（预填已存值；保存=逐键 upsert，空值=None 未设值）--
+    with st.form("my_prefs_preset_form", clear_on_submit=False):
+        new_values: Dict[str, Optional[str]] = {}
+        for key, label in _PREF_PRESET_KEYS:
+            new_values[key] = st.text_input(
+                f"{key} —— {label}", value=str(stored.get(key) or ""),
+                key=f"my_prefs_input_{key}",
+            )
+        save_submitted = st.form_submit_button("💾 保存预设键",
+                                               use_container_width=True)
+    if save_submitted:
+        failed = [k for k, v in new_values.items()
+                  if not user_context_db.upsert_profile(
+                      k, v.strip() or None)]
+        if failed:
+            st.error(f"保存失败（键 {', '.join(failed)}）：键非法、值超长"
+                     "或数据库不可用。")
+        else:
+            ui_kit.flash("我的偏好已保存（跨设备续接）。")
+            st.rerun()
+
+    # -- 自定义键新增/覆盖 --
+    preset_names = {k for k, _ in _PREF_PRESET_KEYS}
+    custom_keys = sorted(k for k in stored if k not in preset_names)
+    with st.form("my_prefs_custom_form", clear_on_submit=True):
+        custom_key = st.text_input("自定义键（≤120 字符，如 ui.theme）",
+                                   max_chars=120, key="my_prefs_custom_key")
+        custom_value = st.text_input("自定义值（空白=未设值）",
+                                     key="my_prefs_custom_value")
+        add_submitted = st.form_submit_button("➕ 新增/覆盖自定义键",
+                                              use_container_width=True)
+    if add_submitted:
+        clean_key = custom_key.strip()
+        if not clean_key:
+            st.error("自定义键不能为空。")
+        elif user_context_db.upsert_profile(clean_key,
+                                            custom_value.strip() or None):
+            ui_kit.flash(f"偏好键「{clean_key}」已保存。")
+            st.rerun()
+        else:
+            st.error("保存失败：键非法、值超长或数据库不可用。")
+
+    # -- 已存键删除（自定义键可删；预置键删除后重存即可恢复）--
+    all_keys = sorted(stored)
+    if custom_keys:
+        st.markdown(
+            "**当前自定义键：** " + "、".join(f"`{k}`" for k in custom_keys)
+        )
+    if all_keys:
+        with st.form("my_prefs_delete_form", clear_on_submit=False):
+            delete_key = st.selectbox("选择要删除的偏好键", all_keys,
+                                      key="my_prefs_delete_key")
+            delete_submitted = st.form_submit_button("🗑 删除所选键",
+                                                     use_container_width=True)
+        if delete_submitted:
+            if user_context_db.delete_profile(delete_key):
+                ui_kit.flash(f"偏好键「{delete_key}」已删除。")
+                st.rerun()
+            else:
+                st.error("删除失败（数据库不可用），请稍后重试。")
+    else:
+        st.caption("暂无已存偏好键（保存上方预设键或新增自定义键后可删）。")
+
+
 def render_users_admin_page() -> None:
     """
     用户管理页入口（规范 §5：侧边栏「👥 用户管理」）。
@@ -571,6 +688,9 @@ def render_users_admin_page() -> None:
     管理员（sys_admin）职能；词典管理员（dict_admin）作为管理侧过渡期兼判
     同样放行（legacy role=='admin' 账号经 LEGACY_ROLE_TO_NEW_ROLES 映射必然
     两位一体，升级前后行为逐字节一致）。页面内容不渲染 —— 权限不信任前端隐藏。
+
+    批次 19：页面末尾（新建用户表单之后）追加「⚙️ 我的偏好」段
+    （_render_my_preferences，user_profiles 个人键值读写，见其 docstring）。
     """
     me = _current_user()
     if not me:
@@ -619,3 +739,9 @@ def render_users_admin_page() -> None:
 
     st.markdown("")
     _render_create_user_form(me)
+
+    # 批次 19：页面末尾追加「⚙️ 我的偏好」（新建用户表单之后；账号页作为
+    # app.render_users_admin_entry 的中段，其后还有范畴与工具段 —— 本段
+    # 收在账号页自身末尾，不动 app.py 接线）。
+    st.markdown("")
+    _render_my_preferences()

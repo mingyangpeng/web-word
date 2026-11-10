@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-10 · 批次 19：工具接线收官 11/11＋用户上下文域 UI（FX-35/36/37）
+
+- **工具 run() 页面接线 11/11 全通**（②组最后挂账项消）：admission/reliability/clustering/typicality/schema/template/multimedia 八处新接（+semantic_search/corpus_evidence），全部「get_tool→run、registry 未加载回落直调逐字节等价」先例形态，缓存语义零变化
+- **用户上下文域 UI**：义项脊柱「📝 我的笔记」＋「📌 书签」toggle；账号管理页「⚙️ 我的偏好」段（user_profiles 读写）；未登录不渲染
+- user_context_db 读面补强：get_note/get_profile/get_bookmark 单条直读＋list_* LIMIT 500 行数闸（RV16-4 消缺）
+- 侧边栏「↩︎ 续接上次：X」灰注（落地三分支分支 2 可见面补全）
+- 等价性测试三件（test_fx35/36/37）；全量 **2668 passed / 0 failed**
+
 本项目使用 [GSD 工作流](.planning/) 按里程碑推进，每个里程碑的详细计划、验证记录与
 上下文归档在 `.planning/milestones/` 与 `.planning/phases/`。本文件只记录**面向使用者的
 变更**。

@@ -19,6 +19,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src import entry_assembly, lexical_db, media_db, mysql_db  # noqa: E402
+from src import template_engine  # noqa: E402
 from src.entry_assembly import (  # noqa: E402
     Section,
     _assembly_sections,
@@ -766,6 +767,9 @@ class TestDegradation:
         monkeypatch.setattr(media_db, "list_assets_for_anchor", _boom)
         monkeypatch.setattr(entry_assembly, "get_values_for_anchor", _boom)
         monkeypatch.setattr(entry_assembly, "derive_cluster_schemas", _boom)
+        # 批次 19 工具接线后 _derive_engine_schema 经 get_tool("schema").run
+        # 委托 template_engine.derive_cluster_schemas —— 委托目标同步打桩
+        monkeypatch.setattr(template_engine, "derive_cluster_schemas", _boom)
         monkeypatch.setattr(entry_assembly, "instantiate_template", _boom)
         assert entry_assembly._fetch_oald_senses("run") == []
         assert entry_assembly._fetch_synonyms("run") == []

@@ -419,7 +419,13 @@ def _derive_engine_schema(study_code: str, language: str) -> List[Dict[str, Any]
     """② 模板辅助：母图式一次提炼（instantiate_template 的 engine_schema
     位逐义项复用，避免每义项重复 scipy 提炼）。失败 / 无数据返回 []。"""
     try:
-        return derive_cluster_schemas(str(study_code), str(language))
+        # 批次 19 工具页面接线：registry 未加载回落直调等价
+        from src.tools.registry import get_tool as _get_tool
+        _sch = _get_tool("schema")
+        return (_sch.run({"category": str(study_code),
+                          "language": str(language)})
+                if _sch is not None else
+                derive_cluster_schemas(str(study_code), str(language)))
     except Exception as e:  # noqa: BLE001 — 降级不崩（模板段按未产出口径）
         logger.warning(f"entry_assembly: 母图式提炼失败（{study_code}）: {e}")
         return []
@@ -494,7 +500,13 @@ def _fetch_media_for_anchor(anchor_type: str, anchor_id: int) -> List[Dict[str, 
         if key is not None and key in cache["media"]:
             return [dict(r) for r in cache["media"][key]]
     try:
-        return media_db.list_assets_for_anchor(anchor_type, int(anchor_id))
+        # 批次 19 工具页面接线：registry 未加载回落直调等价
+        from src.tools.registry import get_tool as _get_tool
+        _mm = _get_tool("multimedia")
+        return (_mm.run({"anchor_type": anchor_type,
+                         "anchor_id": int(anchor_id)})
+                if _mm is not None else
+                media_db.list_assets_for_anchor(anchor_type, int(anchor_id)))
     except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
         logger.error(f"entry_assembly: 媒体绑定查询失败（{anchor_type}:{anchor_id}）: {e}")
         return []

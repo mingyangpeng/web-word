@@ -624,9 +624,14 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 st.caption(f"当前 media_asset_id：#{current}" if current
                            else "当前 media_asset_id：—（未绑）")
                 try:
-                    bindings = media_db.list_assets_for_anchor(
-                        media_db.ANCHOR_EXAMPLE, eid,
-                    )
+                    # 批次 19 工具页面接线：registry 未加载回落直调等价
+                    from src.tools.registry import get_tool as _get_tool
+                    _mm = _get_tool("multimedia")
+                    bindings = (_mm.run({"anchor_type": media_db.ANCHOR_EXAMPLE,
+                                         "anchor_id": eid})
+                                if _mm is not None else
+                                media_db.list_assets_for_anchor(
+                                    media_db.ANCHOR_EXAMPLE, eid))
                 except Exception as e:  # noqa: BLE001 —— 展示失败不拦绑定
                     logger.warning(f"读取例证媒体绑定失败（example={eid}）: {e}")
                     bindings = []

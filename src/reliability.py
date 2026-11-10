@@ -879,7 +879,22 @@ def render_reliability_page() -> None:
 
     # R5 遗留 2：归属列 —— 记录本次计算由哪个会话用户触发（reliability_runs.created_by）。
     # role gate 已保证 user 是登录会话；id 脏值由 _persist_run 兜底转 None。
-    result = run_reliability(category, task_type, created_by=user.get("id"))
+    # FX-35 工具页面接线（规范 §4「页面经中央注册表调工具」，semantic_search
+    # 接线先例同款）：信度计算改经 get_tool("reliability").run(...) —— 同模块
+    # 自委托（ReliabilityTool.run 合并 params_schema 默认值后回调本模块
+    # run_reliability）；registry 查不到回落原直调，两路逐字节等价（页面三参
+    # category/task_type/created_by 全在 params_schema 内；features_meta 不入
+    # ctx，与原直调一样走形参默认 None 自动读范畴包）。原调用点无
+    # st.cache_data，缓存纪律无涉。
+    from src.tools.registry import get_tool
+
+    _reliability_tool = get_tool("reliability")
+    result = (
+        _reliability_tool.run({"category": category, "task_type": task_type,
+                               "created_by": user.get("id")})
+        if _reliability_tool is not None else
+        run_reliability(category, task_type, created_by=user.get("id"))
+    )
 
     if result.get("db_error"):
         st.error(f"数据库不可用：{result['db_error']}")

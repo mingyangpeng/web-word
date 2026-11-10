@@ -1914,7 +1914,14 @@ def _load_page_data(cache_scope: str, category: str, language: str) -> Dict[str,
     if load_error:
         dendro = {"load_error": load_error}
     else:
-        ranking = compute_medoid_ranking(category, language)
+        # 批次 19 工具页面接线（规范 §4，semantic_search.py 先例同款）：
+        # 页面取数改经 get_tool("typicality").run(...) —— 同模块自委托，
+        # registry 未加载回落原直调逐字节等价；行为与缓存语义不变。
+        from src.tools.registry import get_tool as _get_tool
+        _typ = _get_tool("typicality")
+        ranking = (_typ.run({"category": category, "language": language})
+                   if _typ is not None else
+                   compute_medoid_ranking(category, language))
         if not ranking:
             # R4-1/R4-5 尾部二分：主探针可达但 ranking 空 —— 深探针区分
             # 「真未灌入」与「表族缺表/读取失败被底层静默折叠成 []」；
@@ -1926,7 +1933,10 @@ def _load_page_data(cache_scope: str, category: str, language: str) -> Dict[str,
     scipy_missing = False
     if ranking:
         try:
-            dendro = build_dendrogram_data(category, language)
+            _clu = _get_tool("clustering")
+            dendro = (_clu.run({"category": category, "language": language})
+                      if _clu is not None else
+                      build_dendrogram_data(category, language))
         except ImportError:
             scipy_missing = True
     return {"ranking": ranking, "dendro": dendro, "scipy_missing": scipy_missing,

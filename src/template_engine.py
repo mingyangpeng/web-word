@@ -697,7 +697,13 @@ def instantiate_template(
         cluster_info = sense.pop("_cluster")
         cluster_schema = _pick_cluster_schema(engine_schema, cluster_info)
         if cluster_schema is None:
-            schemas = derive_cluster_schemas(str(category), str(language))
+            # 批次 19 工具页面接线（规范 §4）：registry 未加载回落直调等价
+            from src.tools.registry import get_tool as _get_tool
+            _sch = _get_tool("schema")
+            schemas = (_sch.run({"category": str(category),
+                                 "language": str(language)})
+                       if _sch is not None else
+                       derive_cluster_schemas(str(category), str(language)))
             cluster_schema = _pick_cluster_schema(schemas, cluster_info)
         return build_template(sense, sense.pop("_vector"), cluster_schema,
                               feature_meta, assembly=assembly)
@@ -930,8 +936,13 @@ def instantiate_templates(
             cluster_schema = _pick_cluster_schema(engine_schema, cluster_info)
             if cluster_schema is None:
                 if derived is None:
-                    derived = derive_cluster_schemas(str(category),
-                                                     str(language))
+                    from src.tools.registry import get_tool as _get_tool
+                    _sch = _get_tool("schema")
+                    derived = (_sch.run({"category": str(category),
+                                         "language": str(language)})
+                               if _sch is not None else
+                               derive_cluster_schemas(str(category),
+                                                      str(language)))
                 cluster_schema = _pick_cluster_schema(derived, cluster_info)
             out[i] = build_template(sense, vector, cluster_schema,
                                     feature_meta, assembly=assembly)
@@ -1241,8 +1252,14 @@ def render_template_page() -> None:
         except PermissionError as e:
             st.error(f"⛔ {e}")
             st.stop()
-        st.session_state["template_export"] = collect_cluster_templates(
-            cat_code, language, cl.get("cluster_no"))
+        from src.tools.registry import get_tool as _get_tool
+        _tpl = _get_tool("template")
+        st.session_state["template_export"] = (
+            _tpl.run({"category": cat_code, "language": language,
+                      "cluster_no": cl.get("cluster_no")})
+            if _tpl is not None else
+            collect_cluster_templates(cat_code, language,
+                                      cl.get("cluster_no")))
     payload = st.session_state.get("template_export")
     # RV12-3 陈旧载荷守卫：切簇/语言/范畴后旧导出不得继续显示。载荷在写入
     # 时已自带作用域三元组（collect_cluster_templates 返回的 category /
