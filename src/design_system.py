@@ -1145,5 +1145,83 @@ pre code {{
 [data-testid="stMainBlockContainer"] {{
     padding-top: 1.6rem;
 }}
+
+/* ══════════ v5：选择框（白底发丝边＋focus accent） ══════════ */
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stMultiselect"] > div > div {{
+    border-radius: 10px;
+    border-color: var(--ls-hairline);
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}}
+[data-testid="stSelectbox"] > div > div:hover,
+[data-testid="stMultiselect"] > div > div:hover {{
+    border-color: rgba(0, 113, 227, 0.4);
+}}
+
+/* ══════════ v5：数字/日期输入同族 ══════════ */
+[data-testid="stNumberInput"] > div > div,
+[data-testid="stDateInput"] > div > div,
+[data-testid="stTimeInput"] > div > div {{
+    border-radius: 10px;
+    border-color: var(--ls-hairline);
+    background: #ffffff;
+}}
+
+/* ══════════ v5：文件上传（虚线框＋圆角） ══════════ */
+[data-testid="stFileUploaderDropzone"] {{
+    border-radius: 14px;
+    border-color: var(--ls-hairline);
+    background: #ffffff;
+}}
+
+/* ══════════ v5：表单提交按钮＝accent 药丸（登录/暂存/发布全族） ══════════ */
+[data-testid="stFormSubmitButton"] > button {{
+    border-radius: var(--ls-pill);
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.15s ease,
+                box-shadow 0.2s ease;
+}}
+[data-testid="stFormSubmitButton"] > button:hover {{
+    transform: scale(1.015);
+}}
+
+/* ══════════ v5：告警条（Apple 通知风——整卡极浅着色替代默认黄底） ══ */
+[data-testid="stAlert"] {{
+    border: 1px solid var(--ls-hairline);
+    background: #F5F5F7;
+}}
+[data-testid="stAlert"][kind="stInfo"] {{
+    background: rgba(0, 113, 227, 0.06);
+}}
+[data-testid="stAlert"][kind="stSuccess"] {{
+    background: rgba(52, 199, 89, 0.07);
+}}
+[data-testid="stAlert"][kind="stWarning"] {{
+    background: rgba(255, 204, 0, 0.10);
+}}
+[data-testid="stAlert"][kind="stError"] {{
+    background: rgba(255, 59, 48, 0.06);
+}}
+
+/* ══════════ v5：Expander 悬停反馈 ══════════ */
+[data-testid="stExpander"] details > summary:hover {{
+    color: var(--ls-accent);
+}}
+[data-testid="stExpander"] details[open] > summary {{
+    color: var(--ls-accent);
+}}
+
+/* ══════════ v5：主区图片统一圆角阴影 ══════════ */
+[data-testid="stMain"] img {{
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}}
+
+/* ══════════ v5：caption 灰阶统一（Apple 次级文本） ══════════ */
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {{
+    color: var(--ls-text-2);
+    font-size: 0.85rem;
+}}
 </style>
 """
