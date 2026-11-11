@@ -319,3 +319,12 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] 逐特征一致率口径——collab_metrics.feature_level_agreement_rate（快照 vs payload 逐键比对：一致数÷可比键总数，单侧独有键不计，聚合带快照提交）；指标页回退链：快照面有→逐特征真值（caption「逐特征口径（n 提交）」）→无→台账提案对照口径→断库灰注
 - [x] 测试 40 条：迁移幂等/1060/submit 两态/三态聚合/回退链 AppTest/真库端到端 0.8 对表
 - 备注：存量提交无快照 → 回退口径自然生效；新提交起逐特征真值累积
+
+## 批次 24（2026-11-12 · Apple 界面 v4 控件级＋标注暂存＋重标批量查询）
+
+> 两路交付（CSS v4 手工＋FX-45）。全量 **2885 passed / 0 failed**（批次 23 基线 2845 → +40）。
+
+- [x] **CSS v4 控件级 Apple 化**——accent-color（radio/checkbox 选中圈统一 Apple Blue，替换 Streamlit 默认红）／焦点环（3px accent glow）／滑杆轨道+拇指 accent／表单卡白底 16px 圆角／下载按钮药丸族／链接 accent 色／代码块 SF Mono 浅灰底／expander 标题加重／内容图圆角／侧边栏节头小灰阶
+- [x] 标注平台表单草稿暂存（FX-45，draft_states 第二消费面）——「💾 暂存标注」＋打开恢复（优先级：暂存 > 上次提交 > AI 预填 > 空，字段级校验回落）＋提交自动清除；六字段快照（admission/schema/alignment/cn_syntax/strategy/needs_review）
+- [x] RV19-1 重标逐义位闸核对批量化——单条 IN 查询（JOIN 键与 _CS_STATUS_SQL 逐字一致）替代 N 次往返；8 组夹具双实现对照逐项一致；500 上限/dedup 闸不动
+- [x] FX-46 公网部署三件套（前批被取消任务重做成功）——deploy/nginx.conf.example（TLS/WS 升级/RV4-7 限速+noindex 折中/限速/安全头）＋Caddyfile.example＋validate.sh（nginx -t 真验通过）＋DEPLOYMENT「六、公网部署」节；核实两件：8501 端口=0.0.0.0（公网时应改 127.0.0.1）、st.iframe 经浏览器请求 static（deny all 不可行→折中口径）

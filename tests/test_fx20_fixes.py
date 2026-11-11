@@ -332,7 +332,11 @@ class TestReassignAssignment:
 # 4) 重标闭环：round+1 / 裁决闸 / 历史标注人
 # ============================================
 def _seed_reannotation_happy(cursor, cs_status_by_sense=None):
-    """重标闸的种子路由：categories 直配/映射、逐义位裁决、历史标注人、动词。"""
+    """重标闸的种子路由：categories 直配/映射、批量裁决状态、历史标注人、动词。
+
+    FX-45 起闸核对为单条 IN 查询（_CS_STATUS_BATCH_SQL）—— 路由回调按
+    params = (study_code, *sense_ids) 逐 sense_id 供状态行。
+    """
     cs_status_by_sense = cs_status_by_sense or {}
     cursor.select_routes.append(
         ("SELECT code FROM categories",
@@ -340,8 +344,9 @@ def _seed_reannotation_happy(cursor, cs_status_by_sense=None):
     )
 
     def _cs_status(sql, params):
-        study_code, sense_id = params
-        return [{"cs_status": cs_status_by_sense.get(sense_id, "merged")}]
+        return [{"sense_id": sid,
+                 "cs_status": cs_status_by_sense.get(sid, "merged")}
+                for sid in params[1:]]
 
     cursor.select_routes.append(("JOIN cs_senses s", _cs_status))
     cursor.select_routes.append(
@@ -398,11 +403,14 @@ class TestCreateReannotationTasks:
     def test_mixed_senses_partial_eligible(self, monkeypatch):
         cursor = _patch_plain(monkeypatch)
         _seed_reannotation_happy(cursor, cs_status_by_sense={102: "split"})
+        # FX-45 单条 IN 查询：按 params[1:]（整批 sense_id）分派状态行 ——
+        # 101 merged / 102 split（经 by_sense 覆盖）/ 103 不供行（未映射）。
         cursor.select_routes[1] = (
             "JOIN cs_senses s",
-            lambda sql, params: ([{"cs_status": "merged"}] if params[1] == 101
-                                 else [{"cs_status": "split"}] if params[1] == 102
-                                 else []),
+            lambda sql, params: [{"sense_id": sid, "cs_status": status}
+                                 for sid, status in ((101, "merged"),
+                                                     (102, "split"))
+                                 if sid in params[1:]],
         )
         result = create_reannotation_tasks("motion", [101, 102, 103], 2, 1,
                                            actor=ADMIN_ACTOR)

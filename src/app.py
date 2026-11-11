@@ -67,6 +67,9 @@ from src.annotation_flow import (
     get_submissions_for_sense, detect_disagreements, save_adjudication,
     get_assignment_stats, STATUS_ADJUDICATED,
 )
+# FX-45 任务 1：draft_states 第二消费面（标注表单暂存/恢复/提交清除；第一
+# 消费面 = writing_pages FX-39 撰写台，API 单一实现点在 user_context_db）。
+from src import user_context_db
 from src.reliability import render_reliability_page
 from src.cluster_analysis import render_semantic_analysis_page
 from src.template_engine import render_template_page
@@ -3001,6 +3004,18 @@ SUBMIT_ADMIT_LABELS = {"": "（未选择）", "Y": "Y · 核心物理位移义",
 # LLM 草稿列（llm_tag 权威层存储值，键含「拓展」）→ 提交口径（Y/EXT/N）
 _LLM_TAG_TO_ADMIT = {"Y": "Y", "拓展": "EXT", "N": "N"}
 
+# FX-45 任务 1：标注表单暂存（draft_states 第二消费面，照 writing_pages
+# FX-39 先例）。form_key 约定 'annotate_draft_{sense_id}' —— sense_id 取
+# oald_senses.id（提交流义位下拉每行的稳定主键；draft_states own-rows-only
+# 即本人会话域，未登录 upsert/list 天然拦）。暂存快照 state 统一 dict
+# （全部可编辑字段，与表单六控件一一对应）：
+#   {"admission": str, "schema": str, "alignment": str,
+#    "cn_syntax": str, "strategy": str, "needs_review": bool}
+# 提交成功即 delete_draft 清除（「已恢复暂存标注——提交后自动清除」口径）。
+ANNOTATE_STASH_FORM_KEY_PREFIX = "annotate_draft_"
+ANNOTATE_STASH_BUTTON_LABEL = "💾 暂存标注"
+ANNOTATE_STASH_FLASH_TEXT = "标注已暂存（未提交）——重开该义位自动恢复为表单默认值。"
+
 
 def render_annotation_page() -> None:
     """🏷️ 标注平台（按角色分派；规范 §5，权限判定在渲染入口 §6-4）。
@@ -3309,6 +3324,146 @@ def render_submission_page() -> None:
         render_reviewer_panel()
 
 
+def _llm_draft_fields(sense: Dict[str, Any]) -> Tuple[str, str, str]:
+    """AI 初筛草稿三字段同源取值（FX-43 快照 / FX-45 预填链共用单一实现点）。
+
+    返回 (admission 预填值, schema 草稿, alignment 草稿)：admission 经
+    _LLM_TAG_TO_ADMIT 映射到提交口径（llm_tag 权威层三值域 Y·拓展·N →
+    Y/EXT/N），schema/alignment 原样 strip。
+    """
+    adm = _LLM_TAG_TO_ADMIT.get(str(sense.get("llm_tag") or "").strip(), "")
+    schema = str(sense.get("llm_schema") or "").strip()
+    align = str(sense.get("llm_align") or "").strip()
+    return adm, schema, align
+
+
+def _format_stash_dt(value: Any) -> str:
+    """暂存时间展示口径（writing_pages._format_dt 同款）：None → '—'，
+    datetime → 'YYYY-MM-DD HH:MM'，脏值原样。"""
+    if value is None:
+        return "—"
+    try:
+        return value.strftime("%Y-%m-%d %H:%M")
+    except AttributeError:
+        return str(value)
+
+
+def _load_stashed_annotation_draft(form_key: str) -> Optional[Dict[str, Any]]:
+    """读当前用户在某 form_key 上的标注暂存快照（只读；FX-45 任务 1）。
+
+    照 writing_pages._load_stashed_writing_draft 口径（FX-39 恢复纪律的
+    第二消费面复制件）：user_context_db 未提供 draft 单键直读（本批不改
+    该模块），走 list_drafts 全量（行数闸 500，单人暂存量级极小）按
+    form_key 过滤；state_json 兼容 bytes/已解析 dict（pymysql 不解 JSON
+    列）；解析失败或非 dict → None（快照损坏按「无暂存」渲染，绝不猜态）。
+    未登录/库不可用 → list_drafts 降级 [] → None（fail-closed；
+    draft_states own-rows-only 天然拦未登录）。命中返回 {"state": dict,
+    "updated_at": 行时间}；无此键返回 None。
+    """
+    try:
+        rows = user_context_db.list_drafts()
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.warning(f"app: 标注暂存草稿读取失败（form={form_key!r}）: {e}")
+        return None
+    for row in rows:
+        if str(row.get("form_key") or "") != form_key:
+            continue
+        raw = row.get("state_json")
+        if isinstance(raw, (bytes, bytearray)):
+            raw = bytes(raw).decode("utf-8", "replace")
+        state: Any = raw
+        if isinstance(raw, str):
+            try:
+                state = json.loads(raw)
+            except (TypeError, ValueError):
+                state = None
+        if not isinstance(state, dict):
+            return None
+        return {"state": state, "updated_at": row.get("updated_at")}
+    return None
+
+
+def _apply_annotation_stash_defaults(
+    stashed: Optional[Dict[str, Any]],
+    sense: Dict[str, Any],
+    prev: Dict[str, Any],
+) -> Dict[str, Any]:
+    """暂存快照 → 标注表单默认值与恢复提示（纯函数；FX-45 恢复口径单一实现点）。
+
+    优先级：**暂存（用户显式保存）> 本人上次提交 > AI 初筛草稿 > 空** ——
+    无暂存时各字段取值与改动前逐字节一致（prev > AI > 空链路原样内联在本
+    函数）。字段有效性（只收合法值；空白暂存值不覆盖既有默认，与
+    writing_pages._apply_stash_defaults「非空白才覆盖」同口径）：
+    admission/schema/alignment 非空且 ∈ 各自 OPTIONS 才覆盖；
+    cn_syntax/strategy 非空白才覆盖；needs_review 仅快照给出 bool 时覆盖
+    （快照缺键照旧）。
+
+    Args:
+        stashed: _load_stashed_annotation_draft 的返回（{"state": dict,
+            "updated_at": 暂存时间}）；None = 无暂存（照旧）。
+        sense: 义位行（AI 初筛草稿字段 llm_tag/llm_schema/llm_align 与权威层
+            cn_syntax/translation_strategy/needs_review 的来源）。
+        prev: 本人上次提交 payload（get_my_submissions 同 sense_id 行）。
+
+    Returns:
+        dict: {"admission", "schema", "alignment", "cn_syntax", "strategy",
+        "needs_review", "restore_caption"}；restore_caption 仅在有可用暂存时
+        非 None：「📥 已恢复暂存标注（{updated_at}）——提交后自动清除」。
+
+    冲突纪律（FX-39 同款）：本函数只产出**表单默认值与提示文案** —— FX-43
+    ai_draft_snapshot 捕获（取 AI 原始字段而非表单最终值）、提交链路、
+    分歧比对全部不受暂存影响；提交照旧走 submit_annotation 全链路。
+    """
+    adm_prev = str(prev.get("admission") or "").strip()
+    adm_draft, schema_draft, align_draft = _llm_draft_fields(sense)
+    admission = adm_prev if adm_prev in SUBMIT_ADMIT_OPTIONS else (
+        adm_draft if adm_draft in SUBMIT_ADMIT_OPTIONS else "")
+    schema_prev = str(prev.get("schema") or "").strip()
+    schema = schema_prev if schema_prev in SCHEMA_OPTIONS else (
+        schema_draft if schema_draft in SCHEMA_OPTIONS else "")
+    align_prev = str(prev.get("alignment") or "").strip()
+    alignment = align_prev if align_prev in ALIGNMENT_OPTIONS else (
+        align_draft if align_draft in ALIGNMENT_OPTIONS else "")
+    cn_syntax = str(prev.get("cn_syntax") or sense.get("cn_syntax") or "")
+    strategy = str(prev.get("strategy") or sense.get("translation_strategy") or "")
+    needs_review = bool(prev.get("needs_review", sense.get("needs_review")))
+
+    restore_caption = None
+    if isinstance(stashed, dict) and isinstance(stashed.get("state"), dict):
+        state = stashed["state"]
+        s_admission = str(state.get("admission") or "").strip()
+        if s_admission and s_admission in SUBMIT_ADMIT_OPTIONS:
+            admission = s_admission
+        s_schema = str(state.get("schema") or "").strip()
+        if s_schema and s_schema in SCHEMA_OPTIONS:
+            schema = s_schema
+        s_align = str(state.get("alignment") or "").strip()
+        if s_align and s_align in ALIGNMENT_OPTIONS:
+            alignment = s_align
+        s_syn = str(state.get("cn_syntax") or "")
+        if s_syn.strip():
+            cn_syntax = s_syn
+        s_strategy = str(state.get("strategy") or "")
+        if s_strategy.strip():
+            strategy = s_strategy
+        s_review = state.get("needs_review")
+        if isinstance(s_review, bool):
+            needs_review = s_review
+        restore_caption = (
+            f"📥 已恢复暂存标注（{_format_stash_dt(stashed.get('updated_at'))}）"
+            "——提交后自动清除"
+        )
+    return {
+        "admission": admission,
+        "schema": schema,
+        "alignment": alignment,
+        "cn_syntax": cn_syntax,
+        "strategy": strategy,
+        "needs_review": needs_review,
+        "restore_caption": restore_caption,
+    }
+
+
 def render_submission_flow() -> None:
     """多人提交流视图：选动词 → 选义位 → LLM 初筛草稿 → 表单 → submit_annotation。
 
@@ -3436,7 +3591,8 @@ def render_submission_flow() -> None:
         except Exception as e:
             st.caption(f"范畴包不可用：{_html_escape(str(e))}")
 
-    # ---- 标注表单（预填优先级：本人上次提交 > LLM 初筛草稿 > 空）----
+    # ---- 标注表单（预填优先级：暂存 > 本人上次提交 > LLM 初筛草稿 > 空；
+    #      FX-45 任务 1：暂存是用户显式保存，最高优先）----
     st.markdown(f"<h3 style='{HEADER_H3}'>标注表单（motion · admission 任务）</h3>",
                 unsafe_allow_html=True)
     my_prev = {
@@ -3445,32 +3601,32 @@ def render_submission_flow() -> None:
     }
     prev = my_prev.get(sid) or {}
 
-    _adm_prev = str(prev.get("admission") or "").strip()
-    _adm_draft = _LLM_TAG_TO_ADMIT.get(str(sense.get("llm_tag") or "").strip(), "")
-    _init_adm = _adm_prev if _adm_prev in SUBMIT_ADMIT_OPTIONS else (
-        _adm_draft if _adm_draft in SUBMIT_ADMIT_OPTIONS else "")
-    _schema_prev = str(prev.get("schema") or "").strip()
-    _schema_draft = str(sense.get("llm_schema") or "").strip()
-    _init_schema = _schema_prev if _schema_prev in SCHEMA_OPTIONS else (
-        _schema_draft if _schema_draft in SCHEMA_OPTIONS else "")
-    _align_prev = str(prev.get("alignment") or "").strip()
-    _align_draft = str(sense.get("llm_align") or "").strip()
-    _init_align = _align_prev if _align_prev in ALIGNMENT_OPTIONS else (
-        _align_draft if _align_draft in ALIGNMENT_OPTIONS else "")
+    # FX-45 任务 1：暂存恢复（draft_states 第二消费面，照 writing_pages FX-39
+    # 先例）。有暂存 → 表单默认值用暂存值＋恢复 caption；无暂存照旧（取值链
+    # 原样内联在 _apply_annotation_stash_defaults）。冲突纪律：暂存只动表单
+    # 默认值 —— ai_draft_snapshot 捕获（下方 FX-43 块，取 AI 原始字段而非表单
+    # 最终值）与提交链路不受影响，提交照旧走 submit_annotation 全链路。
+    annotate_stash_key = f"{ANNOTATE_STASH_FORM_KEY_PREFIX}{sid}"
+    _defaults = _apply_annotation_stash_defaults(
+        _load_stashed_annotation_draft(annotate_stash_key), sense, prev)
+    _init_adm = _defaults["admission"]
+    _init_schema = _defaults["schema"]
+    _init_align = _defaults["alignment"]
 
     # FX-43 AI 初筛草稿快照（随提交落 ai_draft_snapshot，逐特征 AI-人一致率
     # 的比对基准）。快照语义 =「AI 当初给的」——取上方「LLM 初筛草稿」展示
-    # 的同一组原始字段（llm_tag/llm_schema/llm_align/llm_reason，即表单预填
-    # 来源 _adm_draft/_schema_draft/_align_draft），**不含人工修改后的值**
-    # （表单最终值在 payload）。只收 AI 真给到的键（空值不入快照，防「空串
-    # 特征」假分歧）；草稿字段全空 = 该义位无 AI 草稿 → ai_draft=None
-    # （落列默认 NULL，RV2-3 口径：不用空对象冒充有草稿）。准入值取表单预填
-    # 同源的 _LLM_TAG_TO_ADMIT 映射值（与 payload["admission"] 同值域，逐键
-    # 比对才可比；llm_tag 原文是权威层存储值域（Y／拓展／N），不作比对键值）。
+    # 的同一组原始字段（llm_tag/llm_schema/llm_align/llm_reason，经
+    # _llm_draft_fields 与表单预填链同源），**不含人工修改后的值**（表单最终
+    # 值在 payload；FX-45 起表单默认值还可能来自暂存，但暂存只动默认值，
+    # 快照捕获不受影响）。只收 AI 真给到的键（空值不入快照，防「空串特征」
+    # 假分歧）；草稿字段全空 = 该义位无 AI 草稿 → ai_draft=None（落列默认
+    # NULL，RV2-3 口径：不用空对象冒充有草稿）。准入值取表单预填同源的
+    # _LLM_TAG_TO_ADMIT 映射值（与 payload["admission"] 同值域，逐键比对才
+    # 可比；llm_tag 原文是权威层存储值域（Y／拓展／N），不作比对键值）。
+    _adm_draft, _schema_draft, _align_draft = _llm_draft_fields(sense)
     _ai_draft: Optional[Dict[str, str]] = None
     if (str(sense.get("llm_tag") or "").strip()
-            or str(sense.get("llm_schema") or "").strip()
-            or str(sense.get("llm_align") or "").strip()):
+            or _schema_draft or _align_draft):
         _ai_draft = {}
         if _adm_draft:
             _ai_draft["admission"] = _adm_draft
@@ -3482,6 +3638,11 @@ def render_submission_flow() -> None:
         if _draft_reason:
             _ai_draft["reason"] = _draft_reason
         _ai_draft = _ai_draft or None
+
+    # FX-45 任务 1：恢复 caption（有暂存才出；「提交后自动清除」与提交成功
+    # 路径 delete_draft 闭环）。
+    if _defaults["restore_caption"]:
+        st.caption(_defaults["restore_caption"])
 
     with st.form(f"submission_form_{sid}"):
         f1, f2 = st.columns(2)
@@ -3495,16 +3656,39 @@ def render_submission_flow() -> None:
         align = st.selectbox("英汉对齐等级（标准4）", options=ALIGNMENT_OPTIONS,
                              index=ALIGNMENT_OPTIONS.index(_init_align))
         cn_syn = st.text_input(
-            "汉语句法特征", value=str(prev.get("cn_syntax") or sense.get("cn_syntax") or ""),
+            "汉语句法特征", value=_defaults["cn_syntax"],
             placeholder="如：强制趋向补语 / 需“把”字句 / 动词可独立作谓语")
         strategy = st.text_input(
-            "译义转化策略", value=str(prev.get("strategy") or sense.get("translation_strategy") or ""),
+            "译义转化策略", value=_defaults["strategy"],
             placeholder="如：保留原图式 / 增补方式要素 / 舍弃方式语义")
         review = st.checkbox(
             "❓ 存疑（边界案例，建议进仲裁清单）",
-            value=bool(prev.get("needs_review", sense.get("needs_review"))))
+            value=_defaults["needs_review"])
         saved = st.form_submit_button("📤 提交本义位标注", type="primary")
-        if saved:
+        # FX-45 任务 1：💾 暂存标注（与「提交本义位标注」并列的第二提交钮；
+        # 落 draft_states 用户上下文域，**不写 annotation_submissions、不触发
+        # 审校流转**）。upsert 全部可编辑字段（六控件当前值原样快照，允许
+        # 半成品 WIP —— 恢复期空白值回落既有默认链）；乐观锁/校验闸不经此路
+        # 径（提交照旧走 submit_annotation 全链）。
+        stashed = st.form_submit_button(ANNOTATE_STASH_BUTTON_LABEL)
+        if stashed:
+            if user_context_db.upsert_draft(annotate_stash_key, {
+                "admission": admission,
+                "schema": schema,
+                "alignment": align,
+                "cn_syntax": cn_syn.strip(),
+                "strategy": strategy.strip(),
+                "needs_review": bool(review),
+            }):
+                # RV12 纪律：flash+rerun（提示落会话队列跨 rerun 展示）；
+                # 禁 st.success+rerun 回潮。
+                ui_kit.flash(ANNOTATE_STASH_FLASH_TEXT)
+                st.rerun()
+            else:
+                st.error(
+                    "暂存失败：数据库不可用或快照超长（50000 字符上限），"
+                    "请稍后重试。")
+        elif saved:
             if not admission:
                 st.error("请先选择准入标签（Y / EXT / N）。")
             else:
@@ -3542,6 +3726,11 @@ def render_submission_flow() -> None:
                         ai_draft=_ai_draft,
                     )
                 if _submitted:
+                    # FX-45 任务 1：提交成功自动清除该义位暂存（与恢复 caption
+                    # 「提交后自动清除」闭环）。无暂存时 delete 返回 False，纯
+                    # housekeeping 静默（数据层内部已留痕）；提交失败不清除
+                    # （WIP 仍在）。
+                    user_context_db.delete_draft(annotate_stash_key)
                     st.success(f"✅ {sense_id_label} 提交成功"
                                f"（同一义位重复提交=覆盖更新，覆盖后需重新审核）")
                 else:

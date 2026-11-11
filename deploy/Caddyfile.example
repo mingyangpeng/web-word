@@ -1,0 +1,47 @@
+# =============================================================================
+# LexiSchema 公网部署 · Caddy 样例配置（与 nginx.conf.example 同语义）
+#
+# 用法见 deploy/README.md。启用三步：
+#   1) cp deploy/Caddyfile.example /etc/caddy/Caddyfile
+#   2) 把 <服务器域名> 占位改成实际域名（证书自动申请，无需配路径）
+#   3) systemctl reload caddy（首次直接 systemctl start）
+#
+# 站点：Streamlit 单容器 127.0.0.1:8501（编纂端 + 查阅端）
+#
+# 与 nginx 版的语义差异（如实标注）：
+#   * 自动 HTTPS：Caddy 向 Let's Encrypt/ZeroSSL 自动签发续期，无证书路径
+#     占位；80 端口 HTTP→HTTPS 跳转自动完成，无需手写。
+#   * WebSocket：Caddy 反代原生支持升级，无需手写 Upgrade/Connection 头。
+#   * 限速：vanilla Caddy v2 无内置 rate limit（nginx 版的 login 10r/m、
+#     static 30r/m 在这里不落地）。可选方案：用带 caddy-ratelimit 模块的
+#     自编译 Caddy，或在前置层（云 WAF/fail2ban）实现 —— 二选一，别只嘴上说。
+# =============================================================================
+
+# 占位：把 lexischema.example.com 改成实际服务器域名（改完证书自动签发）
+lexischema.example.com {
+	# ---- 安全头（与 nginx 版同语义）----
+	# HSTS：只在确认 443 可用后再启用（回滚困难）；样例按 180 天给值
+	header {
+		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		X-Frame-Options           "SAMEORIGIN"
+		X-Content-Type-Options    "nosniff"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		-Server                   # 抹掉 Caddy 版本指纹（对应 nginx 的 server_tokens off）
+	}
+
+	# ---- /app/static/：RV4-7 折中（不能 deny all！）----
+	# 已核实：图谱 HTML 由浏览器直接请求（st.iframe 相对路径
+	# /app/static/word_graph_<指纹>.html，图谱内还引 /app/static/vis-network.min.js），
+	# deny all 会让知识图谱/词簇图渲染成空白。
+	# 折中 = 不索引 + 限文件面；限速见文件头注（vanilla Caddy 无内置 rate limit）。
+	# 残余风险（如实）：匿名用户拿到完整直链仍能访问单个 HTML；文件名含
+	# SHA256 指纹 12 位不可枚举，图谱数据敏感度低（§五 P3 口径），原型定位下可接受。
+	@app_static path /app/static/*
+	header @app_static {
+		X-Robots-Tag "noindex"
+	}
+
+	# ---- 其余全部反代到 Streamlit（含 WebSocket /_stcore/stream，自动升级）----
+	# 无独立登录 HTTP 端点：登录表单提交走 WebSocket，限速口径见文件头注。
+	reverse_proxy 127.0.0.1:8501
+}

@@ -130,13 +130,20 @@ def _seed_assignment(cursor, status="open", assignee=7):
 
 
 def _seed_reannotation_happy(cursor, coder_rows=None):
-    """重标闸 happy 种子：categories 直配、逐义位 merged、历史标注人、动词。"""
+    """重标闸 happy 种子：categories 直配、批量裁决状态 merged、历史标注人、动词。
+
+    FX-45 起闸核对为单条 IN 查询（_CS_STATUS_BATCH_SQL）：路由按
+    params = (study_code, *sense_ids) 逐 sense_id 供状态行（行含 sense_id
+    键，与批量语句 SELECT 形态一致）。
+    """
     cursor.select_routes.append(
         ("SELECT code FROM categories",
          lambda sql, params: [{"code": "RUN"}] if params[0] == "RUN" else [])
     )
     cursor.select_routes.append(
-        ("JOIN cs_senses s", lambda sql, params: [{"cs_status": "merged"}])
+        ("JOIN cs_senses s",
+         lambda sql, params: [{"sense_id": sid, "cs_status": "merged"}
+                              for sid in params[1:]])
     )
     cursor.select_routes.append(
         ("SELECT DISTINCT coder_id",
