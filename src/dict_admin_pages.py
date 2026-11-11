@@ -1468,16 +1468,34 @@ def _style_check_status_badge(status: Any) -> str:
     return get_badge_html(_esc(label), color)
 
 
+_STYLE_CHECK_NAMES_TTL = 60
+_STYLE_CHECK_NAMES_CACHE: dict = {}  # scope -> (monotonic_ts, mapping)
+
+
 def _style_check_user_names() -> Dict[int, str]:
     """run_by（用户 id）→ 展示名映射（users_db.list_users 一次取全量，只读）。
 
     花名册不可用（库断连等）按空映射降级 —— 历史小表执行人格退回「#id」，
     不因装饰性映射失败拖垮质检段。
+
+    RV16-3 消缺（批次 26）：手写 TTL 60s 缓存（首参 scope=cache_scope_key，
+    S1 教训换库隔离；照 _fx24_annotation_progress_cached 先例）——驾驶舱每
+    rerun 一次的装饰性全表读降为 60s 一次。**空映射不缓存**：断库降级 {} 必须即时自愈（缓存 {} 会让断库恢复后 60s 内映射仍空）。
     """
+    import time as _time
+
+    scope = mysql_db.cache_scope_key()
+    now = _time.monotonic()
+    hit = _STYLE_CHECK_NAMES_CACHE.get(scope)
+    if hit is not None and now - hit[0] < _STYLE_CHECK_NAMES_TTL:
+        return hit[1]
     try:
         users = users_db.list_users() or []
     except Exception as e:  # noqa: BLE001 —— 装饰性取数，失败按空映射降级
         logger.warning(f"体例质检历史执行人映射取数失败: {e}")
+        # 失败即失效缓存：断库期历史小表执行人列即时退回「#id」（降级契约
+        # test_fx26 钉死），恢复后下次调用重新取数自愈
+        _STYLE_CHECK_NAMES_CACHE.pop(scope, None)
         return {}
     names: Dict[int, str] = {}
     for u in users:
@@ -1489,6 +1507,9 @@ def _style_check_user_names() -> Dict[int, str]:
             continue
         if uid > 0:
             names[uid] = str(u.get("display_name") or u.get("username") or f"#{uid}")
+        if names:
+            _STYLE_CHECK_NAMES_CACHE[scope] = (
+                now, names)  # 空映射不缓存（断库恢复即时自愈）
     return names
 
 

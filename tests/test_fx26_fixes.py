@@ -201,8 +201,12 @@ def test_user_names_mapping_and_degradation(monkeypatch):
         {"id": 9, "username": "乙", "display_name": None},
         "脏行", {"id": "x", "username": "脏id"},
     ])
+    dp._STYLE_CHECK_NAMES_CACHE.clear()  # RV16-3：清缓存使首Phase真实取数
     names = _style_check_user_names()
     assert names == {7: "主编甲", 9: "乙"}
+    # 二阶段（断库降级）：TTL 内缓存命中是 RV16-3 设计行为（陈旧窗折中）——
+    # 降级路径在缓存清空后触发：清缓存→取数失败→空映射即时降级不缓存
+    dp._STYLE_CHECK_NAMES_CACHE.clear()
 
     def _boom():
         raise RuntimeError("db down")
