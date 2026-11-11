@@ -329,20 +329,26 @@ class TestR1VisibilityMatrix:
         sidebar_option_label 反查回页面键再对表（分组只改呈现不改键集）。
         """
         from src.app import sidebar_option_label
-        from src.page_guides import PAGE_KEYS
+        from src.page_guides import PAGE_KEYS, page_label
 
-        label_to_key = {sidebar_option_label(k): k for k in PAGE_KEYS}
+        # 批次 22 按钮式侧边栏：导航按钮 label=page_label（批次 21 瘦身后
+        # nav 不再用 sidebar_option_label 前缀——区归属由小节头表达）
+        label_to_key = {page_label(k): k for k in PAGE_KEYS}
         user = None if session_key == "anon" else _sessions()[session_key]
         at = _new_at()
         if user is not None:
             at.session_state["user"] = user
         at.run()
         assert not at.exception, session_key
-        radios = list(at.sidebar.radio)
-        assert radios, f"{session_key}: 页面切换 radio 未渲染"
+        # 批次 22 按钮式侧边栏：导航按钮 label=page_label（登录/退出等
+        # 非导航按钮以 label_to_key 键集过滤）
+        nav_buttons = [b for b in at.sidebar.button
+                       if str(b.label) in label_to_key]
+        assert nav_buttons, f"{session_key}: 侧边栏导航按钮未渲染"
         got = set()
-        for option in radios[0].options:
-            assert option in label_to_key, f"{session_key}: 未知选项标签 {option!r}"
+        for button in nav_buttons:
+            option = str(button.label)
+            assert option in label_to_key, f"{session_key}: 未知按钮标签 {option!r}"
             got.add(label_to_key[option])
         expected = _EXPECTED_VISIBLE[session_key]
         assert got == expected, (

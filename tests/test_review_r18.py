@@ -74,6 +74,7 @@ os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
 import src.user_context_db as ucdb  # noqa: E402
+from src.page_guides import page_label  # noqa: E402
 from src.tools import builtin  # noqa: E402,F401  导入即注册内置 11 工具（真实注册路径）
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -274,11 +275,14 @@ def _form_login(at, username: str, password: str):
     return at
 
 
-def _page_radio(at):
-    """侧边栏「页面」radio（key="page" 路由契约不变）。"""
-    radios = [r for r in at.sidebar.radio if r.label == "页面"]
-    assert radios, "页面 radio 未渲染"
-    return radios[0]
+def _goto(at, key: str):
+    """点侧边栏导航按钮切页（批次 22 按钮式侧边栏）。"""
+    for b in at.sidebar.button:
+        if str(b.label) == page_label(key):
+            b.click()
+            at.run()
+            return
+    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 # ============================================
@@ -600,7 +604,7 @@ class TestChain5LandingBranches:
         assert _pget(at, "page") == "search", "前置：首次登录落搜索释义"
 
         # 上次工作位置：radio 手动切页
-        _page_radio(at).set_value("cluster")
+        _goto(at, "cluster")
         at.run()
         assert not at.exception
         assert _pget(at, "page") == "cluster"

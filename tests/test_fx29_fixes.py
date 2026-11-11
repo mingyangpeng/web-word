@@ -43,7 +43,7 @@ import pytest  # noqa: E402
 import src.app as app_module  # noqa: E402
 import src.collab_pages as collab_pages  # noqa: E402
 import src.mysql_db as db  # noqa: E402
-from src.page_guides import PAGE_KEYS  # noqa: E402
+from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
 from src.users_db import create_user, ensure_user_tables  # noqa: E402
 
 # ============================================
@@ -264,11 +264,14 @@ def _form_login(at, username: str, password: str):
     return at
 
 
-def _page_radio(at):
-    """侧边栏「页面」radio（key="page" 路由契约不变）。"""
-    radios = [r for r in at.sidebar.radio if r.label == "页面"]
-    assert radios, "页面 radio 未渲染"
-    return radios[0]
+def _goto(at, key: str):
+    """点侧边栏导航按钮切页（批次 22 按钮式侧边栏；on_click 后 rerun）。"""
+    for b in at.sidebar.button:
+        if str(b.label) == page_label(key):
+            b.click()
+            at.run()
+            return
+    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 # ============================================
@@ -338,11 +341,11 @@ def test_manual_page_switch_after_landing_not_hijacked(fx29_db, monkeypatch):
     at = _form_login(at, "fx29_rev", "fx29-rev-pw")
     assert _pget(at, "page") == "ai_hub", "前置：登录落地协作收件箱"
 
-    _page_radio(at).set_value("search")
+    _goto(at, "search")
     at.run()
     assert _pget(at, "page") == "search", "手动切页即生效"
 
-    _page_radio(at).set_value("graph")
+    _goto(at, "graph")
     at.run()
     assert _pget(at, "page") == "graph"
 

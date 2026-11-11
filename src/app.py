@@ -2032,17 +2032,37 @@ def render_sidebar():
     _resume_hint = st.session_state.get(_RESUME_HINT_KEY)
     if _resume_hint in visible_keys:
         st.sidebar.caption(f"↩︎ 续接上次：{page_label(_resume_hint)}")
-    # 七区菜单分组（规范②组，FX-23）：仅展示重排 —— 组间按 _SIDEBAR_ZONES 序、
-    # 组内保持 PAGE_KEYS 相对序，键集与权限过滤不变；标签加区名前缀
-    # （sidebar_option_label），区名前缀成块出现即分组标题。
-    # 不再 horizontal=True：选项标签变为「【区名】页名」两段式，竖排成组可读。
+    # 七区菜单导航（批次 22 升级：macOS 式真侧边栏）—— 每区一个小节头
+    # （灰阶小型大写风）＋区页逐页整宽按钮；当前页 type="primary"（accent
+    # 药丸），其余透明底（CSS .st-key-ls_nav 定制）。路由契约不变：按钮
+    # on_click 回调写 session_state["page"]（RV12-1 回调纪律），PAGE_KEYS
+    # 与权限过滤不变。旧单 radio（【区名】前缀标签）由 FX-23 引入、本版
+    # 取代 —— sidebar_option_label 保留（帮助中心等处引用）。
     visible_keys = _group_keys_by_zone(visible_keys)
-    st.sidebar.radio(
-        "页面",
-        options=visible_keys,
-        format_func=sidebar_option_label,
-        key="page",
-    )
+    with st.sidebar.container(key="ls_nav"):
+        for zone, zone_keys in _SIDEBAR_ZONES:
+            zone_visible = [k for k in zone_keys if k in visible_keys]
+            if not zone_visible:
+                continue
+            import re as _re
+
+            zone_text = _re.sub(
+                "[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]", "",
+                zone).strip()
+            st.markdown(
+                # zone_text 源自内置 _SIDEBAR_ZONES 常量（非用户数据），无需转义
+                f"<div class='ls-nav-header'>{zone_text}</div>",
+                unsafe_allow_html=True,
+            )
+            for key in zone_visible:
+                selected = st.session_state.get("page") == key
+                st.sidebar.button(
+                    page_label(key),
+                    key=f"nav_{key}",
+                    type="primary" if selected else "secondary",
+                    use_container_width=True,
+                    on_click=(lambda pk=key: st.session_state.update(page=pk)),
+                )
     st.sidebar.divider()
 
     # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）。
