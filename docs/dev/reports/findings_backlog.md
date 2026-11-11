@@ -336,3 +336,12 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] 侧边栏导航重构——st.sidebar.container(key="ls_nav")＋七区小节头＋整宽按钮；CSS .st-key-ls_nav 透明底/hover 浅灰/primary 蓝药丸白字；zone_text 源常量免转义
 - [x] 测试面迁移——_radio_keys/_radio_labels/_page_radio 全部换按钮口径（integration helpers＋fx23＋fx29＋review_r18＋回归矩阵 label_to_key 改 page_label＋page_guides 源级钉板换 nav_{key} 键契约＋fx35 灰注段锚换「七区菜单导航」）；fx23 区块断言改小节头三区在场
 - [x] page_label import 补齐（review_r18 模块级归位）；fx23 断言去 Button.type（AppTest 元素类型非按钮 kind）
+
+## 批次 26（2026-11-12 · Apple 原生主题定稿＋控件级 v4）
+
+> 用户反馈「还是太丑」→ 两轮深化：**根因修复**（config.toml 无 [theme] 段——Streamlit 一直在用默认红主题色，radio 红点/焦点红全源于此）＋ CSS v4 控件级全覆盖。全量 **2885 passed / 0 failed**（零功能变更）。
+
+- [x] **根因修复**：src/.streamlit/config.toml 加 [theme] 段（primaryColor=#0071E3 Apple Blue／backgroundColor=#FFFFFF／secondaryBackgroundColor=#F5F5F7／textColor=#1D1D1F）——原生控件（radio 选中圈/checkbox/slider/primary 按钮/焦点）全部转 Apple Blue，替换默认红
+- [x] **CSS v4 控件级**——ls_nav 导航行 !important 定稿（未选中透明/悬停浅灰/选中 accent 药丸白字）＋accent-color 统一选中圈＋焦点环 3px glow＋滑杆 accent＋表单卡白底 16px＋下载按钮药丸＋链接 accent＋代码块 SF Mono＋expander 加重＋内容图圆角＋侧栏节头小灰阶＋主区顶距收紧
+- [x] 侧边栏 macOS 式真导航定稿——七区小节头（ls-nav-header 灰阶小字）＋区页整宽按钮（当前页 accent 药丸）
+- [x] 浏览器实测：未登录首屏/语义分析/驾驶舱三面截图验收（分段 tabs/白卡指标/蓝药丸选中）

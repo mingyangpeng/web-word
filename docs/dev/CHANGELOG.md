@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2026-11-12 · 批次 26：Apple 原生主题定稿＋CSS v4 控件级
+
+- 根因修复：config.toml 加 [theme]（primaryColor #0071E3 等 Apple 色板）——原生控件全转 Apple Blue（此前默认红）
+- CSS v4 控件级：accent-color/焦点环/滑杆/表单卡/下载按钮/链接/代码块/节头；侧边栏导航行 !important 定稿
+- 全量 **2885 passed / 0 failed**
+
 ## 2026-11-12 · 批次 25：侧边栏 macOS 式真导航（radio → 按钮式）
 
 - 七区小节头（灰阶小型字）＋区页整宽按钮；当前页 accent 药丸；on_click page 路由（RV12-1）
