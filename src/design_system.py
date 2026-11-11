@@ -1020,8 +1020,84 @@ p, li {{ color: var(--ls-text); }}
 ::-webkit-scrollbar-thumb:hover {{ background: rgba(0, 0, 0, 0.32); }}
 ::-webkit-scrollbar-track {{ background: transparent; }}
 
-/* ══════════ 分隔线：发丝线 ══════════ */
-hr {{
+/* ══════════ 控件级 Apple 化（radio/checkbox/slider/focus） ══════════ */
+/* accent-color：radio/checkbox 选中圈统一 Apple Blue（替换 Streamlit 默认红） */
+input[type="radio"], input[type="checkbox"] {{
+    accent-color: var(--ls-accent);
+}}
+/* 焦点环：键盘可达性＋品牌一致 */
+.stTextInput input:focus-visible,
+.stTextArea textarea:focus-visible,
+.stNumberInput input:focus-visible {{
+    border-color: var(--ls-accent);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+    outline: none;
+}}
+/* 滑杆：轨道细圆角＋拇指 accent（Streamlit 内部 class 稳定子集） */
+[data-testid="stSlider"] [role="slider"] {{
+    background-color: var(--ls-accent);
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}}
+[data-testid="stSlider"] > div > div {{
+    background: rgba(0, 113, 227, 0.35);
+}}
+
+/* ══════════ 表单卡：白卡 16px 圆角（标注/撰写/发布表单） ══════════ */
+[data-testid="stForm"] {{
+    background: #ffffff;
+    border: 1px solid var(--ls-hairline);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}}
+
+/* ══════════ 下载按钮同药丸族 ══════════ */
+[data-testid="stDownloadButton"] > button {{
+    border-radius: var(--ls-pill);
+    font-weight: 600;
+    transition: transform 0.15s ease, background 0.2s ease;
+}}
+[data-testid="stDownloadButton"] > button:hover {{ transform: scale(1.015); }}
+
+/* ══════════ 链接：accent 色（正文/表格内可达性） ══════════ */
+[data-testid="stMain"] a, [data-testid="stSidebar"] a {{
+    color: var(--ls-accent);
+    text-decoration: none;
+}}
+[data-testid="stMain"] a:hover {{ text-decoration: underline; }}
+
+/* ══════════ 代码块：SF Mono＋浅灰底圆角 ══════════ */
+code {{
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    background: #F6F6F8;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.9em;
+}}
+pre code {{
+    display: block;
+    padding: 12px 14px;
+    border-radius: 10px;
+    overflow-x: auto;
+}}
+
+/* ══════════ Expander 标题加重 ＋ 内容图圆角 ══════════ */
+[data-testid="stExpander"] summary {{
+    font-weight: 600;
+}}
+[data-testid="stMain"] img {{
+    border-radius: 10px;
+}}
+
+/* ══════════ 侧边栏分节标题：小型灰阶大写风（Apple 侧栏节头） ══════════ */
+[data-testid="stSidebar"] h2 {{
+    font-size: 0.92rem;
+    color: var(--ls-text-2);
+    letter-spacing: 0.03em;
+}}
+
+/* ══════════ 主区分隔线柔化 ══════════ */
+[data-testid="stMain"] hr {{
     border: none;
     border-top: 1px solid var(--ls-hairline);
 }}

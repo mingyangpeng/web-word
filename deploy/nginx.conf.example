@@ -1,0 +1,198 @@
+# =============================================================================
+# LexiSchema 公网部署 · Nginx 样例配置（完整独立 nginx.conf，可直接 -t）
+#
+# 用法见 deploy/README.md。启用三步：
+#   1) cp deploy/nginx.conf.example /etc/nginx/nginx.conf（或合入现有 conf.d）
+#   2) 替换文中三处占位：<服务器域名> / 证书路径 / 日志名
+#   3) nginx -t && systemctl reload nginx
+#
+# 站点：Streamlit 单容器 127.0.0.1:8501（编纂端 + 查阅端）
+# 已核实的应用事实（详见 deploy/README.md「核实记录」）：
+#   * 知识图谱/词簇图经 st.iframe 以相对路径 /app/static/word_graph_<指纹>.html
+#     嵌入页面 —— 由**浏览器**向 /app/static/ 发起 GET（经反代打到本配置），
+#     图谱 HTML 内还引 /app/static/vis-network.min.js（同样浏览器侧加载）。
+#     因此 location /app/static/ 不能 deny all，否则图谱全白（RV4-7 折中见下）。
+#   * Streamlit 无独立 HTTP 登录端点：登录表单在应用页面内，提交走 WebSocket
+#     /_stcore/stream —— 「login 端点」的 10r/m 限速只能挂在该握手请求上，
+#     每个浏览器标签页仅占一次握手，正常用户不受影响。
+# =============================================================================
+
+worker_processes  auto;
+
+# worker 属主留空 = 沿用发行版默认（Debian 系包默认 www-data；官方镜像为 nginx）。
+# 如需显式指定，自行加：user www-data;（用户不存在时 nginx -t 会 getpwnam 失败）。
+
+error_log  /var/log/nginx/lexischema.error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log  /var/log/nginx/lexischema.access.log main;
+
+    sendfile        on;
+    tcp_nopush      on;
+    keepalive_timeout  65;
+    server_tokens   off;
+
+    # ---- 媒体上传：Streamlit 走 /_stcore/upload_file，50m 覆盖媒体库上限 ----
+    client_max_body_size 50m;
+
+    # ---- gzip（Streamlit 的 JSON/HTML 压缩收益明显；js/css 本就小）----
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/x-javascript
+        application/xml
+        image/svg+xml;
+
+    # ---- WebSocket 升级（Streamlit 全部交互走 /_stcore/stream 长连接）----
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ''      close;
+    }
+
+    # ---- 限速区 ----
+    # 「login 端点」10r/m：Streamlit 无独立 HTTP 登录端点，登录表单提交经
+    # WebSocket /_stcore/stream —— 限速挂在其握手请求上（每标签页一次握手，
+    # 10r/m + burst 对低并发编纂端绰绰有余，暴力试口令则被压住）。
+    limit_req_zone $binary_remote_addr zone=login_handshake:10m rate=10r/m;
+    # /app/static/ 限速（RV4-7 折中之一）：直链匿名可达，限速抬高批量爬取成本。
+    limit_req_zone $binary_remote_addr zone=static_fetch:10m rate=30r/m;
+
+    # ---- 80 → 443 跳转；保留 ACME http-01 挑战路径 ----
+    server {
+        listen      80;
+        listen      [::]:80;
+        server_name lexischema.example.com;   # 占位：改成实际服务器域名
+
+        # certbot webroot 模式续期用（若用 DNS 挑战或 Caddy，可整段删掉）
+        location /.well-known/acme-challenge/ {
+            root /var/www/html;
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # ---- 主站：443 TLS ----
+    server {
+        # listen 的 http2 参数在 nginx >=1.25.1 已弃用（仅告警），但老版本
+        # （Debian bookworm 的 1.22）只认这种写法 —— 样例取跨版本兼容形态。
+        listen      443 ssl http2;
+        listen      [::]:443 ssl http2;
+        server_name lexischema.example.com;   # 占位：改成实际服务器域名（两处都要改）
+
+        # 占位：改成实际证书路径（Let's Encrypt 示例：
+        # /etc/letsencrypt/live/<域名>/fullchain.pem 与 privkey.pem）。
+        # 注意：nginx -t 会实读证书文件（占位路径不存在时报
+        # "cannot load certificate"），语法验证可先挂自签临时证书跑通
+        # —— docker run --rm -v $PWD/deploy:/conf:ro \
+        #      -v <自签目录>:/etc/letsencrypt/live/REPLACE-ME:ro \
+        #      nginx:alpine nginx -t -c /conf/nginx.conf.example
+        # （2026-11-11 实测 nginx:alpine：占位证书挂上后 syntax is ok /
+        #   test is successful；仅 listen ... http2 弃用告警，见下。）
+        ssl_certificate     /etc/letsencrypt/live/REPLACE-ME/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/REPLACE-ME/privkey.pem;
+
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers          ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+        ssl_prefer_server_ciphers off;
+        ssl_session_cache    shared:SSL:10m;
+        ssl_session_timeout  1d;
+        ssl_session_tickets  off;
+
+        # HSTS：只在确认 443 可用后再启用（回滚困难）；样例按 180 天给值
+        add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+        # 同源才允许被嵌（应用自身 st.iframe 嵌 /app/static/ 同源，不受影响）
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+        # ---- /app/static/：RV4-7 折中（不能 deny all！）----
+        # 已核实：图谱 HTML 由浏览器直接请求（st.iframe 相对路径 src），
+        # deny all 会让知识图谱/词簇图渲染成空白。
+        # 折中 = 限速 + 不索引 + 不列目录 + 限文件类型：
+        #   * 残余风险（如实）：匿名用户拿到完整直链仍能访问单个 HTML；
+        #     文件名含 SHA256 指纹 12 位不可枚举，风险面即「泄露出的单条直链」。
+        #     图谱数据敏感度低（§五 P3 口径），该残余风险在原型定位下可接受。
+        location /app/static/ {
+            limit_req zone=static_fetch burst=10 nodelay;
+            autoindex off;                              # 不列目录
+            # 注意：nginx 的 add_header 不跨级继承 —— 本块定义了 add_header，
+            # server 级安全头需在此重复一遍才对 static 响应生效。
+            add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+            add_header X-Frame-Options SAMEORIGIN always;
+            add_header X-Content-Type-Options nosniff always;
+            add_header Referrer-Policy strict-origin-when-cross-origin always;
+            add_header X-Robots-Tag "noindex" always;   # 不进搜索引擎索引
+
+            # 只放行应用实际产出的文件类型，缩小直链面
+            location ~* /app/static/[^/]+\.(html|js)$ {
+                limit_req zone=static_fetch burst=10 nodelay;
+                add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+                add_header X-Frame-Options SAMEORIGIN always;
+                add_header X-Content-Type-Options nosniff always;
+                add_header Referrer-Policy strict-origin-when-cross-origin always;
+                add_header X-Robots-Tag "noindex" always;
+                proxy_pass http://127.0.0.1:8501;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            # 其余 /app/static/ 请求一律 404（隐藏目录结构）
+            location ~* /app/static/[^/]+/ {
+                return 404;
+            }
+        }
+
+        # ---- WebSocket 握手：登录/交互消息的承载端点（限速即「login 端点」）----
+        location = /_stcore/stream {
+            limit_req zone=login_handshake burst=5 nodelay;
+            proxy_pass http://127.0.0.1:8501;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;           # WebSocket 必需
+            proxy_set_header Connection $connection_upgrade;  # WebSocket 必需
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            # 长连接：编纂会话可能整日挂着，读超时放宽并依赖应用心跳
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+        }
+
+        # ---- 其余全部反代到 Streamlit ----
+        location / {
+            proxy_pass http://127.0.0.1:8501;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;           # WebSocket 必需
+            proxy_set_header Connection $connection_upgrade;  # WebSocket 必需
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+            proxy_buffering off;   # 流式响应/上传进度不被缓冲
+        }
+    }
+}

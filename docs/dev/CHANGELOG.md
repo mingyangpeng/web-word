@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-12 · 批次 24：CSS v4 控件级 Apple 化＋标注暂存＋公网部署三件套
+
+- CSS v4：accent-color 统一选中圈/焦点环/滑杆/表单卡/下载按钮/链接/代码块/节头——控件级全覆盖
+- 标注平台表单草稿暂存（draft_states 第二消费面）：暂存/恢复/提交清除，优先级 暂存>上次提交>AI 预填
+- 重标逐义位闸核对批量化：单条 IN 替代 N 次往返（双实现对照等价）
+- 公网部署三件套：deploy/nginx.conf.example＋Caddyfile.example＋validate.sh＋DEPLOYMENT 公网节
+- 全量 **2885 passed / 0 failed**
+
 ## 2026-11-11 · 批次 23：AI-人一致率升级为逐特征真值（FX-43）
 
 - annotation_submissions 补 ai_draft_snapshot（ALTER-only 幂等迁移）；提交链捕获 AI 初筛草稿原始值

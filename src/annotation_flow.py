@@ -1558,6 +1558,12 @@ def _resolve_study_code(category: str) -> Optional[str]:
 # cs_lexemes.lemma=o.headword, cs_senses.sense_no=str(o.sense_index))；
 # sense_no 直接用 CAST(o.sense_index AS CHAR) 在 JOIN 条件内解析（免先读行再
 # 二次查询），多命中取最小 id（确定性，与 _find_cs_sense_id 一致）。
+#
+# FX-45 RV19-1 消缺后，create_reannotation_tasks 的闸核对改走下方
+# _CS_STATUS_BATCH_SQL 单条 IN 查询（N 次往返 → 1 条）；本语句保留作
+# **逐义位等价性对照基准**（test_fx45_fixes 用同一数据集断言两种实现
+# 同输出）——批量语句的 JOIN 键须与本语句逐字一致，改动任一侧都必须
+# 重跑该等价性测试。
 _CS_STATUS_SQL = (
     "SELECT s.status AS cs_status "
     "FROM oald_senses o "
@@ -1568,6 +1574,59 @@ _CS_STATUS_SQL = (
     "WHERE o.id = %s "
     "ORDER BY s.id LIMIT 1"
 )
+
+# 批量裁决闸查询（FX-45 任务 2，RV19-1 留档项消缺）：JOIN 键与
+# _CS_STATUS_SQL 逐字一致（同一映射口径），WHERE o.id IN (placeholders)
+# 一次取整批；ORDER BY s.id 全序下每个 sense_id 的行子序列仍按
+# cs_senses.id 升序，Python 侧按首次出现取状态 = 原逐条
+# ``ORDER BY s.id LIMIT 1``（多命中取最小 cs_senses.id）的等价实现。
+_CS_STATUS_BATCH_SQL = (
+    "SELECT o.id AS sense_id, s.status AS cs_status "
+    "FROM oald_senses o "
+    "JOIN cs_lexemes l ON l.language = 'en' AND l.lemma = o.headword "
+    "JOIN categories c ON c.id = l.category_id AND c.code = %s "
+    "JOIN cs_senses s ON s.lexeme_id = l.id "
+    "AND s.sense_no = CAST(o.sense_index AS CHAR) COLLATE utf8mb4_unicode_ci "
+    "WHERE o.id IN ({placeholders}) "
+    "ORDER BY s.id"
+)
+
+
+def _fetch_cs_status_map(study_code: str, sense_ids: List[int]) -> Dict[int, Any]:
+    """单条 IN 查询取逐义位裁决状态（FX-45 任务 2；原逐义位单发的批量化）。
+
+    映射口径与 _CS_STATUS_SQL 逐字一致（同一 JOIN 键）；多命中取最小
+    cs_senses.id（与原 ORDER BY s.id LIMIT 1 语义一致，确定性同
+    sense_spine._find_cs_sense_id）。
+
+    Args:
+        study_code: 语义分析研究代号（categories.code，_resolve_study_code 解析）
+        sense_ids: 标注侧义位 id 清单（oald_senses.id，调用方已去重清洗）
+
+    Returns:
+        dict: sense_id → cs_status 原始值（状态判定交调用方）。
+        **未映射的 sense_id 不入键**（与原「fetchone() is None → 未映射」
+        分支对齐 —— 调用方须用 ``in`` 判存在，不能用 .get() 把「未映射」
+        与「状态为 NULL」混淆）。查询失败向上抛（create_reannotation_tasks
+        外层 fail-closed 口径不变）。
+    """
+    if not sense_ids:
+        return {}
+    placeholders = ", ".join(["%s"] * len(sense_ids))
+    status_map: Dict[int, Any] = {}
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            _CS_STATUS_BATCH_SQL.format(placeholders=placeholders),
+            (study_code, *sense_ids),
+        )
+        for row in cursor.fetchall():
+            key = _as_int(row.get("sense_id"))
+            # ORDER BY s.id 下同 sense_id 的首行即最小 cs_senses.id —— 后续
+            # 行（更大 id）不覆盖首行（多命中取最小 id，与逐条 LIMIT 1 一致）。
+            if key is None or key in status_map:
+                continue
+            status_map[key] = row.get("cs_status")
+    return status_map
 
 
 def create_reannotation_tasks(
@@ -1704,35 +1763,39 @@ def create_reannotation_tasks(
                 ),
                 "created": 0,
             }
-        # 逐义位裁决闸（映射 oald_senses.id → cs_senses.status）
+        # 逐义位裁决闸（映射 oald_senses.id → cs_senses.status）：FX-45 任务 2
+        # （RV19-1 留档项消缺）改单条 IN 查询（N 次往返 → 1 条，500 上限内
+        # 占位符可控）；映射口径与 _CS_STATUS_SQL 逐字一致，多命中取最小
+        # cs_senses.id —— 每 sense_id 的裁决判定与原逐条查询等价
+        # （test_fx45_fixes 同数据集对照锁定）。
         eligible: List[int] = []
+        status_map = _fetch_cs_status_map(study_code, ids)
+        for sid in ids:
+            if sid not in status_map:
+                skipped.append({
+                    "sense_id": sid,
+                    "reason": "未映射到语义分析义位（cs_senses），无法核对分立裁决",
+                })
+                continue
+            cs_status_raw = status_map[sid]
+            status = str(cs_status_raw or "").strip().lower()
+            if status not in DIVIDED_SENSE_STATUSES:
+                skipped.append({
+                    "sense_id": sid,
+                    "reason": f"cs_senses 状态为 {cs_status_raw!r}"
+                    "（非 merged/split），未裁决或维持原分立",
+                })
+                continue
+            eligible.append(sid)
+        if not eligible:
+            return {
+                "ok": False,
+                "error": "所选义位均未通过分立裁决闸（仅 merged/split 可重标）",
+                "created": 0,
+                "skipped": skipped,
+                "reannotation_round": new_round,
+            }
         with get_db_cursor() as cursor:
-            for sid in ids:
-                cursor.execute(_CS_STATUS_SQL, (study_code, sid))
-                row = cursor.fetchone()
-                if not row:
-                    skipped.append({
-                        "sense_id": sid,
-                        "reason": "未映射到语义分析义位（cs_senses），无法核对分立裁决",
-                    })
-                    continue
-                status = str(row.get("cs_status") or "").strip().lower()
-                if status not in DIVIDED_SENSE_STATUSES:
-                    skipped.append({
-                        "sense_id": sid,
-                        "reason": f"cs_senses 状态为 {row.get('cs_status')!r}"
-                        "（非 merged/split），未裁决或维持原分立",
-                    })
-                    continue
-                eligible.append(sid)
-            if not eligible:
-                return {
-                    "ok": False,
-                    "error": "所选义位均未通过分立裁决闸（仅 merged/split 可重标）",
-                    "created": 0,
-                    "skipped": skipped,
-                    "reannotation_round": new_round,
-                }
             placeholders = ", ".join(["%s"] * len(eligible))
             # 历史标注人复核（RV13-3）：JOIN users 过滤停用账号（u.active=1）。
             # 项目在册复核不可建立 —— assignments 无项目列，口径与改派面一致
