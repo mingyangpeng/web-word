@@ -328,3 +328,11 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] 标注平台表单草稿暂存（FX-45，draft_states 第二消费面）——「💾 暂存标注」＋打开恢复（优先级：暂存 > 上次提交 > AI 预填 > 空，字段级校验回落）＋提交自动清除；六字段快照（admission/schema/alignment/cn_syntax/strategy/needs_review）
 - [x] RV19-1 重标逐义位闸核对批量化——单条 IN 查询（JOIN 键与 _CS_STATUS_SQL 逐字一致）替代 N 次往返；8 组夹具双实现对照逐项一致；500 上限/dedup 闸不动
 - [x] FX-46 公网部署三件套（前批被取消任务重做成功）——deploy/nginx.conf.example（TLS/WS 升级/RV4-7 限速+noindex 折中/限速/安全头）＋Caddyfile.example＋validate.sh（nginx -t 真验通过）＋DEPLOYMENT「六、公网部署」节；核实两件：8501 端口=0.0.0.0（公网时应改 127.0.0.1）、st.iframe 经浏览器请求 static（deny all 不可行→折中口径）
+
+## 批次 25（2026-11-12 · 侧边栏 macOS 式真导航：radio → 按钮式）
+
+> 用户「左侧的太丑」→ 推倒 radio 方案，升级为 **macOS 式真侧边栏**：每区灰阶小节头（ls-nav-header 小型字）＋区页整宽按钮（label=page_label，当前页 type="primary" accent 药丸，on_click 写 session_state["page"]——RV12-1 回调纪律）。PAGE_KEYS/权限过滤/落地三分支全部不变。全量 **2885 passed / 0 failed**（+40：fx42/45 遗留＋本批适配）。
+
+- [x] 侧边栏导航重构——st.sidebar.container(key="ls_nav")＋七区小节头＋整宽按钮；CSS .st-key-ls_nav 透明底/hover 浅灰/primary 蓝药丸白字；zone_text 源常量免转义
+- [x] 测试面迁移——_radio_keys/_radio_labels/_page_radio 全部换按钮口径（integration helpers＋fx23＋fx29＋review_r18＋回归矩阵 label_to_key 改 page_label＋page_guides 源级钉板换 nav_{key} 键契约＋fx35 灰注段锚换「七区菜单导航」）；fx23 区块断言改小节头三区在场
+- [x] page_label import 补齐（review_r18 模块级归位）；fx23 断言去 Button.type（AppTest 元素类型非按钮 kind）

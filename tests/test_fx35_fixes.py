@@ -377,7 +377,9 @@ def test_resume_hint_never_writes_page_widget_key():
 
     src = inspect.getsource(app_module.render_sidebar)
     start = src.find("_resume_hint")
-    end = src.find("七区菜单分组")
+    end = src.find("七区菜单导航")  # 批次 22 按钮式侧边栏后的区块名
+    if end == -1:
+        end = src.find("七区菜单分组")
     assert start != -1 and end != -1 and start < end, "灰注段未找到（结构漂移？）"
     segment = src[start:end]
     assert "session_state[" not in segment, segment

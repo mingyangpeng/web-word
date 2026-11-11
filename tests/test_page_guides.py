@@ -159,31 +159,23 @@ def test_every_page_renders_its_guide(page_key):
     assert page_label(page_key) in texts, f"{page_key}: 侧边栏标签与说明不一致"
 
 
-def test_sidebar_radio_uses_page_guides():
-    """app.py 源码级检查：radio 选项来自 PAGE_KEYS 的角色可见性过滤。
-
-    多人标注系统按角色过滤侧边栏入口（规范 §5/§6-4），过滤后的子集
-    仍必须以 PAGE_KEYS 为单一事实来源（_visible_page_keys 遍历 PAGE_KEYS），
-    不允许手写页面清单。
-    """
+def test_sidebar_nav_uses_page_label_and_visibility():
+    """app.py 源级检查（批次 22 按钮式侧边栏）：导航按钮走角色可见性过滤
+    ＋页名取自 page_label（与使用说明同源，不复制文案）。"""
     app_src = open(os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "src", "app.py"), encoding="utf-8").read()
-    assert "options=visible_keys" in app_src, "侧边栏未接角色可见性过滤（断链）"
     assert "def _visible_page_keys" in app_src, "缺角色可见性过滤函数"
     # 过滤必须以 PAGE_KEYS 为基准（防硬编码页面清单）
     assert "PAGE_KEYS" in app_src
-    # FX-23 七区菜单分组：format_func 换为 sidebar_option_label（区名前缀 +
-    # page_label 组合），页名仍须经 page_label 取（与使用说明同源，不复制文案）。
-    assert "format_func=sidebar_option_label" in app_src, \
-        "侧边栏选项标签未接七区前缀格式化（分组断链）"
-    assert "def sidebar_option_label" in app_src, "缺七区标签格式化函数"
-    assert "page_label(page_key)" in app_src, "七区标签绕过 page_label（页名漂移）"
+    # 导航按钮：visible_keys 经 _group_keys_by_zone 分区、label 取 page_label
+    assert "_group_keys_by_zone(visible_keys)" in app_src, \
+        "侧边栏未接角色可见性过滤（断链）"
+    assert "page_label(key)" in app_src, "导航按钮标签绕过 page_label（页名漂移）"
+    assert 'key=f"nav_{key}"' in app_src, "导航按钮键契约（nav_{key}）漂移"
     # 每个页面渲染函数都调用了 render_page_usage_guide
     for key in APP_PAGES:
         assert f'render_page_usage_guide("{key}")' in app_src, key
-
-
 def test_page_access_table_consistent_with_registration():
     """S3 清单 2 ＋ 批次 4-N 收编：六角色权威表与 legacy 投影表双检。
 

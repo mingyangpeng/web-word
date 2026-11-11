@@ -25,7 +25,7 @@ os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
 from src.app import sidebar_option_label  # noqa: E402  （FX-23 七区分组标签）
-from src.page_guides import PAGE_KEYS  # noqa: E402
+from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
 from src.users_db import create_user, ensure_user_tables  # noqa: E402
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -80,16 +80,36 @@ def _form_login(at, username: str, password: str):
     return at
 
 
+def _nav_buttons(at) -> list:
+    """侧边栏导航按钮（批次 22 升级：radio → 按钮式真侧边栏）。
+
+    导航按钮在 st.sidebar.container(key="ls_nav") 内按七区序渲染，label
+    即 page_label（与登录/退出/热门动词等按钮以 PAGE_KEYS 键集区分）。
+    返回按渲染序排列的按钮元素（顺序即七区序）。
+    """
+    label2key = {page_label(k): k for k in PAGE_KEYS}
+    out = []
+    for b in at.sidebar.button:
+        if str(b.label) in label2key:  # label=page_label 值（非键）
+            out.append(b)
+    return out
+
+
 def _radio_keys(at) -> list:
-    """侧边栏页面 radio 的当前选项，还原为页面键（AppTest 的 options 是
-    format_func 应用后的标签，这里用页面体系同源的 sidebar_option_label
-    反查回 PAGE_KEYS 的键 —— FX-23 七区分组后标签带「【区名】」前缀，
-    页名仍出自 page_label，故与 app 用同一格式化函数反查）。"""
-    radios = [r for r in at.sidebar.radio if r.label == "页面"]
-    if not radios:
-        return []
-    label2key = {sidebar_option_label(k): k for k in PAGE_KEYS}
-    return [label2key.get(str(o), str(o)) for o in radios[0].options]
+    """侧边栏可见页键（批次 22 起经导航按钮还原；函数名保留兼容调用面）。"""
+    label2key = {page_label(k): k for k in PAGE_KEYS}
+    return [label2key[str(b.label)] for b in _nav_buttons(at)
+            if str(b.label) in label2key]
+
+
+def _nav_click(at, key: str):
+    """点导航按钮切页（on_click 回调写 session_state["page"] 后 rerun）。"""
+    for b in _nav_buttons(at):
+        if str(b.label) == page_label(key):
+            b.click()
+            at.run()
+            return
+    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 def _run_page_as(page: str, user: dict):

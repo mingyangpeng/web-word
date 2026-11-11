@@ -82,21 +82,43 @@ def _new_at():
     )
 
 
-def _page_radio(at):
-    """侧边栏「页面」radio（分组后仍是单 radio，key="page" 不变）。"""
-    radios = [r for r in at.sidebar.radio if r.label == "页面"]
-    assert radios, "页面 radio 未渲染"
-    return radios[0]
+def _nav_buttons(at):
+    """侧边栏导航按钮（批次 22 按钮式侧边栏；label=page_label）。"""
+    return [b for b in at.sidebar.button
+            if str(b.label) in {page_label(k) for k in PAGE_KEYS}]
 
 
-def _radio_keys(at) -> list:
-    """radio 选项还原为页面键（options 为 format_func 加工后的标签）。"""
-    label2key = {sidebar_option_label(k): k for k in PAGE_KEYS}
-    return [label2key.get(str(o), str(o)) for o in _page_radio(at).options]
+def _nav_keys(at) -> list:
+    label2key = {page_label(k): k for k in PAGE_KEYS}
+    return [label2key[str(b.label)] for b in _nav_buttons(at)
+            if str(b.label) in label2key]
 
 
 def _radio_labels(at) -> list:
-    return [str(o) for o in _page_radio(at).options]
+    """兼容名：导航按钮标签序（七区序）。"""
+    return [str(b.label) for b in _nav_buttons(at)]
+
+
+def _radio_keys(at) -> list:
+    """侧边栏可见页键（导航按钮按七区序还原；批次 22 按钮式侧边栏）。"""
+    label2key = {page_label(k): k for k in PAGE_KEYS}
+    return [label2key[str(b.label)] for b in _nav_buttons(at)
+            if str(b.label) in label2key]
+
+
+def _radio_labels(at) -> list:
+    """兼容名：导航按钮标签序（七区序）。"""
+    return [str(b.label) for b in _nav_buttons(at)]
+
+
+def _goto(at, key: str):
+    """点导航按钮切页（on_click 写 session_state["page"] 后 rerun）。"""
+    for b in _nav_buttons(at):
+        if str(b.label) == page_label(key):
+            b.click()
+            at.run()
+            return
+    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 # ============================================
@@ -184,12 +206,17 @@ def test_anon_sees_only_browse_entries_grouped():
     for hidden in ANON_HIDDEN:
         assert hidden not in keys, f"未登录不得见 {hidden}"
 
-    # 区名前缀成块出现：前四页=查阅展示区，随后标注平台（语义建模区）、
-    # 帮助中心（系统管理区）
-    labels = _radio_labels(at)
-    assert labels[:4] == [sidebar_option_label(k) for k in ANON_VISIBLE[:4]]
-    assert labels[4].startswith("【语义建模】"), labels[4]  # RV21-5 去区 emoji
-    assert labels[5].startswith("【系统管理】"), labels[5]
+    # 批次 22 按钮式侧边栏：小节头（ls-nav-header）分块 + 按钮标签=页名。
+    # 前四页=查阅展示区，随后标注平台（语义建模区）、帮助中心（系统管理区）
+    headers = [m.value for m in at.markdown if "ls-nav-header" in m.value]
+    assert any("查阅展示" in h for h in headers), headers
+    assert any("语义建模" in h for h in headers), headers
+    assert any("系统管理" in h for h in headers), headers
+    # RV21-5 瘦身契约抽检：区名含于页名的页无前缀（语义分析等），此处六键
+    # 中标注平台应为「【语义建模】🏷️ 标注平台」形态
+    nav = _nav_buttons(at)
+    assert any(str(b.label) == page_label("annotate") for b in nav), \
+        "标注平台按钮形态漂移"  # AppTest Button.type=元素类型（'button'），kind 不外露
 
 
 # ============================================
@@ -243,8 +270,7 @@ def test_admin_all_seven_zones_all_17_pages_click_through():
 
     # 逐页点选（路由契约：key="page" 写 session_state，main() 按其分派）
     for key in PAGE_KEYS:
-        _page_radio(at).set_value(key)
-        at.run()
+        _goto(at, key)
         assert not at.exception, \
             [str(e.value) for e in at.exception] + [f"点选 {key} 后异常"]
         assert at.session_state["page"] == key, \
