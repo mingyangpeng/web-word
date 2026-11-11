@@ -1096,10 +1096,35 @@ def _render_five_metrics() -> None:
     有数据源的算真值（AI-人一致率/标注节省量/打回率），没有的如实灰注
     （替换测试通过率/体例质检通过率）—— 宁缺毋假，绝不编数字。
     降级纪律：数据库不可用时整卡灰注（值「—」＋降级文案），不是 0%。
+    FX-43：AI-人一致率卡升级为双口径回退链 —— 快照面（annotation_submissions.
+    ai_draft_snapshot）有数据 → 逐特征真值优先；无快照 → 回退 FX-19 台账
+    口径（caption 标「提案对照口径」）；两口径口径文案见 collab_metrics 两
+    NOTE 常量。
     """
     st.markdown(f"<h3 style='{HEADER_H3}'>🤝 协同度量五指标（规范 §5 · FX-19 补齐）</h3>",
                 unsafe_allow_html=True)
-    agreement = collab_metrics.ai_human_agreement_rate()
+    # FX-43 AI-人一致率双口径回退链：快照面有数据 → 逐特征真值优先（caption
+    # 标「逐特征口径（n 提交）」）；无快照/库不可用 → 回退 FX-19 台账口径
+    # （caption 标「提案对照口径」），台账自身不可用 → 整卡灰注（不可用 ≠ 0%）。
+    # 两口径分子/分母定义见 collab_metrics 的 FEATURE_AGREEMENT_NOTE /
+    # AGREEMENT_NOTE 两常量（口径单一事实源，本页只引用不另造）。
+    feature_agreement = collab_metrics.feature_level_agreement_rate()
+    agreement = None
+    if feature_agreement.get("rate") is not None:
+        agreement_rate = _fmt_rate(feature_agreement.get("rate"))
+        agreement_help = collab_metrics.FEATURE_AGREEMENT_NOTE
+        agreement_caption = (
+            f"逐特征口径（{feature_agreement.get('n_submissions', 0)} 提交）· "
+            "数据源：annotation_submissions.ai_draft_snapshot（FX-43）。"
+        )
+    else:
+        agreement = collab_metrics.ai_human_agreement_rate()
+        agreement_rate = _fmt_rate(agreement.get("agreement_rate"))
+        agreement_help = collab_metrics.AGREEMENT_NOTE
+        agreement_caption = (
+            "提案对照口径 · 数据源：ai_proposals kind='draft' 已裁决提案"
+            "（分母＝adopted+rejected+modified，pending 不计）。"
+        )
     savings = collab_metrics.annotation_savings()
     rejection = collab_metrics.writing_rejection_rate()
     substitution = collab_metrics.substitution_test_status()
@@ -1108,12 +1133,11 @@ def _render_five_metrics() -> None:
     row1 = st.columns(3)
     with row1[0]:
         st.metric(
-            "AI-人一致率", _fmt_rate(agreement.get("agreement_rate")),
-            help=collab_metrics.AGREEMENT_NOTE,
+            "AI-人一致率", agreement_rate,
+            help=agreement_help,
         )
-        if agreement.get("available"):
-            st.caption("数据源：ai_proposals kind='draft' 已裁决提案"
-                       "（分母＝adopted+rejected+modified，pending 不计）。")
+        if agreement is None or agreement.get("available"):
+            st.caption(agreement_caption)
         else:
             st.caption(f"灰注：{agreement.get('note')}")
     with row1[1]:

@@ -3458,6 +3458,31 @@ def render_submission_flow() -> None:
     _init_align = _align_prev if _align_prev in ALIGNMENT_OPTIONS else (
         _align_draft if _align_draft in ALIGNMENT_OPTIONS else "")
 
+    # FX-43 AI 初筛草稿快照（随提交落 ai_draft_snapshot，逐特征 AI-人一致率
+    # 的比对基准）。快照语义 =「AI 当初给的」——取上方「LLM 初筛草稿」展示
+    # 的同一组原始字段（llm_tag/llm_schema/llm_align/llm_reason，即表单预填
+    # 来源 _adm_draft/_schema_draft/_align_draft），**不含人工修改后的值**
+    # （表单最终值在 payload）。只收 AI 真给到的键（空值不入快照，防「空串
+    # 特征」假分歧）；草稿字段全空 = 该义位无 AI 草稿 → ai_draft=None
+    # （落列默认 NULL，RV2-3 口径：不用空对象冒充有草稿）。准入值取表单预填
+    # 同源的 _LLM_TAG_TO_ADMIT 映射值（与 payload["admission"] 同值域，逐键
+    # 比对才可比；llm_tag 原文是权威层存储值域（Y／拓展／N），不作比对键值）。
+    _ai_draft: Optional[Dict[str, str]] = None
+    if (str(sense.get("llm_tag") or "").strip()
+            or str(sense.get("llm_schema") or "").strip()
+            or str(sense.get("llm_align") or "").strip()):
+        _ai_draft = {}
+        if _adm_draft:
+            _ai_draft["admission"] = _adm_draft
+        if _schema_draft:
+            _ai_draft["schema"] = _schema_draft
+        if _align_draft:
+            _ai_draft["alignment"] = _align_draft
+        _draft_reason = str(sense.get("llm_reason") or "").strip()
+        if _draft_reason:
+            _ai_draft["reason"] = _draft_reason
+        _ai_draft = _ai_draft or None
+
     with st.form(f"submission_form_{sid}"):
         f1, f2 = st.columns(2)
         admission = f1.radio(
@@ -3501,13 +3526,21 @@ def render_submission_flow() -> None:
                 # payload 全在 schema 内；task_type 是工具身份不入 ctx，页面原
                 # 直调传的也是字面 "admission"；ai_assisted schema 默认 True 与
                 # 直调形参默认同值）。原调用点无 st.cache_data，缓存纪律无涉。
+                # FX-43 捕获点分流：AdmissionTool params_schema 不含 ai_draft
+                # （merge_params 契约：schema 外的 ctx 键忽略，无法透传快照），
+                # 故带草稿的提交走直调分支传 ai_draft（入参与工具路径逐参数
+                # 等价，仅多传快照）；无草稿（ai_draft=None，快照落列默认 NULL
+                # 与旧调用一致）维持 FX-35 工具优先接线不变。
                 _admission_tool = get_tool("admission")
-                _submitted = (
-                    _admission_tool.run({"category": "motion", "sense_id": sid,
-                                         "coder_id": coder_id, "payload": payload})
-                    if _admission_tool is not None else
-                    submit_annotation("motion", sid, "admission", coder_id, payload)
-                )
+                if _admission_tool is not None and _ai_draft is None:
+                    _submitted = _admission_tool.run(
+                        {"category": "motion", "sense_id": sid,
+                         "coder_id": coder_id, "payload": payload})
+                else:
+                    _submitted = submit_annotation(
+                        "motion", sid, "admission", coder_id, payload,
+                        ai_draft=_ai_draft,
+                    )
                 if _submitted:
                     st.success(f"✅ {sense_id_label} 提交成功"
                                f"（同一义位重复提交=覆盖更新，覆盖后需重新审核）")

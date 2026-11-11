@@ -6,13 +6,17 @@
 保持不动）；本模块补齐其余五指标的**数据源勘察结论、计算口径与降级纪律**
 （宁缺毋假：有数据源的算真值，没有的如实灰注，绝不编数字）。
 
-五指标数据源勘察表（FX-19，2024-11 勘察；页面卡片与本文档口径一致）：
+五指标数据源勘察表（FX-19，2024-11 勘察；页面卡片与本文档口径一致。
+FX-43 起 AI-人一致率升级为**双口径**：逐特征真值优先、台账对照回退）：
 
   ================  ===========================  ==========  ==============================
   指标              数据源                        可算/灰注   口径一句话
   ================  ===========================  ==========  ==============================
-  AI-人一致率       ai_proposals(kind='draft')   可算*       完全一致(adopted)÷已裁决草稿提案
-                    已裁决提案 vs 人工裁决                    （modified=部分一致不入分子）
+  AI-人一致率       annotation_submissions.     可算*       优先逐特征口径：快照 vs payload
+                    ai_draft_snapshot（FX-43）               逐键比对，一致÷可比特征总数；
+                    ／快照面无数据回退                        快照面无数据回退台账口径：
+                    ai_proposals(kind='draft')               adopted÷已裁决草稿提案（modified
+                    已裁决提案 vs 人工裁决                    不入分子）
   标注节省量        ai_proposals(kind='draft')   可算（估算）(采纳+修改后采纳)×3.0 分钟/条
                     adopted+modified 计数                     （工程估算，非实测，页面带徽章）
   打回率            writing_db.review_tasks      可算        (打回修订+直接否决)÷已出结论审校轮
@@ -23,14 +27,17 @@
                     无 run 记录 → 灰注                        failed)，warn 单列不入分母
   ================  ===========================  ==========  ==============================
 
-  * AI-人一致率的「可算」是**台账三值裁决口径**的退路实现：annotation_submissions
-    只存 ai_assisted 布尔标志（DDL 注释「全员看同样 AI 草稿（用户决策③）」），
-    **不落 AI 草稿内容快照**，逐特征比对不可行；adjudications.gold_payload 是
-    人工定稿而非 AI 草稿，同样比对不了。故按勘测指令退而用 ai_proposals 的
-    draft 提案与其后人工裁决对照（完全一致=adopted / 部分一致=modified /
-    不一致=rejected）。局限：台账只存三值裁决，该口径数值上等同 draft 通道
-    「严格采纳率」（采纳率分子计入 modified，本指标不计，二者有别）；待
-    annotation_submissions 留存 AI 草稿快照后应升级为逐特征一致率。
+  * AI-人一致率 FX-19 交付时是**台账三值裁决口径**的退路实现（彼时
+    annotation_submissions 只存 ai_assisted 布尔标志，不落 AI 草稿内容快照，
+    逐特征比对不可行）。FX-43 起提交链落 AI 初筛草稿原始值快照
+    （annotation_submissions.ai_draft_snapshot，NULL=无 AI 草稿，RV2-3 口径），
+    升级为**逐特征真值口径**（feature_level_agreement_rate：快照 vs 人工提交
+    payload 逐键比对，分母=两侧都有的键）—— 论文核心指标 AI-人一致率的口径
+    强化。页面接线为回退链：快照面有数据 → 逐特征真值；无数据（存量提交无
+    快照/纯人工提交/库不可用）→ 回退 FX-19 台账口径（ai_proposals kind='draft'
+    已裁决提案对照，完全一致=adopted / 部分一致=modified 不入分子 /
+    不一致=rejected）。台账口径局限不变：只存三值裁决，数值上接近 draft 通道
+    「严格采纳率」（采纳率分子计入 modified，本口径不计，二者有别）。
 
   ** 体例质检通过率的「可算」自 FX-25 起：数据源 style_check_runs（引擎
     src/style_check.run_style_check 落库，通过率公式与 warn 口径单一事实源
@@ -52,8 +59,9 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
+from src.annotation_flow import parse_payload  # FX-43：JSON 列解析单一实现点
 from src.mysql_db import get_db_cursor
 from src.style_check import list_recent_runs, pass_rate_from_counts
 
@@ -63,12 +71,27 @@ logger = logging.getLogger(__name__)
 # 常量（口径单一事实源；页面 tooltip 直接引用）
 # ============================================
 
-# AI-人一致率 · 数据源与局限说明（页面 caption/tooltip 引用）
+# AI-人一致率 · 台账回退口径说明（页面 caption/tooltip 引用；FX-43 起本口径
+# 降为快照面无数据时的回退，逐特征口径见 FEATURE_AGREEMENT_NOTE）
 AGREEMENT_NOTE = (
-    "口径：完全一致（adopted）÷ 已裁决草稿提案（adopted+rejected+modified，pending 不计）；"
-    "修改后采纳（modified）= 部分一致，保守口径不入分子。数据源：ai_proposals kind='draft'"
-    "（annotation_submissions 不落 AI 草稿快照，逐特征比对暂不可行）；局限：台账仅三值裁决，"
-    "数值上接近 draft 通道严格采纳率 —— 待提交表留存 AI 草稿快照后升级为逐特征一致率。"
+    "口径（提案对照口径，回退）：完全一致（adopted）÷ 已裁决草稿提案"
+    "（adopted+rejected+modified，pending 不计）；修改后采纳（modified）= 部分一致，"
+    "保守口径不入分子。数据源：ai_proposals kind='draft' 已裁决提案与人工裁决对照。"
+    "FX-43 起提交表已落 AI 草稿快照（ai_draft_snapshot），快照面有数据时优先展示"
+    "逐特征口径（feature_level_agreement_rate）；快照面无数据（存量提交无快照/"
+    "纯人工提交）才回退本口径。局限：台账仅三值裁决，数值上接近 draft 通道"
+    "严格采纳率。"
+)
+
+# AI-人一致率 · 逐特征真值口径说明（FX-43；页面 tooltip 引用，两口径单一事实源）
+FEATURE_AGREEMENT_NOTE = (
+    "口径（逐特征口径，FX-43 真值）：提交时落库的 AI 初筛草稿快照"
+    "（ai_draft_snapshot，「AI 当初给的」原始值）与人工提交 payload 逐键比对 ——"
+    "一致特征数 ÷ 可比特征总数（分母 = 快照与 payload 两侧都有的键，单侧独有的"
+    "键不计：AI 没给或人没填都不构成比对；聚合全部带快照提交，值按 JSON 反序列化"
+    "后的字面值直比，不做空白/类型归一以免掩盖真分歧）。数据源："
+    "annotation_submissions.ai_draft_snapshot（FX-43 起提交链落快照）；"
+    "快照面无数据时回退提案对照口径。"
 )
 
 # 标注节省量 · 单条平均耗时假设（**工程估算**，非实测：出处类型＝工程估算）。
@@ -226,6 +249,121 @@ def ai_human_agreement_rate() -> Dict[str, Any]:
     )
     result.update({"available": True, "note": AGREEMENT_NOTE})
     return result
+
+
+# ============================================
+# 指标 1b · AI-人一致率（逐特征真值口径，FX-43；
+#            快照面无数据时页面回退上方台账口径）
+# ============================================
+def feature_level_agreement_from_rows(rows: Any) -> Dict[str, Any]:
+    """逐特征一致率纯聚合（FX-43 分子/分母在这里算，测试直接断言）。
+
+    口径（FEATURE_AGREEMENT_NOTE 同源）：
+      * 输入 rows = 取数层喂入的提交行（payload / ai_draft_snapshot 两 JSON 列，
+        PyMySQL 对 JSON 列可能给 str 或 dict —— parse_payload 统一解析）；
+      * 单条提交的可比键 = 快照与 payload **两侧都有的键**（单侧独有不计：
+        AI 没给或人没填都不构成「比对」）；逐键值按 JSON 反序列化后的字面值
+        直比（==），相等计一致 —— 不做空白/类型归一，归一会掩盖真分歧；
+      * 聚合：matched = 一致特征数；n_features = 可比特征总数；
+        n_submissions = 快照可解析且非空的提交条数（脏快照/空对象不进比对面，
+        RV2-3：空对象不冒充有草稿）；n_features = 0 → rate = None
+        （「还没有可比特征」≠ 0%，与模块 *_rate4 纪律同源）。
+
+    Returns:
+        dict: {"rate": float|None, "n_submissions": int, "n_features": int,
+        "matched": int}（4 位小数比率或 None）。
+    """
+    matched = 0
+    n_features = 0
+    n_submissions = 0
+    for row in rows or []:
+        snapshot = parse_payload(row.get("ai_draft_snapshot"))
+        if not snapshot:
+            continue  # 快照解析失败/空对象：不冒充可比（RV2-3），不进 n_submissions
+        payload = parse_payload(row.get("payload"))
+        n_submissions += 1
+        for key in snapshot.keys() & payload.keys():
+            n_features += 1
+            if snapshot[key] == payload[key]:
+                matched += 1
+    return {
+        "rate": _rate4(matched, n_features),
+        "n_submissions": n_submissions,
+        "n_features": n_features,
+        "matched": matched,
+    }
+
+
+def _fetch_snapshot_submissions(
+    category: Optional[str], task_type: Optional[str], limit: int
+) -> Optional[List[Dict[str, Any]]]:
+    """取 ai_draft_snapshot 非空的提交行（payload 同行带出，本模块只读查询）。
+
+    WHERE 片段全是常量文本（category/task_type 过滤按需拼接），值一律参数化
+    （模块纪律 1）；ORDER BY id DESC 取**最近** limit 条（协同度量反映当前
+    标注面，最旧快照属历史口径）。数据库不可用/表未建/列未迁移（MySQL 1054
+    Unknown column，存量库尚未跑 FX-43 迁移）统一返回 None，上层降级为零值面
+    （消费方回退台账口径，不抛异常）。
+
+    Args:
+        category: 范畴过滤；None = 不限（页面总卡的跨范畴聚合口径）。
+        task_type: 任务类型过滤；None = 不限。
+        limit: 取数上限（>0；非法值回落 500）。
+
+    Returns:
+        list[dict] | None: 提交行列表；数据库不可用返回 None。
+    """
+    cap = limit if isinstance(limit, int) and not isinstance(limit, bool) and limit > 0 else 500
+    conditions: List[str] = ["ai_draft_snapshot IS NOT NULL"]
+    params: List[Any] = []
+    if category:
+        conditions.append("category = %s")
+        params.append(category)
+    if task_type:
+        conditions.append("task_type = %s")
+        params.append(task_type)
+    sql = (
+        "SELECT payload, ai_draft_snapshot FROM annotation_submissions WHERE "
+        + " AND ".join(conditions)
+        + " ORDER BY id DESC LIMIT %s"
+    )
+    params.append(cap)
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, tuple(params))
+            return [dict(r) for r in cursor.fetchall()]
+    except Exception as e:  # noqa: BLE001 —— 库断连/表未建/列未迁移统一降级
+        logger.error(f"取带 AI 草稿快照的提交失败（逐特征一致率降级）: {e}")
+        return None
+
+
+def feature_level_agreement_rate(
+    category: Optional[str] = None, task_type: Optional[str] = None,
+    limit: int = 500,
+) -> Dict[str, Any]:
+    """AI-人一致率（逐特征真值口径，FX-43；见 FEATURE_AGREEMENT_NOTE）。
+
+    与台账口径（ai_human_agreement_rate）的关系：本函数是**优先口径** ——
+    提交表自 FX-43 起落 AI 初筛草稿原始值快照，可做逐键真值比对；快照面无
+    数据（返回 rate=None）时消费方（collab_pages 指标卡）回退台账口径，
+    caption 标「提案对照口径」。两口径的分母/分子定义见各自 NOTE 常量与本
+    模块 docstring 勘察表 * 注。
+
+    Args:
+        category: 范畴过滤；None = 跨范畴聚合（协同度量页总卡口径）。
+        task_type: 任务类型过滤（'admission'|'feature_coding'|'alignment'）；
+            None = 不限。
+        limit: 参与聚合的带快照提交上限（默认 500，取最近优先）。
+
+    Returns:
+        dict: {"rate": float|None, "n_submissions": int, "n_features": int,
+        "matched": int}。快照面无数据 / 数据库不可用 → {"rate": None, 其余 0}
+        （「还没数据」≠ 0%，消费方维持回退，不抛异常）。
+    """
+    rows = _fetch_snapshot_submissions(category, task_type, limit)
+    if rows is None:
+        return {"rate": None, "n_submissions": 0, "n_features": 0, "matched": 0}
+    return feature_level_agreement_from_rows(rows)
 
 
 # ============================================
