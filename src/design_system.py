@@ -1101,5 +1101,49 @@ pre code {{
     border: none;
     border-top: 1px solid var(--ls-hairline);
 }}
+
+/* ══════════ 侧边栏导航行：未选中透明（悬停浅灰）、选中 accent 药丸 ══
+   !important：压过 Streamlit emotion 内联生成样式（主题 primaryColor 已
+   同步 #0071E3，双保险） */
+.st-key-ls_nav .stButton > button {{
+    width: 100%;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--ls-text) !important;
+    font-weight: 500;
+}}
+.st-key-ls_nav .stButton > button:hover {{
+    background: rgba(0, 0, 0, 0.05) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}}
+.st-key-ls_nav .stButton > button[kind="primary"],
+.st-key-ls_nav .stButton > button[kind="primary"]:hover {{
+    background: var(--ls-accent) !important;
+    color: #ffffff !important;
+}}
+.st-key-ls_nav .stButton > button p {{
+    color: var(--ls-text) !important;
+    width: 100%;
+}}
+.st-key-ls_nav .stButton > button[kind="primary"] p {{
+    color: #ffffff !important;
+}}
+
+/* ══════════ 小节头：灰阶小字（Apple 侧栏节头） ══════════ */
+.ls-nav-header {{
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ls-text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 14px 2px 4px 2px;
+}}
+
+/* ══════════ 主区顶部留白收紧 ══════════ */
+[data-testid="stMainBlockContainer"] {{
+    padding-top: 1.6rem;
+}}
 </style>
 """

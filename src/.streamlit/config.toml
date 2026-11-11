@@ -1,3 +1,14 @@
+# ═══ Apple 设计语言主题（批次 21-2）：原生控件（radio/checkbox/slider/
+# primary 按钮/焦点/进度）全部走 primaryColor——单一强调色 Apple Blue
+# #0071E3（白字 4.7:1 ✓）。design_system.get_global_theme_css 在此之上做
+# 装饰层（圆角/阴影/布局），两者色值一致。
+[theme]
+primaryColor = "#0071E3"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F5F5F7"
+textColor = "#1D1D1F"
+font = "sans serif"
+
 [server]
 headless = true
 port = 8501
