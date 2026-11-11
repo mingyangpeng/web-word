@@ -578,7 +578,9 @@ def _sha256_file(path: Any) -> Optional[str]:
         with open(str(path), "rb") as f:
             for chunk in iter(lambda: f.read(65536), b""):
                 digest.update(chunk)
-    except OSError as e:
+    except (OSError, ValueError) as e:
+        # RV4-2：ValueError 一并拦——NUL byte 路径（os 层拒绝）在部分平台抛
+        # ValueError 而非 OSError，漏接会带着 traceback 崩页
         logger.warning(f"计算资产 sha256 失败（path={path!r}）: {e}")
         return None
     return digest.hexdigest()
