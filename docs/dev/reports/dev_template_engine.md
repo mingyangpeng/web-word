@@ -18,7 +18,9 @@
 | 槽位实例化 | 单义位特征向量 → 四维模板（图式/语义参数/句法/对齐预留）+ OALD 原文对照 | `instantiate_template(category, language, sense_id, engine_schema=None)` |
 | 模板文字生成 | 确定性槽位拼装，**不调 LLM**，词面全部来自 features.yaml | `render_template_text(...)` / `build_template(...)` |
 | 批量导出 | 当前簇全部义位 → CSV（§6.4 列结构）+ 结构化 JSON | `collect_cluster_templates` / `build_export_csv` / `build_export_json` |
-| 页面（集成步骤接线） | 簇选择 → 母图式两栏卡片 → 义位实例化卡片 → OALD 并排对照 → 两个导出按钮 | `render_template_page()` |
+| 页面（集成步骤接线） | 簇选择 → 母图式两栏卡片 → 同簇并排总览 → 义位实例化卡片 → OALD 并排对照 → 人工修订（版本留痕）→ 两个导出按钮 | `render_template_page()` |
+| 同簇并排总览（FX-38） | 整簇义位「词典原文 vs 模板化释义」一屏对照表；修订行带「已修订（vN）」标记 | `overview_rows(templates, revisions)`（纯函数）+ 页内 `st.dataframe` |
+| 在线人工修订（FX-38） | 编纂职能 editor/reviewer/dict_admin 在线改模板文本＋优化要点，按版本留痕；引擎输出并存为基线；库离线整块降级 | `src/template_revision_db.py`（save/get_latest/get_latest_revisions/list_revisions/get_latest_notes） |
 
 ## 2. 架构与数据流
 
@@ -153,22 +155,40 @@ schema_core: 主体-人 0.765 / 主体-动物 0.824 / 介质-陆地 1.0
 
 `render_template_page()`（app.py 接线由集成步骤统一做）：
 范畴 → 语言 → 簇 → 母图式两栏卡片（核心要素 vs 可变槽位，槽位带取值分布）
+→ **同簇并排总览（FX-38）**：`instantiate_templates` 批量实例化整簇 +
+`template_revision_db.get_latest_revisions` 批量取修订 → `overview_rows`
+纯函数行构造 → `st.dataframe`（TextColumn width=large，域系页先例同款；
+词典原文列来源随语言标注 OALD10/现汉7）
 → 簇内义位 → 实例化模板卡片（四维分栏）→ 与词典原文并排对照 →
-「生成当前簇全部模板」按钮 → CSV / JSON 两个下载。
+**人工修订面板（FX-38）**：现行修订 info（版本/修订人/优化要点）+ 修订
+表单（textarea 预填现行文本 + 优化要点 input；`require_role_interactive`
+页面闸 + 数据层 `require_role` 二次闸；成功 `ui_kit.flash` + `st.rerun`，
+RV12-2 纪律）+ 修订历史 expander（version DESC）；无编纂职能角色降级只读
+→ 「生成当前簇全部模板」按钮 → CSV（FX-38：有修订义位自动回填「优化要点」
+列，列结构 10 列不变）/ JSON 两个下载。
 AppTest 无头冒烟验证：无异常、簇切换正常、17 条模板生成、两个下载控件渲染
 （streamlit 1.57 的下载数据走 deferred blob，AppTest 树中不可直接读字节，
-载荷正确性由单元测试覆盖）。库不可用时按全库惯例降级提示，不崩。
+载荷正确性由单元测试覆盖）。库不可用时按全库惯例降级提示，不崩——FX-38
+三处（并排总览修订列 / 修订面板 / CSV 回填）各自 fail-open，页面其余功能
+不受影响。
 
 ## 7. 测试
 
-`tests/test_template_engine.py` 29 项，全绿（`pytest -q`：443 基线 → 472，零回归）：
+`tests/test_template_engine.py`（FX-38 后 37 项）＋
+`tests/test_template_revision_db.py`（FX-38 新增 16 项：守卫/清洗不碰库
+＋集成类走独立库 `web\_word\_template\_revision\_test`，grant 脚本已补
+三 host 授权），全绿；页面说明锚点测试（test_page_guides.py）锚「母图式」
+「确定性槽位拼装」保持命中：
 
 | 层 | 覆盖 |
 |---|---|
 | 母图式提炼（合成矩阵，不碰库） | binary 均值 1.0/0.5 边界/0.25 归属正确；序数同值→核心、分歧→槽位；全 0 剔除；A 组不进图式；空簇；四图式映射（P1→源点脱离、P2/P3→终点抵达、追逐→互动位移、无路径→方式伴随、无 defs→None） |
 | 槽位实例化（合成数据） | 四维字段齐全；中文 label/值标签逐项对齐 features.yaml（源点凸显/人主体/自主/陆地介质）；OALD 语法码剥离；及物性摘要；模板文字确定性（两次调用逐字符相同）+ 随向量变化（flee 式）+ 无簇回退 |
-| 导出（合成数据） | CSV 首个 `=` 开头单元格被前置单引号（防公式注入全表断言）；列结构 = §6.4 表；JSON 四维键 round-trip |
+| 导出（合成数据） | CSV 首个 `=` 开头单元格被前置单引号（防公式注入全表断言）；列结构 = §6.4 表；JSON 四维键 round-trip；FX-38 notes 回填（按 sense_id 填「优化要点」，缺省 None 与历史输出逐字节一致） |
+| 并排总览行构造（FX-38，纯函数） | 基础字段/引擎基线标记；修订覆盖与「已修订（vN）」标记；无修订占位"—"；非法输入跳过/退化；混合修订逐行标记 |
 | 配置桥接 | motion 直取；RUN + 观测编码列 → motion；无候选包抛 CategoryPackError |
+| 修订数据层（FX-38，不碰库） | 未登录/viewer/annotator PermissionError；定位三元组与文本/note/sense_ref 清洗拒收；CAN_REVISE_ROLES 与 lexical_pages.CAN_EDIT_ROLES 同集钉死；allowed 空 fail-closed 回归护栏 |
+| 修订数据层（FX-38，独立库集成） | 建表幂等；版本原子自增 1→2→3；latest 取最大版；批量/历史排序/多范畴隔离；无修订义位 fail-open 空读；viewer 写路径真表复核 |
 | MySQL 路径（不可用 skipif，与 test_category_study 同口径） | 真 RUN 数据：英 5 簇提炼、核心/槽位 ⊆ in_clustering 特征集；run-S1 实例化对照论文样例（簇4→方式伴随图式、C1=自主、M1a=人主体）；簇4 全量 17 条导出 CSV/JSON 校验 |
 
 flake8（max-line-length=100）对两个新文件零告警。
