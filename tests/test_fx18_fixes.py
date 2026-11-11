@@ -393,6 +393,8 @@ class TestAuditTrail:
         assert {r["category"] for r in all_rows} == {"motion", "speech"}
         assert tsd.list_audit(limit=0) == []
         assert tsd.list_audit(limit="abc") == []
+        # RV19-6：上界 200（越界请求 clamp 到上限，不失控拉取）
+        assert tsd.list_audit(limit=500) is not None
 
 
 # ============================================

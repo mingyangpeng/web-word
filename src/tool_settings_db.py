@@ -568,7 +568,8 @@ def bind_registry_loader(bind: bool = True) -> None:
 def list_audit(limit: int = 50, category: Optional[str] = None) -> List[Dict[str, Any]]:
     """审计行读（created_at 倒序；limit≤0 或非法 → []，库不可用 → []）。"""
     try:
-        limit_n = int(limit)
+        # RV19-6：上限 200（审计读取防失控拉取；默认 50 在界内）
+        limit_n = min(int(limit), 200)
     except (TypeError, ValueError):
         return []
     if limit_n <= 0:
