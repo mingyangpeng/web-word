@@ -406,8 +406,18 @@ def _patch_ledger_stubs(monkeypatch, stats=None, stages=None):
 
 
 def _patch_metric_stubs(monkeypatch):
-    """打桩 collab_metrics 五指标（collab_pages 经模块属性调用，补丁即刻生效）。"""
+    """打桩 collab_metrics 五指标（collab_pages 经模块属性调用，补丁即刻生效）。
+
+    FX-43 适配：AI-人一致率卡升级双口径回退链后，页面先取
+    feature_level_agreement_rate（快照面）——本夹具把它钉为「快照面无数据」
+    零值面，页面回退台账口径桩（_STUB_AGREEMENT），原有断言语义不变（页面
+    用例不依赖开发库快照内容）；快照面真值路径的页面用例归 tests/
+    test_fx43_fixes.py。
+    """
     monkeypatch.setattr(cm, "ai_human_agreement_rate", lambda: dict(_STUB_AGREEMENT))
+    monkeypatch.setattr(cm, "feature_level_agreement_rate",
+                        lambda *a, **k: {"rate": None, "n_submissions": 0,
+                                         "n_features": 0, "matched": 0})
     monkeypatch.setattr(cm, "annotation_savings", lambda: dict(_STUB_SAVINGS))
     monkeypatch.setattr(cm, "writing_rejection_rate", lambda: dict(_STUB_REJECTION))
     monkeypatch.setattr(cm, "substitution_test_status", lambda: dict(_STUB_SUBSTITUTION))

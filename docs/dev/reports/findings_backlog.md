@@ -310,3 +310,12 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] ui.default_category 跨页消费——五处范畴下拉接 get_pref（semantic ss_category／cluster ca_category／template cat_code 补 index／dict_admin 漏斗＋质检两处）；widget key 不动、偏好不在选项集回退、首建后手选不劫持（FX-41，25 测试）
 - [x] 书签 sense 锚跳转——标注平台动词选择加 key="annotate_verb"＋书签回调写两键（page=annotate＋annotate_verb；verb 从 title「walk-S1 …」提取，Pilot 集外行为如实测试）；entry 锚维持挂账（FX-42，24 测试）
 - [x] 顺带：dict_admin_pages 基线 F821 死行清除（FX-41）
+
+## 批次 23（2026-11-11 · AI-人一致率升级为逐特征真值）
+
+> FX-43 单路交付。全量 **2845 passed / 0 failed**（批次 22 基线 2805 → +40）。8501 容器同步重建（Docker daemon 重启＋build＋up，健康验证 ✓）。
+
+- [x] AI 草稿快照落库——annotation_submissions 补 ai_draft_snapshot JSON NULL（ALTER-only 幂等迁移＋1060 白名单，迁移核提炼 _add_columns_if_missing 共用）；submit_annotation 加 ai_draft 可选参（None=旧 SQL 逐字节一致零破坏）；捕获点=标注平台提交处 AI 初筛草稿原始值（llm_tag/llm_schema/llm_align/llm_reason→映射值域，空值不入快照防假分歧）
+- [x] 逐特征一致率口径——collab_metrics.feature_level_agreement_rate（快照 vs payload 逐键比对：一致数÷可比键总数，单侧独有键不计，聚合带快照提交）；指标页回退链：快照面有→逐特征真值（caption「逐特征口径（n 提交）」）→无→台账提案对照口径→断库灰注
+- [x] 测试 40 条：迁移幂等/1060/submit 两态/三态聚合/回退链 AppTest/真库端到端 0.8 对表
+- 备注：存量提交无快照 → 回退口径自然生效；新提交起逐特征真值累积

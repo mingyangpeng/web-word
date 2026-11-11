@@ -141,6 +141,18 @@ ASSIGNMENTS_ROUND_COLUMNS = (
      "ALTER TABLE assignments ADD COLUMN training TINYINT(1) NULL DEFAULT NULL"),
 )
 
+# FX-43 AI 初筛草稿快照列（ALTER-only 幂等迁移，照 ASSIGNMENTS_ROUND_COLUMNS
+# 先例）：annotation_submissions 补 ai_draft_snapshot JSON NULL，落提交时的
+# AI 初筛草稿原始值（「AI 当初给的」，不含人工修改后的值 —— 修改后的最终值
+# 在 payload）。NULL 口径遵循仓库 RV2-3「留痕列 NULL 口径」：NULL = 提交时
+# 无 AI 草稿（纯人工/系统提交），不用空对象 {} 冒充「有草稿」。建表 SQL 保持
+# 规范 §2 DDL 原样不动，存量库与新库统一走「建旧形 → 探测补列」同一条迁移
+# 路径（仿 media_db.MEDIA_BINDINGS_AUDIT_COLUMNS 先例）。
+SUBMISSION_AI_DRAFT_COLUMNS = (
+    ("ai_draft_snapshot",
+     "ALTER TABLE annotation_submissions ADD COLUMN ai_draft_snapshot JSON NULL"),
+)
+
 # assignments.status 实际枚举（规范 §2 DDL ENUM，test_status_constants_match_ddl_enum
 # 锁定）。规范 §8 写「改派仅限 draft/rejected」，码内无此二字面值 —— 以码为准的
 # 映射口径见 REASSIGNABLE_ASSIGNMENT_STATUSES 注释。
@@ -328,8 +340,9 @@ def ensure_flow_tables() -> None:
     """幂等创建 flow 三表：assignments / annotation_submissions / adjudications
     （规范 §2 DDL 原样，CREATE TABLE IF NOT EXISTS，可重复调用）。
 
-    建表后随做 FX-20 试标轮两列的幂等迁移（``_migrate_assignments_round_columns``，
-    information_schema 探测、已有则跳过 —— 存量库与新库同一条路径）。
+    建表后随做两段幂等迁移（information_schema 探测、已有则跳过 —— 存量库与
+    新库同一条路径）：FX-20 试标轮两列（``_migrate_assignments_round_columns``）
+    ＋ FX-43 AI 初筛草稿快照列（``_migrate_submissions_ai_draft_column``）。
 
     外键引用 users 与 oald_senses：集成时先调 ``users_db.ensure_user_tables()``
     （users 表为空还会得到内置 admin），并确保 ``mysql_db.init_database()`` 已建
@@ -341,6 +354,7 @@ def ensure_flow_tables() -> None:
             for ddl in _FLOW_TABLE_DDLS:
                 cursor.execute(ddl)
             _migrate_assignments_round_columns(cursor)
+            _migrate_submissions_ai_draft_column(cursor)
     except pymysql.Error as e:
         if _is_dup_column_error(e):
             # RV14-4：1060（Duplicate column）= 并发首启的第二进程在探测窗口后
@@ -358,8 +372,8 @@ def _is_dup_column_error(e: BaseException) -> bool:
     return isinstance(e, pymysql.Error) and bool(e.args) and e.args[0] == 1060
 
 
-def _migrate_assignments_round_columns(cursor) -> None:
-    """assignments 存量结构迁移：补 round / training 两列（幂等，FX-20）。
+def _add_columns_if_missing(cursor, table: str, columns, label: str) -> None:
+    """缺列补列的公共迁移核（FX-20/FX-43 两段迁移共用，行为口径不变）。
 
     ALTER-only：column_exists 探测（information_schema，走 db_utils 单一实现）→
     缺列才 ADD COLUMN；二次执行探测命中直接跳过，不炸不重复加列。ALTER 逐条
@@ -367,19 +381,41 @@ def _migrate_assignments_round_columns(cursor) -> None:
     成功继续探测下一列；其余 pymysql.Error 向上抛，由 ensure_flow_tables
     的外层 try/except 记日志（不抛），页面可继续渲染。
     """
-    for column, sql in ASSIGNMENTS_ROUND_COLUMNS:
-        if not _column_exists(cursor, "assignments", column):
+    for column, sql in columns:
+        if not _column_exists(cursor, table, column):
             try:
                 cursor.execute(sql)
             except pymysql.Error as e:
                 if not _is_dup_column_error(e):
                     raise
                 logger.info(
-                    f"assignments.{column} 已由并发进程补齐"
+                    f"{table}.{column} 已由并发进程补齐"
                     "（MySQL 1060，幂等自愈继续，RV14-4）"
                 )
                 continue
-            logger.info(f"assignments.{column} 列已补齐（FX-20 试标轮迁移）")
+            logger.info(f"{table}.{column} 列已补齐（{label}）")
+
+
+def _migrate_assignments_round_columns(cursor) -> None:
+    """assignments 存量结构迁移：补 round / training 两列（幂等，FX-20）。
+
+    ALTER-only 幂等迁移核见 _add_columns_if_missing（本函数是 assignments
+    试标轮两列的入口签名，tests/test_fx20_fixes.py 直调锁定）。
+    """
+    _add_columns_if_missing(cursor, "assignments", ASSIGNMENTS_ROUND_COLUMNS,
+                            "FX-20 试标轮迁移")
+
+
+def _migrate_submissions_ai_draft_column(cursor) -> None:
+    """annotation_submissions 存量结构迁移：补 ai_draft_snapshot 列（FX-43）。
+
+    同款 ALTER-only 幂等迁移核（_add_columns_if_missing，含 MySQL 1060
+    白名单）；列语义与 NULL 口径见 SUBMISSION_AI_DRAFT_COLUMNS 注释（RV2-3：
+    NULL=无 AI 草稿，不用空对象冒充）。
+    """
+    _add_columns_if_missing(cursor, "annotation_submissions",
+                            SUBMISSION_AI_DRAFT_COLUMNS,
+                            "FX-43 AI 草稿快照迁移")
 
 
 # ============================================
@@ -392,6 +428,7 @@ def submit_annotation(
     coder_id: int,
     payload: dict,
     ai_assisted: bool = True,
+    ai_draft: Optional[Dict] = None,
 ) -> bool:
     """提交/覆盖一条标注（INSERT ... ON DUPLICATE KEY UPDATE）。
 
@@ -406,6 +443,13 @@ def submit_annotation(
         coder_id: 标注员 id（users.id）
         payload: 标注内容（结构见 validate_payload；非法值直接拒绝，不进库）
         ai_assisted: 是否基于 AI 草稿标注（用户决策③：全员看同样草稿，默认 True）
+        ai_draft: AI 初筛草稿**原始值**快照（FX-43，「AI 当初给的」，不含人工
+            修改后的值 —— 修改后的最终值在 payload）；ensure_ascii=False 序列化
+            后落 ai_draft_snapshot 列，供逐特征 AI-人一致率比对
+            （collab_metrics.feature_level_agreement_rate）。None = 行为与列
+            缺省完全一致（SQL 不写快照列，新行落列默认 NULL，旧调用零破坏）；
+            非 dict / 空 dict / 序列化失败 → 降级同 None（RV2-3 口径：不用
+            空对象冒充「有草稿」，也不让快照脏值拖垮标注提交本体）。
 
     Returns:
         bool: 提交成功 True；payload/参数非法或数据库错误 False
@@ -425,30 +469,71 @@ def submit_annotation(
         logger.error(f"submit_annotation 拒绝非法 payload（task_type={task_type}）")
         return False
 
-    sql = (
-        "INSERT INTO annotation_submissions "
-        "(category, sense_id, task_type, coder_id, payload, ai_assisted, status) "
-        "VALUES (%s, %s, %s, %s, %s, %s, 'submitted') "
-        "ON DUPLICATE KEY UPDATE "
-        "category = VALUES(category), "
-        "payload = VALUES(payload), "
-        "ai_assisted = VALUES(ai_assisted), "
-        "status = 'submitted', "
-        "submitted_at = CURRENT_TIMESTAMP"
-    )
+    # FX-43 草稿快照预序列化：None/非 dict/空 dict/序列化失败 → draft_json=None
+    # （SQL 不含快照列，与既有语句逐字节一致 —— 旧调用零破坏，RV2-3 不用空对象
+    # 冒充有草稿）。快照脏值只降级快照本身，不拦标注提交本体。
+    draft_json: Optional[str] = None
+    if ai_draft is not None:
+        if not isinstance(ai_draft, dict) or not ai_draft:
+            logger.warning(
+                "submit_annotation: ai_draft 非 dict/为空 → 快照落 NULL"
+                "（RV2-3 口径：不用空对象冒充有草稿）"
+            )
+        else:
+            try:
+                draft_json = json.dumps(ai_draft, ensure_ascii=False)
+            except (TypeError, ValueError) as e:
+                logger.error(f"submit_annotation: ai_draft 序列化失败 → 快照落 NULL: {e}")
+
+    if draft_json is None:
+        # 既有语句（FX-43 前逐字节原样）：不带 ai_draft，新行落列默认 NULL
+        sql = (
+            "INSERT INTO annotation_submissions "
+            "(category, sense_id, task_type, coder_id, payload, ai_assisted, status) "
+            "VALUES (%s, %s, %s, %s, %s, %s, 'submitted') "
+            "ON DUPLICATE KEY UPDATE "
+            "category = VALUES(category), "
+            "payload = VALUES(payload), "
+            "ai_assisted = VALUES(ai_assisted), "
+            "status = 'submitted', "
+            "submitted_at = CURRENT_TIMESTAMP"
+        )
+        params: tuple = (
+            category,
+            sense,
+            task_type,
+            coder,
+            json.dumps(payload, ensure_ascii=False),
+            1 if ai_assisted else 0,
+        )
+    else:
+        # 带草稿快照：INSERT 落原始值；覆盖更新时快照随新提交同步覆盖
+        # （快照语义=「本次提交时 AI 给了什么」，不沿用旧行残留快照）
+        sql = (
+            "INSERT INTO annotation_submissions "
+            "(category, sense_id, task_type, coder_id, payload, ai_assisted, "
+            "ai_draft_snapshot, status) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, 'submitted') "
+            "ON DUPLICATE KEY UPDATE "
+            "category = VALUES(category), "
+            "payload = VALUES(payload), "
+            "ai_assisted = VALUES(ai_assisted), "
+            "ai_draft_snapshot = VALUES(ai_draft_snapshot), "
+            "status = 'submitted', "
+            "submitted_at = CURRENT_TIMESTAMP"
+        )
+        params = (
+            category,
+            sense,
+            task_type,
+            coder,
+            json.dumps(payload, ensure_ascii=False),
+            1 if ai_assisted else 0,
+            draft_json,
+        )
     try:
         with get_db_cursor() as cursor:
-            cursor.execute(
-                sql,
-                (
-                    category,
-                    sense,
-                    task_type,
-                    coder,
-                    json.dumps(payload, ensure_ascii=False),
-                    1 if ai_assisted else 0,
-                ),
-            )
+            cursor.execute(sql, params)
             return True
     except pymysql.Error as e:
         logger.error(f"提交标注失败（sense={sense}, coder={coder}）: {e}")

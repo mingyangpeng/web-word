@@ -162,8 +162,13 @@ class TestMigrateRoundColumns:
         assert sqls.index(alters[0]) > sqls.index(creates[-1])
 
     def test_idempotent_second_run_no_alter(self, monkeypatch):
-        # 二次执行不炸不重复加列：探测命中即跳过（幂等核心断言）
+        # 二次执行不炸不重复加列：探测命中即跳过（幂等核心断言）。
+        # FX-43 适配：ensure_flow_tables 迁移面扩至 annotation_submissions.
+        # ai_draft_snapshot —— 存量列集合同步补该列，「全列已存在 → 零 ALTER」
+        # 断言对两段迁移整体成立（缺列补列语义见 test_missing_columns_emit_alter）。
         cols = {("assignments", c) for c, _ in ASSIGNMENTS_ROUND_COLUMNS}
+        cols |= {("annotation_submissions", c)
+                 for c, _ in flow.SUBMISSION_AI_DRAFT_COLUMNS}
         cursor = _patch(monkeypatch, existing_columns=cols)
         ensure_flow_tables()
         ensure_flow_tables()

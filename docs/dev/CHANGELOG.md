@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-11-11 · 批次 23：AI-人一致率升级为逐特征真值（FX-43）
+
+- annotation_submissions 补 ai_draft_snapshot（ALTER-only 幂等迁移）；提交链捕获 AI 初筛草稿原始值
+- collab_metrics.feature_level_agreement_rate：快照 vs payload 逐键比对；指标页回退链（逐特征真值→提案对照→灰注）
+- 8501 容器重建（Apple 视觉＋批次 14~23 全量代码上线容器）
+- 全量 **2845 passed / 0 failed**
+
 ## 2026-11-11 · 批次 22：范畴偏好跨页消费＋书签 sense 锚跳转（FX-41/42）
 
 - ui.default_category 五处范畴下拉消费（semantic/cluster/template/dict_admin 漏斗＋质检）；widget key 不动、首建后手选不劫持

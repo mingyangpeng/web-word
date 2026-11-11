@@ -205,3 +205,9 @@ GRANT ALL PRIVILEGES ON `web\_word\_template\_revision\_test`.* TO 'web_word_use
 GRANT ALL PRIVILEGES ON `web\_word\_template\_revision\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_template\_revision\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- FX-43：AI 草稿快照迁移/逐特征一致率测试库（tests/test_fx43_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx43\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx43\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx43\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
