@@ -56,6 +56,7 @@ logger = logging.getLogger(__name__)
 
 # 历史小表/收件箱单次渲染上限（防一次性拖全表；发布页与收件箱共用）
 LIST_LIMIT_DEFAULT = 20
+LIST_LIMIT_MAX = 100  # RV19-6：单次读取上限
 
 # 发布允许角色（规范 §8：项目广播归词典管理员职责）
 PUBLISH_ALLOWED_ROLES = ("dict_admin",)
@@ -210,6 +211,7 @@ def list_broadcasts(project_id: int,
     cap = _as_int(limit)
     if cap is None or cap <= 0:
         cap = LIST_LIMIT_DEFAULT
+    cap = min(cap, LIST_LIMIT_MAX)  # RV19-6：上界防失控拉取
     pid = _as_int(project_id)
     if pid is None or pid <= 0:
         return []
