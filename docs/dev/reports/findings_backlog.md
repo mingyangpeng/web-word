@@ -125,9 +125,10 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 ## RV-4 安全深化（8 findings：P1×1 P2×2 P3×5）
 
 - [x] RV4-1 P1 ~~.env 真实 API key 入库~~ ✅ **用户已确认旧 key 早已在智谱后台作废**（2026-11-08）；.env 旧值已清空
-- [ ] RV4-2 P2 _sha256_file 只捕 OSError 不捕 ValueError（NUL byte 崩页出 traceback）——扩为 (OSError, ValueError)
+- [x] RV4-2 P2 ✅ 监工轮消缺（批次 27，test_fx47）：_sha256_file 扩捕 (OSError, ValueError)——NUL byte 路径部分平台抛 ValueError，漏接带 traceback 崩上传通道；负向测试（NUL 路径返 None）＋正常哈希回归
+- [x] RV4-4 P3 ✅ showErrorDetails=false 已在码（[client] 段，批次 12 即改）——监工轮补源级契约钉死（test_fx47），台账销
 - [x] RV4-3 ✅ FX-17：_media_path_gate realpath 前缀校验＋拒 symlink；默认清单 data/media＋data/ModernChineseDict（既有加载链真实来源），MEDIA_BASE_DIRS 可覆盖；三负向测试（../逃逸/绝对路径外/symlink）
-- [ ] RV4-4 P3 showErrorDetails=true 生产改 false（配合日志）
+
 - [x] RV4-5 ✅ FX-17：两 docstring 明示「TOCTOU 窗口（亚 rerun 级）＋后果有界」并指向页面实时复核 current_roles=list_roles()
 - [x] RV4-6 ✅ FX-17：app.py:131 唯一命中改 logger.error 留细节＋页面通用文案；AST 测试钉死不再回潮
 - [ ] RV4-7 P3 static 目录图谱 HTML 绕登录门——数据敏感度低，**留公网部署时处理**（DEPLOYMENT.md §1.2/§五已如实标注风险）
