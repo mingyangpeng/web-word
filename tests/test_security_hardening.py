@@ -612,8 +612,9 @@ class TestHardeningUi:
         at.run()
         at = self._form_login(at, "admin", "admin123")
         assert not at.exception
-        assert any("内置默认密码" in str(w.value) for w in at.sidebar.warning), \
-            "默认口令用户登录后未出现强制改密横幅"
+        # 批次 31：横幅压一行 caption（侧边栏净化——保留语义，文案精简）
+        assert any("默认密码未修改" in str(c.value) for c in at.sidebar.caption), \
+            "默认口令用户登录后未出现改密提示"
         # 三处合一：横幅不再内嵌表单，唯一入口=自助面板
         assert not any(t.key == "force_new_password" for t in at.sidebar.text_input), \
             "内嵌表单已删除，不应再有 force_new_password 输入"
@@ -650,7 +651,7 @@ class TestHardeningUi:
         # 下一次 rerun：横幅不再出现
         at.run()
         assert not at.exception
-        assert not any("内置默认密码" in str(w.value) for w in at.sidebar.warning)
+        assert not any("默认密码未修改" in str(c.value) for c in at.sidebar.caption)
 
     def test_role_change_takes_effect_immediately(self, ui_env):
         """管理员改角色后，旧会话下次操作即按新角色判定（标注页立即失去 annotator 权限）"""

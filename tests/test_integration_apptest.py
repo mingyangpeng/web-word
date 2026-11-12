@@ -24,7 +24,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
-from src.app import sidebar_option_label  # noqa: E402  （FX-23 七区分组标签）
 from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
 from src.users_db import create_user, ensure_user_tables  # noqa: E402
 
@@ -208,7 +207,7 @@ class TestLoginFlow:
         at.run()
         at = _form_login(at, "r3_view", "r3-view-pw")
         assert not at.exception
-        assert any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+        assert any("初始口令未修改" in str(c.value) for c in at.sidebar.caption)
 
     def test_must_change_password_banner_clears_after_change(self, r3_env):
         """批次 3-K ①：改密成功（change_password 清零标志）后横幅消失。
@@ -223,11 +222,11 @@ class TestLoginFlow:
         at.run()
         at = _form_login(at, "r3_chg", "r3-chg-pw")
         assert not at.exception
-        assert any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+        assert any("初始口令未修改" in str(c.value) for c in at.sidebar.caption)
         assert change_password(int(uid), "r3-chg-new-pw")
         at.run()
         assert not at.exception
-        assert not any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+        assert not any("初始口令未修改" in str(c.value) for c in at.sidebar.caption)
 
     def test_login_wrong_password_no_user(self, r3_env):
         """错误密码：无 session user + 统一失败文案（防枚举，规范 §6）。"""
@@ -268,7 +267,7 @@ class TestLoginFlow:
         at = _form_login(at, "r3_selfpw", "r3-selfpw-pw")
         assert not at.exception
         # 初始口令横幅在场（create_user 置 must_change_password=1）
-        assert any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning)
+        assert any("初始口令未修改" in str(c.value) for c in at.sidebar.caption)
 
         expanders = [e for e in at.sidebar.expander if "修改密码" in str(e.label)]
         assert expanders, "侧边栏缺「🔑 修改密码」expander"
@@ -317,7 +316,7 @@ class TestLoginFlow:
         assert verify_login("r3_selfpw", "r3-selfpw-pw") is None, "旧口令应立即失效"
         assert verify_login("r3_selfpw", "r3-selfpw-new2") is not None, "新口令应可登录"
         at.run()
-        assert not any("初始口令必须修改" in str(w.value) for w in at.sidebar.warning), \
+        assert not any("初始口令未修改" in str(c.value) for c in at.sidebar.caption), \
             "改密成功后 must_change_password 横幅应消失"
         # change_password 直接调用不破坏（对照：数据层接口不受影响）
         assert change_password(uid, "r3-selfpw-new3")
@@ -537,10 +536,11 @@ class TestSixRoleSessionVisibility:
         assert "dict_admin" not in keys, "未授词典管理员不得见词典管理区"
 
     def test_session_roles_dict_admin_opens_dict_admin_only(self):
-        """viewer + roles=[dict_admin]：词典管理区可见；用户管理不可见。"""
+        """viewer + roles=[dict_admin]：词典管理区可见；RV23-P3 起用户管理
+        宿主页（「📦 功能模块」段所在）入口同步放开（与页面体闸同口径）。"""
         keys = self._radio_keys_for({"roles": ["dict_admin"]})
         assert "dict_admin" in keys
-        assert "users_admin" not in keys
+        assert "users_admin" in keys
 
     def test_session_roles_annotator_adds_submission(self):
         """viewer + roles=[annotator]：提交流入口可见（annotator 及以上）。"""
