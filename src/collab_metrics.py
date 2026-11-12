@@ -139,6 +139,11 @@ STYLE_CHECK_RATE_NOTE = (
 # 降级通用文案（数据库不可用/表未建 —— 是「不可用」不是「0」）
 DB_UNAVAILABLE_NOTE = "数据库不可用或表未初始化，本指标暂无法统计（灰注降级，非 0）。"
 
+# 逐特征一致率取数上限（RV19-6：行含 payload ＋ ai_draft_snapshot 双
+# MEDIUMTEXT/JSON 大文本列，LIMIT 无上界会一次拖回全表大字段 —— 统一压到
+# 200 行；协同度量反映当前标注面，取最近优先即可，调大也会被本上界封顶）。
+_SNAPSHOT_FETCH_CAP = 200
+
 # configs/style.yaml 位置（仓库根；substitution_test / ai_audit 配置探测）
 _STYLE_YAML_PATH = Path(__file__).resolve().parent.parent / "configs" / "style.yaml"
 
@@ -301,19 +306,24 @@ def _fetch_snapshot_submissions(
 
     WHERE 片段全是常量文本（category/task_type 过滤按需拼接），值一律参数化
     （模块纪律 1）；ORDER BY id DESC 取**最近** limit 条（协同度量反映当前
-    标注面，最旧快照属历史口径）。数据库不可用/表未建/列未迁移（MySQL 1054
-    Unknown column，存量库尚未跑 FX-43 迁移）统一返回 None，上层降级为零值面
-    （消费方回退台账口径，不抛异常）。
+    标注面，最旧快照属历史口径）。limit 有上界 _SNAPSHOT_FETCH_CAP=200
+    （RV19-6：行含双 MEDIUMTEXT/JSON 大文本列，无上界会一次拖回全表大
+    字段；非法值回落上界，>200 压到 200）。数据库不可用/表未建/列未迁移
+    （MySQL 1054 Unknown column，存量库尚未跑 FX-43 迁移）统一返回 None，
+    上层降级为零值面（消费方回退台账口径，不抛异常）。
 
     Args:
         category: 范畴过滤；None = 不限（页面总卡的跨范畴聚合口径）。
         task_type: 任务类型过滤；None = 不限。
-        limit: 取数上限（>0；非法值回落 500）。
+        limit: 取数上限（>0 且 ≤200 生效；非法/超界统一压到 200）。
 
     Returns:
         list[dict] | None: 提交行列表；数据库不可用返回 None。
     """
-    cap = limit if isinstance(limit, int) and not isinstance(limit, bool) and limit > 0 else 500
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+        cap = _SNAPSHOT_FETCH_CAP
+    else:
+        cap = min(limit, _SNAPSHOT_FETCH_CAP)
     conditions: List[str] = ["ai_draft_snapshot IS NOT NULL"]
     params: List[Any] = []
     if category:
@@ -339,7 +349,7 @@ def _fetch_snapshot_submissions(
 
 def feature_level_agreement_rate(
     category: Optional[str] = None, task_type: Optional[str] = None,
-    limit: int = 500,
+    limit: int = _SNAPSHOT_FETCH_CAP,
 ) -> Dict[str, Any]:
     """AI-人一致率（逐特征真值口径，FX-43；见 FEATURE_AGREEMENT_NOTE）。
 
@@ -353,7 +363,8 @@ def feature_level_agreement_rate(
         category: 范畴过滤；None = 跨范畴聚合（协同度量页总卡口径）。
         task_type: 任务类型过滤（'admission'|'feature_coding'|'alignment'）；
             None = 不限。
-        limit: 参与聚合的带快照提交上限（默认 500，取最近优先）。
+        limit: 参与聚合的带快照提交上限（默认 200，取最近优先；RV19-6 起
+            有界：行含双 MEDIUMTEXT/JSON 大文本列，>200 一律压到 200）。
 
     Returns:
         dict: {"rate": float|None, "n_submissions": int, "n_features": int,

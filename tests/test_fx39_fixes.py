@@ -487,18 +487,21 @@ class TestWritingStashStubbed:
             "已恢复暂存草稿（2026-11-10 09:30:00）——提交后自动清除" in c
             for c in stub.captions)
 
-    def test_restore_base_advanced_caption(self, monkeypatch):
-        """基线前进（暂存基于 v2、当前最新 v3 被拒）：恢复值照常作默认值，
-        附加「注意：基线版本可能已前进」caption（仅作草稿底稿口径）。"""
+    def test_restore_base_advanced_archives_stash(self, monkeypatch):
+        """基线前进（暂存基于 v2、当前最新 v3 被拒）→ RV25-2 存档口径：
+        旧暂存文**不回填编辑框**（默认值保持 target prefill），caption 警示
+        「基线已前进，暂存仅存档可查」，旧文本收 expander 只读存档（恢复
+        侧双保险——防版本前进换 content_key 后陈旧暂存重放）。"""
         rows = [self._stash_row({
             "content": "暂存的旧底稿", "style_version": "style.yaml@v2",
             "based_on_version": 2,
         })]
         stub, _, _, _, _, _ = self._render_write(
             monkeypatch, latest=LATEST_REJECTED, stash_rows=rows)
-        assert _widget_value(stub, "writing_content_0_3") == "暂存的旧底稿"
+        assert _widget_value(stub, "writing_content_0_3") == "被拒内容v3"
+        assert any("基线已前进，暂存仅存档可查" in c for c in stub.captions)
         assert any("注意：基线版本可能已前进" in c for c in stub.captions)
-        assert any("恢复值仅作草稿底稿" in c for c in stub.captions)
+        assert any("旧暂存存档" in e for e in stub.expanders)
 
     def test_restore_skips_other_form_key(self, monkeypatch):
         """其他义位的暂存不串台（form_key 隔离）。"""

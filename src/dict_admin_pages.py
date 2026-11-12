@@ -1126,12 +1126,15 @@ _FX24_PROGRESS_CACHE: dict = {}  # scope -> (monotonic_ts, value)
 
 
 def _fx24_annotation_progress_cached(_scope: str):
-    """标注进度聚合缓存（RV16-1 留档项消缺，批次 20）。
+    """标注进度聚合缓存（RV16-1 留档项消缺，批次 20；RV24-3 口径统一）。
 
-    手写 TTL 而非 st.cache_data：**None（R4 失败）不缓存**——断库归因
-    「查询失败」必须即时可见（cache_data 会把 None 钉 60s，归因延迟且
-    污染测试）；成功值缓存 60s。首参 _scope=cache_scope_key()（S1 教训：
-    换库场景隔离）。测试清 _FX24_PROGRESS_CACHE 即可完全复位。
+    手写 TTL 而非 st.cache_data：成功值缓存 60s；失败（R4 None）**pop 即
+    降级**——立即清掉该 scope 的旧条目并如实返回 None，不做「旧值续命到
+    过期」（cache_data 会把 None 钉 60s，归因延迟且污染测试）。取舍：TTL
+    窗口内仍回陈旧成功值（装饰性聚合的合理折中），但一旦取数失败归因必须
+    即时可见（R4 优先）——与 _style_check_user_names 同族同口径。首参
+    _scope=cache_scope_key()（S1 教训：换库场景隔离）。测试清
+    _FX24_PROGRESS_CACHE 即可完全复位。
     """
     import time as _time
 
@@ -1140,8 +1143,12 @@ def _fx24_annotation_progress_cached(_scope: str):
     if hit is not None and now - hit[0] < _FX24_PROGRESS_TTL:
         return hit[1]
     value = mysql_db.get_annotation_progress()
-    if value is not None:  # R4 口径：失败不缓存，恢复即时可见
+    if value is not None:  # 成功值缓存 60s
         _FX24_PROGRESS_CACHE[_scope] = (now, value)
+    else:
+        # RV24-3：失败 pop 即降级（同族口径统一）——旧条目（此处必已过期）
+        # 即时清除，失败态不留缓存残影，恢复后下次调用重新取数
+        _FX24_PROGRESS_CACHE.pop(_scope, None)
     return value
 
 
@@ -1495,7 +1502,13 @@ def _style_check_user_names() -> Dict[int, str]:
 
     RV16-3 消缺（批次 26）：手写 TTL 60s 缓存（首参 scope=cache_scope_key，
     S1 教训换库隔离；照 _fx24_annotation_progress_cached 先例）——驾驶舱每
-    rerun 一次的装饰性全表读降为 60s 一次。**空映射不缓存**：断库降级 {} 必须即时自愈（缓存 {} 会让断库恢复后 60s 内映射仍空）。
+    rerun 一次的装饰性全表读降为 60s 一次。**空映射不缓存**：断库降级 {}
+    必须即时自愈（缓存 {} 会让断库恢复后 60s 内映射仍空）。
+
+    RV24-3 口径统一：失败 **pop 即降级**（R4 归因即时可见优先）——取数
+    失败立即清掉该 scope 条目并返回空映射，不做「旧值续命到过期」；取舍
+    与 _fx24_annotation_progress_cached 一致：TTL 窗口内仍回陈旧成功映射
+    （装饰性列的合理折中），失败态不留缓存残影，恢复后下次调用重新取数。
     """
     import time as _time
 
@@ -1522,9 +1535,10 @@ def _style_check_user_names() -> Dict[int, str]:
             continue
         if uid > 0:
             names[uid] = str(u.get("display_name") or u.get("username") or f"#{uid}")
-        if names:
-            _STYLE_CHECK_NAMES_CACHE[scope] = (
-                now, names)  # 空映射不缓存（断库恢复即时自愈）
+    # 空映射不缓存（断库恢复即时自愈）；RV24-3：写缓存移出循环体尾——
+    # 逐行重复写同一键纯属浪费，语义不变
+    if names:
+        _STYLE_CHECK_NAMES_CACHE[scope] = (now, names)
     return names
 
 
@@ -1551,7 +1565,7 @@ def _style_check_history_rows(runs: List[Dict[str, Any]]) -> List[List[str]]:
 
 
 def _render_style_check_trend(category: str) -> None:
-    """📈 通过率趋势图（FX-50）：pass_rate_trend 读面 → st.line_chart 折线。
+    """📈 通过率趋势图（FX-50）：pass_rate_trend 读面 → st.altair_chart 折线。
 
     数据不可用分级（与质检段既有分级同口径，宁缺毋假不崩页）：
       * trend=None（表未建/库断连）→ R4 归因灰注；上方逐项结果与历史小表
@@ -1559,10 +1573,12 @@ def _render_style_check_trend(category: str) -> None:
       * len(trend) < 2 → 不渲染图表（单点无线可言，不编图），caption 占位
         「≥2 次质检后显示趋势」；
       * ≥2 次 → pandas DataFrame（index=created_at 时间序——读面按 run_id
-        升序保证，列=通过率）→ st.line_chart（Streamlit 原生 Altair 渲染，
-        不引 plotly）：y 轴为 0~1 的比率值（分母 0 的 run rate=None，落图
-        为空档留白，caption 如实注明），y 轴标签即列名「通过率」。
-    图表标题「通过率趋势（最近 N 次）」以 caption 置于图上方（st.line_chart
+        升序保证，列=通过率）→ Altair 折线经 st.altair_chart 渲染（批次 29
+        起，Streamlit 原生链路不引 plotly）：y 轴为 0~1 的比率值且显式钉
+        domain=[0, 1]（FX-50 报备待裁决项落地——通过率语义上限 1，随数据
+        浮动会夸大波动；分母 0 的 run rate=None，落图为空档留白，caption
+        如实注明），y 轴标签即列名「通过率」。
+    图表标题「通过率趋势（最近 N 次）」以 caption 置于图上方（st.altair_chart
     无 title 参数；小字灰题同本段 caption 风格）。
     """
     trend = style_check.pass_rate_trend(
@@ -1646,21 +1662,25 @@ def _render_style_check_section() -> None:
 
     结构（自上而下）：
       * 范畴下拉（_funnel_category_options 同源；引擎侧范畴级
-        configs/<category>/style.yaml 缺席自动回退词典层 style.yaml）＋
-        form「▶ 运行体例质检」按钮（表单提交型控件，选择不触发整页 rerun；
-        提交处理 _style_check_run_clicked）；
+        configs/<category>/style.yaml 缺席自动回退词典层 style.yaml；RV21-1
+        后在表单外——切换即 rerun 刷新结果与历史）＋「▶ 运行体例质检」裸
+        st.button（表单已撤，点击即提交处理 _style_check_run_clicked）；
       * 逐项结果表：最近一次 run 的 items（code/规则/结论/说明），结论
         pass/fail/warn 三色徽章（design_system.get_badge_html 既有口径）；
-        detail_json 解析失败如实灰注，不编项；
+        RV24-1：最近一次 run 单独全量读（list_recent_runs limit=1、
+        include_detail=True），历史小表保持瘦身面（include_detail=False，
+        不拉 MEDIUMTEXT）——瘦身行无 items，直接渲染会让明细表永不显示；
+        items 缺失按成因分开灰注：全量读失败（R4 归因）≠ detail_json
+        为空/解析失败（落库即未生成合法明细，不承诺「重跑即好」），不编项；
       * 通过率 caption：公式 passed/(passed+failed)（warn 不入分子也不入
         分母 —— 警告是「自动化比对未覆盖/暂无数据」类观察项，不是体例违例；
         口径单一事实源在 style_check 模块 docstring）；分母 0 → 「—」
         （还没有可比项 ≠ 0%）；
       * 通过率趋势图（FX-50，历史小表之前）：pass_rate_trend 最近
         FX50_STYLE_CHECK_TREND=20 次（run_id 升序=x 轴时间序）→
-        st.line_chart（pandas DataFrame：index=created_at、列=通过率，
-        y 轴 0~1 比率值，不引 plotly）；不足 2 次 → caption 占位
-        「≥2 次质检后显示趋势」；读面 None → R4 归因灰注；
+        st.altair_chart（批次 29：pandas DataFrame + Altair 折线，y 轴钉
+        0~1 比率值，Streamlit 原生渲染不引 plotly）；不足 2 次 → caption
+        占位「≥2 次质检后显示趋势」；读面 None → R4 归因灰注；
       * 历史小表：最近 FX26_STYLE_CHECK_HISTORY=5 次 run（list_recent_runs；
         时间/执行人/通过/未过/警告，run_by=NULL=「系统作业」）。
     数据不可用分级：list_recent_runs 返回 None（表未建/库断连）→ R4 归因
@@ -1714,8 +1734,17 @@ def _render_style_check_section() -> None:
             "质检（结果落 style_check_runs，协同度量的「体例质检通过率」随之"
             "出真值）。")
         return
+    # RV24-1 消缺：历史小表走瘦身面（include_detail=False，不拉 MEDIUMTEXT），
+    # 瘦身行不含 detail_json/items —— 逐项明细表若直接读它则 items 恒缺，
+    # FX-26 三色徽章表自批次 20 起从未显示过。最近一次 run 另发一条全量读
+    # （limit=1、include_detail=True）供明细表与计数 caption。
     latest = runs[0]
-    items = latest.get("items")
+    items = None
+    latest_runs = style_check.list_recent_runs(category=str(cat or ""),
+                                               limit=1, include_detail=True)
+    if latest_runs:
+        latest = latest_runs[0]
+        items = latest.get("items")
     if items:
         rows = []
         for it in items:
@@ -1728,9 +1757,19 @@ def _render_style_check_section() -> None:
                 _esc(str(it.get("detail") or "—")),
             ])
         _render_table(["检查项", "规则", "结论", "说明"], rows)
+    elif latest_runs is None:
+        # RV24-1：全量读失败与「明细本身缺失」分开归因（R4 口径），不冒充
+        # 解析失败、不误导「重跑即好」。
+        st.warning("最近一次 run 的逐项明细读取失败（数据库不可用或表未建）"
+                   "—— 仅展示计数与历史小表（R4 归因口径），计数与通过率"
+                   "不受影响。")
     else:
-        st.warning("最近一次 run 的逐项明细解析失败（detail_json 非法或为空）"
-                   "—— 仅展示计数，重跑一次质检即生成新明细。")
+        # RV24-1 归因改真：走到这里说明全量读成功（include_detail=True），
+        # items 缺即最近一次 run 本身无可用明细（detail_json 为空或解析
+        # 失败）—— 不承诺「重跑一次即生成新明细」（明细是否恢复取决于
+        # 落库内容，非重跑必然）。
+        st.warning("最近一次 run 无可用逐项明细（detail_json 为空或解析失败）"
+                   "—— 仅展示计数与历史小表，计数与通过率不受影响。")
     passed = int(latest.get("passed") or 0)
     failed = int(latest.get("failed") or 0)
     warned = int(latest.get("warned") or 0)

@@ -15,11 +15,14 @@ reviewed→revised→approved→final→published。编纂协作与标注协作�
   ✍️ 撰写台   选义位（cs_senses **locked 簇优先** —— G3 闸门：分立复核定稿的
               簇才放行撰写；merged 义位禁选）→ 模板预览（template_engine，
               占位容错：不在建模覆盖内不拦撰写）→ text_area 成文编辑 →
-              保存草稿（create_draft / update_draft 乐观锁）→ 提交初审
+              保存草稿（create_draft / update_draft 乐观锁；成功即暂存失效
+              —— 暂存只覆盖未保存内容，RV25-2）→ 提交初审
               （选审校人，回避制数据层硬校验）；另有「💾 暂存草稿（不提交
               审校）」（FX-39 任务 2）：成文/体例版本快照进 user_context_db
               的 draft_states 域（form_key='writing_draft_{cs_sense_id}'），
-              重开撰写台自动恢复为表单默认值，提交审校成功后自动清除——
+              重开撰写台自动恢复为表单默认值（暂存基线落后当前最新版 →
+              不回填编辑框，仅 expander 只读存档，RV25-2），提交审校/保存
+              草稿成功后自动清除——
               暂存只动表单默认值与会话存储，不碰乐观锁/作者校验/回避制
               三闸（照旧作用于保存/提交路径）；
   ⚖️ 审校台   list_pending_reviews 待审列表 → expander 释义内容 ＋ ai_draft
@@ -250,7 +253,12 @@ LOCK_BANNER_NOTE = (
 #   {"content": 成文, "style_version": 体例版本|None,
 #    "based_on_version": 暂存当时的基线版号|None}
 # （based_on_version 是恢复期的基线前进判定依据，不是可编辑控件）。提交
-# 审校成功即 delete_draft 清除（「已恢复暂存草稿——提交后自动清除」口径）。
+# 审校成功即 delete_draft 清除（「已恢复暂存草稿——提交后自动清除」口径）；
+# RV25-2 起「💾 保存草稿」成功路径同样 delete_draft 清除 —— **保存成功即
+# 暂存失效：暂存只覆盖未保存内容**，已进版本链的内容由版本历史承载（不清
+# 则版本前进换 content_key，陈旧暂存重放进新编辑框）。恢复侧双保险：暂存
+# based_on_version 落后当前最新版号时旧暂存文不回填编辑框（基线已前进，
+# 暂存仅存档可查 —— st.expander 只读收纳，见 _apply_stash_defaults）。
 STASH_FORM_KEY_PREFIX = "writing_draft_"
 
 # 暂存成功 flash 文案（RV12：ui_kit.flash + rerun；测试断言对齐）。
@@ -572,6 +580,15 @@ def _apply_stash_defaults(
         （基线已前进）→ base_caption = 「注意：基线版本可能已前进…恢复值仅
         作草稿底稿」。
 
+    基线落后存档口径（RV25-2 恢复侧双保险）：暂存 based_on_version **严格
+    小于**当前最新版号时，旧暂存文**不回填编辑框**（content_default 保持
+    target prefill，restore_caption=None）——base_caption 警示「基线已前进，
+    暂存仅存档可查」，旧文本由页面收 st.expander 只读展示（见
+    _render_write_tab）。防「保存草稿 → 版本前进换 content_key → 新 widget
+    → 陈旧暂存重放 → 基于旧文再存一版」的假恢复污染版本链；与「保存草稿
+    成功即暂存失效」（💾 保存草稿成功路径 delete_draft，暂存只覆盖未保存
+    内容）互补：即便暂存漏清，基线落后照样不进编辑框。
+
     冲突纪律（FX-39）：本函数只产出**视图默认值与提示文案** —— 乐观锁
     （expect_version）、作者校验、回避制的输入全部仍来自
     _resolve_edit_target / 会话 / 数据层，暂存恢复不参与任何闸门判定；
@@ -589,12 +606,22 @@ def _apply_stash_defaults(
     stashed_content = str(state.get("content") or "")
     if not stashed_content.strip():
         return content_default, style_default, None, None
+    stored_base = _safe_int(state.get("based_on_version"))
+    latest_no = _safe_int((latest or {}).get("version"))
+    if (stored_base is not None and latest_no is not None
+            and stored_base < latest_no):
+        # RV25-2 存档态：旧暂存文不回填（style 同不覆盖），警示＋页面只读存档
+        base_caption = (
+            f"⚠️ 注意：基线版本可能已前进（暂存基于 v{stored_base}，当前最新 "
+            f"v{latest_no}）——基线已前进，暂存仅存档可查：旧暂存文本不回填"
+            f"编辑框，见下方「🗄️ 旧暂存存档」只读展开（恢复值仅作草稿底稿，"
+            f"不作现行内容），提交前请核对最新版本。"
+        )
+        return content_default, style_default, None, base_caption
     content_default = stashed_content
     stashed_style = str(state.get("style_version") or "")
     if stashed_style.strip():
         style_default = stashed_style
-    stored_base = _safe_int(state.get("based_on_version"))
-    latest_no = _safe_int((latest or {}).get("version"))
     base_caption = None
     if (stored_base is not None and latest_no is not None
             and stored_base != latest_no):
@@ -909,10 +936,9 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
     # 冲突纪律：暂存只动表单默认值与会话存储 —— 乐观锁 expect_version 仍由
     # _resolve_edit_target 决定，作者校验/回避制照旧作用于保存/提交路径。
     stash_form_key = f"{STASH_FORM_KEY_PREFIX}{cs_id}"
+    stashed = _load_stashed_writing_draft(stash_form_key)
     content_default, style_default, restore_caption, base_caption = (
-        _apply_stash_defaults(
-            _load_stashed_writing_draft(stash_form_key), target, latest,
-        )
+        _apply_stash_defaults(stashed, target, latest)
     )
 
     st.markdown("#### ✍️ 成文编辑")
@@ -920,6 +946,16 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         st.caption(restore_caption)
     if base_caption:
         st.caption(base_caption)
+        # RV25-2 存档态（base_caption 有而 restore_caption 无 = 旧暂存未回填
+        # 编辑框）：旧暂存文收 st.expander 只读展示 —— 可查证、不重放。
+        archive_text = str(((stashed or {}).get("state") or {}).get("content") or "")
+        if not restore_caption and archive_text.strip():
+            with st.expander("🗄️ 旧暂存存档（基线已前进，只读可查）"):
+                st.caption(
+                    f"暂存于 {_format_dt((stashed or {}).get('updated_at'))} —— "
+                    "基线已前进，暂存仅存档可查（未回填编辑框）。"
+                )
+                st.markdown(archive_text)
     content_key = (
         f"writing_content_{target['target_id'] or 0}_"
         f"{_safe_int((latest or {}).get('version')) or 0}"
@@ -950,6 +986,11 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                     author_id=me.get("id"),
                 )
                 if ok:
+                    # RV25-2：保存成功即暂存失效——暂存只覆盖未保存内容，已进
+                    # 版本链的内容由版本历史承载。不清则版本前进换 content_key，
+                    # 陈旧暂存会重放进新 widget 的编辑框（假恢复，基于旧文再存
+                    # 一版）。delete 返回 False = 本无暂存，housekeeping 静默。
+                    user_context_db.delete_draft(stash_form_key)
                     st.success(
                         f"草稿已更新（v{target['expect_version']}，乐观锁校验通过）。"
                     )
@@ -966,6 +1007,8 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                     ai_draft=ai_snapshot,
                 )
                 if vid:
+                    # RV25-2：同上——保存成功（新建版）即暂存失效。
+                    user_context_db.delete_draft(stash_form_key)
                     st.success(
                         "草稿已保存（版本号自动递增）：可在「📚 版本历史」查看链路。"
                     )

@@ -168,11 +168,17 @@ SCHEMA_VERSION = 11
 #   * export_batches.published_by / published_at —— src/export_center.py（R3-4b）
 #   * reliability_runs.created_by         —— src/reliability.py（R5 遗留 2）
 #   * users.must_change_password / users.created_by —— src/users_db.py
-#   * cs_clusters.locked / cs_clusters.merged_into —— src/cluster_analysis.py
-#     （G3 复核定稿位 / 簇合并软键，页面入口幂等演进）
+#   * cs_clusters.locked —— src/cluster_analysis.py
+#     （G3 复核定稿位，ensure_cluster_locked_column 幂等演进）
+#   * cs_senses.merged_into —— src/cluster_analysis.py（分立复核迁移
+#     _ensure_sense_split_columns_for，簇合并软键）＋ src/annotation_flow.py
+#     （台账读面 _ensure_divided_cols 幂等补列，两处同列）
 #   * assignments.round / assignments.training —— src/annotation_flow.py
 #     （FX-20 试标轮迁移：round INT NULL / training TINYINT(1) NULL DEFAULT NULL，
 #     _migrate_assignments_round_columns 幂等补列）
+#   * annotation_submissions.ai_draft_snapshot —— src/annotation_flow.py
+#     （FX-43 AI 初筛草稿快照迁移：JSON NULL，_migrate_submissions_ai_draft_column
+#     幂等补列；NULL=无 AI 草稿，RV2-3 口径）
 #   * usage_logs.user_id —— src/mysql_db.py 本文件
 #     （FX-27 查询归因：user_id INT NULL，_migrate_usage_logs_user_id 幂等补列）
 

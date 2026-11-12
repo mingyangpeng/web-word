@@ -397,6 +397,9 @@ class TestRV2NormComments:
 
     # RV2-4：ALTER-only 列清单 —— (表, 列)。清单与 CREATE 文本互钉：
     # 头注释列出的 mysql_db 管辖列必须确实不在 CREATE_TABLES_SQL 里。
+    # RV24-5 适配：cs_clusters.merged_into 系清单笔误（列实际在 cs_senses，
+    # cluster_analysis 分立迁移 ＋ annotation_flow 台账读面两处补列）；
+    # 补 annotation_submissions.ai_draft_snapshot（FX-43，annotation_flow）。
     ALTER_ONLY = (
         ("oald_senses", "human_reviewed"),
         ("domain_family_senses", "llm_tag"),
@@ -415,7 +418,8 @@ class TestRV2NormComments:
         ("users", "must_change_password"),
         ("users", "created_by"),
         ("cs_clusters", "locked"),
-        ("cs_clusters", "merged_into"),
+        ("cs_senses", "merged_into"),
+        ("annotation_submissions", "ai_draft_snapshot"),
     )
 
     def test_rv24_header_lists_alter_only_columns(self):

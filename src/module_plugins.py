@@ -10,8 +10,17 @@
     D 义位权威库  → annotate/submission/reliability（语义建模区）
     C 配置定义层  → 范畴包配置面（configs 六件套；无独立页——挂 categories_tools_page）
     P 编纂工序链  → cluster/template/writing/lexical/dict_admin（编纂产出＋词典管理）
-    A 协作智能层  → ai_hub＋AI 功能（协作智能层）
+    A 协作智能层  → ai_hub/model_settings（协作收件箱＋AI 功能＋模型供应商设置
+                    ——RV23-P2：AI 设置属协作智能层语义自洽，停 A 一并停）
     U 编者界面层  → search/graph/corpus/domain/semantic（查阅展示区）
+
+豁免键（PAGE_KEYS 中不归属任何模块的两键，与 app._PAGE_TO_MODULE 注释同口径
+——tests/test_fx56_fixes.py 哨兵钉死 PAGE_KEYS − 映射 == 这两键）：
+    * users_admin —— 插件管理段宿主页（categories_tools_page 的「📦 功能模块」
+      勾选段所在）：停用模块后词典管理员唯一的恢复入口，映射进任何模块都会
+      被自己锁死（停 P 即进不去重新勾选 P）；
+    * help —— 帮助中心兜底路由页：全员可达的兜底出口（未登录/停用态都要能
+      找到帮助），不参与模块停用。
 
 纪律：
     * 默认全启用（新增模块/存量库无行 → enabled——升级不自伤）；
@@ -19,17 +28,19 @@
     * U 编者界面层为查阅底线：**禁止停用**（勾选禁用——查阅是平台存在的
       底线，勾选 UI 上该行置灰）；
     * C 配置定义层同理**禁止停用**（配置层是引擎输入，停 C 等于停全站）；
-      两者的勾选框置灰＋caption 说明。
+      两者的勾选框置灰＋caption 说明；读侧（is_module_enabled/disabled_
+      modules）对锁定项恒按启用判定（RV25-7）——直库写 enabled=0 的不可达
+      态也不会拦死导航，gate 永不锁死平台底线。
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from src.guards import require_role
+from src.db_utils import as_int
+from src.guards import require_role_interactive
 from src.mysql_db import get_db_cursor
-from src.users_db import effective_six_roles
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +75,8 @@ MODULE_SPECS: Dict[str, Dict[str, Any]] = {
     MODULE_A: {
         "name": "协作智能层",
         "symbol": "A",
-        "pages": ("ai_hub",),
-        "description": "AI 三通道协作（协作收件箱＋AI 功能）",
+        "pages": ("ai_hub", "model_settings"),
+        "description": "AI 三通道协作（协作收件箱＋AI 功能＋模型供应商设置）",
         "lock": False,
     },
     MODULE_U: {
@@ -111,16 +122,15 @@ def ensure_module_plugins_table() -> bool:
 
 
 def _require_module_actor(actor: Any, action: str) -> Dict[str, Any]:
-    """模块勾选权限闸：仅词典管理员（sys_admin 兼判，与工具点亮同口径）。"""
-    if not isinstance(actor, dict):
-        raise PermissionError(f"{action}需要登录会话用户（dict 形态）")
-    effective = effective_six_roles(actor)
-    if not ({"dict_admin", "sys_admin"} & effective):
-        raise PermissionError(
-            f"{action}被拒绝：当前用户（{actor.get('username', '?')}）有效角色集"
-            "不含词典管理员 —— 功能模块勾选仅词典管理员可执行"
-        )
-    return actor
+    """模块勾选权限闸：仅词典管理员（sys_admin 兼判，与工具点亮同口径）。
+
+    RV23-P3 收口：判定薄封装中央闸门 guards.require_role_interactive（判定
+    单一实现，本函数只做「动作 → 允许角色集」的口径映射）。交互面语义：
+    actor=None 直接拒绝（不读会话兜底）、非 dict 杂类型拒绝、有效六角色集
+    与 {dict_admin, sys_admin} 有交集才放行（test_fx54 钉死面逐项保持）。
+    """
+    return require_role_interactive(
+        actor, allowed=("dict_admin", "sys_admin"), action=action)
 
 
 def is_module_enabled(module_key: str) -> bool:
@@ -129,8 +139,15 @@ def is_module_enabled(module_key: str) -> bool:
     语义：无行/表未建/库不可用/未知模块键 → **True**（默认启用——升级
     不自伤；fail-open 与工具两步激活同 philosophy：禁用是显式动作）。
     仅显式 enabled=0 行 → False。
+
+    RV25-7 读侧防线：锁定模块（C/U，spec["lock"]=True）**恒 True**——写侧
+    set_module_enabled 已拒绝停用，读侧兜同一底线：直库写 enabled=0 的
+    不可达态也不会拦死导航（模块 gate 对 C/U 永不放出拦截页，查阅层/
+    配置层是平台底线）。
     """
     if module_key not in MODULE_SPECS:
+        return True
+    if MODULE_SPECS[module_key].get("lock"):
         return True
     ensure_module_plugins_table()
     try:
@@ -149,7 +166,12 @@ def is_module_enabled(module_key: str) -> bool:
 
 
 def disabled_modules() -> set:
-    """当前停用的模块键集合（侧边栏过滤一次取全，避免逐页查询）。"""
+    """当前停用的模块键集合（侧边栏/落地过滤一次取全，避免逐页点查）。
+
+    RV25-7 读侧防线与 is_module_enabled 同口径：锁定模块（C/U）不在返回
+    集合中——直库写 enabled=0 的不可达态经本函数读取时仍按启用（写侧
+    set_module_enabled 已拒，读侧兜同一底线，侧边栏/落地永不锁死底线页）。
+    """
     ensure_module_plugins_table()
     disabled: set = set()
     try:
@@ -160,7 +182,7 @@ def disabled_modules() -> set:
             )
             for row in cursor.fetchall():
                 key = row.get("module_key")
-                if key in MODULE_SPECS:
+                if key in MODULE_SPECS and not MODULE_SPECS[key].get("lock"):
                     disabled.add(key)
     except Exception as e:  # noqa: BLE001 —— fail-open 全启用
         logger.warning(f"module_plugins 批量读失败（按全启用降级）: {e}")
@@ -186,11 +208,14 @@ def set_module_enabled(module_key: str, enabled: bool, actor: Any) -> bool:
         return False
     if not isinstance(enabled, bool):
         enabled = bool(enabled)
+    # RV23-P3：enabled_by 清洗照 RV3-5 单一口径走 db_utils.as_int——bool 是
+    # int 子类（True==1）必须先拦（旧 int(actor.get("id") or 0) 会把 True
+    # 放行成 1）；整数值串/整数值 float 宽松可转；非正整（0/负值）不留痕
+    # 落 NULL（enabled_by 是审计软引用，0/负数不是合法 users.id）。
     uid = None
     if isinstance(actor, dict):
-        try:
-            uid = int(actor.get("id") or 0) or None
-        except (TypeError, ValueError):
+        uid = as_int(actor.get("id"))
+        if uid is not None and uid <= 0:
             uid = None
     ensure_module_plugins_table()
     try:
@@ -242,7 +267,8 @@ def list_module_settings() -> List[Dict[str, Any]]:
 
 
 def filter_pages_by_modules(pages: Any) -> List[str]:
-    """按模块启用态过滤页面键序列（侧边栏/落地三分支共用）。"""
+    """按模块启用态过滤页面键序列（侧边栏/落地三分支共用；RV25-5 起落地
+    分支 2 续接点也走本函数——app._landing_page_for 生产接线）。"""
     disabled = disabled_modules()
     if not disabled:
         return list(pages)

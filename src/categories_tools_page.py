@@ -31,7 +31,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import streamlit as st
 
@@ -54,6 +54,56 @@ from src.tools.pack_check import pack_selfcheck
 from src.users_db import effective_six_roles
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================
+# RV25-3：勾选写回统一改 on_change 回调形态（真用户动作才写库）
+# ============================================
+# 旧实现是渲染期值差写回形态（渲染时比较勾选值与库值，有差异即代写）：
+# 陈旧驻留会话在他人改库后复渲染时，UI 残值与库值的 divergence 会被当成
+# 「用户勾选」自动翻转启停（无操作写库，含 sys_admin 变体）。回调形态下
+# 只有用户真的动了开关（on_change 触发）才落库；divergence 不代写。回调内
+# 不直接 st.error/st.success（回调期渲染命令不可靠），成功/失败一律
+# ui_kit.flash 落会话队列、st.rerun 后由页顶 pop_and_render_flash 弹出。
+def _available_toggle_callback(category: str, tool_id: str,
+                               actor: Dict[str, Any], widget_key: str) -> None:
+    """available 勾选 on_change 回调：写 available_set/available_unset（审计）。"""
+    new_value = bool(st.session_state.get(widget_key))
+    ok = (available_set(category, tool_id, actor=actor, available=True)
+          if new_value else
+          available_unset(category, tool_id, actor=actor))
+    if ok:
+        ui_kit.flash(f"工具 {tool_id} 在范畴 {category} 的 available 位"
+                     f"已{'置位' if new_value else '撤除'}（已审计）。")
+        st.rerun()
+    else:
+        ui_kit.flash(f"available 写库未生效（工具 {tool_id}；见服务端日志）。",
+                     level="error")
+
+
+def _enabled_toggle_callback(category: str, tool_id: str,
+                             actor: Dict[str, Any], widget_key: str,
+                             avail: bool) -> None:
+    """enabled 勾选 on_change 回调：写 enabled_set/enabled_unset（审计）。
+
+    两步激活前置闸（仅 available 的工具可开）双保险：开关 disabled=not avail
+    之外，回调内再验 avail（纵深防御——不依赖前端 disabled 态）。
+    """
+    if not avail:
+        ui_kit.flash(
+            f"工具 {tool_id} 在范畴 {category} 尚未 available（两步激活第一步"
+            "未完成），enabled 位不可点亮。", level="warning")
+        return
+    new_value = bool(st.session_state.get(widget_key))
+    ok = (enabled_set(category, tool_id, actor=actor, enabled=True)
+          if new_value else enabled_unset(category, tool_id, actor=actor))
+    if ok:
+        ui_kit.flash(f"工具 {tool_id} 在范畴 {category} 的 enabled 位"
+                     f"已{'点亮' if new_value else '熄灭'}（已审计）。")
+        st.rerun()
+    else:
+        ui_kit.flash(f"enabled 写库未生效（工具 {tool_id}；见服务端日志）。",
+                     level="error")
 
 
 def render_categories_tools_page() -> None:
@@ -108,12 +158,15 @@ def render_categories_tools_page() -> None:
                 st.markdown(f"**{t.name}**（`{t.id}` v{t.version} · "
                             f"工序 {t.stage}）")
             with col_toggle:
-                new_avail = st.checkbox(
+                avail_key = f"avail_{category}_{t.id}"
+                st.checkbox(
                     "available", value=avail,
-                    key=f"avail_{category}_{t.id}",
+                    key=avail_key,
                     disabled=bool(row and row.get("enabled") and avail),
                     help="安装/依赖/selfcheck 就绪位；仍启用的工具须先由词典"
                          "管理员解除 enabled 才能撤 available",
+                    on_change=_available_toggle_callback,
+                    args=(category, t.id, me, avail_key),
                 )
             with col_state:
                 if row is None:
@@ -123,16 +176,6 @@ def render_categories_tools_page() -> None:
                         f"available={'✅' if row.get('available') else '❌'} · "
                         f"enabled={'✅' if row.get('enabled') else '❌'}"
                         + (f" · v{row.get('tool_version')}" if row.get("tool_version") else ""))
-            if new_avail != avail:
-                ok = (available_set(category, t.id, actor=me, available=True)
-                      if new_avail else
-                      available_unset(category, t.id, actor=me))
-                if ok:
-                    ui_kit.flash(f"工具 {t.id} 在范畴 {category} 的 available 位"
-                                 f"已{'置位' if new_avail else '撤除'}（已审计）。")
-                    st.rerun()
-                else:
-                    st.error(f"available 写库未生效（工具 {t.id}；见服务端日志）。")
 
     st.markdown("")
 
@@ -150,24 +193,18 @@ def render_categories_tools_page() -> None:
             with col_label:
                 st.markdown(f"**{t.name}**（`{t.id}` · 最低角色 {t.permission}）")
             with col_toggle:
-                new_enab = st.checkbox(
+                enab_key = f"enab_{category}_{t.id}"
+                st.checkbox(
                     "enabled", value=enab,
-                    key=f"enab_{category}_{t.id}",
+                    key=enab_key,
                     disabled=not avail,   # 两步激活：仅 available 的工具可开
                     help="" if avail else "两步激活第一步未完成：该工具在此范畴"
                          "尚未 available（平台管理员区置位后才能点亮）",
+                    on_change=_enabled_toggle_callback,
+                    args=(category, t.id, me, enab_key, avail),
                 )
             with col_state:
                 st.caption("可点亮" if avail else "未 available · 不可点亮")
-            if avail and new_enab != enab:
-                ok = (enabled_set(category, t.id, actor=me, enabled=True)
-                      if new_enab else enabled_unset(category, t.id, actor=me))
-                if ok:
-                    ui_kit.flash(f"工具 {t.id} 在范畴 {category} 的 enabled 位"
-                                 f"已{'点亮' if new_enab else '熄灭'}（已审计）。")
-                    st.rerun()
-                else:
-                    st.error(f"enabled 写库未生效（工具 {t.id}；见服务端日志）。")
 
     st.markdown("")
 
@@ -209,6 +246,33 @@ def render_categories_tools_page() -> None:
 # ============================================
 # 批次 30：五构件功能模块勾选（用户需求「五个插件模式」——词典管理员勾选启停）
 # ============================================
+
+
+def _module_toggle_callback(module_key: str, module_name: str,
+                            actor: Dict[str, Any], widget_key: str) -> None:
+    """功能模块勾选 on_change 回调（RV25-3）：真用户动作才写 module_plugins。
+
+    写路径经 set_module_enabled（数据层词典管理员闸＋锁定项拒绝，逐字节
+    不变）；PermissionError（会话角色被实时收窄的兜底）转 flash error。
+    """
+    new_enabled = bool(st.session_state.get(widget_key))
+    from src.module_plugins import set_module_enabled  # 函数级导入（同区先例）
+
+    try:
+        ok = set_module_enabled(module_key, new_enabled, actor)
+    except PermissionError as e:
+        ui_kit.flash(f"⛔ {e}", level="error")
+        return
+    if ok:
+        ui_kit.flash(
+            f"功能模块「{module_name}」已{'启用' if new_enabled else '停用'}"
+            "（已留痕）。"
+        )
+        st.rerun()
+    else:
+        ui_kit.flash("模块勾选写库未生效（见服务端日志）。", level="error")
+
+
 def _render_module_plugins_section(me: Dict[str, Any]) -> None:
     """📦 功能模块（五构件 D·C·P·A·U 插件化）：词典管理员勾选启停。
 
@@ -219,9 +283,7 @@ def _render_module_plugins_section(me: Dict[str, Any]) -> None:
       * 未登录/非管理员不渲染段；库降级灰注（R4 归因口径）。
     """
     try:
-        from src.module_plugins import (MODULE_SPECS, is_module_enabled,
-                                        list_module_settings,
-                                        set_module_enabled)
+        from src.module_plugins import MODULE_SPECS, list_module_settings
     except ImportError as e:  # noqa: BLE001
         st.warning(f"插件注册表加载失败：{e}")
         return
@@ -253,24 +315,15 @@ def _render_module_plugins_section(me: Dict[str, Any]) -> None:
                 key=f"module_lock_{key}",
             )
             continue
-        new_enabled = st.checkbox(
+        # RV25-3：模块勾选写回同样改 on_change 回调形态（真用户动作才写）——
+        # 值差写回形态下陈旧驻留会话会在复渲染时无操作自动翻转模块启停。
+        toggle_key = f"module_toggle_{key}"
+        st.checkbox(
             label,
             value=enabled,
             disabled=not is_dict,
-            key=f"module_toggle_{key}",
+            key=toggle_key,
             help="勾选=启用（侧边栏入口可见）；取消=停用（入口隐藏＋直访拦截）",
+            on_change=_module_toggle_callback,
+            args=(key, spec["name"], me, toggle_key),
         )
-        if new_enabled != enabled:
-            try:
-                ok = set_module_enabled(key, new_enabled, me)
-            except PermissionError as e:
-                st.error(f"⛔ {e}")
-                continue
-            if ok:
-                ui_kit.flash(
-                    f"功能模块「{spec['name']}」已{'启用' if new_enabled else '停用'}"
-                    "（已留痕）。"
-                )
-                st.rerun()
-            else:
-                st.error("模块勾选写库未生效（见服务端日志）。")

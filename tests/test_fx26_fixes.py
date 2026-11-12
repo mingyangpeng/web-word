@@ -9,9 +9,11 @@ docstring 一致）：
     - 渲染：权限兜底门（非词典管理员整段不渲染）、runs=None → R4 归因灰注、
       空清单 → 引导文案、逐项表（code/规则/结论/说明）＋ 通过率 caption
       （公式 passed/(passed+failed)、warn 不入分母）＋ 历史 run 小表
-      （run_by=NULL →「系统作业」，RV2-3 留痕口径）、detail_json 解析失败
-      如实灰注；
-    - 运行按钮（form 提交）：guards 中央闸门拒绝 → st.error 不触引擎；
+      （run_by=NULL →「系统作业」，RV2-3 留痕口径）、明细缺失如实灰注
+      （RV24-1：全量读失败与 detail_json 解析失败分开归因，无「重跑即好」
+      误导）；
+    - 运行按钮（裸 button，RV21-1 后表单已撤）：guards 中央闸门拒绝 →
+      st.error 不触引擎；
       引擎 ok → ui_kit.flash ＋ st.rerun（RV12-2，禁止 st.success 回潮）；
       ok=False / 异常形态 / 意外异常 → R4 归因灰注、不崩页不编数；
     - AppTest 冒烟：质检段渲染 not at exception ＋ 按钮在场 ＋ 点击后
@@ -354,6 +356,9 @@ def _patch_section_world(monkeypatch, stub, runs="unset", submit=False,
                          trend=None):
     """铺质检段渲染假体：st/会话用户/花名册；runs 传 None/[]/清单可配。
 
+    RV24-1：list_recent_runs 桩按 include_detail 返回不同形态——False（历史
+    小表瘦身面）→ 行剥去 items/detail_json 键；True（最近一次 run 全量面）
+    → 行带 items（与真引擎两面形态对齐）。
     FX-50：趋势读面 pass_rate_trend 一并打桩（默认 None=R4 灰注路径，
     本文件用例不展开图表面——图表契约由 test_fx50_fixes 钉住），保证
     质检段单测不触真库。
@@ -363,8 +368,17 @@ def _patch_section_world(monkeypatch, stub, runs="unset", submit=False,
     monkeypatch.setattr(dp.users_db, "list_users",
                         lambda: [{"id": 7, "username": "c", "display_name": "主编甲"}])
     if runs != "unset":
+
+        def _fake_list_recent_runs(category=None, limit=5, include_detail=True):
+            if not runs:      # None（R4）与 []（真 0）两面同形
+                return runs
+            if include_detail:
+                return runs
+            return [{k: v for k, v in row.items()
+                     if k not in ("items", "detail_json")} for row in runs]
+
         monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                            lambda category=None, limit=5, include_detail=True: runs)
+                            _fake_list_recent_runs)
     monkeypatch.setattr(dp.style_check, "pass_rate_trend",
                         lambda category=None, limit=20: trend)
     return stub
@@ -442,14 +456,17 @@ def test_section_history_shows_system_actor(monkeypatch):
     assert history_md
 
 
-def test_section_items_parse_failure_gray_note(monkeypatch):
-    """detail_json 解析失败（items=None）→ 如实灰注，不编逐项行。"""
+def test_section_items_missing_gray_note_truthful(monkeypatch):
+    """RV24-1 反钉改真：全量面 items=None（detail_json 为空/解析失败）→
+    如实灰注、不编逐项行，且不再误导「重跑一次质检即生成新明细」。
+    （旧钉板「必现解析失败」随 RV24-1 修复删除——瘦身面不再喂明细表。）"""
     stub = _StubSt()
     _patch_section_world(
         monkeypatch, stub, runs=_fake_runs(items=None))
     _render_style_check_section()
     joined = stub.joined()
-    assert "明细解析失败" in joined
+    assert "解析失败" in joined
+    assert "重跑" not in joined             # 不承诺「重跑即好」
     assert "CFG_COMPLETE" not in joined     # 不编项
 
 
@@ -486,9 +503,18 @@ _SMOKE_SCRIPT = (
 
 def test_apptest_smoke_render_and_run_button(monkeypatch):
     """AppTest 冒烟：段渲染不抛异常、提交按钮在场；点击后 flash 经
-    pop_and_render_flash 弹出（引擎打桩，不触真库不落假 run）。"""
+    pop_and_render_flash 弹出（引擎打桩，不触真库不落假 run）。
+    RV24-1：读面桩按 include_detail 回双形态（瘦身面无 items 键）。"""
+
+    def _fake_list_recent_runs(category=None, limit=5, include_detail=True):
+        if not include_detail:
+            return [{k: v for k, v in row.items()
+                     if k not in ("items", "detail_json")}
+                    for row in _fake_runs()]
+        return _fake_runs()
+
     monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                        lambda category=None, limit=5, include_detail=True: _fake_runs())
+                        _fake_list_recent_runs)
     monkeypatch.setattr(dp.style_check, "pass_rate_trend",
                         lambda category=None, limit=20: None)  # FX-50：趋势面本文件不展开
     monkeypatch.setattr(
