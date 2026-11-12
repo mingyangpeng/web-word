@@ -348,7 +348,11 @@ def _refresh_session_user() -> Optional[Dict[str, Any]]:
 # 后仍会原样出现在投影里，照样被它拦下）＋ legacy 表恰为六角色表的投影。
 _PAGE_ACCESS_SIX: Dict[str, tuple] = {
     "submission": ("dict_admin", "sys_admin", "reviewer", "editor", "annotator"),
-    "users_admin": ("sys_admin",),
+    # RV23-P3：补 dict_admin —— 页面体闸（users_admin_page：sys_admin 或
+    # dict_admin 放行）与侧边栏入口此前矛盾：纯 dict_admin 会话被入口隐藏，
+    # 进不了宿主页的「📦 功能模块」段，停用模块的恢复路径走不通（模块 gate
+    # 拦截文案指的路不存在）。入口可见性与页面体闸同口径对齐。
+    "users_admin": ("sys_admin", "dict_admin"),
     "reliability": ("dict_admin", "sys_admin", "reviewer"),
     "cluster": NEW_ROLES,
     "template": NEW_ROLES,
@@ -443,13 +447,21 @@ _PAGE_ZONE_PREFIX: Dict[str, str] = {
 # 区 emoji 清洗（RV21-5 标签瘦身：前缀括号内去区 emoji，页名自带 emoji 不重复）
 _ZONE_EMOJI_RE = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]")
 
-# 批次 30 五构件插件化：页面键 → 所属模块键（MODULE_SPECS 映射的本地投影；
-# 语义建模/编纂产出等区页归属——查阅展示 U/协作 A/标注 D/编纂 P）
+# 批次 30 五构件插件化：页面键 → 所属模块键（与 module_plugins.MODULE_SPECS
+# 派生映射逐键一致的本地投影——tests/test_fx56_fixes.py 有双源一致性哨兵，
+# 改任一侧必须同步另一侧）；语义建模/编纂产出等区页归属——查阅展示 U/
+# 协作 A/标注 D/编纂 P。RV23-P2：model_settings（🤖 模型供应商）归 A 构件
+# ——AI 供应商设置属协作智能层语义自洽，停用 A 后不再直访可达。
+# 豁免键（不映射 = 不随任何模块停用，恒可达）：
+#   * users_admin —— 插件管理段宿主页（「📦 功能模块」勾选段所在）：
+#     停用模块后词典管理员唯一的恢复入口，映射进任何模块都会被自己锁死；
+#   * help —— 帮助中心兜底路由页：全员可达的兜底出口（未登录/停用态
+#     都要能找到帮助），不参与模块停用。
 _PAGE_TO_MODULE: Dict[str, str] = {
     "annotate": "d", "submission": "d", "reliability": "d",
     "cluster": "p", "template": "p", "writing": "p", "lexical": "p",
     "dict_admin": "p",
-    "ai_hub": "a",
+    "ai_hub": "a", "model_settings": "a",
     "search": "u", "graph": "u", "corpus": "u", "domain": "u", "semantic": "u",
 }
 
@@ -569,7 +581,8 @@ st.markdown(f"""
 # 全装饰性（零色板变更，WCAG 对比度矩阵不受影响）；模块级注入一次。
 # ============================================
 from src.design_system import get_global_theme_css
-from src.module_plugins import disabled_modules, is_module_enabled
+from src.module_plugins import (
+    disabled_modules, filter_pages_by_modules, is_module_enabled)
 
 st.markdown(get_global_theme_css(), unsafe_allow_html=True)
 
@@ -1745,9 +1758,8 @@ def _render_must_change_password_banner(user: Dict[str, Any]) -> None:
         return
     if not needs_password_change(uid):
         return
-    st.sidebar.warning(
-        "🔐 **初始口令必须修改**：当前账号仍在使用管理员签发的初始口令，"
-        "请通过下方「🔑 修改密码」入口修改后再继续使用。"
+    st.sidebar.caption(
+        "🔐 初始口令未修改——请在「🔑 修改密码」中更换。"
     )
 
 
@@ -1764,10 +1776,10 @@ def _render_default_password_guard(user: Dict[str, Any]) -> None:
         return
     if not is_using_default_password(uid):
         return
-    st.sidebar.warning(
-        "⚠️ **内置默认密码，请立即修改**：当前密码是公开的 bootstrap 凭据。"
-        "请使用下方唯一的「🔑 修改密码」入口修改；修改成功前本提示持续显示。"
+    st.sidebar.caption(
+        "⚠️ 默认密码未修改——请在「🔑 修改密码」中更换（公开凭据，改前本提示保留）。"
     )  # R8-1（批次 12）：内嵌表单删除——改密 UI 三处合一，唯一入口=自助面板
+    # 批次 31：长卡压一行（用户「侧边栏一堆文字」反馈——细节收进 expander 内）
 
 
 def _render_self_change_password_form(user: Dict[str, Any]) -> None:
@@ -1855,7 +1867,7 @@ _RESUME_PAGE_LOADER: Optional[Callable[[int], Optional[str]]] = None
 
 # RV15-3（FX-35）：侧边栏「继续：…」灰注的一次性旗标键 —— 登录落地分支 2
 # （续接点命中）此刻落 session_state（落地解析只在登录成功路径调用一次，
-# 旗标自然只写一次、随后只读不写）；render_sidebar 在页面 radio 上方读旗标
+# 旗标自然只写一次、随后只读不写）；render_sidebar 在导航按钮上方读旗标
 # 渲染灰注。非 widget 键（RV12-1 只读纪律无涉），且不在 _LOGOUT_KEEP_KEYS
 # —— 登出全清自然回收（共享终端换人不留上一人的续接痕迹）。
 _RESUME_HINT_KEY = "_resume_hint_page"
@@ -1918,9 +1930,12 @@ def _landing_page_for(user: Dict[str, Any]) -> str:
     分支顺序即规范语序：有待办→协作收件箱；有续接点→上次位置；首次→搜索释义。
     RV15-1：分支 1 加可裁决角色条件（_can_adjudicate_inbox 同源口径）——
     无裁决权角色不因全局 pending>0 被落去 ai_hub；RV15-3：分支 2 命中即
-    flash「已回到上次工作位置」。
+    flash「已回到上次工作位置」；RV25-5：分支 2 命中前对 resume 键接模块
+    过滤（filter_pages_by_modules 与侧边栏共用同一停用集合——docstring
+    「侧边栏/落地共用」兑现）——续接点落在已停用模块页时顺延分支 3，否则
+    登录即闪现模块 gate 拦截页。
     仅在登录成功路径调用一次（_render_login_section）；返回键必属该角色可见集
-    （_visible_page_keys ⊆ PAGE_KEYS），七区路由契约不受影响。
+    （_visible_page_keys ⊆ PAGE_KEYS）且所属模块启用，七区路由契约不受影响。
     """
     visible = _visible_page_keys(user)
     # 分支 1：有待办 → 协作收件箱（ai_hub 六角色全可见）。
@@ -1932,10 +1947,13 @@ def _landing_page_for(user: Dict[str, Any]) -> str:
     # 分支 2：有续接点 → 上次位置（user_state 续接点；侧边栏「继续：…」同源）。
     # RV15-3：命中即 flash（规范「继续：…」可见面；main() 下一轮渲染消费）。
     # FX-35：命中同时把 resume 页键落一次性旗标（_RESUME_HINT_KEY），
-    # render_sidebar 在 radio 上方渲染「↩︎ 续接上次：…」灰注（侧边栏可见面
+    # render_sidebar 在导航按钮上方渲染「↩︎ 续接上次：…」灰注（侧边栏可见面
     # 最小件）；旗标写一次后只读，登出全清自然回收。
+    # RV25-5：角色可见集只过权限不过模块——续接点指向已停用模块页时
+    # （filter_pages_by_modules 过滤后为空）视同未命中，顺延分支 3。
     resume = _resume_work_page(user)
-    if resume is not None and resume in visible:
+    if (resume is not None and resume in visible
+            and filter_pages_by_modules([resume])):
         ui_kit.flash(f"已回到上次工作位置：{page_label(resume)}")
         st.session_state[_RESUME_HINT_KEY] = resume
         return resume
@@ -1980,10 +1998,9 @@ def _render_login_section() -> None:
         if st.session_state.get(_USER_DB_BACKED_KEY):
             _render_default_password_guard(user)
             _render_must_change_password_banner(user)
-            # R8-1：默认口令用户表单默认展开（改密完成后 is_using_default_password
-            # 实时判 False，expander 收起——唯一入口始终可见、无需滚动寻找）
-            _auto_open = is_using_default_password(int(user.get("id")))
-            with st.sidebar.expander("🔑 修改密码", expanded=_auto_open):
+            # 批次 31：expander 默认折叠（用户「侧边栏太堆」反馈——一行
+            # ⚠️ caption 已提示改密；想改再展开，入口始终可见不消失）
+            with st.sidebar.expander("🔑 修改密码", expanded=False):
                 _render_self_change_password_form(user)
         return
 
@@ -1999,9 +2016,11 @@ def _render_login_section() -> None:
             st.session_state[_USER_DB_BACKED_KEY] = True
             # 登录落地三分支（FX-29，规范 §9 L242）：有待办→协作收件箱；
             # 有续接点→上次位置；首次→搜索释义。只在登录成功这一刻写初始
-            # page（radio key="page" 尚未实例化，st.rerun() 后以其值实例化，
-            # 七区路由契约不变）；用户随后手动切页不被劫持 —— 解析不进每轮
-            # 渲染，残留页回退逻辑（render_sidebar）原样保留。
+            # page（RV12-1：切页只在回调/登录一次性写点写会话——按钮式侧边
+            # 栏的 page 由导航按钮 on_click 回调写，无 key="page" widget，
+            # 不存在实例化时机冲突，七区路由契约不变）；用户随后手动切页
+            # 不被劫持 —— 解析不进每轮渲染，残留页回退逻辑（render_sidebar）
+            # 原样保留。
             st.session_state["page"] = _landing_page_for(info)
             st.rerun()
         else:
@@ -2196,13 +2215,15 @@ def render_sidebar():
     # 不要再传 index=：key="page" 一旦存在于 session_state，再传 index 会在
     # 旧版 Streamlit 上抛 StreamlitAPIException、新版上打重复赋值警告。
     visible_keys = _visible_page_keys(_current_user())
-    # 批次 30 五构件插件化：停用模块的页面从侧边栏隐藏（is_module_enabled
-    # fail-open——库不可用时全启用，导航不因基础设施抖动而消失）
+    # 批次 30 五构件插件化：停用模块的页面从侧边栏隐藏（disabled_modules
+    # 一次取全停用集合，RV25-8——不再逐键 14 次点查 is_module_enabled；
+    # fail-open 语义不变：库不可用/读失败时集合为空全启用，导航不因基础
+    # 设施抖动而消失）
     visible_keys = [k for k in visible_keys
-                    if is_module_enabled(_PAGE_TO_MODULE.get(k, ""))]
+                    if _PAGE_TO_MODULE.get(k, "") not in disabled_modules()]
     if st.session_state.get("page") not in visible_keys:
         st.session_state["page"] = "search"
-    # RV15-3（FX-35）：登录落地分支 2（续接点命中）落的灰注旗标 —— radio 上方
+    # RV15-3（FX-35）：登录落地分支 2（续接点命中）落的灰注旗标 —— 导航按钮上方
     # 一行 caption「↩︎ 续接上次：{页名}」。仅当续接点命中时显示：旗标由
     # _landing_page_for 在登录那一刻写一次（落地解析不进每轮渲染），本处只读
     # 不写（RV12-1：不直写 widget 键）；旗标页键仍需在当前角色可见集内
@@ -2249,8 +2270,9 @@ def render_sidebar():
     st.sidebar.divider()
 
     # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）。
-    # 跳转用 on_click 回调（重跑前执行）：radio 的 key="page" 在本函数更下方
-    # 实例化，若在其实例化后改 session_state["page"] 会被 Streamlit 拒绝。
+    # 跳转用 on_click 回调（重跑前执行）——RV12-1 回调纪律：切页只在回调内
+    # 写会话。批次 22 起侧边栏为按钮式导航（FX-23 取代旧单 radio），不存在
+    # key="page" 的 radio 实例化时机问题，本注释口径随实现更新（RV25-4）。
     if st.session_state.get("user"):
         _inbox_n = pending_inbox_count()
         if _inbox_n:
@@ -2382,6 +2404,12 @@ def render_module_gate(page: str) -> bool:
     此前无参版本只挂 render_main_area（else 分支）而模块页分支全部绕过——
     拦截提示在真实浏览器中永远无法出现（死路），已修。
 
+    RV25-4：返回按钮改 on_click 回调形态（切页写会话统一走回调——RV12-1
+    纪律；此前「if st.button(...) 正文期写 page + st.rerun」与侧边栏残留页
+    自愈双时机分裂：展开态下侧边栏先把 page 兜回 search，点击后的正文期
+    写入永不在同一时机生效）。on_click 回调在下一轮重跑**之前**执行，点击
+    即切页，与侧边栏导航按钮同口径。
+
     返回 True=放行继续分派；False=已渲染拦截提示（调用方 return）。
     """
     mod = _PAGE_TO_MODULE.get(page)
@@ -2395,15 +2423,15 @@ def render_module_gate(page: str) -> bool:
         "—— 页面暂不可用；如需使用请联系词典管理员在「👥 账号管理」页的"
         "「📦 功能模块」段重新勾选启用。"
     )
-    if st.button("← 返回搜索释义", key="module_gate_back"):
-        st.session_state["page"] = "search"
-        st.rerun()
+    st.button(
+        "← 返回搜索释义", key="module_gate_back",
+        on_click=lambda: st.session_state.update(page="search"),
+    )
     return False
 
 
 def render_main_area():
     """渲染主区域组件"""
-
 
     # 词条装配预览（批次 9 Agent AS，工序 14 消费侧）函数级导入：本文件顶部
     # import 块因 sys.path 前置本就整块 E402，此处仿 pandas 的函数级导入先例，
@@ -2411,7 +2439,10 @@ def render_main_area():
     from src.entry_assembly import render_entry_assembly
     render_page_usage_guide("search")
     st.markdown(f"<h1 style='{HEADER_H1}'>🏃 动词释义优化器</h1>", unsafe_allow_html=True)
-    st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
+    # 批次 31：理论长文折叠（用户「搜索页一堆文字」反馈——搜索框置顶，
+    # 理论说明收进展开才见的 expander；TEXT_TITLE 常量与折叠标题语义分离）
+    with st.expander("📚 理论背景与功能说明（点开查看）", expanded=False):
+        st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
 
     # ===== 浮动固定搜索栏 =====
     # 用 st.container(key="search_bar") 让输入框真正位于 .st-key-search_bar 容器内，
@@ -4130,9 +4161,10 @@ def main():
     _page 在 render_sidebar 之前取值：侧边栏可能因角色可见性把残留页重置回
     search（只影响下一次运行），本次运行仍按用户请求的页分派并给出权限提示。
     旧键重定向（批次 8）：_page == "category" 就地置 "cluster" —— 页面合并后
-    旧书签/残留会话重定向一次不断链；置于 render_sidebar 之前，radio(key="page")
-    本次运行即选中 cluster，cluster 不可见的会话（未登录）由侧边栏残留页回退兜回
-    search，本次运行照常走 cluster 分支给出「请先登录」提示。
+    旧书签/残留会话重定向一次不断链；置于 render_sidebar 之前，本次运行即按
+    重定向后的 page 分派（按钮式侧边栏由 on_click 回调写 session_state["page"]，
+    RV25-4 注释口径随实现更新），cluster 不可见的会话（未登录）由侧边栏残留页
+    回退兜回 search，本次运行照常走 cluster 分支给出「请先登录」提示。
     """
     _page = st.session_state.get("page")
     if _page == "category":
