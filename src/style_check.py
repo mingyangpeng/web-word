@@ -6,7 +6,9 @@ G6 体例终检），没有可重复执行的机械质检与执行记录，协�
 的「体例质检通过率」因此无数据源灰注。本模块把质检引擎与记录面建起来：
 ``run_style_check`` 逐项机械检查 → 结果落 ``style_check_runs`` →
 ``collab_metrics.style_check_status`` 取数出真值（出版导出/驾驶舱的 UI 入口
-归下一批，本模块只做引擎＋记录＋指标接线）。
+归下一批，本模块只做引擎＋记录＋指标接线）。读面：``list_recent_runs``
+（历史小表）与 ``pass_rate_trend``（FX-50 通过率趋势，按 run_id 升序）
+共用 ``_query_runs`` 查询内核（单一 SQL 事实源，不复制查询文本）。
 
 检查项清单（code / rule / 判定 / 数据源）—— 全部**机械可验证**，从
 configs/style.yaml 实际键出发（style_version / defining_vocab /
@@ -624,6 +626,35 @@ def run_style_check(category: str, actor: Any = None) -> Dict[str, Any]:
     }
 
 
+def _query_runs(
+    cols: str, category: Optional[str] = None, limit: int = 5,
+) -> Optional[List[Dict[str, Any]]]:
+    """list_recent_runs / pass_rate_trend 共用的 SELECT 内核（单一 SQL 事实
+    源，勿复制查询文本）：列集可配（瘦身面少拉 MEDIUMTEXT），category=None
+    跨范畴，id 降序取最近 limit 次；数据库不可用/表未建 → None（R4 归因，
+    调用方据此灰注）。
+    """
+    sql = f"SELECT {cols} FROM style_check_runs"
+    params: List[Any] = []
+    if category is not None:
+        sql += " WHERE category = %s"
+        params.append(str(category))
+    sql += " ORDER BY id DESC LIMIT %s"
+    try:
+        capped = max(1, min(int(limit), 50))
+    except (TypeError, ValueError):
+        capped = 1
+    params.append(capped)
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(sql, tuple(params))
+            rows = cursor.fetchall() or []
+    except Exception as exc:  # noqa: BLE001 —— 表未建/库断连统一降级
+        logger.error(f"style_check: 读取质检 run 记录失败: {exc}")
+        return None
+    return [dict(row) for row in rows]
+
+
 def list_recent_runs(
     category: Optional[str] = None, limit: int = 5,
     include_detail: bool = True,
@@ -646,27 +677,11 @@ def list_recent_runs(
     cols = ("id, category, run_by, passed, failed, warned, total, "
             "detail_json, created_at" if include_detail else
             "id, category, run_by, passed, failed, warned, total, created_at")
-    sql = f"SELECT {cols} FROM style_check_runs"
-    params: List[Any] = []
-    if category is not None:
-        sql += " WHERE category = %s"
-        params.append(str(category))
-    sql += " ORDER BY id DESC LIMIT %s"
-    try:
-        capped = max(1, min(int(limit), 50))
-    except (TypeError, ValueError):
-        capped = 1
-    params.append(capped)
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(sql, tuple(params))
-            rows = cursor.fetchall() or []
-    except Exception as exc:  # noqa: BLE001 —— 表未建/库断连统一降级
-        logger.error(f"style_check: 读取质检 run 记录失败: {exc}")
+    rows = _query_runs(cols, category, limit)
+    if rows is None:
         return None
     out: List[Dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
+    for item in rows:
         raw = item.get("detail_json")
         parsed: Any = None
         if isinstance(raw, (str, bytes)) and raw:
@@ -679,3 +694,38 @@ def list_recent_runs(
             item.pop("detail_json", None)  # 瘦身面不回传 MEDIUMTEXT 原文
         out.append(item)
     return out
+
+
+def pass_rate_trend(
+    category: Optional[str] = None, limit: int = 20,
+) -> Optional[List[Dict[str, Any]]]:
+    """体例质检通过率趋势读面（FX-50）：最近 limit 次 run 按 run_id 升序
+    返回（自增 id 与时间同序——图表 x 轴时间序）。
+
+    Args:
+        category: None → 跨范畴最近 limit 次；给定 → 该范畴最近 limit 次。
+        limit: 返回条数上限（默认 20；非正数按 1；上限 50，与
+            list_recent_runs 同一封顶）。
+
+    Returns:
+        list[dict] | None：行恰为 ``{run_id, created_at, rate, passed,
+        failed}``；rate = passed/(passed+failed)（pass_rate_from_counts
+        单一口径，4 位小数；分母 0 → None，「还没有可比项」≠ 0%；warn 不
+        入分子也不入分母）；数据库不可用/表未建 → None（R4 归因，调用方
+        据此灰注）。查询复用 _query_runs（与 list_recent_runs 同一 SQL
+        内核，不复制查询文本），仅取计数列、不拉 MEDIUMTEXT。
+    """
+    rows = _query_runs("id, passed, failed, created_at", category, limit)
+    if rows is None:
+        return None
+    trend: List[Dict[str, Any]] = []
+    for row in rows:
+        trend.append({
+            "run_id": row.get("id"),
+            "created_at": row.get("created_at"),
+            "rate": pass_rate_from_counts(row.get("passed"), row.get("failed")),
+            "passed": row.get("passed"),
+            "failed": row.get("failed"),
+        })
+    trend.reverse()  # 内核 id 降序（新在前）→ 升序返回（x 轴时间序）
+    return trend

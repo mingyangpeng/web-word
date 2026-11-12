@@ -73,6 +73,7 @@ class _StubSt:
         self.messages = []       # (kind, text)
         self.selectboxes = []    # (label, options)
         self.buttons = []        # (label, kwargs)
+        self.charts = []         # FX-50 趋势图 line_chart 调用 (data, kwargs)
 
     def form(self, *args, **kwargs):
         return _StubCol()
@@ -115,6 +116,12 @@ class _StubSt:
 
     def rerun(self):
         self.messages.append(("rerun", ""))
+
+    def line_chart(self, *args, **kwargs):
+        # FX-50 趋势图桩：单独记录不进 messages（DataFrame 非 str，
+        # 混入会让 joined() 的 "\n".join 炸类型；本文件用例默认 trend 桩
+        # 为 None，不走到图表，仅防新渲染路径炸桩）
+        self.charts.append((args[0] if args else None, kwargs))
 
     def texts(self, kind=None):
         return [t for k, t in self.messages if kind is None or k == kind]
@@ -339,8 +346,14 @@ def test_run_clicked_bad_shape_result_gray_note(monkeypatch):
 # 渲染：权限门 / 数据不可用分级 / 逐项表与历史表
 # ============================================
 
-def _patch_section_world(monkeypatch, stub, runs="unset", submit=False):
-    """铺质检段渲染假体：st/会话用户/花名册；runs 传 None/[]/清单可配。"""
+def _patch_section_world(monkeypatch, stub, runs="unset", submit=False,
+                         trend=None):
+    """铺质检段渲染假体：st/会话用户/花名册；runs 传 None/[]/清单可配。
+
+    FX-50：趋势读面 pass_rate_trend 一并打桩（默认 None=R4 灰注路径，
+    本文件用例不展开图表面——图表契约由 test_fx50_fixes 钉住），保证
+    质检段单测不触真库。
+    """
     monkeypatch.setattr(dp, "st", stub)
     monkeypatch.setattr(dp, "_current_user", lambda: _ME_ADMIN)
     monkeypatch.setattr(dp.users_db, "list_users",
@@ -348,6 +361,8 @@ def _patch_section_world(monkeypatch, stub, runs="unset", submit=False):
     if runs != "unset":
         monkeypatch.setattr(dp.style_check, "list_recent_runs",
                             lambda category=None, limit=5, include_detail=True: runs)
+    monkeypatch.setattr(dp.style_check, "pass_rate_trend",
+                        lambda category=None, limit=20: trend)
     return stub
 
 
@@ -470,6 +485,8 @@ def test_apptest_smoke_render_and_run_button(monkeypatch):
     pop_and_render_flash 弹出（引擎打桩，不触真库不落假 run）。"""
     monkeypatch.setattr(dp.style_check, "list_recent_runs",
                         lambda category=None, limit=5, include_detail=True: _fake_runs())
+    monkeypatch.setattr(dp.style_check, "pass_rate_trend",
+                        lambda category=None, limit=20: None)  # FX-50：趋势面本文件不展开
     monkeypatch.setattr(
         dp.style_check, "run_style_check",
         lambda category, actor=None: {"ok": True, "run_id": 9,
