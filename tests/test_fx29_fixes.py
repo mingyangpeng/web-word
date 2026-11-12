@@ -182,11 +182,10 @@ def test_landing_targets_always_valid_page_keys(monkeypatch):
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "src", "app.py")
 # 预授权测试库（scripts/grant_local_mysql.sql 授权覆盖，自建库名无 GRANT）。
-# 取 writing 系专库：web_word_users_test 被 users/apptest/r1/security 等七模块
-# 共用，与并行验证会话同跑时会出现「他方 fixture 删库 → 本方用户表清空 →
-# fail-closed 登出」的串库竞态；writing 库占用面最小，竞态窗口最小。
+# 专用沙箱库（批次 27 监工轮 RV18-3 归位：此前复用 writing_test 与
+# test_writing_db 共享面存在并行互踩风险；本库授权见 grant_local_mysql.sql）
 # （pytest 串行约定下各模块 fixture 建库/删库互不重叠 —— 并行会话另论。）
-TEST_DB = "web_word_writing_test"
+TEST_DB = "web_word_fx29_test"
 TIMEOUT = 180
 
 _USERS = (("fx29_ann", "fx29-ann-pw", "标注员", "annotator"),
@@ -420,7 +419,7 @@ class TestResumeGlue:
     """RV18-3：续接点胶水层真适配器＋登出写路径行为覆盖（此前仅 lambda 桩喂缝）。"""
 
     # FX-35 适配（非接线失联，照实注明）：本类跑在模块专属库
-    # web_word_writing_test 上，而 user_context_db 的惰性建表哨兵
+    # web_word_fx29_test 上，而 user_context_db 的惰性建表哨兵
     # _TABLES_ENSURED 是**进程级**的 —— 任何先行模块在自己的测试库上触发过
     # 惰性建表（如 test_integration_apptest 登录落地 → _resume_page_loader →
     # list_states），本类再调 ensure_user_context_tables() 就被哨兵直通跳过

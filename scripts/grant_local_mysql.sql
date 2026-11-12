@@ -211,3 +211,15 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx43\_test`.* TO 'web_word_user'@'127.0.0.1'
 GRANT ALL PRIVILEGES ON `web\_word\_fx43\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx43\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+FLUSH PRIVILEGES;
+
+-- FX-27：查询归因沙箱（tests/test_fx27_fixes.py，RV18-3 归位）
+GRANT ALL PRIVILEGES ON `web\_word\_fx27\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx27\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx27\_test`.* TO 'web_word_user'@'%';
+
+-- FX-29：落地三分支 AppTest 沙箱（tests/test_fx29_fixes.py，RV18-3 归位）
+GRANT ALL PRIVILEGES ON `web\_word\_fx29\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx29\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx29\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
