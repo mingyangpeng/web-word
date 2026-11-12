@@ -19,7 +19,7 @@ r"""FX-18 修复批次回归测试。
   * registry   DB 持久化位优先（loader 返回值覆盖进程位）、读不到回落
                _ENABLED（None/异常两路）、registry_enabled_override 三态、
                bind_registry_loader 绑定/解绑、reset_registry_state 复位钩子；
-  * 内置工具   十类＋multimedia 共 11 工具注册、run 薄包装委托（monkeypatch
+  * 内置工具   十类＋multimedia＋schema_family 共 12 工具注册（批次 32）、run 薄包装委托（monkeypatch
                目标函数验证 task_type 固定与参数合并）、render 留阶段 2；
   * pack 自检  三态（无引用通过 / 未注册引用失败 / 已注册未启用警示）＋
                引用解析（字符串/映射/非法形态）＋ 真实 motion 包无引用通过；
@@ -47,7 +47,7 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 import src.mysql_db as db  # noqa: E402
 from src import tool_settings_db as tsd  # noqa: E402
 from src.mysql_db import get_db_cursor  # noqa: E402
-from src.tools import builtin  # noqa: E402,F401  导入即注册内置 11 工具
+from src.tools import builtin  # noqa: E402,F401  导入即注册内置 12 工具（批次 32 起）
 from src.tools import pack_check, registry as reg  # noqa: E402
 from src.tools.registry import (  # noqa: E402
     RegistryError,
@@ -564,7 +564,7 @@ TEN_CATEGORY_MAP = [
      {"anchor_type": "word", "anchor_id": 5}),
 ]
 
-EXPECTED_TOOL_IDS = {t[0] for t in TEN_CATEGORY_MAP}
+EXPECTED_TOOL_IDS = {t[0] for t in TEN_CATEGORY_MAP} | {"schema_family"}
 ANNOTATION_TOOLS = ("admission", "feature_coding", "alignment")
 
 
@@ -813,15 +813,18 @@ class TestCategoriesToolsPage:
         assert True in by_disabled and False in by_disabled  # available 的可开
 
     def test_sys_admin_available_toggle_persists_and_audits(self, fx18_env):
-        """开关即写：available 开勾 → 写库 + 审计行（who=页面会话用户）。"""
+        """开关即写：available 开勾 → 写库 + 审计行（who=页面会话用户）。
+
+        RV25-3 形态适配：写回已改 on_change 回调触发（真用户动作才写库）
+        —— AppTest 的 check() 改变 widget 值后 run() 即触发回调。
+        """
         tsd.ensure_tool_settings_tables()
         at = _run_page(_PAGE_USER_SYS)
         assert not at.exception
         target = next(c for c in at.checkbox
                       if c.label == "available" and not c.value)
         first_tool_id = sorted(t.id for t in list_tools())[0]
-        target.check()   # 勾选置位
-        at.run()          # 值差触发改写（checkbox 值变化在下一 run 生效）
+        target.check().run()   # 勾选置位 → on_change 回调写库（RV25-3）
         assert not at.exception
         rows = tsd.list_settings()
         assert len(rows) == 1

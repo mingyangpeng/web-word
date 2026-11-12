@@ -1,5 +1,27 @@
 # 更新日志
 
+## 2026-11-13 · 批次 32：图式范畴化插件——工作流「图式→图式谱系」缺失环节平台化
+
+- 理论落地（给师兄讨论 docx「共享图式提取、图式范畴化」段）：对各子簇提炼的事件图式本身做二级归纳——梳理图式亲缘关系与家族相似性，建立更高层级的事件类型谱系
+- 引擎 `src/schema_family.py`：三级归属向量（核心=2/槽位=1/缺省=0）→ Gower nominal（类型差异不取程度差，避免循环论证）→ UPGMA（average linkage，max_distance=0.5 切割）→ 图式家族＋medoid 代表图式；方法论自洽（义位聚类同一套机器用在图式对象上）
+- 工具 `schema_family_tool`：第 12 个内置 ToolSpec（stage=schema_family，P 构件工序 8 下游，两步激活照全仓口径）
+- 页面语义分析「🌐 图式谱系」tab（第 10 tab）：家族表＋族卡片（代表图式核心要素）；结果按范畴×语言 session 隔离，实时计算不落库
+- 修复 build_schema_families 代表图式错位缺陷（族内位置误索引按族序排列的 medoids——回归断言钉死每族恰一 is_prototype 且与 prototype 一致）
+- 测试 `tests/test_schema_family.py` 24 条（向量/Gower 已知值/UPGMA 切割/medoid 平局/端到端/工具委托/RegistryError 必填拒绝/tab 打桩渲染＋<2 图式降级）；test_tools_registry 工具集钉 12、fx18 EXPECTED_TOOL_IDS 同步
+- 全量 **3037 passed / 0 failed**（批次 31 基线 3013 → +24）
+
+## 2026-11-13 · fx56–58：RV23–25 监工轮修复收口
+
+- RV24-2：无草稿覆盖更新清残留快照（ai_draft_snapshot=NULL 双形态语句，旧库 1054 回落）——AI-人一致率不再出假分歧
+- RV24-5：mysql_db 头部 ALTER-only 清单去失真（补 ai_draft_snapshot 归属、cs_clusters.merged_into 笔误改 cs_senses）
+- RV25-2：撰写台暂存陈旧重放双保险（保存成功即暂存失效；基线前进的旧暂存只读收纳不回填）
+- RV24-8：save_revision 1062 并发保存冲突专项文案（不再泛化「数据库写入失败」）
+- RV19-6 同型补：collab_metrics 快照聚合取数上限 200（双 MEDIUMTEXT 大文本列）
+- RV23-P2：AI 模型供应商设置归 A 协作智能层（停 A 一并停 model_settings）；RV23-P3：dict_admin 补 users_admin 入口（功能模块恢复路径可达）；RV25-7：锁定模块读侧恒按启用判定（直库写 0 也不锁死导航）
+- RV25-3：勾选段 value-comparison 写回改为「勾选变更才写」（陈旧 session 不再自动覆写 DB）
+- FX-57：质检最新运行明细单独 include_detail=True 取数（FX-26 逐项明细不再死路）；RV24-1 灰注归因改真
+- 全量回归随批次 32 收口（3037 passed / 0 failed）
+
 ## 2026-11-12 · 批次 30：五构件插件化——D·C·P·A·U 模块勾选启停
 
 - 插件注册表 `src/module_plugins.py`：五模块 MODULE_SPECS（D 义位权威库/C 配置定义层/P 编纂工序链/A 协作智能层/U 编者界面层）＋`module_plugins` 表持久化勾选（enabled_by 留痕）；默认全启用（无行/库降级 fail-open——升级不自伤）

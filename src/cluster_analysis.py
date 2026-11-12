@@ -2734,10 +2734,10 @@ def render_semantic_analysis_page() -> None:
         )
 
     tab_tree, tab_typical, tab_division, tab_graph, tab_compare, tab_matrix, \
-        tab_align, tab_schema, tab_overview = st.tabs([
+        tab_align, tab_schema, tab_family, tab_overview = st.tabs([
             "🌳 谱系树", "🏆 典型性", "🧬 分立复核", "🕸️ 义位图谱",
             "🫱🫲 双语对比", "🔥 编码热图", "🔀 跨语言对齐", "⚖️ 图式对齐",
-            "📋 总览"])
+            "🌐 图式谱系", "📋 总览"])
 
     with tab_tree:
         _render_dendrogram(data["dendro"])
@@ -2765,6 +2765,10 @@ def render_semantic_analysis_page() -> None:
             else:
                 st.caption("（语义分析数据未就绪 —— 见页面顶部提示。）")
 
+    # 🌐 图式谱系（批次 32：图式范畴化——工作流缺失环节平台化，P 构件插件）
+    with tab_family:
+        _render_schema_family_tab(category, language)
+
 
 def render_cluster_analysis_page() -> None:
     """兼容薄包装（批次 8）：旧「📈 谱系与典型性」页入口 → 语义分析合并页。
@@ -2775,3 +2779,56 @@ def render_cluster_analysis_page() -> None:
     可用，行为 = 渲染合并页。
     """
     render_semantic_analysis_page()
+
+
+def _render_schema_family_tab(category: str, language: str) -> None:
+    """🌐 图式谱系（批次 32，工作流「图式范畴化」环节平台化）。
+
+    对各簇提取的事件图式本身做二级归纳：三级归属向量（核心=2/槽位=1/缺省=0）
+    → Gower nominal → UPGMA → 图式家族＋medoid 代表图式——更高层级的事件
+    类型谱系。工具面：schema_family_tool（第 12 个内置工具，两步激活照全仓
+    口径）。数据面：不落库（实时计算，簇数据变更即随指纹重算）。
+    """
+    from src import schema_family as _sf
+    from src.template_engine import derive_cluster_schemas
+
+    st.markdown("### 🌐 图式谱系（图式范畴化·事件类型层级）")
+    st.caption(
+        "理论：对各子簇提炼的事件图式本身进行归纳——梳理图式之间的亲缘关系与"
+        "家族相似性，建立更高层级的事件类型谱系（图式范畴化）。方法：把义位"
+        "聚类的同一套机器（Gower nominal＋UPGMA＋medoid）用在图式对象上——"
+        "图式特征向量＝各语义槽三级归属（核心=2／槽位=1／缺省=0）。工具面："
+        "schema_family_tool（第 12 个内置工具，P 构件，两步激活）。"
+    )
+    schemas = derive_cluster_schemas(category, language)
+    if len(schemas) < 2:
+        st.info(
+            f"范畴 {category}（{language} 侧）当前 {len(schemas)} 个图式——"
+            "≥2 个子簇图式后显示家族谱系。请先完成聚类与图式提取。"
+        )
+        return
+    _sf_key = f"schema_family_result_{category}_{language}"
+    if st.button("⚙️ 计算图式家族谱系", key=f"schema_family_calc_{category}_{language}"):
+        st.session_state[_sf_key] = _sf.build_schema_families(schemas)
+    result = st.session_state.get(_sf_key)
+    if not result:
+        st.caption("点上方「⚙️ 计算图式家族谱系」生成。")
+        return
+    st.dataframe(_sf.families_summary(result), use_container_width=True,
+                 hide_index=True)
+    for f in result.get("families", []):
+        proto = f["prototype"]
+        members_txt = "、".join(
+            f"{m.get('cluster_no')}·{m.get('cluster_name')}"
+            + ("（代表）" if m.get("is_prototype") else "")
+            for m in f["members"])
+        core_txt = "、".join(
+            f"{cf.get('code')}·{cf.get('label', '')}"
+            for cf in proto.get("core_features") or [])
+        st.markdown(
+            f"**家族 {f['family_no']}**（{len(f['members'])} 图式，"
+            f"族内平均距离 {f['avg_distance']}）：{members_txt}  \n"
+            f"代表图式：簇 {proto.get('cluster_no')}·{proto.get('cluster_name')} "
+            f"—— 核心要素：{core_txt}"
+        )
+
