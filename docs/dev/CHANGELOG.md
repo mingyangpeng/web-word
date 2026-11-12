@@ -22,6 +22,15 @@
 - FX-57：质检最新运行明细单独 include_detail=True 取数（FX-26 逐项明细不再死路）；RV24-1 灰注归因改真
 - 全量回归随批次 32 收口（3037 passed / 0 failed）
 
+## 2026-11-13 · 批次 31：侧边栏净化——三横幅压行＋改密折叠＋搜索页长文折叠
+
+- 用户反馈「左边的登录了咋一直有修改密码提示，还有就是一堆文字干啥的」（64d74f7）
+- 默认口令守卫/签发口令横幅：大卡压一行 caption（细节收进 expander，语义保留）
+- 修改密码 expander 默认折叠（入口可见不消失——用户「侧边栏太堆」反馈）
+- 搜索页：理论长文折叠进 expander，搜索框前置（搜索页「一堆文字」反馈）
+- 测试适配：test_integration_apptest／test_security_hardening 断言同步
+- 全量 **3013 passed / 0 failed**（+124：fx39 沙箱归位后真库用例激活＋前置批次增量）
+
 ## 2026-11-12 · 批次 30：五构件插件化——D·C·P·A·U 模块勾选启停
 
 - 插件注册表 `src/module_plugins.py`：五模块 MODULE_SPECS（D 义位权威库/C 配置定义层/P 编纂工序链/A 协作智能层/U 编者界面层）＋`module_plugins` 表持久化勾选（enabled_by 留痕）；默认全启用（无行/库降级 fail-open——升级不自伤）
