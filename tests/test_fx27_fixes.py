@@ -21,7 +21,7 @@
     _column_exists 探测参数是 (MYSQL_DATABASE, table, column) 三元）；
   * 真库用例（TestFx27RealDb）复用已授权测试库机制：web_word_user 无
     CREATE DATABASE 全局权限，只有点名授权的沙箱库 —— 取**现无任何测试
-    引用**的 web_word_r1_probe（grep 全 tests/ 零引用，FX-27 专用，不与
+    引用**的 web_word_fx27_test（grep 全 tests/ 零引用，FX-27 专用，不与
     其他套件/并行批次冲突），MySQL 不可用/无沙箱权限整类 skip。
 """
 
@@ -42,7 +42,7 @@ from src.mysql_db import (  # noqa: E402
 )
 
 # 已授权沙箱库（web_word_user 对其有 ALL PRIVILEGES；现无任何测试引用）
-TEST_DB = "web_word_r1_probe"
+TEST_DB = "web_word_fx27_test"
 
 
 # ============================================
@@ -280,7 +280,7 @@ class TestRecordQueryAttribution:
 
 
 # ============================================
-# 4) 真库沙箱（web_word_r1_probe：init 全链路 + 写入 + 聚合口径）
+# 4) 真库沙箱（web_word_fx27_test：init 全链路 + 写入 + 聚合口径）
 # ============================================
 def _q(sql, params=()):
     with db.get_db_cursor() as cursor:
@@ -295,7 +295,7 @@ _USER_ID_COL = ("SELECT IS_NULLABLE, COLUMN_TYPE, COLUMN_COMMENT "
 
 
 class TestFx27RealDb:
-    """迁移/写入/聚合口径跑在真实 MySQL 8.0（已授权沙箱库 web_word_r1_probe，
+    """迁移/写入/聚合口径跑在真实 MySQL 8.0（已授权沙箱库 web_word_fx27_test，
     每用例 DROP+CREATE 重建，互不污染）。"""
 
     @pytest.fixture
