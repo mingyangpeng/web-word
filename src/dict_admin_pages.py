@@ -138,6 +138,15 @@ FX-26（体例质检 UI 入口，接 FX-25 引擎 src/style_check.py 的公开�
   检查逻辑；motion 现状（run #1：3 过/1 未过/1 警告，DEFINING_VOCAB 未过=
   词表待编者核定）由数据如实展示，不做特判文案。
 
+FX-50（体例质检通过率趋势图，接 FX-25/FX-26 既有面）：质检段在历史小表之前
+  追加趋势块 _render_style_check_trend —— 读面 style_check.pass_rate_trend
+  （与 list_recent_runs 共用 _query_runs 查询内核）取最近 20 次 run 按
+  run_id 升序，≥2 次时 pandas DataFrame（index=created_at、列=通过率）→
+  st.line_chart 折线（Streamlit 原生 Altair 渲染，不引 plotly；y 轴为 0~1
+  的比率值，分母 0 的 run rate=None 落图留空并如实注明）；不足 2 次 →
+  caption 占位「≥2 次质检后显示趋势」；读面 None（表未建/库断连）→ R4
+  归因灰注，不影响上方逐项结果与历史小表。
+
 FX-30（规范 §8②组「项目广播」发布入口）：项目成员 tab 在项目自检之后追加
   「📢 项目广播」段 _render_broadcast_section —— 词典管理员选中的项目下
   标题＋正文 form 发布（调用点 guards.require_dict_admin 中央闸门，纵深防御
@@ -1451,6 +1460,10 @@ def _render_my_decisions_section() -> None:
 # 历史 run 小表条数（任务书口径：最近 5 次；引擎 list_recent_runs limit 透传）。
 FX26_STYLE_CHECK_HISTORY = 5
 
+# 通过率趋势图取数条数（FX-50；引擎 pass_rate_trend limit 透传，读面默认
+# 20 同口径 —— 趋势看的是近期走势，20 次封顶与读面上限一致）。
+FX50_STYLE_CHECK_TREND = 20
+
 # 逐项结论三态徽章：文案与配色（design_system 既有色板，get_badge_html 按
 # 底色自动选深/浅字）；未知 status 按灰徽章原样展示（引擎契约外值不隐藏）。
 _STYLE_CHECK_STATUS_LABELS = {"pass": "通过", "fail": "未过", "warn": "警告"}
@@ -1537,6 +1550,45 @@ def _style_check_history_rows(runs: List[Dict[str, Any]]) -> List[List[str]]:
     return rows
 
 
+def _render_style_check_trend(category: str) -> None:
+    """📈 通过率趋势图（FX-50）：pass_rate_trend 读面 → st.line_chart 折线。
+
+    数据不可用分级（与质检段既有分级同口径，宁缺毋假不崩页）：
+      * trend=None（表未建/库断连）→ R4 归因灰注；上方逐项结果与历史小表
+        不受影响，如实注明；
+      * len(trend) < 2 → 不渲染图表（单点无线可言，不编图），caption 占位
+        「≥2 次质检后显示趋势」；
+      * ≥2 次 → pandas DataFrame（index=created_at 时间序——读面按 run_id
+        升序保证，列=通过率）→ st.line_chart（Streamlit 原生 Altair 渲染，
+        不引 plotly）：y 轴为 0~1 的比率值（分母 0 的 run rate=None，落图
+        为空档留白，caption 如实注明），y 轴标签即列名「通过率」。
+    图表标题「通过率趋势（最近 N 次）」以 caption 置于图上方（st.line_chart
+    无 title 参数；小字灰题同本段 caption 风格）。
+    """
+    trend = style_check.pass_rate_trend(
+        category=category, limit=FX50_STYLE_CHECK_TREND)
+    if trend is None:
+        st.warning(
+            "通过率趋势数据不可用：style_check_runs 读取失败（数据库不可用或"
+            "表未建）—— 上方逐项结果与历史小表不受影响（R4 归因口径）。")
+        return
+    if len(trend) < 2:
+        st.caption("≥2 次质检后显示趋势")
+        return
+    import pandas as pd  # 函数内 import：趋势图才需要，保持模块导入链轻
+
+    rates = [float("nan") if r.get("rate") is None else float(r["rate"])
+             for r in trend]
+    created = pd.to_datetime([r.get("created_at") for r in trend])
+    df = pd.DataFrame({"通过率": rates},
+                      index=pd.Index(created, name="created_at"))
+    note = ""
+    if any(r.get("rate") is None for r in trend):
+        note = "；分母 0（还没有可比项）的 run 无通过率，线上留空"
+    st.caption(f"通过率趋势（最近 {len(trend)} 次）{note}")
+    st.line_chart(df)
+
+
 def _style_check_run_clicked(category: str, me: Dict[str, Any]) -> None:
     """「▶ 运行体例质检」提交处理：中央闸门 → 引擎执行 → 成功 flash＋rerun。
 
@@ -1597,6 +1649,11 @@ def _render_style_check_section() -> None:
         分母 —— 警告是「自动化比对未覆盖/暂无数据」类观察项，不是体例违例；
         口径单一事实源在 style_check 模块 docstring）；分母 0 → 「—」
         （还没有可比项 ≠ 0%）；
+      * 通过率趋势图（FX-50，历史小表之前）：pass_rate_trend 最近
+        FX50_STYLE_CHECK_TREND=20 次（run_id 升序=x 轴时间序）→
+        st.line_chart（pandas DataFrame：index=created_at、列=通过率，
+        y 轴 0~1 比率值，不引 plotly）；不足 2 次 → caption 占位
+        「≥2 次质检后显示趋势」；读面 None → R4 归因灰注；
       * 历史小表：最近 FX26_STYLE_CHECK_HISTORY=5 次 run（list_recent_runs；
         时间/执行人/通过/未过/警告，run_by=NULL=「系统作业」）。
     数据不可用分级：list_recent_runs 返回 None（表未建/库断连）→ R4 归因
@@ -1680,6 +1737,9 @@ def _render_style_check_section() -> None:
         "不入分母（警告是观察项不是违例；口径单一事实源 src/style_check.py "
         "模块 docstring）；「未过」项的处置口径见其「说明」列（如 "
         "DEFINING_VOCAB=词表待编者核定）。")
+    # FX-50：通过率趋势图（历史小表之前；读面 pass_rate_trend 单一数据源，
+    # 自带 <2 次占位与 None 灰注分级，失败不拖垮下方历史小表）
+    _render_style_check_trend(str(cat or ""))
     history_rows = _style_check_history_rows(runs)
     _render_table(["run", "时间", "执行人", "通过", "未过", "警告"], history_rows)
     st.caption(

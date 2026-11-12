@@ -4,6 +4,7 @@ exclude = .git,__pycache__,venv,.venv,*.egg-info,dist,build
 ignore = E203,W503,E226,E122,E127,E128
 per-file-ignores =
     src/app.py:E402,E302,E305,E306
+    src/design_system.py:E302,F541,W605
     src/mysql_db.py:E402,E302,E305
     src/page_guides.py:E501
     src/dict_admin_pages.py:E501

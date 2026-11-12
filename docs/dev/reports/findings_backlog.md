@@ -346,3 +346,13 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] **CSS v4 控件级**——ls_nav 导航行 !important 定稿（未选中透明/悬停浅灰/选中 accent 药丸白字）＋accent-color 统一选中圈＋焦点环 3px glow＋滑杆 accent＋表单卡白底 16px＋下载按钮药丸＋链接 accent＋代码块 SF Mono＋expander 加重＋内容图圆角＋侧栏节头小灰阶＋主区顶距收紧
 - [x] 侧边栏 macOS 式真导航定稿——七区小节头（ls-nav-header 灰阶小字）＋区页整宽按钮（当前页 accent 药丸）
 - [x] 浏览器实测：未登录首屏/语义分析/驾驶舱三面截图验收（分段 tabs/白卡指标/蓝药丸选中）
+
+## 批次 28（2026-11-11·晚 · 界面迭代第三批：趋势可视化＋书签快捷段＋CSS v6）
+
+> 三路交付（FX-50/51/52）。全量 **2928 passed / 0 failed**（批次 27 基线 2890 → +38）。
+
+- [x] **体例质检趋势可视化**（FX-50）——pass_rate_trend 读面（升序时间序，共用 _query_runs 内核不复制 SQL）＋质检段 st.line_chart（通过率趋势最近 20 次；分母 0 → 线上留空；<2 次 caption 占位；None 灰注 R4 归因）——编者一眼读质检质量走势
+- [x] **侧边栏「📌 我的书签」快捷段**（FX-51）——最近 3 条书签行（emoji 分型＋18 字截断＋整行按钮）：page 锚跳转（RV15-3 双保险）/sense 锚跳转（page=annotate＋annotate_verb 预置，FX-42 三分支同口径）/entry 锚如实挂账＋「全部书签 →」收尾行；未登录/无书签整段不渲染；list_bookmarks 签名零变更（limit=3 直用，RV16-4 行数闸现成）
+- [x] **CSS v6 微调批**（FX-52）——DataFrame 内凹阴影覆盖层／st.table 白卡发丝边／表单内 radio 行距收紧／divider 间距／按钮 focus-visible 可达性（accent-soft outline）／侧边栏 232px（!important 压 react-resizable 内联宽）／指标卡悬停加深
+- [x] .flake8 per-file-ignores 补 design_system.py（E302/F541 为 f-string CSS 模板固有形态，~500 对花括号反转义不划算）
+- [x] 核实两件入 deploy/README：8501 端口=0.0.0.0（公网时应改 127.0.0.1:8501:8501）／st.iframe 经浏览器请求 /app/static/（RV4-7 deny all 不可行→限速+noindex 折中）

@@ -1223,5 +1223,93 @@ pre code {{
     color: var(--ls-text-2);
     font-size: 0.85rem;
 }}
+
+/* ══════════ v6：CSS 微调批（表格密度与收尾细节·装饰性零色板变更） ════ */
+
+/* v6-1 DataFrame 行密度：glide-data-grid 单元格是 canvas 位图——CSS 无法
+   收紧行高/字号（须走组件 rowHeight 参数）；容器圆角/边框已在 v3 锁定，
+   此处仅补 canvas 上的内凹阴影：canvas 不透明白底会盖住容器自身 inset
+   阴影，故用 ::after 覆盖层实现内凹感（pointer-events:none 不挡交互） */
+[data-testid="stDataFrame"] {{
+    position: relative;
+}}
+[data-testid="stDataFrame"]::after {{
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    pointer-events: none;
+}}
+
+/* v6-2 原生表 st.table：白底＋发丝边＋表头浅灰底
+   （Streamlit 1.57 实测渲染形态：容器 testid=stTable，内含原生 <table>；
+   白底钉死与 v3 卡片族同纪律，表头浅灰用 rgba 半透明暗色兼容） */
+[data-testid="stTable"] {{
+    background: #ffffff;
+    border: 1px solid var(--ls-hairline);
+    border-radius: 12px;
+    overflow: hidden;
+}}
+[data-testid="stTable"] table {{
+    background: #ffffff;
+    border-collapse: collapse;
+    width: 100%;
+}}
+[data-testid="stTable"] th {{
+    background: rgba(0, 0, 0, 0.035);
+    color: var(--ls-text);
+    font-weight: 600;
+    border-bottom: 1px solid var(--ls-hairline);
+}}
+[data-testid="stTable"] td {{
+    color: var(--ls-text);
+    border-bottom: 1px solid var(--ls-hairline);
+}}
+
+/* v6-3 表单内 radio/checkbox 行距收紧：1.57 实测每项根节点 testid=
+   stRadio / stCheckbox（内含 <label>）——padding/行高收窄，密集表单
+   （标注/撰写/发布）更紧凑 */
+[data-testid="stForm"] [data-testid="stRadio"] label,
+[data-testid="stForm"] [data-testid="stCheckbox"] label {{
+    padding-top: 1px;
+    padding-bottom: 1px;
+    margin: 0;
+    line-height: 1.35;
+}}
+
+/* v6-4 分隔线上下间距收紧（发丝线样式保持 v3 既有规则，只调间距） */
+[data-testid="stMain"] hr,
+[data-testid="stSidebar"] hr {{
+    margin: 12px 0;
+}}
+
+/* v6-5 按钮键盘焦点可见性（可达性）：2px accent-soft 描边——outline
+   自动跟随药丸圆角；导航按钮 !important 背景不受影响 */
+.stButton > button:focus-visible,
+[data-testid="stFormSubmitButton"] > button:focus-visible,
+[data-testid="stDownloadButton"] > button:focus-visible {{
+    outline: 2px solid rgba(0, 113, 227, 0.45);
+    outline-offset: 2px;
+}}
+
+/* v6-6 侧边栏宽度固定 232px（Apple 侧栏比例）：1.57 实测 stSidebar 是
+   react-resizable 部件（内联 width 优先级高于样式表，须 !important）；
+   仅作用于展开态（aria-expanded="false" 折叠态不受影响）；搜索栏 sticky
+   区在主区，不受侧栏宽度影响 */
+[data-testid="stSidebar"][aria-expanded="true"] {{
+    width: 232px !important;
+    min-width: 232px !important;
+    max-width: 232px !important;
+}}
+
+/* v6-7 主区指标卡悬停：阴影加深（微升感、无位移——不加 transform）；
+   限定 stMain 作用域，侧栏白卡 box-shadow:none 的规则保持优先 */
+[data-testid="stMain"] [data-testid="stMetric"] {{
+    transition: box-shadow 0.2s ease;
+}}
+[data-testid="stMain"] [data-testid="stMetric"]:hover {{
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}}
 </style>
 """

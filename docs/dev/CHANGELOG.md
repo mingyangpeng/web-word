@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-11-11 · 批次 28：质检趋势可视化＋侧边栏书签快捷段＋CSS v6
+
+- 体例质检趋势 st.line_chart（最近 20 次通过率，分母 0 留空；pass_rate_trend 读面共用查询内核）
+- 侧边栏「📌 我的书签」快捷段：最近 3 条（page 锚跳转/sense 锚跳转+动词预选/entry 挂账）＋「全部书签」收尾
+- CSS v6：DataFrame 内凹阴影/st.table 白卡/表单 radio 行距/按钮 focus-visible 可达性/侧边栏 232px/指标卡悬停
+- 全量 **2928 passed / 0 failed**
+
 ## 2026-11-12 · 批次 26：Apple 原生主题定稿＋CSS v4 控件级
 
 - 根因修复：config.toml 加 [theme]（primaryColor #0071E3 等 Apple 色板）——原生控件全转 Apple Blue（此前默认红）

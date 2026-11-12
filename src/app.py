@@ -74,7 +74,16 @@ from src.reliability import render_reliability_page
 from src.cluster_analysis import render_semantic_analysis_page
 from src.template_engine import render_template_page
 from src.semantic_search import render_semantic_search_page
-from src.users_admin_page import render_users_admin_page, ROLE_LABELS, ROLE_BADGE_COLORS
+# FX-51：侧边栏书签 sense 锚跳转复用 FX-42 单一实现点（_extract_verb_from_title
+# verb 提取 / _annotate_target_visible 可达性闸——私有名跨模块导入有
+# _can_adjudicate_inbox 先例，本文件顶部同区）。
+from src.users_admin_page import (
+    render_users_admin_page,
+    ROLE_LABELS,
+    ROLE_BADGE_COLORS,
+    _annotate_target_visible,
+    _extract_verb_from_title,
+)
 from src.category_pack import CATEGORIES, load_pack
 # FX-29 工具页面接线（架构 §4/§9「页面经中央注册表调工具」）：导入内置工具包
 # 即把 ToolSpec 注册进中央注册表；页面按 tool_id 经 get_tool 取工具调 run()
@@ -1987,6 +1996,159 @@ def _render_login_section() -> None:
             st.sidebar.error("用户名或密码错误，或账号已停用。")
 
 
+# ============================================
+# 侧边栏「📌 我的书签」快捷段（FX-51：书签闭环的导航面——用户上下文域 UI
+# 第三块；书签创建在义项脊柱「📌 收藏本义位」、完整列表在账号管理页书签段，
+# 本段补日常可达性：最近 3 条一键跳转）
+# ============================================
+# 数量纪律：只取最近 3 条。user_context_db.list_bookmarks 的 limit 行数闸
+# （RV16-4，默认 500，updated_at DESC「最近在前」排序内置）传 3 即可——
+# 签名零变更；完整列表仍在账号管理页（该页 list_bookmarks 默认全量）。
+_SIDEBAR_BOOKMARK_ROWS = 3
+# 标题截断宽（字）：超出截断＋「…」收尾（侧边栏窄栏排版纪律）。
+_SIDEBAR_BOOKMARK_TITLE_MAX = 18
+# 锚类型 → 行首 emoji（user_context_db.BOOKMARK_ANCHOR_TYPES 三锚；未知
+# 类型灰点防御——数据层白名单外脏值不崩侧边栏）。
+_BOOKMARK_ROW_EMOJI = {"sense": "📌", "entry": "📄", "page": "🔗"}
+
+
+def _bookmark_display_title(row: Dict[str, Any]) -> str:
+    """书签行展示标题（RV2-3 第 2 类回退：title 空白 → 锚值 → 「（未命名）」；
+    与 users_admin_page 书签段 display_title 同一表达式，展示口径不分叉）。"""
+    anchor_id = str(row.get("anchor_id") or "")
+    return str(row.get("title") or "") or anchor_id or "（未命名）"
+
+
+def _bookmark_short_title(title: str) -> str:
+    """展示标题截断 18 字（_SIDEBAR_BOOKMARK_TITLE_MAX；超出以 … 收尾——
+    诚实省略号，截断可感知）。"""
+    if len(title) <= _SIDEBAR_BOOKMARK_TITLE_MAX:
+        return title
+    return title[:_SIDEBAR_BOOKMARK_TITLE_MAX] + "…"
+
+
+def _sidebar_bookmark_jump_callback(anchor_type: str, anchor_id: str,
+                                    display_title: str):
+    """书签行整行跳转 on_click 回调工厂（FX-51；照 users_admin_page
+    _goto_page_callback / _goto_sense_callback 先例，RV12-1：切页/预置只在
+    回调内写会话，正文期直写在 Streamlit 1.57 必崩页）。
+
+    三锚分支（与账号管理页书签段同口径）：
+      * page 锚：PAGE_KEYS 白名单双保险（渲染期只给合法锚出整行按钮 =
+        第一道，回调期再闸一道 = RV15-3；键集外脏锚不写会话，静默放弃）；
+      * sense 锚：照 FX-42 三分支——可达性闸（_annotate_target_visible，
+        annotate 页面层角色门折算）不过 → 只写 page＝annotate ＋ warning
+        flash 说明；verb 提取到（_extract_verb_from_title，'-S' 直连与
+        ' · S' 落库格式共存）→ 写两键 page=annotate ＋ annotate_verb=<verb>
+        （键在标注平台动词 selectbox（key="annotate_verb"）实例化前写入 =
+        官方「程序化设值」）；提取不到 → 只写 page ＋ info flash 引导手选；
+      * entry 锚：本批不跳（渲染期就不出整行按钮，caption 挂账——依赖
+        词条浏览器上下文），防御分支直达不了。
+    """
+
+    def _go() -> None:
+        """重跑开始前执行（on_click 时机）：合法键写入＋一次性提示入队。"""
+        if anchor_type == "page":
+            if anchor_id in PAGE_KEYS:  # RV15-3 双保险第二道（渲染期已闸）
+                st.session_state.update(page=anchor_id)
+            return
+        if anchor_type == "sense":
+            if not _annotate_target_visible(_current_user()):
+                st.session_state.update(page="annotate")
+                ui_kit.flash(
+                    "标注平台对当前账号不可见——已回退仅切页（不预置动词）。",
+                    level="warning",
+                )
+                return
+            verb = _extract_verb_from_title(display_title)
+            if verb:
+                st.session_state.update(page="annotate", annotate_verb=verb)
+            else:
+                st.session_state.update(page="annotate")
+                ui_kit.flash(f"请在标注平台选择动词 {display_title}", level="info")
+
+    return _go
+
+
+def _render_sidebar_bookmarks() -> None:
+    """侧边栏「📌 我的书签」快捷段（FX-51；render_sidebar 内、导航区（ls_nav
+    容器）之后、AI 待办徽章/实验统计之前调用——唯一调用点）。
+
+    口径：
+      * 未登录整段不渲染（own-rows-only 口径的 UI 表达——数据层
+        _resolve_user_id fail-closed 同源，这里 UI 层先闸一层）；
+      * 无书签整段不渲染（不占版面——「最近 3 条」为空即整个段落消失）；
+      * 库降级（DB_AVAILABLE=False / 读取意外异常）段头照出＋灰注如实说明
+        （与反馈导出离线灰注同款表达；数据层 list_bookmarks 对 pymysql
+        错误自兜底返回 []，fail-closed 语义为「读不到＝空」——UI 不猜
+        区分，只对显式离线/意外异常出灰注）；
+      * 行形态：emoji 按类型（📌 sense/📄 entry/🔗 page）＋标题截断 18 字
+        ＋整行按钮（use_container_width，on_click 跳转见
+        _sidebar_bookmark_jump_callback）；entry 锚不出按钮，caption 行
+        挂账（FX-42 书签段「不做假按钮」同口径）；
+      * 收尾行「全部书签 →」：on_click 写 page="users_admin"（跳账号管理
+        页书签段；导航按钮 lambda 回调同款，RV12-1 合规）。
+    """
+    me = _current_user()
+    if not isinstance(me, dict):
+        return
+    if not DB_AVAILABLE:
+        st.sidebar.markdown(
+            "<div class='ls-nav-header'>📌 我的书签</div>",
+            unsafe_allow_html=True,
+        )
+        st.sidebar.caption("🗄️ 数据库离线，书签暂不可读。")
+        return
+    try:
+        rows = user_context_db.list_bookmarks(limit=_SIDEBAR_BOOKMARK_ROWS)
+    except Exception as e:  # noqa: BLE001 — 数据层已自兜底，防御一层
+        logger.error(f"侧边栏书签读取失败（降级灰注）: {e}")
+        st.sidebar.markdown(
+            "<div class='ls-nav-header'>📌 我的书签</div>",
+            unsafe_allow_html=True,
+        )
+        st.sidebar.caption("🗄️ 书签读取失败（数据库异常），暂不可用。")
+        return
+    if not rows:
+        return
+    st.sidebar.markdown(
+        # 段头照 ls-nav-header 风格 class 复用（批次 22 灰阶小节头样式）；
+        # 文本为内置常量（非用户数据），无需转义。
+        "<div class='ls-nav-header'>📌 我的书签</div>",
+        unsafe_allow_html=True,
+    )
+    entry_pending = False
+    for row in rows:
+        anchor_type = str(row.get("anchor_type") or "")
+        anchor_id = str(row.get("anchor_id") or "")
+        display_title = _bookmark_display_title(row)
+        emoji = _BOOKMARK_ROW_EMOJI.get(anchor_type, "•")
+        label = f"{emoji} {_bookmark_short_title(display_title)}"
+        can_jump_page = anchor_type == "page" and anchor_id in PAGE_KEYS
+        if anchor_type != "sense" and not can_jump_page:
+            # entry 锚（挂账不跳）与 page 锚键集外脏锚（PAGE_KEYS 白名单
+            # 第一道闸）：不出整行按钮（不做假按钮），灰字行如实展示。
+            if anchor_type == "entry":
+                entry_pending = True
+            st.sidebar.caption(label)
+            continue
+        st.sidebar.button(
+            label,
+            key=f"sidebar_bm_{int(row.get('id') or 0)}",
+            use_container_width=True,
+            on_click=_sidebar_bookmark_jump_callback(
+                anchor_type, anchor_id, display_title),
+        )
+    if entry_pending:
+        st.sidebar.caption("📄 词条锚暂不支持跳转（依赖词条浏览器上下文），挂账中。")
+    st.sidebar.button(
+        "全部书签 →",
+        key="sidebar_bookmarks_all",
+        use_container_width=True,
+        on_click=lambda: st.session_state.update(page="users_admin"),
+    )
+
+
 def render_sidebar():
     """渲染侧边栏组件（折叠/展开双分支，D-01）"""
     # 会话角色防陈旧（R1-P2b）：每次 rerun、先于 main() 页面分派实时回查
@@ -2063,6 +2225,11 @@ def render_sidebar():
                     use_container_width=True,
                     on_click=(lambda pk=key: st.session_state.update(page=pk)),
                 )
+
+    # 📌 我的书签快捷段（FX-51）：书签闭环的导航面（用户上下文域 UI 第三块）。
+    # 位置契约：导航区（ls_nav 容器）之后、AI 待办徽章/实验统计之前。登录门/
+    # 空态不渲染/库降级灰注/最近 3 条纪律见 _render_sidebar_bookmarks。
+    _render_sidebar_bookmarks()
     st.sidebar.divider()
 
     # 🤖 AI 协作待办徽章（批次 7：收件箱 pending 计数，30s 缓存；登录后可见）。
