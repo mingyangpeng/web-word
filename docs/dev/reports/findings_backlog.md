@@ -37,10 +37,11 @@
 ### 代码质量（R6，全 P3）
 - [x] R6-2 工具层五文件 docstring 阶段口径齐＋_session_roles 0 残留（FX-15 核验完成）
 - [x] R6-4 收敛 ✅ FX-17：5/6 处本地副本改 `from src.db_utils import … as _原名`（签名零变化）；mysql_db._column_exists **声明豁免**（三参形态被 test_schema 迁移契约桩钉死，db_utils 两参版被 test_fxb 反钉，docstring 注明关系）；cluster_analysis._as_int_id 同名不同义按台账不动
-- [ ] R6-5 审定状态链下沉＋配色统一；R6-6 状态枚举域前缀（export_center EXPORT_STATUS_* 已由 FX10 批修，余项待）；R6-7 ANCHOR_TYPES 改名
+- [ ] R6-5 审定状态链下沉＋配色统一；R6-6 状态枚举域前缀（export_center EXPORT_STATUS_* 已由 FX10 批修，余项待）
+- [x] R6-7 ANCHOR_TYPES 改名 ✅ 监工第五轮核实已在码（批次 14 即落）——media_db 元组常量加域前缀 MEDIA_ANCHOR_TYPES（ANCHOR_WORD/ANCHOR_SENSE/ANCHOR_EXAMPLE/ANCHOR_SCHEMA，media_db.py:83-90），语义化命名＋跨模块引用（app/sense_spine/entry_assembly 等 4 处）——台账陈旧销
 - [x] R6-8/R6-9/R6-10 ✅ 监工第五轮核实已在码（批次 12 起）——TASK_TYPE_LABELS 单一导出于 annotation_flow:53（collab/dict_admin/users_admin 四处消费改引，9 处引用）；widget key 已带 users_admin_ 前缀（role_grant_user 等）；annotation_flow logger 调用 68 处（四处补 logger 已覆盖）——台账三小项销
 - [ ] R6-11 17 个补 docstring——P3 风格项机械补注，**降为阶段 2**（FX10 批已顺手补 pipeline_status 六个 _format_*、template_engine、export_center 数处）
-- [ ] R6-12 媒体状态机下沉 media_db
+- [x] R6-12 媒体状态机下沉 media_db ✅ 监工第五轮核实已在码——advance_binding_status/next_binding_status/list_assets 单一实现归数据层（media_db.py:618「R6-12 自 dict_admin_pages 下沉」注），页面层零自留（dict_admin_pages.py:2370）——台账陈旧销
 - [ ] R6-1 拆文件建议（不实施——结构性建议，维持现状，阶段 2 再议）
 
 ### 文档一致性（R7）
