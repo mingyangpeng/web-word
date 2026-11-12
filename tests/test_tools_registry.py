@@ -303,10 +303,11 @@ class TestBuiltinTools:
         # FX-18 十类补全后注册表共 11 工具（十类＋multimedia）；
         # 试点三工具仍是全量注册集合的子集，工具总数由 test_fx18_fixes 钉死。
         assert set(EXPECTED_BUILTIN_FIELDS) <= {t.id for t in list_tools()}
+        # 批次 32 起共 12 工具：十一类＋multimedia＋schema_family（图式范畴化）
         assert {t.id for t in list_tools()} == {
             "admission", "alignment", "clustering", "corpus_evidence",
             "feature_coding", "multimedia", "reliability", "schema",
-            "semantic_search", "template", "typicality",
+            "schema_family", "semantic_search", "template", "typicality",
         }
 
     def test_stage_lookup_finds_pilots(self):
