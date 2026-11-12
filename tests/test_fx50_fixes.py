@@ -260,6 +260,14 @@ class _StubSt:
     def line_chart(self, *args, **kwargs):
         self.charts.append((args[0] if args else None, kwargs))
 
+    def altair_chart(self, *args, **kwargs):
+        # 批次 29：趋势图改 altair_chart（y 轴钉 0~1）——记录面同 line_chart
+        self.charts.append((args[0] if args else None, kwargs))
+
+    def altair_chart(self, *args, **kwargs):
+        # 批次 29：趋势图改 altair_chart（y 轴钉 0~1）——记录面同 line_chart
+        self.charts.append((args[0] if args else None, kwargs))
+
     def texts(self, kind=None):
         return [t for k, t in self.messages if kind is None or k == kind]
 
@@ -317,15 +325,14 @@ def test_section_trend_chart_and_placement(monkeypatch):
                          trend=_trend_rows([0.5, None, 0.75]))
     _render_style_check_section()
     assert len(stub.charts) == 1
-    df, kwargs = stub.charts[0]
-    assert df.index.name == "created_at"
-    assert isinstance(df.index, pd.DatetimeIndex)   # x 轴时间序
-    assert list(df.columns) == ["通过率"]
-    vals = df["通过率"].tolist()
-    assert vals[0] == pytest.approx(0.5)
-    assert vals[2] == pytest.approx(0.75)
-    assert math.isnan(vals[1])                      # 分母 0 → 线上留空
-    assert str(df.index[0])[:10] == "2026-11-09"
+    # 批次 29：趋势图改 altair_chart（y 轴钉 0~1）——从 chart spec 断言
+    chart = stub.charts[0][0]
+    spec = chart.to_dict()
+    enc = spec["encoding"]
+    assert enc["x"]["field"] == "created_at" and enc["x"]["type"] == "temporal"
+    y = enc["y"]
+    assert y["field"] == "通过率" and y["type"] == "quantitative"
+    assert y["scale"]["domain"] == [0, 1]           # y 轴钉 0~1（监工裁决落地）
     captions = stub.texts("caption")
     assert any("通过率趋势（最近 3 次）" in c and "线上留空" in c
                for c in captions)

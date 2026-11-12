@@ -123,6 +123,10 @@ class _StubSt:
         # 为 None，不走到图表，仅防新渲染路径炸桩）
         self.charts.append((args[0] if args else None, kwargs))
 
+    def altair_chart(self, *args, **kwargs):
+        # 批次 29：趋势图改 altair_chart（y 轴钉 0~1）——记录面同 line_chart
+        self.charts.append((args[0] if args else None, kwargs))
+
     def texts(self, kind=None):
         return [t for k, t in self.messages if kind is None or k == kind]
 

@@ -1586,7 +1586,14 @@ def _render_style_check_trend(category: str) -> None:
     if any(r.get("rate") is None for r in trend):
         note = "；分母 0（还没有可比项）的 run 无通过率，线上留空"
     st.caption(f"通过率趋势（最近 {len(trend)} 次）{note}")
-    st.line_chart(df)
+    # FX-50 报备待裁决项落地（监工轮）：y 轴显式钉 0~1——通过率语义上限 1，
+    # 随数据浮动会夸大波动；仍走 Streamlit 原生 Altair 渲染
+    import altair as alt
+
+    chart = alt.Chart(df.reset_index()).mark_line(point=True).encode(
+        x="created_at:T", y=alt.Y("通过率:Q", scale=alt.Scale(domain=[0, 1])),
+    )
+    st.altair_chart(chart, use_container_width=True)
 
 
 def _style_check_run_clicked(category: str, me: Dict[str, Any]) -> None:
@@ -1626,8 +1633,8 @@ def _style_check_run_clicked(category: str, me: Dict[str, Any]) -> None:
     warned = int(result.get("warned") or 0)
     ui_kit.flash(
         f"体例质检完成：run #{result.get('run_id')}（范畴 {result.get('category')}）"
-        f"通过 {passed}/{passed + failed}、警告 {warned} 项单列 —— 结果见下方"
-        "逐项表与历史记录；未过项的处置口径见其「说明」列。")
+        f"通过 {passed}/{passed + failed}、警告 {warned} 项单列 —— 逐项表与"
+        "历史记录已更新在本段内，无需滚动查找；未过项的处置口径见其「说明」列。")
     logger.info(
         f"dict_admin {me.get('username')} 运行体例质检（category={category}）"
         f"→ run #{result.get('run_id')}：pass={passed} fail={failed} warn={warned}")
