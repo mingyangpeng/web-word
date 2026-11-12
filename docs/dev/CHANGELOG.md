@@ -5,7 +5,7 @@
 - 理论落地（给师兄讨论 docx「共享图式提取、图式范畴化」段）：对各子簇提炼的事件图式本身做二级归纳——梳理图式亲缘关系与家族相似性，建立更高层级的事件类型谱系
 - 引擎 `src/schema_family.py`：三级归属向量（核心=2/槽位=1/缺省=0）→ Gower nominal（类型差异不取程度差，避免循环论证）→ UPGMA（average linkage，max_distance=0.5 切割）→ 图式家族＋medoid 代表图式；方法论自洽（义位聚类同一套机器用在图式对象上）
 - 工具 `schema_family_tool`：第 12 个内置 ToolSpec（stage=schema_family，P 构件工序 8 下游，两步激活照全仓口径）
-- 页面语义分析「🌐 图式谱系」tab（第 10 tab）：家族表＋族卡片（代表图式核心要素）；结果按范畴×语言 session 隔离，实时计算不落库
+- 页面语义分析「🌐 图式谱系」tab（第 10 tab）：家族表＋族卡片（代表图式核心要素）；结果按范畴×语言 session 隔离（点「计算」重算），不落库
 - 修复 build_schema_families 代表图式错位缺陷（族内位置误索引按族序排列的 medoids——回归断言钉死每族恰一 is_prototype 且与 prototype 一致）
 - 测试 `tests/test_schema_family.py` 24 条（向量/Gower 已知值/UPGMA 切割/medoid 平局/端到端/工具委托/RegistryError 必填拒绝/tab 打桩渲染＋<2 图式降级）；test_tools_registry 工具集钉 12、fx18 EXPECTED_TOOL_IDS 同步
 - 全量 **3037 passed / 0 failed**（批次 31 基线 3013 → +24）
