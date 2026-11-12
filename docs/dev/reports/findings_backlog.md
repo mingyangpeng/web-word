@@ -40,7 +40,7 @@
 - [x] R6-5 审定状态链下沉＋配色统一 ✅ 监工第六轮核实已在码——提交态枚举域下沉 annotation_flow（STATUS_SUBMITTED/ADJUDICATED/SUBMISSION_STATUSES 常量域，:60-63）；配色统一 REVIEW_STATUS_COLORS 单一事实源在 design_system:58（跨模块消费 3 处改引）——台账陈旧销。R6-6 状态枚举域前缀：export_center EXPORT_STATUS_* 已由 FX10 批修；annotation_flow STATUS_* 同款域前缀已在码——余项经核实无未前缀枚举域，一并销
 - [x] R6-7 ANCHOR_TYPES 改名 ✅ 监工第五轮核实已在码（批次 14 即落）——media_db 元组常量加域前缀 MEDIA_ANCHOR_TYPES（ANCHOR_WORD/ANCHOR_SENSE/ANCHOR_EXAMPLE/ANCHOR_SCHEMA，media_db.py:83-90），语义化命名＋跨模块引用（app/sense_spine/entry_assembly 等 4 处）——台账陈旧销
 - [x] R6-8/R6-9/R6-10 ✅ 监工第五轮核实已在码（批次 12 起）——TASK_TYPE_LABELS 单一导出于 annotation_flow:53（collab/dict_admin/users_admin 四处消费改引，9 处引用）；widget key 已带 users_admin_ 前缀（role_grant_user 等）；annotation_flow logger 调用 68 处（四处补 logger 已覆盖）——台账三小项销
-- [ ] R6-11 17 个补 docstring——P3 风格项机械补注，**降为阶段 2**（FX10 批已顺手补 pipeline_status 六个 _format_*、template_engine、export_center 数处）
+- [x] R6-11 17 个补 docstring ✅ 监工轮 ast 双面核实已在码销账——src/*.py 顶层公开函数/类＋公开类方法缺 docstring 均 **0 缺口**（FX10 批顺手补 pipeline_status 六个 _format_*、template_engine、export_center 数处后，历批累计已全覆盖；原文 17 个清单丢失，以现状核实为准）
 - [x] R6-12 媒体状态机下沉 media_db ✅ 监工第五轮核实已在码——advance_binding_status/next_binding_status/list_assets 单一实现归数据层（media_db.py:618「R6-12 自 dict_admin_pages 下沉」注），页面层零自留（dict_admin_pages.py:2370）——台账陈旧销
 - [ ] R6-1 拆文件建议（不实施——结构性建议，维持现状，阶段 2 再议）
 
