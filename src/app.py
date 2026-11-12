@@ -443,6 +443,17 @@ _PAGE_ZONE_PREFIX: Dict[str, str] = {
 # 区 emoji 清洗（RV21-5 标签瘦身：前缀括号内去区 emoji，页名自带 emoji 不重复）
 _ZONE_EMOJI_RE = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]")
 
+# 批次 30 五构件插件化：页面键 → 所属模块键（MODULE_SPECS 映射的本地投影；
+# 语义建模/编纂产出等区页归属——查阅展示 U/协作 A/标注 D/编纂 P）
+_PAGE_TO_MODULE: Dict[str, str] = {
+    "annotate": "d", "submission": "d", "reliability": "d",
+    "cluster": "p", "template": "p", "writing": "p", "lexical": "p",
+    "dict_admin": "p",
+    "ai_hub": "a",
+    "search": "u", "graph": "u", "corpus": "u", "domain": "u", "semantic": "u",
+}
+
+
 # 区序号（重排用）：未知键取 len(_SIDEBAR_ZONES)，稳定沉到列表尾。
 _ZONE_ORDER: Dict[str, int] = {
     key: i
@@ -558,6 +569,7 @@ st.markdown(f"""
 # 全装饰性（零色板变更，WCAG 对比度矩阵不受影响）；模块级注入一次。
 # ============================================
 from src.design_system import get_global_theme_css
+from src.module_plugins import disabled_modules, is_module_enabled
 
 st.markdown(get_global_theme_css(), unsafe_allow_html=True)
 
@@ -2184,6 +2196,10 @@ def render_sidebar():
     # 不要再传 index=：key="page" 一旦存在于 session_state，再传 index 会在
     # 旧版 Streamlit 上抛 StreamlitAPIException、新版上打重复赋值警告。
     visible_keys = _visible_page_keys(_current_user())
+    # 批次 30 五构件插件化：停用模块的页面从侧边栏隐藏（is_module_enabled
+    # fail-open——库不可用时全启用，导航不因基础设施抖动而消失）
+    visible_keys = [k for k in visible_keys
+                    if is_module_enabled(_PAGE_TO_MODULE.get(k, ""))]
     if st.session_state.get("page") not in visible_keys:
         st.session_state["page"] = "search"
     # RV15-3（FX-35）：登录落地分支 2（续接点命中）落的灰注旗标 —— radio 上方
@@ -2357,8 +2373,38 @@ def render_sidebar():
 # ============================================
 # 主区域组件
 # ============================================
+def render_module_gate(page: str) -> bool:
+    """批次 30 五构件插件化：停用模块的页面直访拦截（侧边栏隐藏之外的
+    第二道门——会话残留 page 直访时 fail-closed）。
+
+    FX-54 实测修正：gate 挂在 main() 分派链最前端、按 _page **捕获值**判定
+    （侧边栏的残留页重置只影响下一次运行，本次运行仍按用户请求的页分派）；
+    此前无参版本只挂 render_main_area（else 分支）而模块页分支全部绕过——
+    拦截提示在真实浏览器中永远无法出现（死路），已修。
+
+    返回 True=放行继续分派；False=已渲染拦截提示（调用方 return）。
+    """
+    mod = _PAGE_TO_MODULE.get(page)
+    if mod is None or is_module_enabled(mod):
+        return True
+    from src.module_plugins import MODULE_SPECS
+
+    spec = MODULE_SPECS[mod]
+    st.warning(
+        f"🧩 功能模块「{spec['name']}」（{spec['symbol']} 构件）已被词典管理员停用 "
+        "—— 页面暂不可用；如需使用请联系词典管理员在「👥 账号管理」页的"
+        "「📦 功能模块」段重新勾选启用。"
+    )
+    if st.button("← 返回搜索释义", key="module_gate_back"):
+        st.session_state["page"] = "search"
+        st.rerun()
+    return False
+
+
 def render_main_area():
     """渲染主区域组件"""
+
+
     # 词条装配预览（批次 9 Agent AS，工序 14 消费侧）函数级导入：本文件顶部
     # import 块因 sys.path 前置本就整块 E402，此处仿 pandas 的函数级导入先例，
     # 不给 flake8 新增告警。
@@ -4102,6 +4148,10 @@ def main():
     # 丢弃提示的问题 —— 上一轮 ui_kit.flash 落的提示在这里消费转渲染，
     # 置于页面分派之前，位于正文顶部；队列消费即清空不跨轮重复）。
     ui_kit.pop_and_render_flash()
+    # 批次 30 五构件插件化：停用模块直访拦截（FX-54 实测修正——按 _page
+    # 捕获值判定，模块页分派分支全部经过此闸；search∈U 锁定不可停不拦）
+    if not render_module_gate(_page):
+        return
     if _page == "graph":
         render_interactive_graph_page()
     elif _page == "corpus":

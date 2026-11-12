@@ -357,3 +357,13 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] **CSS v6 微调批**（FX-52）——DataFrame 内凹阴影覆盖层／st.table 白卡发丝边／表单内 radio 行距收紧／divider 间距／按钮 focus-visible 可达性（accent-soft outline）／侧边栏 232px（!important 压 react-resizable 内联宽）／指标卡悬停加深
 - [x] .flake8 per-file-ignores 补 design_system.py（E302/F541 为 f-string CSS 模板固有形态，~500 对花括号反转义不划算）
 - [x] 核实两件入 deploy/README：8501 端口=0.0.0.0（公网时应改 127.0.0.1:8501:8501）／st.iframe 经浏览器请求 /app/static/（RV4-7 deny all 不可行→限速+noindex 折中）
+
+## 批次 30（2026-11-12 · 五构件插件化：D·C·P·A·U 模块勾选启停）
+
+> 用户需求「做成五个插件的模式……供词典管理员进行选取的勾选」→ FX-54 交付。全量 **2937 passed / 0 failed**（批次 28 基线 2928 → +9；2 skipped 口径不变）。
+
+- [x] **插件注册表** `src/module_plugins.py`——五模块 MODULE_SPECS（D 义位权威库/C 配置定义层/P 编纂工序链/A 协作智能层/U 编者界面层，页面映射与侧边栏分区对齐）＋module_plugins 表（module_key 主键/enabled 默认 1/enabled_by 软引用留痕——RV2-3 第 1 类）；is_module_enabled 单一判定（无行/表未建/库不可用/未知键 → True，fail-open 与工具两步激活同 philosophy：禁用是显式动作）；set_module_enabled 写入前校验模块键＋锁定项拒绝；filter_pages_by_modules 侧边栏/落地共用
+- [x] **「📦 功能模块（五构件插件）」勾选段**（categories_tools_page 范畴与工具段顶部）——词典管理员勾选启停（持久化＋flash 留痕）；C/U 锁定项勾选框置灰带「🔒 平台底线，不可停用」（配置层是引擎输入、查阅层是平台底线，服务端写入前二次拒绝）；未登录/非管理员不渲染段，非词典管理员勾选框置灰
+- [x] **侧边栏过滤＋直访拦截**（app.py）——visible_keys 按 is_module_enabled 过滤（停用模块页面从侧边栏消失）；render_module_gate 直访拦截 fail-closed（「🧩 功能模块已被词典管理员停用」提示＋「← 返回搜索释义」按钮）；停用为入口级开关不撤数据，重新勾选即恢复
+- [x] 测试 9 条 `tests/test_fx54_fixes.py`（表 CRUD/默认全启用/锁定项拒绝/未知键放行/list_settings 形态/页面过滤/fail-open 降级/非词典管理员拒绝/侧边栏隐藏 AppTest）；test_fx18 勾选数断言适配（+5 锁定态渲染）
+- 备注：文档收口同批（FX-55）——使用说明书 §四补「🧩 功能模块」描述／帮助母本 7.2 扩「📦 功能模块」子段（五构件清单表）／架构规范五构件处加对齐注

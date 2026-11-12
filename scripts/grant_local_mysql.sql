@@ -165,6 +165,12 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'localhost'
 GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
 
+-- FX-54：批次 30 五构件插件化测试库（tests/test_fx54_fixes.py）
+GRANT ALL PRIVILEGES ON `web\_word\_fx54\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx54\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx54\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
+
 -- FX-31：用户上下文域 5 表测试库（tests/test_fx31_fixes.py）
 GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON `web\_word\_fx31\_test`.* TO 'web_word_user'@'localhost';
@@ -222,4 +228,9 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx27\_test`.* TO 'web_word_user'@'%';
 GRANT ALL PRIVILEGES ON `web\_word\_fx29\_test`.* TO 'web_word_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON `web\_word\_fx29\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx29\_test`.* TO 'web_word_user'@'%';
+FLUSH PRIVILEGES;
+-- FX-39：落地三分支 AppTest 沙箱（tests/test_fx39_fixes.py，监工轮归位）
+GRANT ALL PRIVILEGES ON `web\_word\_fx39\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_fx39\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_fx39\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;

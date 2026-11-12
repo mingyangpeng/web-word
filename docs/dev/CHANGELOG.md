@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-12 · 批次 30：五构件插件化——D·C·P·A·U 模块勾选启停
+
+- 插件注册表 `src/module_plugins.py`：五模块 MODULE_SPECS（D 义位权威库/C 配置定义层/P 编纂工序链/A 协作智能层/U 编者界面层）＋`module_plugins` 表持久化勾选（enabled_by 留痕）；默认全启用（无行/库降级 fail-open——升级不自伤）
+- 「📦 功能模块（五构件插件）」勾选段（categories_tools_page 范畴与工具段顶部）：词典管理员勾选启停；C/U 锁定项勾选框置灰（配置层是引擎输入、查阅层是平台底线——服务端写入前二次拒绝）
+- 侧边栏过滤＋直访拦截（app.py）：停用模块的页面从侧边栏隐藏；render_module_gate 直访拦截 fail-closed（「🧩 功能模块已被词典管理员停用」提示＋返回搜索释义）；停用为入口级开关不撤数据，重新勾选即恢复
+- 测试 `tests/test_fx54_fixes.py` 9 条（表 CRUD/默认启用/锁定项拒绝/fail-open/权限闸/侧边栏隐藏 AppTest）；test_fx18 勾选数断言适配（+5 锁定态渲染）
+- 全量 **2937 passed / 0 failed**（批次 28 基线 2928 → +9；2 skipped 口径不变）
+
 ## 2026-11-11 · 批次 28：质检趋势可视化＋侧边栏书签快捷段＋CSS v6
 
 - 体例质检趋势 st.line_chart（最近 20 次通过率，分母 0 留空；pass_rate_trend 读面共用查询内核）
