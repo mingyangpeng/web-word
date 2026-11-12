@@ -791,8 +791,9 @@ class TestCategoriesToolsPage:
         assert not any("available 位仅平台管理员可操作" in i.value
                        for i in at.info)
         assert any("enabled 位仅词典管理员可操作" in i.value for i in at.info)
-        # available 区 11 个开关（enabled 区对本角色不渲染开关）
-        assert len(at.checkbox) == len(list_tools())
+        # available 区 11 个开关 + 功能模块 3 个可勾选（d/p/a——c/u 锁定
+        # 禁用态 checkbox 亦渲染，共 5 个；批次 30 五构件插件化）
+        assert len(at.checkbox) == len(list_tools()) + 5
         avail_boxes = [c for c in at.checkbox if c.label == "available"]
         assert len(avail_boxes) == len(list_tools())
         assert all(not c.disabled for c in avail_boxes)

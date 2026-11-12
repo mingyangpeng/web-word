@@ -77,6 +77,7 @@ def render_categories_tools_page() -> None:
 
     st.markdown(f"<h1 style='{HEADER_H1}'>🧩 范畴与工具</h1>",
                 unsafe_allow_html=True)
+    _render_module_plugins_section(me)
     st.markdown(
         "<p style='color:#4a5568;margin:0 0 12px 0;'>两步激活"
         "（架构 §4）：平台管理员维护 <strong>available</strong>（安装/依赖/"
@@ -204,3 +205,72 @@ def render_categories_tools_page() -> None:
             } for r in audit_rows],
             use_container_width=True, hide_index=True,
         )
+
+# ============================================
+# 批次 30：五构件功能模块勾选（用户需求「五个插件模式」——词典管理员勾选启停）
+# ============================================
+def _render_module_plugins_section(me: Dict[str, Any]) -> None:
+    """📦 功能模块（五构件 D·C·P·A·U 插件化）：词典管理员勾选启停。
+
+    语义（src/module_plugins.py 单一实现）：
+      * 勾选持久化 module_plugins 表；停用模块——侧边栏入口隐藏＋直访拦截；
+      * 配置定义层（C）与编者界面层（U）为**锁定项**（勾选框置灰）：配置层
+        是引擎输入、查阅层是平台底线——停用任一等于停全站；
+      * 未登录/非管理员不渲染段；库降级灰注（R4 归因口径）。
+    """
+    try:
+        from src.module_plugins import (MODULE_SPECS, is_module_enabled,
+                                        list_module_settings,
+                                        set_module_enabled)
+    except ImportError as e:  # noqa: BLE001
+        st.warning(f"插件注册表加载失败：{e}")
+        return
+    if not isinstance(me, dict):
+        return
+    effective = effective_six_roles(me)
+    is_dict = "dict_admin" in effective
+    st.markdown(f"<h2 style='{HEADER_H2}'>📦 功能模块（五构件插件）</h2>",
+                unsafe_allow_html=True)
+    st.caption(
+        "勾选启用/取消勾选停用对应构件模块——停用的模块侧边栏入口隐藏、"
+        "直访拦截；数据不受影响，重新勾选即恢复。配置定义层与编者界面层"
+        "为平台底线（锁定项）。"
+    )
+    try:
+        settings = {row["module_key"]: row for row in list_module_settings()}
+    except Exception as e:  # noqa: BLE001
+        st.warning(f"模块设置读取失败（R4 归因）：{e}")
+        return
+    for key, spec in MODULE_SPECS.items():
+        row = settings.get(key) or {}
+        enabled = bool(row.get("enabled", True))
+        lock = spec.get("lock")
+        label = f"{spec['symbol']} 构件｜{spec['name']}——{spec['description']}"
+        if lock:
+            st.checkbox(
+                label + "（🔒 平台底线，不可停用）",
+                value=True, disabled=True,
+                key=f"module_lock_{key}",
+            )
+            continue
+        new_enabled = st.checkbox(
+            label,
+            value=enabled,
+            disabled=not is_dict,
+            key=f"module_toggle_{key}",
+            help="勾选=启用（侧边栏入口可见）；取消=停用（入口隐藏＋直访拦截）",
+        )
+        if new_enabled != enabled:
+            try:
+                ok = set_module_enabled(key, new_enabled, me)
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                continue
+            if ok:
+                ui_kit.flash(
+                    f"功能模块「{spec['name']}」已{'启用' if new_enabled else '停用'}"
+                    "（已留痕）。"
+                )
+                st.rerun()
+            else:
+                st.error("模块勾选写库未生效（见服务端日志）。")
