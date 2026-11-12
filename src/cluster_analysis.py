@@ -2787,7 +2787,8 @@ def _render_schema_family_tab(category: str, language: str) -> None:
     对各簇提取的事件图式本身做二级归纳：三级归属向量（核心=2/槽位=1/缺省=0）
     → Gower nominal → UPGMA → 图式家族＋medoid 代表图式——更高层级的事件
     类型谱系。工具面：schema_family_tool（第 12 个内置工具，两步激活照全仓
-    口径）。数据面：不落库（实时计算，簇数据变更即随指纹重算）。
+    口径）。数据面：不落库；结果按范畴×语言会话缓存，点「计算」重算（
+    derive_cluster_schemas 每次渲染取簇数据，无缓存——数据变更后手动重算）。
     """
     from src import schema_family as _sf
     from src.template_engine import derive_cluster_schemas
