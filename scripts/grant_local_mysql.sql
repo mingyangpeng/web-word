@@ -163,6 +163,11 @@ FLUSH PRIVILEGES;
 GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx25\_test`.* TO 'web_word_user'@'%';
+-- 资源注册表集成测试库（tests/test_registry_db.py；漏记补齐——
+-- 本机 root 已手工授权过，落脚本保新环境可复现）
+GRANT ALL PRIVILEGES ON `web\_word\_registry\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_registry\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_registry\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
 
 -- FX-54：批次 30 五构件插件化测试库（tests/test_fx54_fixes.py）
