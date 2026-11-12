@@ -285,7 +285,8 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] RV16-1 驾驶舱聚合缓存——手写 TTL 60s（**None 不缓存**，R4 归因即时可见；测试清缓存 fixture 配套）
 - [x] RV16-1 list_recent_runs 瘦身——include_detail=False 消费（历史小表不再拉 MEDIUMTEXT）
 - [x] page_guides「 vs 」行话消缺（copy_quality 契约）
-- [ ] 留档：ui.default_category 范畴下拉消费点（semantic/cluster/template 页——app.py 无该控件，勘察如实）；sense/entry 锚跳转（依赖页面上下文）；localStorage 合并
+- [x] **留档行如实化（监工轮对码核实）**：ui.default_category 已 5 处消费（cluster_analysis/dict_admin_pages×2/template_engine/semantic_search——FX-41，test_fx41 钉死；批次 20 勘察时消费点尚未落，后续批次补齐）；sense/entry 锚跳转已在码（app.py 落地分支 FX-42＋侧边栏书签 sense 锚 FX-51，test_fx42/fx51 钉死）
+- [ ] 留档：localStorage 合并（图谱收藏/备注仍只存浏览器本地 wordgraph.annotations.v1——跨设备同步到服务端待规划，等大件批次）
 
 ## 批次 21（2026-11-11 · 界面美化：全局主题层＋标签瘦身）
 
@@ -367,3 +368,23 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] **侧边栏过滤＋直访拦截**（app.py）——visible_keys 按 is_module_enabled 过滤（停用模块页面从侧边栏消失）；render_module_gate 直访拦截 fail-closed（「🧩 功能模块已被词典管理员停用」提示＋「← 返回搜索释义」按钮）；停用为入口级开关不撤数据，重新勾选即恢复
 - [x] 测试 9 条 `tests/test_fx54_fixes.py`（表 CRUD/默认全启用/锁定项拒绝/未知键放行/list_settings 形态/页面过滤/fail-open 降级/非词典管理员拒绝/侧边栏隐藏 AppTest）；test_fx18 勾选数断言适配（+5 锁定态渲染）
 - 备注：文档收口同批（FX-55）——使用说明书 §四补「🧩 功能模块」描述／帮助母本 7.2 扩「📦 功能模块」子段（五构件清单表）／架构规范五构件处加对齐注
+
+## 批次 31（2026-11-13 · 侧边栏净化：三横幅压行＋改密折叠＋搜索页长文折叠）
+
+> 用户反馈「左边的登录了咋一直有修改密码提示，还有就是一堆文字干啥的」→ 64d74f7。全量 **3013 passed / 0 failed**（+124：fx39 沙箱归位后真库用例激活＋前置批次增量）。
+
+- [x] 默认口令守卫/签发口令横幅：大卡压一行 caption（细节收进 expander，语义保留）
+- [x] 修改密码 expander 默认折叠（用户「侧边栏太堆」反馈——入口可见不消失）
+- [x] 搜索页：理论长文折叠进 expander，搜索框前置（搜索页「一堆文字」反馈）
+- [x] test_integration_apptest／test_security_hardening 断言适配
+
+## 批次 32（2026-11-13 · 图式范畴化插件：「图式→图式谱系」缺失环节平台化）
+
+> 给师兄讨论 docx「共享图式提取、图式范畴化与多维释义模板构建」段理论落地 → e014afc。全量 **3037 passed / 0 failed**（批次 31 基线 3013 → +24）。
+
+- [x] **引擎** `src/schema_family.py`——三级归属向量（核心=2/槽位=1/缺省=0）→ Gower nominal（类型差异不取程度差，避免循环论证）→ UPGMA（average linkage，max_distance=0.5 切割）→ 图式家族＋medoid 代表图式；方法论自洽（义位聚类同一套机器用在图式对象上）
+- [x] **工具** `schema_family_tool`——第 12 个内置 ToolSpec（stage=schema_family，P 构件工序 8 下游，两步激活照全仓口径）
+- [x] **页面** 语义分析第 10 tab「🌐 图式谱系」——家族表＋族卡片（代表图式核心要素）；结果按范畴×语言 session 隔离（点「计算」重算），不落库
+- [x] 修复 build_schema_families 代表图式错位缺陷（族内位置误索引按族序排列的 medoids——回归断言钉死每族恰一 is_prototype 且与 prototype 一致）
+- [x] 测试 `tests/test_schema_family.py` 24 条（向量/Gower 已知值/UPGMA 切割/medoid 平局/端到端/工具委托/RegistryError 必填拒绝/tab 打桩渲染＋<2 图式降级）；test_tools_registry 工具集钉 12、fx18 EXPECTED_TOOL_IDS 同步
+- 同批收口：fx56-58（RV23-25 监工轮修复，0839307）——快照残留/暂存重放/1062 逐因/模块读侧锁死/勾选 on_change 化/质检明细死路
