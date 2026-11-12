@@ -12,9 +12,9 @@
     detail_json、items 键恒在）。
   * 质检段图表（全桩不触库）—— dict_admin_pages._render_style_check_trend：
     trend=None → R4 归因灰注；<2 次 → caption 占位「≥2 次质检后显示趋势」；
-    ≥2 次 → st.line_chart（pandas DataFrame：index=created_at、列=通过率，
-    分母 0 的 run 落 NaN 线上留空）＋ 标题 caption「通过率趋势（最近 N 次）」；
-    Streamlit 原生 Altair 渲染，不引 plotly。
+    ≥2 次 → st.altair_chart（批次 29；pandas DataFrame：index=created_at、
+    列=通过率，分母 0 的 run 落 NaN 线上留空，y 轴钉 0~1）＋ 标题 caption
+    「通过率趋势（最近 N 次）」；Streamlit 原生 Altair 渲染，不引 plotly。
   * AppTest 冒烟（真 Streamlit 渲染链）—— runs≥2 趋势图渲染不炸页；不足
     占位 caption 在场。
 
@@ -25,11 +25,9 @@ fixture 前后 DROP 重建，与 test_fx25_fixes 互不污染，test_fx25 同口
 """
 
 import inspect
-import math
 import os
 import sys
 
-import pandas as pd
 import pymysql
 import pytest
 
@@ -264,10 +262,6 @@ class _StubSt:
         # 批次 29：趋势图改 altair_chart（y 轴钉 0~1）——记录面同 line_chart
         self.charts.append((args[0] if args else None, kwargs))
 
-    def altair_chart(self, *args, **kwargs):
-        # 批次 29：趋势图改 altair_chart（y 轴钉 0~1）——记录面同 line_chart
-        self.charts.append((args[0] if args else None, kwargs))
-
     def texts(self, kind=None):
         return [t for k, t in self.messages if kind is None or k == kind]
 
@@ -304,20 +298,31 @@ def _trend_rows(rates, start_id=1):
 
 
 def _patch_section_world(monkeypatch, stub, runs, trend):
-    """铺质检段渲染假体：st/当前用户/花名册/两读面（runs 与 trend 独立可配）。"""
+    """铺质检段渲染假体：st/当前用户/花名册/两读面（runs 与 trend 独立可配）。
+
+    RV24-1：list_recent_runs 桩按 include_detail 回双形态——False（历史小表
+    瘦身面）行剥去 items/detail_json 键，True（最近一次 run 全量面）行带
+    items（与真引擎两面形态对齐）。
+    """
+
+    def _fake_list_recent_runs(category=None, limit=5, include_detail=True):
+        if not include_detail:
+            return [{k: v for k, v in row.items()
+                     if k not in ("items", "detail_json")} for row in runs]
+        return runs
+
     monkeypatch.setattr(dp, "st", stub)
     monkeypatch.setattr(dp, "_current_user", lambda: _ME_ADMIN)
     monkeypatch.setattr(dp.users_db, "list_users", lambda: [])
     monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                        lambda category=None, limit=5, include_detail=True:
-                        runs)
+                        _fake_list_recent_runs)
     monkeypatch.setattr(dp.style_check, "pass_rate_trend",
                         lambda category=None, limit=20: trend)
     return stub
 
 
 def test_section_trend_chart_and_placement(monkeypatch):
-    """runs≥2 → st.line_chart 在场且位于历史小表之前：DataFrame
+    """runs≥2 → st.altair_chart 在场且位于历史小表之前：DataFrame
     （index=created_at 时间序、列=通过率、分母 0 落 NaN 留空）＋标题
     caption 注明 N 与留空口径。"""
     stub = _StubSt()
@@ -387,10 +392,15 @@ def test_trend_limit_constant_matches_read_face_default():
 
 
 def test_trend_chart_is_streamlit_native_no_plotly():
-    """不引 plotly：趋势块用 st.line_chart（Streamlit 原生 Altair 渲染）。"""
+    """不引 plotly：趋势块用 st.altair_chart（Streamlit 原生 Altair 渲染）。
+
+    RV24-11：实现钉板——断言落在代码体（st.altair_chart 在码、st.line_chart
+    不在码），不再用 docstring 子串钉板，docstring 漂移骗不过哨兵。
+    """
     src = inspect.getsource(_render_style_check_trend)
-    assert "st.line_chart" in src
-    body = src.split('"""', 2)[-1]   # 只查代码体（docstring 会提及「不引 plotly」）
+    body = src.split('"""', 2)[-1]   # 只查代码体（docstring 文案不参与钉板）
+    assert "st.altair_chart" in body   # 批次 29：altair 折线（y 轴钉 0~1）
+    assert "st.line_chart" not in body
     assert "plotly" not in body.lower()
     assert "import plotly" not in inspect.getsource(dp)
 
@@ -408,11 +418,17 @@ _SMOKE_SCRIPT = (
 
 
 def test_apptest_smoke_trend_chart_renders(monkeypatch):
-    """AppTest 冒烟（runs≥2）：真 st.line_chart 渲染链跑通，not at exception，
-    标题 caption 在场（读面与花名册打桩，不触真库）。"""
+    """AppTest 冒烟（runs≥2）：真 st.altair_chart 渲染链跑通，not at exception，
+    标题 caption 在场（读面与花名册打桩，不触真库；RV24-1 双形态桩）。"""
+
+    def _fake_list_recent_runs(category=None, limit=5, include_detail=True):
+        if not include_detail:
+            return [{k: v for k, v in _one_run_row().items()
+                     if k not in ("items", "detail_json")}]
+        return [_one_run_row()]
+
     monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                        lambda category=None, limit=5, include_detail=True:
-                        [_one_run_row()])
+                        _fake_list_recent_runs)
     monkeypatch.setattr(dp.style_check, "pass_rate_trend",
                         lambda category=None, limit=20:
                         _trend_rows([0.5, 0.75, 1.0]))
@@ -426,10 +442,16 @@ def test_apptest_smoke_trend_chart_renders(monkeypatch):
 
 def test_apptest_smoke_trend_placeholder(monkeypatch):
     """AppTest 冒烟（runs<2）：占位 caption「≥2 次质检后显示趋势」在场，
-    not at exception。"""
+    not at exception（RV24-1 双形态桩）。"""
+
+    def _fake_list_recent_runs(category=None, limit=5, include_detail=True):
+        if not include_detail:
+            return [{k: v for k, v in _one_run_row().items()
+                     if k not in ("items", "detail_json")}]
+        return [_one_run_row()]
+
     monkeypatch.setattr(dp.style_check, "list_recent_runs",
-                        lambda category=None, limit=5, include_detail=True:
-                        [_one_run_row()])
+                        _fake_list_recent_runs)
     monkeypatch.setattr(dp.style_check, "pass_rate_trend",
                         lambda category=None, limit=20: _trend_rows([0.75]))
     monkeypatch.setattr(dp.users_db, "list_users", lambda: [])

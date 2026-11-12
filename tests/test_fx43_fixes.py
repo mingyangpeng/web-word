@@ -6,8 +6,10 @@
     幂等迁移，照 FX-20 _migrate_assignments_round_columns 模式含 MySQL 1060
     白名单；建表 SQL 保持规范 §2 原样，存量库与新库走「建旧形 → 探测补列」
     同一条路径）。NULL = 提交时无 AI 草稿（纯人工/系统），不用空对象冒充；
-  * 提交链捕获 —— submit_annotation 加可选 ai_draft 参数（None=SQL 与既有
-    语句逐字节一致，旧调用零破坏；非 dict/空 dict/序列化失败降级同 None，
+  * 提交链捕获 —— submit_annotation 加可选 ai_draft 参数（None=无草稿：
+    RV24-2 起覆盖更新清残留快照 ai_draft_snapshot=NULL，避免新 payload 对
+    旧草稿假比对污染公开指标；纯旧库列缺失 1054 回落旧语句，列缺失时旧
+    SQL 不变。非 dict/空 dict/序列化失败降级同 None，
     快照脏值不拦标注提交本体；ensure_ascii=False 序列化后落 ai_draft_snapshot，
     覆盖更新时快照随新提交同步覆盖）。捕获点在 app.py 标注平台提交处
     （LLM 初筛草稿原始值，页面 AppTest 接线锁见 fx35 口径注记）；
@@ -249,13 +251,15 @@ class TestSubmitAnnotationAiDraft:
         assert "INSERT INTO annotation_submissions" in sql
         return sql, params
 
-    def test_without_ai_draft_sql_byte_identical_to_legacy(self, monkeypatch):
-        """ai_draft 缺省（None）→ 语句与 FX-43 前逐字节一致（旧调用零破坏）：
-        不含快照列，新行落列默认 NULL。"""
+    def test_without_ai_draft_clears_stale_snapshot(self, monkeypatch):
+        """ai_draft 缺省（None）→ RV24-2 清残留快照口径：覆盖更新
+        ai_draft_snapshot = NULL（曾带草稿提交的同义位重提不再残留旧快照），
+        快照不占参数位（params 仍 6 元）。"""
         cursor = _patch_flow_plain(monkeypatch)
         assert submit_annotation("motion", 501, "admission", 12, _VALID_PAYLOAD)
         sql, params = self._last_write(cursor)
-        assert "ai_draft_snapshot" not in sql
+        assert "ai_draft_snapshot = NULL" in sql
+        assert "VALUES(ai_draft_snapshot)" not in sql
         assert ("(category, sense_id, task_type, coder_id, payload, "
                 "ai_assisted, status)") in sql
         assert params == ("motion", 501, "admission", 12,
@@ -298,28 +302,29 @@ class TestSubmitAnnotationAiDraft:
             {"admission": "N", "reason": "改判"}, ensure_ascii=False)
 
     @pytest.mark.parametrize("bad_draft", [{}, "草稿", [], 3])
-    def test_empty_or_nondict_draft_falls_back_to_legacy(self, monkeypatch,
-                                                         bad_draft, caplog):
+    def test_empty_or_nondict_draft_degrades_to_null_snapshot(self, monkeypatch,
+                                                              bad_draft, caplog):
         """空对象/非 dict 草稿 → 降级同 None（RV2-3：不用空对象冒充有草稿），
-        语句回落既有形态，提交本体不受影响。"""
+        走 RV24-2 清残留快照分支（ai_draft_snapshot = NULL），提交本体不受
+        影响。"""
         cursor = _patch_flow_plain(monkeypatch)
         with caplog.at_level(logging.WARNING, logger="src.annotation_flow"):
             assert submit_annotation("motion", 501, "admission", 12,
                                      _VALID_PAYLOAD, ai_draft=bad_draft)
         sql, params = self._last_write(cursor)
-        assert "ai_draft_snapshot" not in sql
+        assert "ai_draft_snapshot = NULL" in sql
         assert len(params) == 6
         assert any("ai_draft" in r.getMessage() and "NULL" in r.getMessage()
                    for r in caplog.records)
 
     def test_unserializable_draft_degrades_submission_survives(self, monkeypatch):
-        """草稿不可序列化（set 值）→ 快照降级 NULL、提交照常成功
-        （快照脏值不拦标注提交本体）。"""
+        """草稿不可序列化（set 值）→ 快照降级 NULL（清残留分支）、提交照常
+        成功（快照脏值不拦标注提交本体）。"""
         cursor = _patch_flow_plain(monkeypatch)
         assert submit_annotation("motion", 501, "admission", 12, _VALID_PAYLOAD,
                                  ai_draft={"admission": "Y", "bad": {1, 2}})
         sql, params = self._last_write(cursor)
-        assert "ai_draft_snapshot" not in sql and len(params) == 6
+        assert "ai_draft_snapshot = NULL" in sql and len(params) == 6
 
     def test_invalid_payload_still_rejected_with_draft(self, monkeypatch):
         """payload 非法照旧拒绝（快照参数不改变既有校验闸）。"""
@@ -427,7 +432,8 @@ class TestFeatureLevelAgreementRateFetch:
         return cursor
 
     def test_fetch_filters_and_limit(self, monkeypatch):
-        """SQL 面：快照非 NULL 过滤 + 常量 WHERE 片段参数化 + 最近优先 LIMIT。"""
+        """SQL 面：快照非 NULL 过滤 + 常量 WHERE 片段参数化 + 最近优先 LIMIT
+        （RV19-6：默认/上限 200，行含双 MEDIUMTEXT 大文本列）。"""
         cursor = self._patch_cm_cursor(monkeypatch, [])
         r = cm.feature_level_agreement_rate("motion", "admission")
         assert r == {"rate": None, "n_submissions": 0, "n_features": 0,
@@ -436,7 +442,7 @@ class TestFeatureLevelAgreementRateFetch:
         assert "ai_draft_snapshot IS NOT NULL" in sql
         assert "category = %s" in sql and "task_type = %s" in sql
         assert "ORDER BY id DESC LIMIT %s" in sql
-        assert params == ("motion", "admission", 500)
+        assert params == ("motion", "admission", 200)
 
     def test_fetch_no_filter_cross_category(self, monkeypatch):
         """category/task_type 缺省 None → 跨范畴聚合（页面总卡口径），仅 LIMIT 参数。"""
@@ -444,7 +450,7 @@ class TestFeatureLevelAgreementRateFetch:
         cm.feature_level_agreement_rate()
         sql, params = cursor.executed[0]
         assert "category = %s" not in sql and "task_type = %s" not in sql
-        assert params == (500,)
+        assert params == (200,)
 
     def test_fetch_rows_fed_to_pure_aggregation(self, monkeypatch):
         """取数行喂纯聚合：种子两行 → matched/n_features 逐键对表。"""
@@ -459,12 +465,12 @@ class TestFeatureLevelAgreementRateFetch:
         assert r == {"rate": 0.6667, "n_submissions": 2, "n_features": 3,
                      "matched": 2}
 
-    def test_invalid_limit_falls_back_to_default(self, monkeypatch):
-        """非法 limit（0/负数/bool）→ 回落默认 500（LIMIT 恒有界）。"""
+    def test_invalid_limit_falls_back_to_cap(self, monkeypatch):
+        """非法 limit（0/负数/bool）→ 回落上界 200（RV19-6，LIMIT 恒有界）。"""
         for bad in (0, -5, True):
             cursor = self._patch_cm_cursor(monkeypatch, [])
             cm.feature_level_agreement_rate(limit=bad)
-            assert cursor.executed[0][1] == (500,)
+            assert cursor.executed[0][1] == (200,)
 
     def test_db_offline_zero_face(self, monkeypatch):
         """数据库不可用 → 零值面（rate None + 其余 0），不抛异常（消费方维持
@@ -757,9 +763,10 @@ class TestFx43RealDb:
         row = self._snapshot_of(sense_id, coder)
         assert row is not None and row["ai_draft_snapshot"] is None
 
-    def test_resubmit_overwrite_then_legacy_keep(self, fx43_db):
-        """覆盖更新两态：带新草稿 → 快照同步覆盖；不带草稿（旧调用形态）→
-        快照保持不动（SQL 不含快照列 = 与列缺省行为完全一致）。"""
+    def test_resubmit_overwrite_then_clear_snapshot(self, fx43_db):
+        """覆盖更新两态（RV24-2 口径）：带新草稿 → 快照同步覆盖；无草稿重提 →
+        残留快照置 NULL（旧行不残留旧草稿，下游 _fetch_snapshot_submissions
+        不再把该行当带快照提交聚合）。"""
         sense_id, coder = fx43_db["sense_id"], fx43_db["coder_a"]
         assert submit_annotation("motion", sense_id, "admission", coder,
                                  _VALID_PAYLOAD, ai_draft={"admission": "Y"})
@@ -769,12 +776,11 @@ class TestFx43RealDb:
         row = self._snapshot_of(sense_id, coder)
         assert flow.parse_payload(row["ai_draft_snapshot"]) == {
             "admission": "N", "reason": "改判"}
-        # 旧调用形态覆盖：快照列不出现在语句里 → 旧行快照保持
+        # 无草稿覆盖（旧调用形态）：清残留快照 → ai_draft_snapshot = NULL
         assert submit_annotation("motion", sense_id, "admission", coder,
                                  _VALID_PAYLOAD)
         row = self._snapshot_of(sense_id, coder)
-        assert flow.parse_payload(row["ai_draft_snapshot"]) == {
-            "admission": "N", "reason": "改判"}
+        assert row["ai_draft_snapshot"] is None
 
     def test_feature_level_rate_end_to_end(self, fx43_db):
         """逐特征一致率端到端：种子三态提交 → rate/matched/n_features/

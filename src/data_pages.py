@@ -95,6 +95,7 @@ from src.import_engine import TARGET_FIELDS, plan_import, run_import, validate_m
 from src.mysql_db import get_db_cursor
 from src.security import sanitize_csv_dataframe
 from src import guards
+from src import ui_kit
 from src.design_system import HEADER_H1, get_card_style
 from src import sense_spine
 
@@ -1067,7 +1068,10 @@ def _render_batch_list() -> None:
         else:
             ok = rollback_batch(selected_bid, list(session_events))
         if ok:
-            st.success(
+            # RV25-6（RV12-2 漏网收口）：直渲染成功提示会随本轮 rerun 丢弃
+            # —— 统一 ui_kit.flash 进会话队列，下一轮渲染由
+            # pop_and_render_flash 弹出（全仓收口口径，禁直渲染成功族回潮）。
+            ui_kit.flash(
                 f"批次 {selected_bid} 已回滚（rolled_back）：更新行按 old_values 恢复"
                 "旧值；新增行因 definitions 无 status 列仅留痕不作废（平台纪律："
                 "不物理 DELETE）。"

@@ -19,8 +19,8 @@ v5.1 批次 3-K 新增「角色授予」面板（平台架构设计规范 §8）
 即可进入 —— 账号生命周期是平台管理员（sys_admin）职能；词典管理员
 （dict_admin）作为管理侧过渡期兼判同样放行（legacy role=='admin' 账号经
 LEGACY_ROLE_TO_NEW_ROLES 映射必然两位一体，升级前后行为逐字节一致）。
-侧边栏入口可见性仍由 app._PAGE_ACCESS_SIX（users_admin → sys_admin）控制，
-此处是纵深防御第二层。
+侧边栏入口可见性仍由 app._PAGE_ACCESS_SIX（users_admin → sys_admin＋
+dict_admin，RV23-P3 与本页体闸同口径）控制，此处是纵深防御第二层。
 
 安全规则（设计规范 §6）：
   * 权限检查在**函数入口**判定（role gate，§6-4）：非登录或角色不符

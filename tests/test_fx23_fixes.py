@@ -106,11 +106,6 @@ def _radio_keys(at) -> list:
             if str(b.label) in label2key]
 
 
-def _radio_labels(at) -> list:
-    """兼容名：导航按钮标签序（七区序）。"""
-    return [str(b.label) for b in _nav_buttons(at)]
-
-
 def _goto(at, key: str):
     """点导航按钮切页（on_click 写 session_state["page"] 后 rerun）。"""
     for b in _nav_buttons(at):
@@ -259,7 +254,8 @@ def test_admin_all_seven_zones_all_17_pages_click_through():
     def _zone_text(z: str) -> str:
         return _re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]", "", z).strip()
 
-    labels = _radio_labels(at)
+    labels = _radio_keys(at)
+    assert len(labels) == len(PAGE_KEYS), "七区标签数与页数一致（健壮性抽查）"
     for zone, zone_keys in _SIDEBAR_ZONES:
         zt = _zone_text(zone)
         first = sidebar_option_label(zone_keys[0])

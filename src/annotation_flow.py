@@ -421,6 +421,59 @@ def _migrate_submissions_ai_draft_column(cursor) -> None:
 # ============================================
 # 提交（验收 V2：重复提交 = 覆盖更新）
 # ============================================
+# RV24-2 无草稿覆盖更新两形态（params 完全相同，仅语句差一行）：
+#   * _UPSERT_NO_DRAFT_CLEAR_SNAPSHOT —— 快照列在库（FX-43 迁移后常态）时用：
+#     覆盖更新 ai_draft_snapshot = NULL 置空。同义位曾带草稿提交时旧行残留旧
+#     快照，旧语句不触快照列会让下游 _fetch_snapshot_submissions 把它当带
+#     快照提交聚合 —— 新 payload 对旧草稿假比对，AI-人一致率（公开指标）出
+#     假分歧；本次无草稿即清残留。
+#   * _UPSERT_NO_DRAFT_LEGACY —— 纯旧库列缺失（未跑 FX-43 迁移）时 MySQL
+#     1054 回落用：FX-43 前既有语句逐字节原样（不带快照列，新行落列默认
+#     NULL）。回落判定与重试见 submit_annotation except 分支。
+_UPSERT_NO_DRAFT_CLEAR_SNAPSHOT = (
+    "INSERT INTO annotation_submissions "
+    "(category, sense_id, task_type, coder_id, payload, ai_assisted, status) "
+    "VALUES (%s, %s, %s, %s, %s, %s, 'submitted') "
+    "ON DUPLICATE KEY UPDATE "
+    "category = VALUES(category), "
+    "payload = VALUES(payload), "
+    "ai_assisted = VALUES(ai_assisted), "
+    "ai_draft_snapshot = NULL, "
+    "status = 'submitted', "
+    "submitted_at = CURRENT_TIMESTAMP"
+)
+_UPSERT_NO_DRAFT_LEGACY = (
+    "INSERT INTO annotation_submissions "
+    "(category, sense_id, task_type, coder_id, payload, ai_assisted, status) "
+    "VALUES (%s, %s, %s, %s, %s, %s, 'submitted') "
+    "ON DUPLICATE KEY UPDATE "
+    "category = VALUES(category), "
+    "payload = VALUES(payload), "
+    "ai_assisted = VALUES(ai_assisted), "
+    "status = 'submitted', "
+    "submitted_at = CURRENT_TIMESTAMP"
+)
+_UPSERT_WITH_DRAFT_SNAPSHOT = (
+    "INSERT INTO annotation_submissions "
+    "(category, sense_id, task_type, coder_id, payload, ai_assisted, "
+    "ai_draft_snapshot, status) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s, 'submitted') "
+    "ON DUPLICATE KEY UPDATE "
+    "category = VALUES(category), "
+    "payload = VALUES(payload), "
+    "ai_assisted = VALUES(ai_assisted), "
+    "ai_draft_snapshot = VALUES(ai_draft_snapshot), "
+    "status = 'submitted', "
+    "submitted_at = CURRENT_TIMESTAMP"
+)
+
+
+def _is_unknown_column_error(e: BaseException) -> bool:
+    """MySQL 1054（ER_BAD_FIELD_ERROR，Unknown column）判定（RV24-2 旧库回落）。"""
+    return (isinstance(e, pymysql.Error) and bool(e.args)
+            and isinstance(e.args[0], int) and e.args[0] == 1054)
+
+
 def submit_annotation(
     category: str,
     sense_id: int,
@@ -446,8 +499,16 @@ def submit_annotation(
         ai_draft: AI 初筛草稿**原始值**快照（FX-43，「AI 当初给的」，不含人工
             修改后的值 —— 修改后的最终值在 payload）；ensure_ascii=False 序列化
             后落 ai_draft_snapshot 列，供逐特征 AI-人一致率比对
-            （collab_metrics.feature_level_agreement_rate）。None = 行为与列
-            缺省完全一致（SQL 不写快照列，新行落列默认 NULL，旧调用零破坏）；
+            （collab_metrics.feature_level_agreement_rate）。
+            None（无草稿，含降级形态）= RV24-2 口径：**无草稿重提清残留快照，
+            避免新 payload 对旧草稿假比对污染公开指标** —— 覆盖更新分支
+            ai_draft_snapshot = NULL 置空（FX-43 前旧语句不触快照列，同义位曾
+            带草稿提交时旧行残留旧快照，下游 _fetch_snapshot_submissions 会把
+            它当带快照提交聚合，新 payload 对旧草稿假比对，AI-人一致率公开
+            指标出假分歧）。FX-43 起「旧 SQL 逐字节一致」约束放弃（快照列
+            在库为常态，见 _UPSERT_NO_DRAFT_ 常量组）；纯旧库列缺失（未跑
+            FX-43 迁移）路径兼容保留：MySQL 1054 回落旧语句重试（旧 SQL
+            不变），不让清残留能力挡住老库提交。
             非 dict / 空 dict / 序列化失败 → 降级同 None（RV2-3 口径：不用
             空对象冒充「有草稿」，也不让快照脏值拖垮标注提交本体）。
 
@@ -470,8 +531,9 @@ def submit_annotation(
         return False
 
     # FX-43 草稿快照预序列化：None/非 dict/空 dict/序列化失败 → draft_json=None
-    # （SQL 不含快照列，与既有语句逐字节一致 —— 旧调用零破坏，RV2-3 不用空对象
-    # 冒充有草稿）。快照脏值只降级快照本身，不拦标注提交本体。
+    # （RV24-2 起「无草稿」走清残留快照分支 —— 与既有语句逐字节一致的约束放弃，
+    # 纯旧库列缺失路径经 1054 回落保留；RV2-3 不用空对象冒充有草稿）。快照脏值
+    # 只降级快照本身，不拦标注提交本体。
     draft_json: Optional[str] = None
     if ai_draft is not None:
         if not isinstance(ai_draft, dict) or not ai_draft:
@@ -486,18 +548,9 @@ def submit_annotation(
                 logger.error(f"submit_annotation: ai_draft 序列化失败 → 快照落 NULL: {e}")
 
     if draft_json is None:
-        # 既有语句（FX-43 前逐字节原样）：不带 ai_draft，新行落列默认 NULL
-        sql = (
-            "INSERT INTO annotation_submissions "
-            "(category, sense_id, task_type, coder_id, payload, ai_assisted, status) "
-            "VALUES (%s, %s, %s, %s, %s, %s, 'submitted') "
-            "ON DUPLICATE KEY UPDATE "
-            "category = VALUES(category), "
-            "payload = VALUES(payload), "
-            "ai_assisted = VALUES(ai_assisted), "
-            "status = 'submitted', "
-            "submitted_at = CURRENT_TIMESTAMP"
-        )
+        # RV24-2：无草稿（含降级形态）默认走清残留快照语句（覆盖更新
+        # ai_draft_snapshot = NULL）；纯旧库列缺失时 1054 回落旧语句（见 except）。
+        sql = _UPSERT_NO_DRAFT_CLEAR_SNAPSHOT
         params: tuple = (
             category,
             sense,
@@ -509,19 +562,7 @@ def submit_annotation(
     else:
         # 带草稿快照：INSERT 落原始值；覆盖更新时快照随新提交同步覆盖
         # （快照语义=「本次提交时 AI 给了什么」，不沿用旧行残留快照）
-        sql = (
-            "INSERT INTO annotation_submissions "
-            "(category, sense_id, task_type, coder_id, payload, ai_assisted, "
-            "ai_draft_snapshot, status) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, 'submitted') "
-            "ON DUPLICATE KEY UPDATE "
-            "category = VALUES(category), "
-            "payload = VALUES(payload), "
-            "ai_assisted = VALUES(ai_assisted), "
-            "ai_draft_snapshot = VALUES(ai_draft_snapshot), "
-            "status = 'submitted', "
-            "submitted_at = CURRENT_TIMESTAMP"
-        )
+        sql = _UPSERT_WITH_DRAFT_SNAPSHOT
         params = (
             category,
             sense,
@@ -536,6 +577,24 @@ def submit_annotation(
             cursor.execute(sql, params)
             return True
     except pymysql.Error as e:
+        # RV24-2 纯旧库兼容：存量库尚未跑 FX-43 迁移（快照列不存在）时，
+        # 清残留语句撞 MySQL 1054 → 回落既有旧语句重试一次（旧 SQL 不变口径，
+        # 列缺失时旧 SQL 不变），不让清残留能力挡住老库的正常提交。
+        if draft_json is None and _is_unknown_column_error(e):
+            logger.info(
+                "annotation_submissions 缺 ai_draft_snapshot 列（存量库未跑 "
+                "FX-43 迁移）→ 无草稿提交回落旧语句（RV24-2 兼容）"
+            )
+            try:
+                with get_db_cursor() as cursor:
+                    cursor.execute(_UPSERT_NO_DRAFT_LEGACY, params)
+                    return True
+            except pymysql.Error as e2:
+                logger.error(f"提交标注失败（sense={sense}, coder={coder}）: {e2}")
+                return False
+            except Exception as e2:
+                logger.error(f"提交标注重试意外错误（sense={sense}, coder={coder}）: {e2}")
+                return False
         logger.error(f"提交标注失败（sense={sense}, coder={coder}）: {e}")
         return False
     except Exception as e:

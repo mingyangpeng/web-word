@@ -158,7 +158,9 @@ _EXPECTED_VISIBLE = {
     "granted_annotator": _ALL_PAGES - {"users_admin", "dict_admin",
                                        "model_settings", "reliability", "lexical"},
     "granted_reviewer": _ALL_PAGES - {"users_admin", "dict_admin", "model_settings"},
-    "granted_dict_admin": _ALL_PAGES - {"users_admin"},
+    # RV23-P3：users_admin 入口补 dict_admin（与页面体闸 sys_admin/dict_admin
+    # 同口径——宿主页承载「📦 功能模块」段，停用模块的恢复路径必须可达）。
+    "granted_dict_admin": _ALL_PAGES,
     "granted_editor": _ALL_PAGES - {"users_admin", "dict_admin",
                                     "model_settings", "reliability"},
     "pure_viewer": _ALL_PAGES - {"submission", "users_admin", "reliability",
@@ -328,7 +330,6 @@ class TestR1VisibilityMatrix:
         展示标签 —— FX-23 七区分组后标签带「【区名】」前缀，用页面体系同源的
         sidebar_option_label 反查回页面键再对表（分组只改呈现不改键集）。
         """
-        from src.app import sidebar_option_label
         from src.page_guides import PAGE_KEYS, page_label
 
         # 批次 22 按钮式侧边栏：导航按钮 label=page_label（批次 21 瘦身后

@@ -18,9 +18,7 @@ from src.module_plugins import (  # noqa: E402
     ensure_module_plugins_table, filter_pages_by_modules, is_module_enabled,
     list_module_settings, set_module_enabled,
 )
-import src.app as app_module  # noqa: E402
 import src.mysql_db as db  # noqa: E402
-import pymysql  # noqa: E402
 
 TEST_DB = "web_word_fx54_test"
 

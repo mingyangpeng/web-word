@@ -96,10 +96,6 @@ class _StubSt:
     def container(self, *args, **kwargs):
         return _StubContainer()
 
-    def button(self, *args, **kwargs):
-        # 渲染面不点击（_StubSt 语义：只验渲染形态）
-        return False
-
     def columns(self, spec, **kwargs):
         n = len(spec) if isinstance(spec, (list, tuple)) else int(spec)
         return [_StubCol() for _ in range(n)]
@@ -122,7 +118,8 @@ class _StubSt:
         return False
 
     def button(self, *args, **kwargs):
-        # RV21-1：质检段改普通按钮后桩同面（渲染面不点击）
+        # 渲染面不点击（_StubSt 语义：只验渲染形态；RV21-1 后质检段同为
+        # 普通 button，桩面一致）
         return False
 
     def metric(self, label, value=None, **kwargs):

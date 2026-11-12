@@ -19,7 +19,9 @@
 并发语义：
     建版本号走**单语句原子自增** —— ``INSERT … SELECT COALESCE(MAX(version),0)+1
     …``，同语句内完成「读最大版 + 插新行」，InnoDB 行锁保证同义位并发保存
-    版本连续且不撞 UNIQUE，无需显式事务/先读后写。
+    版本连续；UNIQUE (category, language, sense_id, version) **兜底**（RV24-8
+    逐因：极端并发撞 1062 时写路径返回专项文案「并发保存冲突（他人刚保存
+    一版），请重试」，不再泛化「数据库写入失败」），无需显式事务/先读后写。
 
 清洗口径（仿 lexical_db._clean_*）：
     revision_text 非空字符串 ≤6000；note 可选 ≤500（None→""）；sense_ref 可选
@@ -141,7 +143,11 @@ def save_revision(category: Any, language: Any, sense_id: Any,
 
     - 权限：require_role(actor, CAN_REVISE_ROLES)，不满足抛 PermissionError；
     - 入参非法 → {"ok": False, "reason": ...}（页面按因转述，不抛）；
-    - 表未建/库不可用 → {"ok": False, "reason": "db"}（页面 fail-open 提示）。
+    - MySQL 1062（UNIQUE uq_cat_lang_sense_ver 兜底命中，RV24-8）→
+      {"ok": False, "reason": "并发保存冲突（他人刚保存一版），请重试"}
+      （页面按因转述，用户重试即版本号取到新值）；
+    - 其余数据库错误（表未建/库不可用等）→
+      {"ok": False, "reason": "数据库写入失败"}（页面 fail-open 提示）。
     """
     require_role(actor, CAN_REVISE_ROLES, action="模板人工修订")
     loc = _norm_locate(category, language, sense_id)
@@ -193,6 +199,15 @@ def save_revision(category: Any, language: Any, sense_id: Any,
                     cat, lang, sid, version, actor_name)
         return {"ok": True, "version": version}
     except pymysql.Error as exc:
+        # RV24-8：1062 = UNIQUE uq_cat_lang_sense_ver 兜底命中 —— 单语句原子
+        # 自增的行锁窗口之外，另一会话抢先落了同义位下一版。专项文案引导重试
+        # （重试时 MAX(version)+1 自然取到新值），不与表未建/断连混作
+        # 「数据库写入失败」。
+        if bool(exc.args) and isinstance(exc.args[0], int) and exc.args[0] == 1062:
+            logger.warning(
+                "template_revisions 并发保存冲突（1062，%s/%s sense=%s）: %s",
+                cat, lang, sid, exc)
+            return {"ok": False, "reason": "并发保存冲突（他人刚保存一版），请重试"}
         logger.error("template_revisions 写入失败（%s/%s sense=%s）: %s",
                      cat, lang, sid, exc)
         return {"ok": False, "reason": "数据库写入失败"}
