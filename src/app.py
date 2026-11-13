@@ -1798,7 +1798,13 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
     失败 st.error。与默认口令守卫表单（_render_default_password_guard）键名
     不同、互不影响，可并存。
     """
-    with st.sidebar.form("self_change_password_form", clear_on_submit=True):
+    # 批次 34：st.sidebar.form → st.form——sidebar.form 显式绑定 sidebar 根
+    # 容器，会**脱离调用处的 with st.sidebar.expander 上下文**（表单一直
+    # 平铺在 expander 外、expander body 空置成一条空白卡——用户 review
+    # 截图「修改密码没在折叠里面」+「空白条」两问题的同一根因）。st.form
+    # 继承 with 上下文，真正嵌进 expander；错误/成功提示仍走 st.sidebar.*
+    # （折叠后提示也可见）。
+    with st.form("self_change_password_form", clear_on_submit=True):
         # 批次 33：去重复标题——expander 头已是「🔑 修改密码」（用户 review
         # 反馈双标题叠显）；表单内不再再写一遍
         old_password = st.text_input("当前密码", type="password",
@@ -2244,14 +2250,12 @@ def render_sidebar():
             zone_visible = [k for k in zone_keys if k in visible_keys]
             if not zone_visible:
                 continue
-            import re as _re
-
-            zone_text = _re.sub(
-                "[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]", "",
-                zone).strip()
+            # 批次 34：区头恢复自带 emoji（用户「这些干啥的」反馈——RV21-5
+            # 洗 emoji 是 radio 前缀口径（页名带 emoji 会重复），区头是独立
+            # 分区标签，图标才像有意为之的分组条而非乱入灰字）
             st.markdown(
-                # zone_text 源自内置 _SIDEBAR_ZONES 常量（非用户数据），无需转义
-                f"<div class='ls-nav-header'>{zone_text}</div>",
+                # zone 源自内置 _SIDEBAR_ZONES 常量（非用户数据），无需转义
+                f"<div class='ls-nav-header'>{zone}</div>",
                 unsafe_allow_html=True,
             )
             for key in zone_visible:

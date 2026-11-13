@@ -1141,13 +1141,24 @@ pre code {{
 }}
 
 /* ══════════ 小节头：灰阶小字（Apple 侧栏节头） ══════════ */
+/* 批次 34 分组感强化（用户反馈「没起到分组作用只是简单堆叠」）：
+   组间留白（节头上边距）≫ 组内留白（按钮紧凑），节头下加 hairline
+   分隔——Apple Music/Finder 侧栏分组形态 */
 .ls-nav-header {{
     font-size: 11px;
     font-weight: 700;
     color: var(--ls-text-2);
-    text-transform: uppercase;
     letter-spacing: 0.06em;
-    margin: 14px 2px 4px 2px;
+    margin: 20px 2px 5px 2px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--ls-hairline);
+}}
+/* 组内按钮行距收紧（与组间 20px 对比建立分区节奏） */
+.st-key-ls_nav .stButton {{
+    margin-bottom: 1px;
+}}
+.st-key-ls_nav > div:first-child .ls-nav-header, .st-key-ls_nav .ls-nav-header:first-of-type {{
+    margin-top: 2px;
 }}
 
 /* ══════════ 主区顶部留白收紧 ══════════ */
