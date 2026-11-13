@@ -1050,6 +1050,15 @@ input[type="radio"], input[type="checkbox"] {{
     border-radius: 16px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }}
+/* 侧栏窄栏表单豁免白卡（批次 33 用户 review 截图：改密表单卡下空白条
+   根源＝主区白卡样式进入侧栏与 expander body 双层叠加）；登录/改密表单
+   在 frosted 侧栏内以无边框形态渲染 */
+[data-testid="stSidebar"] [data-testid="stForm"] {{
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}}
 
 /* ══════════ 下载按钮同药丸族 ══════════ */
 [data-testid="stDownloadButton"] > button {{
