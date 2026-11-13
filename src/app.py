@@ -1777,7 +1777,7 @@ def _render_default_password_guard(user: Dict[str, Any]) -> None:
     if not is_using_default_password(uid):
         return
     st.sidebar.caption(
-        "⚠️ 默认密码未修改——请在「🔑 修改密码」中更换（公开凭据，改前本提示保留）。"
+        "⚠️ 默认密码未修改——请在下方「🔑 修改密码」中更换（改后此提示自动消失）。"
     )  # R8-1（批次 12）：内嵌表单删除——改密 UI 三处合一，唯一入口=自助面板
     # 批次 31：长卡压一行（用户「侧边栏一堆文字」反馈——细节收进 expander 内）
 
@@ -1799,7 +1799,8 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
     不同、互不影响，可并存。
     """
     with st.sidebar.form("self_change_password_form", clear_on_submit=True):
-        st.markdown("**🔑 修改密码**")
+        # 批次 33：去重复标题——expander 头已是「🔑 修改密码」（用户 review
+        # 反馈双标题叠显）；表单内不再再写一遍
         old_password = st.text_input("当前密码", type="password",
                                      key="self_pw_old", max_chars=128)
         new_password = st.text_input("新密码（≥8 位）", type="password",
