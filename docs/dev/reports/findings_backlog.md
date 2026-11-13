@@ -388,3 +388,12 @@ AI 体例质检 / G3 撰写侧消费 / usage_logs.user_id / 驾驶舱风险清�
 - [x] 修复 build_schema_families 代表图式错位缺陷（族内位置误索引按族序排列的 medoids——回归断言钉死每族恰一 is_prototype 且与 prototype 一致）
 - [x] 测试 `tests/test_schema_family.py` 24 条（向量/Gower 已知值/UPGMA 切割/medoid 平局/端到端/工具委托/RegistryError 必填拒绝/tab 打桩渲染＋<2 图式降级）；test_tools_registry 工具集钉 12、fx18 EXPECTED_TOOL_IDS 同步
 - 同批收口：fx56-58（RV23-25 监工轮修复，0839307）——快照残留/暂存重放/1062 逐因/模块读侧锁死/勾选 on_change 化/质检明细死路
+
+## 批次 33（2026-11-13 · 侧边栏改密段打磨：双标题去重＋文案顺化＋侧栏表单豁免白卡）
+
+> 用户 review 截图反馈（8502 侧边栏）→ 770c576＋f209e0b。全量 **3037 passed / 0 failed**。
+
+- [x] 「🔑 修改密码」双标题去重——expander 头（批次 31 引入）与表单内 markdown 标题（批次 4-N 遗留）叠显；删表单内重复标题，expander 头为唯一标题
+- [x] 默认口令守卫 caption 顺化——「（公开凭据，改前本提示保留）」→「（改后此提示自动消失）」（语义不变：is_using_default_password 实时判据改密即消；窄栏折行读感费解是原问题）
+- [x] 侧栏窄栏表单豁免主区白卡样式（f209e0b）——改密表单卡下空白条根源＝stForm 白卡（批次 28 全局选择器）进入侧栏与 expander body 双层叠加；登录/改密表单 frosted 侧栏内无边框渲染，主区大表单不受影响（选择器限定 stSidebar）
+- [x] 测试钉面核实：AppTest 只钉 expander label/提交按钮/caption 前缀——零破坏；CSS 生成花括号配平
