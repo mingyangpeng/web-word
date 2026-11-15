@@ -239,8 +239,6 @@ ZH_EN: Dict[str, str] = {
     "🔐 登录": "🔐 Sign in",
     "用户名": "Username",
     "密码": "Password",
-    "用户名": "Username",
-    "密码": "Password",
     "保存": "Save",
     "提交": "Submit",
     "取消": "Cancel",

@@ -370,6 +370,22 @@ class TestPureCheckItems:
         assert items["DEFINING_VOCAB"]["status"] == "fail"
         assert "未落盘" in items["DEFINING_VOCAB"]["detail"]
 
+    def test_vocab_file_over_1mb_rejected(self, configs_root):
+        """vocab_file 超 1MB 上限（RV19-4）→ 拒读 fail；R6 加固后 stat 预检
+        先于 read_text（巨文件不再整读进内存才被拒），拒绝文案不变。"""
+        root = Path(configs_root(FULL_YAML.replace(
+            "  words: [give, take, move, put, break, cut, fill, cover, "
+            "change, follow, hold, turn]\n", "  vocab_file: big_vocab.txt\n")))
+        big = root / "big_vocab.txt"
+        big.write_text("abcdef " * (1024 * 1024 // 7 + 1), encoding="utf-8")
+        assert big.stat().st_size > 1_000_000
+        style, path, _ = sc.load_style_config("motion")
+        search_dirs = [Path(path).parent, Path(path).parent.parent,
+                       sc._REPO_ROOT]
+        items = _items_by_code(sc.run_config_check_items(style, search_dirs))
+        assert items["DEFINING_VOCAB"]["status"] == "fail"
+        assert "过大" in items["DEFINING_VOCAB"]["detail"]
+
     def test_sense_ordering_enum_outside_fails(self, configs_root):
         """排序规则键在枚举外（按字母序）→ fail 列枚举。"""
         configs_root(FULL_YAML.replace(

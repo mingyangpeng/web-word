@@ -267,7 +267,19 @@ def _extract_vocab_words(
 
 
 def _read_vocab_file(path: Path, declared: str) -> Tuple[List[str], str]:
-    """读词表文件（每行一词；空行与 # 注释行跳过）。"""
+    """读词表文件（每行一词；空行与 # 注释行跳过）。
+
+    1MB 上限（RV19-4）**先 stat 预检再读**（R6 边界扫描加固）：此前的
+    ``len(raw)`` 检查发生在 ``read_text`` 之后 —— 巨文件（GB 级注入文件）
+    会先被整读进内存才被拒，预检防住这个内存放大面。stat 后文件再变大的
+    竞态由读后的 len 复查兜底（两道闸同口径，拒绝文案一致）。
+    """
+    try:
+        if path.stat().st_size > 1_000_000:  # RV19-4 读取上限：1MB/十万行
+            return [], f"vocab_file 过大（>1MB，{declared}）——拒绝读取"
+    except OSError as exc:
+        logger.warning(f"style_check: vocab_file stat 失败（{declared}）: {exc}")
+        return [], "vocab_file 读取失败（详见服务端日志）"
     try:
         raw = path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -817,8 +829,19 @@ def write_corpus_vocab_file(pairs: List[Tuple[str, int]]) -> Path:
 
     与页面层「编者增删写回」（dict_admin_pages._vocab_write_words，按字母序
     ＋核定人注记）区分：本函数是**语料重建**写法（build_corpus_vocab 的产物
-    落盘）。路径 configs/defining_vocab.txt。"""
-    vocab_file = Path(__file__).resolve().parent.parent / "configs" / "defining_vocab.txt"
+    落盘）。路径 configs/defining_vocab.txt。
+
+    落盘原子性（R8 词表状态面加固）：词表是**无状态机的文件直写存储**，
+    write_text 的「先截断后写」在中途崩溃/被杀时会留半截词表（下游质检读侧
+    当场误判 fail）。改为同目录临时文件写全 → ``os.replace`` 原子换名（POSIX
+    同分区 rename 原子；Windows 覆盖已存在目标也原子）——读者要么看到旧表
+    要么看到新表，绝无中间态。落盘路径走模块常量 ``_REPO_ROOT``（与旧
+    ``Path(__file__)`` 推导同值；测试可 monkeypatch 隔离到 tmp）。这只收
+    「写一半」面；「读-改-写丢更新」（两编者并发增删）在页面层读侧，属
+    P3 移交项（见 dict_admin_pages._vocab_write_words）。"""
+    import os as _os
+
+    vocab_file = _REPO_ROOT / "configs" / "defining_vocab.txt"
     total = sum(c for _, c in pairs)
     header = (
         "# 定义词表（defining vocabulary）—— 初版由语料高频词自动提取\n"
@@ -827,6 +850,17 @@ def write_corpus_vocab_file(pairs: List[Tuple[str, int]]) -> Path:
         "# 编者核定：在词典管理区「📝 词表核定」页增删词（写回本文件，git 留痕）；\n"
         "# 受控定义词表的语言学充分性始终由编者判断——本文件只是体力活机械化。\n"
     )
-    vocab_file.write_text(header + "\n".join(w for w, _ in pairs) + "\n",
-                          encoding="utf-8")
+    tmp = vocab_file.with_name(vocab_file.name + ".tmp")
+    try:
+        tmp.write_text(header + "\n".join(w for w, _ in pairs) + "\n",
+                       encoding="utf-8")
+        _os.replace(tmp, vocab_file)   # 同目录同分区：rename 原子换名，无中间态
+    except BaseException:
+        # 写失败（磁盘满/权限/replace 被打断）不残留 .tmp 脏文件——异常照常
+        # 向上传（调用方页面/脚本给失败反馈），落盘不产生半截态。
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     return vocab_file

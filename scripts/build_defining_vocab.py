@@ -2,9 +2,9 @@
 """build_defining_vocab.py —— 定义词表候选构建（语料高频词自动提取）。
 
 薄壳（批次 51）：构建函数单一事实源在 src/style_check.py（fetch_corpus_
-definitions / count_corpus_words / build_corpus_vocab）——本脚本只做 CLI
-编排（取数→计频→构建→写 configs/defining_vocab.txt→style.yaml 指向→
-质检验证）。编者核定流在词典管理区「📝 词表核定」页。
+definitions / count_corpus_words / build_corpus_vocab / write_corpus_vocab_file）
+——本脚本只做 CLI 编排（取数→计频→构建→写 configs/defining_vocab.txt→
+style.yaml 指向→质检验证）。编者核定流在词典管理区「📝 词表核定」页。
 
 用法：
     python scripts/build_defining_vocab.py [--min-freq 2] [--dry-run]
@@ -24,6 +24,7 @@ from src.style_check import (  # noqa: E402 —— 薄壳复用质检模块的�
     check_defining_vocab,
     count_corpus_words,
     fetch_corpus_definitions,
+    write_corpus_vocab_file,
 )
 
 VOCAB_FILE = ROOT / "configs" / "defining_vocab.txt"
@@ -31,22 +32,18 @@ STYLE_FILE = ROOT / "configs" / "style.yaml"
 
 
 def write_vocab_file(pairs, dry_run: bool) -> None:
-    """写词表 txt（一行一词；头部注释记来源与频次分布摘要）。"""
-    total = sum(c for _, c in pairs)
-    header = (
-        "# 定义词表（defining vocabulary）—— 初版由语料高频词自动提取\n"
-        f"# 生成：scripts/build_defining_vocab.py（语料 = definitions.en_ndef +\n"
-        f"# oald_senses.definition；词条 {len(pairs)}，总出现 {total} 次）\n"
-        "# 编者核定：在词典管理区「📝 词表核定」页增删词（写回本文件，git 留痕）；\n"
-        "# 受控定义词表的语言学充分性始终由编者判断——本文件只是体力活机械化。\n"
-    )
-    body = "\n".join(w for w, _ in pairs) + "\n"
+    """写词表 txt（一行一词；头部注释记来源与频次分布摘要）。
+
+    R7/R8 review 收敛：落盘本体委托 src/style_check.write_corpus_vocab_file
+    （构建四函数单一事实源——批次 51「scripts 薄壳化」的应有形态；旧实现
+    在本脚本复制了一份逐字节相同的头注模板，双份会漂移）。dry-run 只预览
+    不落盘（频次摘要与词数打印留在本壳，落盘路径与头注归质检模块）。"""
     if dry_run:
         print(f"  [dry-run] 将写 {VOCAB_FILE}：{len(pairs)} 词（前 10："
               f"{', '.join(w for w, _ in pairs[:10])}）")
         return
-    VOCAB_FILE.write_text(header + body, encoding="utf-8")
-    print(f"  ✓ 词表写入 {VOCAB_FILE}：{len(pairs)} 词")
+    path = write_corpus_vocab_file(pairs)
+    print(f"  ✓ 词表写入 {path}：{len(pairs)} 词")
 
 
 def point_style_yaml(dry_run: bool) -> None:
@@ -103,7 +100,10 @@ def main() -> int:
     import yaml as _yaml
     style = _yaml.safe_load(STYLE_FILE.read_text(encoding="utf-8"))
     item = check_defining_vocab(style)
-    print(f"  DEFINING_VOCAB → {item.get('status')}: {item.get('note', '')[:90]}")
+    # 检查项字典的说明键是 detail（_item 单一契约：code/rule/status/detail）——
+    # R7/R8 review 实证修复：旧代码读 'note' 键恒取空串，质检验证段
+    # 「DEFINING_VOCAB → pass: 」后详情永远缺失（退出码判定不受影响）。
+    print(f"  DEFINING_VOCAB → {item.get('status')}: {item.get('detail', '')[:90]}")
     return 0 if item.get("status") == "pass" else 1
 
 
