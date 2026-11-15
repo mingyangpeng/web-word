@@ -26,6 +26,7 @@
 ./start                  # 万能启动（缺啥补啥）
 ./start status           # 巡检（含数据库拓扑自检——3306 占用者/61 表锚点/3307 状态）
 ./start stop | down | logs | update | backup | doctor
+./start restore <file.sql.gz>  # 灾备恢复（容器内导入；覆盖非空库需确认/--force；--database <沙箱库> 可演练；61 表锚点校验）
 pytest                   # 连宿主 3307（conftest 固定；CI 显式 3306 不受影响）
 docker compose restart web   # 改码后让 8501 生效（bind mount 动态映射，无需重建镜像）
 ```

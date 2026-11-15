@@ -1,5 +1,15 @@
 # 更新日志
 
+## 2026-11-15 · 批次 41：review 收敛第二波——多 agent 并行修复
+
+- **测试库唯一化（P1 结构性）**：6 文件共用 web_word_users_test 各自唯一（f13965d）——AppTest 跨文件漂移的结构根源消除；grant 补 5 库转义授权（哨兵回绿）
+- **恢复闭环（P2）**：新建 scripts/restore_db.sh（七步流：校验→安全闸→建库→导入→61 表锚点→摘要；真机探针库冒烟全过）＋./start restore 子命令＋backup_db.sh host 守卫＋OPS/DEPLOYMENT 文档
+- **数据层缓存（P2×3）**：count_feedbacks/get_stats/get_annotation_progress 手写 TTL 60s（先例形态：失败不缓存、写函数成功后 clear×3 处、缓存键含取数缝防桩串）——侧边栏/标注主路径每轮 rerun 重查消除
+- **测试质量（P2×2）**：新建 tests/test_ui_kit.py 10 条（flash 队列坏态三路兜底——勘察出 _LEVEL_RENDERERS import 绑死坑）；fx29 teardown 补连接池清理（照 fx33 口径）
+- **徽章收敛（P2×2）**：dict_admin_pages/model_settings_pages 内联白字 _badge 委托 get_badge_html（12+3 调用点零改动）
+- **reliability**：静默 except 补 logger.debug；TESTING.md 补 CI 授权盲区节
+- 全量 **3047 passed / 0 failed**（+10 ui_kit）；并行会话文件（app.py/section_dock 等）未触碰
+
 ## 2026-11-15 · 批次 40：全项目四维 review——50 findings 收敛（P1×4/P2×25/P3×21）
 
 - 四 agent 只读勘察：代码质量（AST 全扫）/安全/测试保障/运维一致性

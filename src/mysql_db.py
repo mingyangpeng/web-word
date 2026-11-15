@@ -1399,6 +1399,8 @@ def replace_oald_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int
                 "DELETE FROM oald_senses WHERE definition_id = %s", (definition_id,)
             )
             if not senses:
+                # 删空也是数据变更：灌库替换路径同样要失效进度缓存
+                _agg_cache_drop("get_annotation_progress")
                 return 0
 
             rows = [
@@ -1429,10 +1431,12 @@ def replace_oald_senses(definition_id: int, senses: List[Dict[str, Any]]) -> int
                         examples, example_patterns, is_idiom, headword,
                         prototype_level, image_schema, alignment,
                         cn_syntax, translation_strategy, source, needs_review)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
-                           %s, %s, %s, %s, %s, %s, %s, %s)""",
+                   VALUES (%s, %s, %s, %s, %s, %s, %s,
+                           %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 rows,
             )
+            # 灌库/替换成功即失效逐动词进度缓存（灌库后标注页不得再报「词库为空」）
+            _agg_cache_drop("get_annotation_progress")
             return len(rows)
 
     except pymysql.Error as e:
@@ -1793,6 +1797,9 @@ def clear_all_word_data(force: bool = False) -> Dict[str, int]:
             cursor.execute("SELECT COUNT(*) AS n FROM word_clusters")
             removed["word_clusters"] = int(cursor.fetchone()["n"] or 0)
             cursor.execute("DELETE FROM word_clusters")
+        # 清库成功（with 退出即提交）——oald_senses 已清空，进度缓存必须失效，
+        # 否则标注页会按 60s 旧值继续显示「词库未灌」前的进度
+        _agg_cache_drop("get_annotation_progress")
     except RuntimeError:
         # RV2-1 闸门拒绝：原样上抛 —— 不得落进下面的吞错路径返回假成功
         raise
@@ -2438,30 +2445,104 @@ def get_feedback_data() -> List[Dict[str, Any]]:
         return []
 
 
-def count_feedbacks() -> Optional[int]:
+# ============================================
+# 轻量聚合手写 TTL 缓存（R5-3 补齐：count_feedbacks / get_stats /
+# get_annotation_progress —— 侧边栏每轮 rerun / 标注页每次渲染都重跑的全表聚合）
+# ============================================
+# 形态照 dict_admin_pages._fx24_annotation_progress_cached 先例（RV24-3 口径）：
+# 成功值缓存 60s；失败（None / empty 口径值）不落缓存 —— 立即如实返回，
+# 恢复后下次调用即重取，失败态不钉到过期（R4 归因即时可见）。
+# 不用 st.cache_data 的两个原因：
+#   1) 既有调用点全部零参调用（app.py 侧边栏/标注页，调用点不能改），而
+#      st.cache_data 的键只含函数入参 —— 无法照 get_hot_verbs 形态把
+#      cache_scope_key() 并进键（故改在函数内部自动派生，调用点零改动）；
+#   2) cache_data 会把失败值（None）钉 60s，与 RV24-3「失败 pop 即降级」
+#      口径冲突（先例 docstring 明确拒绝）。
+# 键含当前 get_db_cursor 对象：生产恒为模块真函数（键稳定，跨 rerun 复用）；
+# 测试 monkeypatch 换桩即换新对象 → 新槽位，桩与桩、桩与真库互不串场
+# （cache_scope_key 的 S1 教训推广到「取数缝」：数据源变即键变）。
+_AGG_TTL = 60
+_AGG_CACHE: dict = {}  # (函数名, scope, get_db_cursor) -> (monotonic_ts, value)
+_AGG_MISS = object()  # 未命中哨兵（成功值恒非 None，与 miss 的 None 区分开）
+
+
+def _agg_scope(cache_scope: Optional[str]) -> str:
+    """缓存作用域：显式传参透传，否则按当前库连接目标自动派生。
+
+    既有调用点零参（不能像 get_hot_verbs 那样由调用方传 cache_scope_key()），
+    故在数据层内部派生 —— 测试 monkeypatch MYSQL_DATABASE 换库时 scope 随之
+    变化，业务库与测试库互不串数据（S1 同源口径）。"""
+    return cache_scope if cache_scope is not None else cache_scope_key()
+
+
+def _agg_cache_get(name: str, scope: str):
+    """按（函数名, scope, 取数缝）查缓存；TTL 过期条目即时清除。未命中返回 _AGG_MISS。"""
+    key = (name, scope, get_db_cursor)
+    import time as _time
+
+    now = _time.monotonic()
+    hit = _AGG_CACHE.get(key)
+    if hit is not None and now - hit[0] < _AGG_TTL:
+        return hit[1]
+    _AGG_CACHE.pop(key, None)  # 过期残影即时清（含防御性清理）
+    return _AGG_MISS
+
+
+def _agg_cache_put(name: str, scope: str, value) -> None:
+    """缓存成功取数值（60s TTL 窗口内复用）。失败值不经过此函数。"""
+    key = (name, scope, get_db_cursor)
+    import time as _time
+
+    _AGG_CACHE[key] = (_time.monotonic(), value)
+
+
+def _agg_cache_drop(name: str) -> None:
+    """写操作后失效对应聚合缓存（清所有 scope/缝的同名条目，防提交后读到旧值）。"""
+    for key in [k for k in _AGG_CACHE if k[0] == name]:
+        _AGG_CACHE.pop(key, None)
+
+
+def count_feedbacks(cache_scope: Optional[str] = None) -> Optional[int]:
     """
     反馈总行数轻量计数（R5-3，P1）：侧边栏数据导出区默认只显示行数 caption，
     不再每轮 rerun 全表 SELECT * —— 全量取数移到点击导出按钮后按需执行。
 
+    缓存（R5-3 补齐，P2）：每轮 rerun 仍要 COUNT(*) 全表，现包 60s 手写 TTL
+    —— TTL 对齐 get_hot_verbs 先例（ttl=60）＋首参 cache_scope 口径；手写
+    形态与失败降级口径见上方 _AGG_CACHE 注释。首参向后兼容：既有零参调用点
+    不改动，内部自动派生 cache_scope_key()。
+
+    Args:
+        cache_scope: 缓存作用域键（cache_scope_key()）；None 时自动派生
+
     Returns:
-        反馈行数；查询失败返回 None（区别于 0 行，页面据此提示数据不可用）。
+        反馈行数；查询失败返回 None（区别于 0 行，页面据此提示数据不可用，
+        失败值不缓存 —— 恢复后下次调用即重取）。
     """
+    scope = _agg_scope(cache_scope)
+    cached = _agg_cache_get("count_feedbacks", scope)
+    if cached is not _AGG_MISS:
+        return cached
     try:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT COUNT(*) AS n FROM feedbacks")
-            return int(cursor.fetchone()["n"] or 0)
+            n = int(cursor.fetchone()["n"] or 0)
+            _agg_cache_put("count_feedbacks", scope, n)
+            return n
     except pymysql.Error as e:
         logger.error(f"Failed to count feedbacks: {e}")
+        _agg_cache_drop("count_feedbacks")  # RV24-3：失败 pop 即降级
         return None
     except Exception as e:
         logger.error(f"Unexpected error counting feedbacks: {e}")
+        _agg_cache_drop("count_feedbacks")
         return None
 
 
 # ============================================
 # Statistics Operations
 # ============================================
-def get_stats() -> Dict[str, Any]:
+def get_stats(cache_scope: Optional[str] = None) -> Dict[str, Any]:
     """
     Get database statistics.
 
@@ -2472,6 +2553,14 @@ def get_stats() -> Dict[str, Any]:
       * total_definitions —— 已收录词目数，单独返回，不再冒充查询数。
       * queries_today —— 今天的查询次数，用于侧边栏的当日增量。
       * total_clusters / total_relations —— 词簇数与词间关系边数（结构指标）。
+
+    缓存（R5-3 补齐，P2）：侧边栏每轮 rerun 重跑本函数 7 条聚合，现包 60s
+    手写 TTL —— TTL 对齐 get_hot_verbs 先例（ttl=60）＋首参 cache_scope 口径；
+    手写形态与失败降级口径见上方 _AGG_CACHE 注释。首参向后兼容：既有零参
+    调用点不改动，内部自动派生 cache_scope_key()。
+
+    Args:
+        cache_scope: 缓存作用域键（cache_scope_key()）；None 时自动派生
 
     Returns:
         Dictionary containing statistics
@@ -2485,6 +2574,10 @@ def get_stats() -> Dict[str, Any]:
         "total_clusters": 0,
         "total_relations": 0,
     }
+    scope = _agg_scope(cache_scope)
+    cached = _agg_cache_get("get_stats", scope)
+    if cached is not _AGG_MISS:
+        return cached
     try:
         with get_db_cursor() as cursor:
             # 真实查询次数（来自查询日志）
@@ -2520,7 +2613,7 @@ def get_stats() -> Dict[str, Any]:
             cursor.execute("SELECT COUNT(*) AS n FROM word_relations")
             total_relations = int(cursor.fetchone()['n'] or 0)
 
-            return {
+            stats = {
                 "total_queries": total_queries,
                 "queries_today": queries_today,
                 "total_definitions": total_definitions,
@@ -2529,12 +2622,16 @@ def get_stats() -> Dict[str, Any]:
                 "total_clusters": total_clusters,
                 "total_relations": total_relations,
             }
+            _agg_cache_put("get_stats", scope, stats)
+            return stats
 
     except pymysql.Error as e:
         logger.error(f"Failed to get statistics: {e}")
+        _agg_cache_drop("get_stats")  # RV24-3：失败 pop 即降级（empty 口径值不落缓存）
         return empty
     except Exception as e:
         logger.error(f"Unexpected error getting statistics: {e}")
+        _agg_cache_drop("get_stats")
         return empty
 
 
@@ -2987,13 +3084,29 @@ def get_domain_family_examples(word: str, sense_num: int) -> List[Dict[str, Any]
 # MOVECAT 标注平台（义位准入 / 图式五维标注 / 进度与导出）
 # ============================================
 
-def get_annotation_progress() -> Optional[List[Dict[str, Any]]]:
+def get_annotation_progress(cache_scope: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
     """逐动词标注进度（oald_senses，研究词表 996 义位 = 992 OALD + 4 人工补充）：
     义位总数 / 已标注（prototype_level 非空）/ 存疑数。
 
+    缓存（R5-3 补齐，P2）：oald_senses 全表 GROUP BY 每次渲染标注平台/提交流
+    都重算，现包 60s 手写 TTL —— TTL 对齐 get_hot_verbs 先例（ttl=60）；形态
+    照 dict_admin_pages._fx24_annotation_progress_cached 同族先例（成功值缓存
+    60s、失败 pop 即降级，见 _AGG_CACHE 注释；dict_admin 的外层缓存口径不变，
+    本层缓存令 app.py 直调点与外层 TTL 到期后的重取共享同一份数据）。写侧
+    失效：update_sense_annotation / replace_oald_senses / clear_all_word_data
+    成功后 _agg_cache_drop("get_annotation_progress")，提交/复核/灌库后即时
+    反映。首参向后兼容：既有零参调用点不改动，内部自动派生 cache_scope_key()。
+
     查询失败（R4-1 fail-closed）返回 None —— 区别于「表在但词库未灌」的空列表，
     标注平台/提交流据此分流「数据不可用（勿重跑灌库）」与「词库为空，可灌库」。
+
+    Args:
+        cache_scope: 缓存作用域键（cache_scope_key()）；None 时自动派生
     """
+    scope = _agg_scope(cache_scope)
+    cached = _agg_cache_get("get_annotation_progress", scope)
+    if cached is not _AGG_MISS:
+        return cached
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -3008,12 +3121,16 @@ def get_annotation_progress() -> Optional[List[Dict[str, Any]]]:
                    JOIN definitions d ON d.id = s.definition_id
                    GROUP BY d.verb ORDER BY d.verb"""
             )
-            return list(cursor.fetchall())
+            rows = list(cursor.fetchall())
+            _agg_cache_put("get_annotation_progress", scope, rows)
+            return rows
     except pymysql.Error as e:
         logger.error(f"Failed to get annotation progress: {e}")
+        _agg_cache_drop("get_annotation_progress")  # RV24-3：失败 pop 即降级
         return None  # R4-1：查询失败 ≠ 词库为空
     except Exception as e:
         logger.error(f"Unexpected error getting annotation progress: {e}")
+        _agg_cache_drop("get_annotation_progress")
         return None  # R4-1：同上
 
 
@@ -3042,6 +3159,9 @@ def update_sense_annotation(sense_id: int, prototype_level: Optional[str],
                  cn_syntax, translation_strategy,
                  1 if needs_review else 0, sense_id),
             )
+            # 提交/复核保存成功即失效逐动词进度缓存（提交后下次渲染进度必须
+            # 反映本次保存；失败不 clear —— 数据未变，缓存仍有效）
+            _agg_cache_drop("get_annotation_progress")
             return True
     except pymysql.Error as e:
         logger.error(f"Failed to update sense annotation (id={sense_id}): {e}")

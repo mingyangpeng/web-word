@@ -32,6 +32,7 @@
 """
 
 import os
+import queue
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -196,7 +197,8 @@ _USERS = (("fx29_ann", "fx29-ann-pw", "标注员", "annotator"),
 @pytest.fixture(scope="module")
 def fx29_db():
     """模块级测试库（test_integration_apptest.r3_env 同约定）：建库→建表→
-    建号，结束后还原全局库名再删库。MySQL 不可用只 skip 依赖它的用例。"""
+    建号，结束后还原全局库名→清空测试库连接池→删库。MySQL 不可用只 skip
+    依赖它的用例。"""
     import pymysql
 
     try:
@@ -226,6 +228,22 @@ def fx29_db():
         yield
     finally:
         db.MYSQL_DATABASE = old_db  # 先还原全局再删库（与 r3_env 同约定）
+        # 连接池清理（照 test_fx33_fixes.fx33_env teardown 口径对齐）：
+        # 本模块库生命周期内走 db.get_db_cursor 的取数（users_db 建表/建号、
+        # TestResumeGlue 的 user_context 读写与脏值直写、AppTest 里 app.py
+        # 页面取数）都会把活连接存进 _connection_pools 的 TEST_DB 键池；
+        # 不 pop 并 close 的话，删库后残留活连接仍指向已不存在的库，下个
+        # 模块同键复用时先撞 "Unknown database"。
+        pool_key = (db.MYSQL_HOST, db.MYSQL_PORT, TEST_DB, db.MYSQL_USER)
+        pool = getattr(db, "_connection_pools", {}).pop(pool_key, None)
+        if pool is not None:
+            while True:
+                try:
+                    pool.get_nowait().close()
+                except queue.Empty:
+                    break
+                except Exception:  # noqa: BLE001 单连接关不掉不阻塞 teardown
+                    pass
         conn = pymysql.connect(
             host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
             password=db.MYSQL_PASSWORD, charset=db.MYSQL_CHARSET,

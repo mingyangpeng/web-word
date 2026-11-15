@@ -59,6 +59,34 @@ pytest tests/test_phase5.py -k degradation
 新增涉及外部调用的单元用例请沿用 monkeypatch 约定；新增真库集成模块请按模块分库
 （`web_word_<module>_test` 命名，防并行 pytest 互删）并在 grant 脚本补授权行。
 
+## CI 授权盲区（review 记录，2026-11-15）
+
+CI 与本地的 MySQL 授权口径不同步，新增测试库名时存在一个「CI 恒绿、本地静默 skip」
+的盲区，记录在此防再犯：
+
+- **CI 是 root 全局权限隐式覆盖**：`.github/workflows/ci-cd.yml` 的 `mysql:8`
+  service 直接用 `root` 连接（该文件注释明示：`grant_local_mysql.sql` 是按
+  `web_word_user` 逐库授权的本地脚本，CI 里不适用）—— root 全局权限天然覆盖
+  **任何**测试库名，fixture 的 CREATE/DROP 永远成功。
+- **本地是 `web_word_user` 逐库授权**：本地测试连接（宿主 mysqld 3307，
+  `tests/conftest.py` 固定 `MYSQL_PORT=3307`）用的 `web_word_user` 只有
+  `scripts/grant_local_mysql.sql` 逐库 GRANT 过的库。集成 fixture 连不上目标库
+  或无建库权限时按约定自动 `pytest.skip` —— 于是**新增测试库名忘了补授权行时，
+  CI 照常全绿，本地却整段静默 skip**，真库覆盖悄悄缩水且无任何告警。
+
+对账手段（排查「本地 skipped 数偏高」时逐个跑）：
+
+```bash
+./start status                      # 状态一览（容器/健康端点/数据库拓扑自检）
+bash scripts/ops/status.sh          # 拓扑自检细目：3306=容器业务库 / 3307=宿主 pytest 测试库
+pytest -q --no-cov 2>&1 | tail -3   # 本地全量跑一遍：skipped 数 0 = 授权齐
+```
+
+skipped 数 > 0 时，用 `grep -rn "web_word_.*_test" tests/` 的库名清单对照
+`scripts/grant_local_mysql.sql` 的 GRANT 段，缺哪个库名补哪行（`localhost`/
+`127.0.0.1`/`%` 三个 host 维度都要，库名 `_` 一律写 `\_` 转义，见该脚本头部
+说明），重跑确认 skipped 归零。
+
 ## 测试文件一览
 
 | 文件 | 覆盖内容 |

@@ -734,12 +734,13 @@ def _db_confirms_dict_admin(user: Dict[str, Any]) -> bool:
 # ============================================
 
 def _badge(text: str, color: str) -> str:
-    """小圆角徽章（HTML span）。text 由调用方保证已过 _esc。"""
-    return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
-        f'padding:1px 10px;border-radius:10px;font-size:0.78em;'
-        f'margin-right:4px;">{text}</span>'
-    )
+    """小圆角徽章（HTML span）。text 由调用方保证已过 _esc。
+
+    RV1-2（_badge 收敛）：实现单份进 design_system.get_badge_html ——
+    文字颜色按底色自动选深/浅（旧版写死白字，浅底不达 WCAG AA）；
+    转义契约不变。
+    """
+    return get_badge_html(text, color)
 
 
 def _render_table(headers: List[str], rows: List[List[str]]) -> None:

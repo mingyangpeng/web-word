@@ -38,6 +38,7 @@
 | 12 | 备份自动化 | `crontab -e` 添加 `15 2 * * * cd /path/to/web-word && bash scripts/backup_db.sh --keep 14 >> data/logs/backup_db.log 2>&1` |
 | 13 | 备份验证 | 每月抽一份 `*.sql.gz` 在沙箱实例恢复演练 |
 | 14 | G6 备份新鲜卡 | 部署后确认词典管理→出版导出→备份新鲜卡显示 ✅ |
+| 15 | 恢复演练 | 恢复前先 `./start backup` 留当前态；`./start restore <备份文件.sql.gz>` 恢复业务库（覆盖非空库需交互确认或 `--force`）；`--database <沙箱库>` 可演练不碰业务库；脚本内含 61 表锚点校验（见 `scripts/restore_db.sh`） |
 
 ### 1.5 测试库初始化（本地开发/CI 用，生产部署可跳过）
 

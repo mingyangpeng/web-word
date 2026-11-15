@@ -24,7 +24,9 @@
 # ProgramArguments 即可）：
 #   15 2 * * * cd /path/to/web-word && bash scripts/backup_db.sh --keep 14 >> data/logs/backup_db.log 2>&1
 #
-# 依赖：mysqldump / gzip / tar 在 PATH 中（本机 Homebrew MySQL 8 自带）。
+# 依赖：mysqldump / gzip / tar 在 PATH 中（本机 Homebrew MySQL 8 自带）；
+#       连接依赖 .env 的 MYSQL_HOST=127.0.0.1（容器端口映射——Docker 服务名
+#       mysql 仅容器内有效，宿主 mysqldump 解析不了，脚本对此显式拦截）。
 
 set -euo pipefail
 
@@ -91,6 +93,18 @@ MYSQL_USER_VAL="$(env_value MYSQL_USER)"
 MYSQL_PASSWORD_VAL="$(env_value MYSQL_PASSWORD)"
 
 MYSQL_HOST_VAL="${MYSQL_HOST_VAL:-127.0.0.1}"
+
+# 宿主执行口径检查：本脚本在宿主跑 mysqldump，连接依赖 .env 的
+# MYSQL_HOST=127.0.0.1（容器端口映射）。若照 .env 注释把该值改成容器服务名
+# mysql，宿主 mysqldump 解析不了该主机名、只会哑火——此处显式拦截给出处置，
+# 而不是让 mysqldump 报一条英文 DNS 错误（review finding：连接口径防呆）。
+case "$MYSQL_HOST_VAL" in
+  127.0.0.1|localhost) : ;;
+  *)
+    echo "错误：MYSQL_HOST=${MYSQL_HOST_VAL} 不是 127.0.0.1/localhost —— backup_db.sh 在宿主执行依赖 127.0.0.1（容器映射）；Docker 服务名仅容器内有效，宿主 mysqldump 解析不了。请把 .env 的 MYSQL_HOST 改回 127.0.0.1（容器内进程走 compose 注入的 mysql 服务名，不经本脚本）" >&2
+    exit 1 ;;
+esac
+
 MYSQL_PORT_VAL="${MYSQL_PORT_VAL:-3306}"
 if [ -z "$MYSQL_DATABASE_VAL" ] || [ -z "$MYSQL_USER_VAL" ]; then
   echo "错误：环境文件（.env.local / .env）缺 MYSQL_DATABASE 或 MYSQL_USER，无法备份" >&2

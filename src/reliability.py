@@ -715,8 +715,8 @@ def _list_categories() -> tuple[str, ...]:
         cats = tuple(str(c) for c in cats)
         if cats:
             return cats
-    except Exception:
-        pass
+    except Exception as e:  # noqa: BLE001 —— category_pack 缺失/损坏属可选依赖，静默回退扫 configs/
+        logger.debug(f"category_pack 加载失败，回退扫 configs/ 子目录: {e}")
     configs_dir = os.path.join(_REPO_ROOT, "configs")
     if os.path.isdir(configs_dir):
         found = sorted(

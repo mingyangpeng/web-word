@@ -78,7 +78,7 @@ import streamlit as st
 
 from src import users_db
 from src.db_utils import current_user as _current_user
-from src.design_system import HEADER_H3, get_card_style
+from src.design_system import HEADER_H3, get_badge_html, get_card_style
 from src.guards import require_dict_admin
 
 try:
@@ -616,12 +616,13 @@ def _render_status_card(provider: Optional[Dict[str, Any]], creating: bool) -> N
 
 
 def _badge(text: str, color: str) -> str:
-    """小圆角徽章（HTML span）。text 为调用方给的固定枚举文案（不含 UGC）。"""
-    return (
-        f'<span style="display:inline-block;background:{color};color:#fff;'
-        f'padding:1px 10px;border-radius:10px;font-size:0.78em;'
-        f'margin-left:4px;">{text}</span>'
-    )
+    """小圆角徽章（HTML span）。text 为调用方给的固定枚举文案（不含 UGC）。
+
+    RV1-2（_badge 收敛）：实现单份进 design_system.get_badge_html ——
+    文字颜色按底色自动选深/浅（旧版写死白字，浅底不达 WCAG AA）；
+    徽章间仍由调用处 join 的空格衔接（旧版 margin-left 微差已并入统一口径）。
+    """
+    return get_badge_html(text, color)
 
 
 def _render_models_block() -> None:
