@@ -1014,7 +1014,7 @@ def render_card_annotation(verb):
 
 def render_card_anchor(verb):
     """
-    渲染范畴锚定卡片。
+    渲染范畴归类卡片。
 
     Args:
         verb: 动词
@@ -1027,7 +1027,7 @@ def render_card_anchor(verb):
 
     html = '''
     <div style="padding: 20px;">
-        <h4 style="color: #276749; font-weight: 600; margin: 0 0 16px 0;">🎯 范畴锚定</h4>
+        <h4 style="color: #276749; font-weight: 600; margin: 0 0 16px 0;">🎯 范畴归类</h4>
     '''
     html += _mock_source_badge_html(verb)
 
@@ -1042,7 +1042,7 @@ def render_card_anchor(verb):
             html += f'<span style="background-color: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;">{emoji} {semantic_type}</span>'
         html += '</div>'
     else:
-        html += '<p style="color: #4a5568;">暂无范畴锚定数据</p>'
+        html += '<p style="color: #4a5568;">暂无范畴归类数据</p>'
 
     html += '</div>'
     return html
@@ -2514,7 +2514,7 @@ def render_main_area():
         # st.button + on_click 写入 session_state.card_expanded）
         for card_key, title, icon, body_renderer in (
             ("prototype", "原型与位移事件分析", "🧬", render_card_prototype),
-            ("anchor", "范畴锚定", "🎯", render_card_anchor),
+            ("anchor", "范畴归类", "🎯", render_card_anchor),
             ("annotation", "义位标注", "🏷️", render_card_annotation),
             ("core", "核心释义与多维辨异", "📚", render_card_core),
             ("example", "图式示例", "🖼️", render_card_example),
