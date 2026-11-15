@@ -51,7 +51,7 @@ from src.users_db import (  # noqa: E402
     verify_password,
 )
 
-TEST_DB = "web_word_users_test"
+TEST_DB = "web_word_sec_test"
 
 
 # ============================================

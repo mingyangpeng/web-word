@@ -29,7 +29,7 @@ from src.users_db import create_user, ensure_user_tables  # noqa: E402
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "src", "app.py")
-TEST_DB = "web_word_users_test"
+TEST_DB = "web_word_integration_test"
 TIMEOUT = 180
 
 # 测试账号（username → (password, display_name, role)）；display_name 特意含

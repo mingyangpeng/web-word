@@ -50,7 +50,7 @@ from src.import_engine import (  # noqa: E402
     validate_mapping,
 )
 
-TEST_DB = "web_word_users_test"  # 与 users / dict_admin 系测试共用（授权覆盖）
+TEST_DB = "web_word_import_test"  # 测试库按文件唯一（批次 40 review——同名互踩是跨文件漂移根源）
 
 MAPPING = {"词目": "verb", "中文释义": "chinese_ndef", "音标": "phonetic"}
 

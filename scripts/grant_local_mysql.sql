@@ -239,3 +239,20 @@ GRANT ALL PRIVILEGES ON `web\_word\_fx39\_test`.* TO 'web_word_user'@'127.0.0.1'
 GRANT ALL PRIVILEGES ON `web\_word\_fx39\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_fx39\_test`.* TO 'web_word_user'@'%';
 FLUSH PRIVILEGES;
+
+-- 批次 40 review：测试库按文件唯一化补授权（五新库，字面名口径）
+GRANT ALL PRIVILEGES ON `web_word_import_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web_word_import_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web_word_import_test`.* TO 'web_word_user'@'%';
+GRANT ALL PRIVILEGES ON `web_word_integration_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web_word_integration_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web_word_integration_test`.* TO 'web_word_user'@'%';
+GRANT ALL PRIVILEGES ON `web_word_r3_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web_word_r3_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web_word_r3_test`.* TO 'web_word_user'@'%';
+GRANT ALL PRIVILEGES ON `web_word_sec_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web_word_sec_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web_word_sec_test`.* TO 'web_word_user'@'%';
+GRANT ALL PRIVILEGES ON `web_word_r1_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web_word_r1_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web_word_r1_test`.* TO 'web_word_user'@'%';

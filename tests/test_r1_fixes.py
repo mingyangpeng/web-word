@@ -53,7 +53,7 @@ from src.users_db import (  # noqa: E402
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "src", "app.py")
-TEST_DB = "web_word_users_test"  # 授权覆盖库名（pytest 串行，见模块 docstring）
+TEST_DB = "web_word_r1_test"  # 测试库按文件唯一（批次 40 review）
 TIMEOUT = 180
 
 
