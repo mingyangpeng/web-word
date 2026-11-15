@@ -104,3 +104,4 @@ docker-compose.override.yml
 docs/research/papers/
 docs/research/notes/
 docs/research/protocols/
+.env
