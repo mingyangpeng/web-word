@@ -25,11 +25,13 @@ os.environ.setdefault("MYSQL_PORT", "3307")
 os.environ.setdefault("MYSQL_PASSWORD", "webword123")
 
 # fail-fast（批次 42 review P2）：测试绝不允许连业务库（3306）——显式设了
-# 3306 即主口径被破坏，立即报错而非静默把测试库建进业务实例
-if os.environ.get("MYSQL_PORT", "3307") != "3307":
+# 3306 即主口径被破坏，立即报错而非静默把测试库建进业务实例。
+# 批次 45 修正：CI（GitHub Actions 自动设 CI=true）的 3306 是自己的 mysql
+# service 容器（非业务库），合法——fail-fast 仅对本地开发机生效。
+if os.environ.get("MYSQL_PORT", "3307") != "3307" and not os.environ.get("CI"):
     raise RuntimeError(
-        f"MYSQL_PORT={os.environ['MYSQL_PORT']} —— 测试必须走宿主 mysqld 3307 "
-        "（业务库在容器 3306）。显式覆盖请先确认目标不是业务库。")
+        f"MYSQL_PORT={os.environ['MYSQL_PORT']} —— 本地测试必须走宿主 mysqld 3307 "
+        "（业务库在容器 3306）。CI 环境（CI=true）的 3306 是自备 mysql service，放行。")
 
 # 时序契约收口：共享 helper（tests/helpers.py，review P3 收敛落点）含 src.*
 # import（page_guides、mysql_db 探针），必须在上面 env 设定**之后**加载。
