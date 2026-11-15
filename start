@@ -1,9 +1,112 @@
 #!/usr/bin/env bash
-# start —— 兼容旧用法的一键入口：等价于 ./develop.sh && ./start.sh
-# 三个脚本各有分工：develop.sh 部署环境+数据 / start.sh 启动网页 / repair.sh 检测修复
-# stop/status/doctor 直接转发 start.sh（不触发部署）
+#
+# start —— 万能启动入口（运维人员唯一需要记住的命令）。
+#
+# 设计目标：不懂本项目的运维，敲 `./start` 项目必须正常起来——脚本自行判断
+# 系统当前状态，缺什么补什么（Docker 没跑拉起 Docker、.env 缺失补模板、镜像
+# 缺失自动构建、容器没起自动起、数据库端口被占自动处置）。幂等：重复运行
+# 无害；任何一步失败都有中文处置指引，不静默吞错。
+#
+# 用法：
+#   ./start                 # 万能启动（默认）：自检 → 缺啥补啥 → 启动 → 健康确认
+#   ./start status          # 状态一览（容器/健康端点/数据库拓扑自检）
+#   ./start stop            # 停止（容器保留、数据卷不动）
+#   ./start down            # 移除容器（数据卷永不删）
+#   ./start logs [web|mysql|all] [--tail N]   # 日志
+#   ./start update          # 代码更新滚动部署（git pull → 重建 → 平滑替换）
+#   ./start backup          # 灾备备份（mysqldump＋媒体归档，保留 14 份）
+#   ./start doctor          # 全量体检（环境七类＋数据库拓扑），只诊断不启动
+#
+# 实现：核心启动流内置（本文件）；各子命令薄分发到 scripts/ops/ 脚本库
+# （单一实现原则——start 是入口，ops 是库）。旧本机裸跑三件套
+# （develop.sh/start.sh/repair.sh）已归档 scripts/archive/——全 Docker 口径。
+
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OPS="$ROOT/scripts/ops"
+. "$OPS/_common.sh"
+cd "$ROOT"
+
+# ══════════════════════════════════════════════
+# 子命令分发（start 是唯一入口，实现全在 ops 库）
+# ══════════════════════════════════════════════
 case "${1:-}" in
-  stop|status|doctor) exec bash "$(dirname "$0")/start.sh" "$@" ;;
+    stop)    exec bash "$OPS/stop.sh" ;;
+    down)    exec bash "$OPS/down.sh" ;;
+    status)  exec bash "$OPS/status.sh" ;;
+    logs)    shift; exec bash "$OPS/logs.sh" "$@" ;;
+    update)  exec bash "$OPS/update.sh" ;;
+    backup)  exec bash "$ROOT/scripts/backup_db.sh" ;;
+    doctor)
+        shift
+        bash "$OPS/status.sh"
+        say_info "环境七类体检（env_doctor——部分检查项属本机裸跑口径，容器形态下仅参考）"
+        exec python3 "$ROOT/scripts/env_doctor.py" "$@"
+        ;;
 esac
-bash "$(dirname "$0")/develop.sh" || exit 1
-exec bash "$(dirname "$0")/start.sh"
+
+# ══════════════════════════════════════════════
+# 默认流：万能启动（自检 → 缺啥补啥 → 启动 → 确认）
+# ══════════════════════════════════════════════
+echo "═══ LexiSchema 项目启动（$(date '+%H:%M:%S')）═══"
+
+# ① Docker daemon——没跑就拉起（macOS open -a Docker / Linux systemctl）
+say_info "① Docker 环境"
+ensure_docker_daemon
+require_compose
+
+# ② .env——缺失自动补模板（AI key 可后补，不阻断启动）
+say_info "② 环境配置"
+if require_env_file; then
+    if grep -qE '^(ZHIPUAI_API_KEY|OPENAI_API_KEY|DEEPSEEK_API_KEY)=..*' "$ROOT/.env"; then
+        say_ok ".env 在位，AI key 非空"
+    else
+        say_warn ".env 在位但无 AI key——AI 功能不可用，其余正常（后补 .env 即可）"
+    fi
+fi
+
+# ③ 数据库端口预检——宿主进程若占 3306，容器映射起不来（my.cnf 已固化 3307）
+say_info "③ 数据库端口 3306"
+p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
+if [ -n "$p3306" ] && ! echo "$p3306" | grep -qi "dock"; then
+    say_warn "3306 被宿主进程 '$p3306' 占用——尝试停它（宿主 mysqld 已固化 3307，数据无损）"
+    pkill -f "mysqld" 2>/dev/null || true
+    sleep 3
+    if lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1; then
+        say_err "3306 仍被占用且无法安全释放——请人工处置（lsof -nP -iTCP:3306 -sTCP:LISTEN）"
+        exit 1
+    fi
+fi
+say_ok "3306 可用（容器 MySQL 监听）"
+
+# ④ web 镜像——缺失自动构建（首次部署零手工）
+say_info "④ 应用镜像"
+if ! docker compose images web 2>/dev/null | grep -q "web-word"; then
+    say_warn "web 镜像不存在——自动构建（首次约 3~5 分钟）"
+    docker compose build web || { say_err "镜像构建失败——见上方日志"; exit 1; }
+else
+    say_ok "镜像在位"
+fi
+
+# ⑤ 容器——compose up -d（幂等：在跑的容器不重建）
+say_info "⑤ 启动容器（mysql＋web）"
+docker compose up -d || { say_err "容器启动失败——日志：./start logs"; exit 1; }
+
+# ⑥ 健康等待——web 端点轮询 ≤120s
+wait_web_healthy || true
+
+# ⑦ 数据库完整性——归一锚点校验（61 表），异常只告警不阻断
+say_info "⑦ 数据库完整性"
+n_tables="$(docker exec web-word-mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
+if [ "$n_tables" = "61" ]; then
+    say_ok "业务库 web_word_db = 61 表（归一锚点，完整）"
+else
+    say_warn "业务库 $n_tables 表（预期 61）——数据可能未灌/异常；回滚锚点见 data/backups/db/"
+fi
+
+# ⑧ 收尾卡片
+echo
+echo "════════════════════════════════════════════"
+say_ok "项目已就绪 → http://localhost:8501"
+say_info "日常命令：./start status（巡检）｜./start logs web（日志）｜./start stop（停止）｜./start backup（备份）"
+echo "════════════════════════════════════════════"
