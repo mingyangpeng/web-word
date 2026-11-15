@@ -99,4 +99,8 @@ data/logs/
 
 # compose 本地覆写（不入库）
 docker-compose.override.yml
-docs/research/
+# 研究区：论文/笔记/protocols 用户文件永不提交（纪律）；tables/ 数据表除外
+# ——它是灌库脚本与 Dockerfile COPY 的依赖（Levin 候选词表/域系初判表等）
+docs/research/papers/
+docs/research/notes/
+docs/research/protocols/
