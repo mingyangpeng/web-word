@@ -1,5 +1,23 @@
 # 更新日志
 
+## 2026-11-15 · 批次 38：三层记忆锚点——忘了怎么办
+
+- `./start help`（打印用法表）；README 快速开始节重写为 start 口径（拓扑表内嵌）
+- 新增 `docs/dev/OPS.md` 运维速查备忘（现状/端口凭据/命令/坑位清单/挂账/文档地图六节——人与 AI 接手者同源）；CLAUDE.md 常用命令指路 OPS.md
+
+## 2026-11-15 · 批次 37：根目录唯一万能入口 start
+
+- 八步幂等流（daemon→env→端口→镜像→容器→健康→61 表锚点→就绪卡片），缺啥补啥自动修复
+- 子命令薄分发 ops 脚本库（stop/status/down/logs/update/backup/doctor）；旧本机裸跑三件套归档 scripts/archive/
+- 真机冒烟全绿；`./start help` 自带用法表
+
+## 2026-11-15 · 批次 36：代码与数据库双归一＋防再犯
+
+- 代码动态映射：容器 bind mount src/config/configs/scripts（MD5 一致验证）；业务库统一容器 MySQL（宿主 28 业务表＋users 数据迁入，对账 32/34；zh_dict 以容器全量为准）
+- 测试双轨：conftest 固定 3307（容器环境跨文件漂移回退宿主）；grant 补 30 测试库字面授权（1044→0）
+- 防再犯：my.cnf 固化 3307＋skip-log-bin（binlog 3.2G 清理）；brew 废库归档改名；status.sh 拓扑自检；DEPLOYMENT §三·五定版节
+- 撤销未完成侧边栏修复入 stash（跨文件 5 失败待配套适配）；全量 **3037 passed / 0 failed**
+
 ## 2026-11-15 · 批次 36：代码与数据库双归一——容器动态映射＋业务库统一容器 MySQL＋测试双轨
 
 - **代码动态映射**（607430f）：容器 bind mount src/config/configs/scripts——8501 跑宿主工作树代码（MD5 一致验证），改码重启即生效不再依赖镜像重建；不挂项目根防遮盖 /app/seed，/app/data 保持 named volume

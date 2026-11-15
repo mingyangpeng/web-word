@@ -50,7 +50,7 @@ Docker Compose（MySQL 主机名是服务名 `mysql`）与本地开发（主机�
 
 ### 旧名变量（仅 `src/security.py` 的 `KeyManager` 读取）
 
-`ZHIPU_API_KEY`、`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`。主应用取释义时**不读**这些名字，
+`ZHIPU_API_KEY`、`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`。主应用按 LLM_PROVIDER 供应商链读取（llm_api.py 降级序：DB 供应商 → 这些 .env key），
 因此运行应用不需要它们（历史上的 `src/api.py` 已删除）。
 
 > 注意 `ZHIPU_API_KEY` 与 `ZHIPUAI_API_KEY` 是两个不同的名字：主应用只认后者。

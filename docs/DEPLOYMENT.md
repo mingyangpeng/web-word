@@ -48,7 +48,7 @@ pytest 的真库集成模块（迁移集成/e2e 工作流/各批次 fixes 集成
 - **23 个测试库**：迁移集成（`web_word_migration_test`）＋按模块分库的集成测试库
   （users/flow/ai_ledger/media/wordforms/org/dict_admin/collab/writing/lexical/
   stage1_e2e/review_regression/llm_providers）＋批次 14~17 及 review waves 逐批补入的
-  fx18/fx19/fx20/fx25/fx27(r1_probe)/fx30/fx31/fx32/fx33 测试库——合计授权 **24 库**
+  fx18/fx19/fx20/fx25/fx27(r1_probe)/fx30/fx31/fx32/fx33 测试库——合计授权 **30 库**
   （脚本内注释逐库标注归属模块）。
 
 ```bash

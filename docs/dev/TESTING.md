@@ -51,7 +51,7 @@ pytest tests/test_phase5.py -k degradation
   任何漏掉的 patch 都会立刻显式失败，而不是静默触网或连库。
 - **集成层真库用例自动降级**：迁移集成/e2e 工作流/各批次 fixes 集成段在真 MySQL 上
   真跑；无库或 `web_word_user` 未授权（见 `docs/DEPLOYMENT.md` §1.5 测试库初始化，
-  `scripts/grant_local_mysql.sql` 幂等授权 1 应用库＋23 测试库）时**自动 skip 而
+  `scripts/grant_local_mysql.sql` 幂等授权 1 应用库＋30 测试库）时**自动 skip 而
   非 fail**——环境能力问题，不是代码缺陷。
 - **CI 有 MySQL 8 service**：`.github/workflows/ci-cd.yml` 起了 `mysql:8` 服务并执行
   授权脚本，真库用例在 CI 上真跑（不 skip）。
