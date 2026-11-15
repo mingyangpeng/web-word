@@ -56,6 +56,7 @@ from src.design_system import (
     get_table_header_style,
     get_table_row_style,
 )
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 from src.lexical_db import (
     EXAMPLE_SOURCES,
     MAX_CONTENT_LEN,
@@ -783,7 +784,8 @@ def render_lexical_page() -> None:
 
     ensure_lexical_tables()
 
-    st.markdown(f"<h1 style='{HEADER_H1}'>📖 例证与对译</h1>", unsafe_allow_html=True)
+    # 页 H1 双语：原文即 key（与侧边栏 label 同串，ZH_EN 已收录）
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('📖 例证与对译')}</h1>", unsafe_allow_html=True)
     st.markdown(
         f"<h2 style='{HEADER_H2}'>编纂成文 · 工序 11 例证配置 ＋ 工序 12 对译定稿</h2>",
         unsafe_allow_html=True,

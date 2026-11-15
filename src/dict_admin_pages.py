@@ -191,6 +191,7 @@ from src.design_system import (
     get_table_header_style,
     get_table_row_style,
 )
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 
 logger = logging.getLogger(__name__)
 
@@ -4016,7 +4017,8 @@ def render_dict_admin_page() -> None:
     registry_db.ensure_resource_registry_tables()
     broadcast_db.ensure_broadcast_table()  # FX-30：项目广播表随页面自举就位
 
-    st.markdown(f"<h1 style='{HEADER_H1}'>📖 词典管理</h1>", unsafe_allow_html=True)
+    # 页 H1 双语：原文即 key（与侧边栏 label 同串，ZH_EN 已收录）
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('📖 词典管理')}</h1>", unsafe_allow_html=True)
     st.markdown(
         f"<h2 style='{HEADER_H2}'>词典管理员工作台（阶段 1 MVP）</h2>",
         unsafe_allow_html=True,

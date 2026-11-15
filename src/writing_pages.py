@@ -75,6 +75,7 @@ from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.design_system import (
     HEADER_H1, HEADER_H2, HEADER_H3, get_badge_html,
 )
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -1495,7 +1496,8 @@ def render_writing_page() -> None:
     # 开销可忽略；users 表由登录链路 ensure_user_tables 先行）
     writing_db.ensure_writing_tables()
 
-    st.markdown(f"<h1 style='{HEADER_H1}'>✍️ 释义撰写与审校</h1>",
+    # 页 H1 双语：原文即 key（与侧边栏 label 同串，ZH_EN 已收录）
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('✍️ 释义撰写与审校')}</h1>",
                 unsafe_allow_html=True)
     st.markdown(
         f"<h2 style='{HEADER_H2}'>编纂成文域工作台（阶段 2 第一批）</h2>",

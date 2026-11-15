@@ -92,6 +92,7 @@ from src import collab_db  # P3 分层抽取：协作区数据层（assignments 
 from src import collab_metrics  # FX-19：协同度量五指标数据层（本页薄渲染）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3, get_card_style  # 卡片样式：FX-30 广播条
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 from src.mysql_db import get_db_cursor  # 仅 _search_verbs 薄封装注入游标工厂（R2-5 测试锚点）
 from src.org_db import get_projects_for_user
 from src import guards
@@ -1242,8 +1243,13 @@ def render_collab_page() -> None:
         st.warning("请先登录。")
         return
 
+    # 页 H1 双语（复合形态）：前半段动态取 GUIDE['label']（与侧边栏 label
+    # 同串，ZH_EN 已收录——先 _t 译后 _html_escape 转义，次序不能反）；
+    # 后半段「AI 协作区」是页级文案（只此一处），照 i18n 收录纪律不进
+    # 框架字典，用 t 的显式 en 参数就地给译文（en 态：🤖 AI Hub · Workspace）。
     st.markdown(
-        f"<h1 style='{HEADER_H1}'>{_html_escape(str(GUIDE['label']))} · AI 协作区</h1>",
+        f"<h1 style='{HEADER_H1}'>{_html_escape(_t(str(GUIDE['label'])))}"
+        f" · {_t('AI 协作区', 'Workspace')}</h1>",
         unsafe_allow_html=True,
     )
     st.markdown(

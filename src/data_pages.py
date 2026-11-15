@@ -106,6 +106,7 @@ from src.security import sanitize_csv_dataframe
 from src import guards
 from src import ui_kit
 from src.design_system import HEADER_H1, get_card_style
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 from src import sense_spine
 
 logger = logging.getLogger(__name__)
@@ -1111,7 +1112,8 @@ def render_import_page() -> None:
         st.error("⛔ 数据导入仅词典管理员可用（导入同权，规范 §15）。")
         return
 
-    st.markdown(f"<h1 style='{HEADER_H1}'>🧰 数据导入向导</h1>", unsafe_allow_html=True)
+    # 页 H1 双语：原文即 key（与侧边栏 label 不同串，ZH_EN 已补收条目）
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('🧰 数据导入向导')}</h1>", unsafe_allow_html=True)
     st.caption(
         "三步向导：① 上传 → ② 预览与指纹 → ③ 登记批次＋列映射。批次 5 起业务写入"
         "已接线（src/import_engine.py）：默认干跑预览（零写库），显式「执行写入」才"
@@ -1224,7 +1226,8 @@ def render_browser_page() -> None:
         st.warning("请先登录。")
         return
 
-    st.markdown(f"<h1 style='{HEADER_H1}'>📖 词条浏览器</h1>", unsafe_allow_html=True)
+    # 页 H1 双语：原文即 key（与侧边栏 label 不同串，ZH_EN 已补收条目）
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('📖 词条浏览器')}</h1>", unsafe_allow_html=True)
     st.caption(
         "管理视角的词条列表（只读）：词目 / 义项数 / coverage（待补，如实标注） / "
         "来源分级；行展开即见义项脊柱（每条义项一个 🧬 expander，点开懒加载七段"

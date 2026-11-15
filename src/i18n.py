@@ -13,11 +13,12 @@
      文案、``set_lang("en")`` 切语言（写会话 + 登录态时持久化），
      ``is_en()`` 供个别分支逻辑（如只对英文态追加提示）使用。
 
-字典范围（框架层，约 74 条）：17 页侧边栏 label（与 src/page_guides.py
-PAGE_GUIDES 的 label 逐字一致，emoji 保留）、七区头（与 src/app.py
+字典范围（框架层，约 79 条）：17 页侧边栏 label（与 src/page_guides.py
+PAGE_GUIDES 的 label 逐字一致，emoji 保留）、3 条页 H1 主标题（与
+label 不同串的页面主标题，页头 i18n 接线补收）、七区头（与 src/app.py
 _SIDEBAR_ZONES 区名逐字一致；与页 label 同串的三条共用同一条目）、
 登录/通用动词、通用名词与界面动词、使用说明段头与侧栏常驻文案、
-R4 高频降级/状态提示（grep src/ 收录的高频原文）。页面级文案不进本
+R4 高频降级/状态提示（grep src/ 收录的高频原文）。页面级长文案不进本
 字典 —— 各页按需在调用点用 ``t(zh, en)`` 的显式 en 参数就地给译文，
 或经并行会话逐步沉淀进 ZH_EN。
 
@@ -181,7 +182,7 @@ def t(zh: str, en: Optional[str] = None) -> str:
 
 
 # ============================================
-# ZH_EN 字典：中文原文 → 英文译文（框架层，74 条）
+# ZH_EN 字典：中文原文 → 英文译文（框架层，79 条）
 # ============================================
 
 # 收录纪律：
@@ -193,7 +194,9 @@ def t(zh: str, en: Optional[str] = None) -> str:
 #   * 「🤖 模型供应商」刻意译作 "🤖 Model Providers"，与 ai_hub 的
 #     "🤖 AI Hub" 区分（两个入口都带 🤖，撞名会让用户分不清）；
 #   * 页面级长文案不进本字典（框架层只收通用词与高频提示）—— 各页
-#     文案在调用点用 t(zh, en) 显式参数就地给译文，或后续批次沉淀。
+#     文案在调用点用 t(zh, en) 显式参数就地给译文，或后续批次沉淀；
+#     例外：各页 H1 主标题（与 label 不同串的）随页头 i18n 接线收编，
+#     保证 en 态页标题不再是中文（双语 review finding）。
 ZH_EN: Dict[str, str] = {
     # —— 17 页侧边栏 label（与 src/page_guides.py PAGE_GUIDES 逐字一致）——
     "🔍 搜索释义": "🔍 Search Definitions",
@@ -214,6 +217,13 @@ ZH_EN: Dict[str, str] = {
     "📖 例证与对译": "📖 Examples & Translation",
     # 与「🤖 AI 协作」的译文刻意区分（同为 🤖 前缀的两个入口不能撞名）
     "🤖 模型供应商": "🤖 Model Providers",
+
+    # —— 页 H1 主标题（与侧边栏 label 不同串的页面主标题；双语 review
+    #    finding「en 态页 H1 仍中文」接线补收 —— 各 *_pages.py 页面入口的
+    #    `<h1 style='{HEADER_H1}'>` 内文案用 _t 取此处译文）——
+    "🧰 数据导入向导": "🧰 Data Import Wizard",
+    "📖 词条浏览器": "📖 Entry Browser",
+    "👥 用户管理": "👥 User Management",
 
     # —— 七区头（与 src/app.py _SIDEBAR_ZONES 区名逐字一致；与页 label
     #    同串的「📊 语义分析」「🤖 AI 协作」「📖 词典管理」共用上段条目）——

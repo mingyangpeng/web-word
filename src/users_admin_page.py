@@ -69,6 +69,7 @@ from src import guards
 from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun 不再丢）
 from src import user_context_db  # 批次 19：我的偏好读写（own-rows-only）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 from src.page_guides import PAGE_KEYS  # FX-39：page 锚跳转合法性闸（路由键单一事实源）
 from src.users_db import (
     NEW_ROLES,
@@ -961,7 +962,8 @@ def render_users_admin_page() -> None:
         st.error("⛔ 用户管理仅管理员可用。")
         return
 
-    st.markdown(f"<h1 style='{HEADER_H1}'>👥 用户管理</h1>", unsafe_allow_html=True)
+    # 页 H1 双语：原文即 key（与侧边栏 label「👥 账号管理」不同串，ZH_EN 已补收条目）
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('👥 用户管理')}</h1>", unsafe_allow_html=True)
     st.markdown(
         f"<h2 style='{HEADER_H2}'>账号与角色（管理员专用）</h2>",
         unsafe_allow_html=True,

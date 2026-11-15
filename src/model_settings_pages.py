@@ -80,6 +80,7 @@ from src import users_db
 from src.db_utils import current_user as _current_user
 from src.design_system import HEADER_H1, HEADER_H3, get_badge_html, get_card_style
 from src.guards import require_dict_admin
+from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
 
 try:
     from src import llm_providers_db
@@ -867,7 +868,9 @@ def render_model_settings_page() -> None:
     # RV 第二轮（P2 页头统一）：st.title 的字号/边距与设计系统页头不同源，
     # 统一为其他页面一致的 `<h1 style='{HEADER_H1}'>` 形态（视觉规格相同：
     # 2.5rem/700，无 title 自带的底部留白差异）。
-    st.markdown(f"<h1 style='{HEADER_H1}'>🤖 模型供应商</h1>", unsafe_allow_html=True)
+    # 页 H1 双语：原文即 key（「🤖 模型供应商」ZH_EN 已收录，en 态 "🤖 Model
+    # Providers"，与 AI 协作区的 "🤖 AI Hub" 刻意区分不撞名）。
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('🤖 模型供应商')}</h1>", unsafe_allow_html=True)
     st.caption("管理 LLM 模型供应商，配置后在释义生成等 AI 功能中使用。")
 
     if llm_providers_db is None:
