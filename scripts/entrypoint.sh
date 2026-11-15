@@ -8,7 +8,12 @@
 # environment 列在 docker-compose.yml（.env 已入库，compose 的 environment
 # 覆盖 env_file，MYSQL_HOST=mysql 由 compose 强制指定）。
 
-set -e
+# set -euo pipefail（R9 终审补全：原先只有 -e。补 -u 防未定义变量静默展开成
+# 空串（本脚本全部变量均先赋值后用，run_loader 的 "$@" 在 shift 后恒非空）；
+# 补 -o pipefail 防管道中间环节失败被吞（当前无管道，属前瞻口径对齐）。
+# 容错分支全部走显式 || echo / if !，与 -e 交互安全——单步灌库失败不阻断
+# 启动的口径由这些显式分支保证，不由关掉 -e 保证）
+set -euo pipefail
 
 # ---- 种子补入（先于一切灌库步骤，幂等）----
 # /app/data 由 named volume 承载：首次启动卷为空，把镜像内 /app/seed/data 的

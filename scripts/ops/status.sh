@@ -59,7 +59,11 @@ elif echo "$p3306" | grep -qi "dock"; then
 else
     say_err "3306 被 '$p3306' 占用（应为容器！）—— 宿主 mysqld 抢了业务端口，先停它再 docker compose up -d mysql"
 fi
-n3306="$(docker exec web-word-mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
+# docker exec 引号层级（R9 终审对齐 restore/backup/snapshot 同口径）：宿主单
+# 引号包裹整条 sh -c（$ 不被宿主展开），容器内 sh 展开 MYSQL_ROOT_PASSWORD；
+# 口令经 MYSQL_PWD 环境变量传入而非 -p 命令行形态——容器内 ps 不可见、
+# 口令含特殊字符也不经 shell 二次解析。
+n3306="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
 if [ "$n3306" = "61" ]; then
     say_ok "容器 web_word_db = 61 表（归一后完整库）"
 else

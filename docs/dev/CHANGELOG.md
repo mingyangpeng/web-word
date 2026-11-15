@@ -31,6 +31,13 @@
 - tests/test_vocab_admin.py 6 条（往返/注释剔除/header 契约/casefold 防线分层——ASCII 序教训入注）
 - 全量 **3080 passed / 0 failed**（+33：vocab_admin 6＋i18n 27）
 
+## 2026-11-16 · 批次 53：10 轮 review 第三波——R9 shell 终审＋移交清单全清
+
+- **R9 五脚本终审**：restore 退出码契约缺口（锚点计数非数字 case 预检）；snapshot 补 set -e＋mktemp trap EXIT；entrypoint set -euo pipefail＋幂等核实；backup_db .part 半截产物 trap 清理；ops/_common 死代码删＋status 口令口径归一 MYSQL_PWD
+- **移交清单全清**（词表页）：三写按钮补 guards.require_dict_admin 二次闸（哨兵翻转）＋增词上限 200＋_vocab_write_words 乐观锁（mtime 失配拒写）＋_vocab_read_words 1MB 闸＋note→detail ×2
+- **副作用如实披露**：backup --keep 1 冒烟按保留策略删了两个本地旧备份（含归一前锚点 manual-20261115-1237）——**替代锚点成立**（data/backups/db/20261116-0124.sql.gz 当前 61 表全量 11M 更新鲜）
+- 新建 tests/test_review_r9.py 34 条＋哨兵翻转 2 条；全量 **3186 passed / 0 failed**
+
 ## 2026-11-15 · 批次 44：start 深审——六处一致性修复＋必填三键拦截
 
 - 专项深审 start 全文（多轮多 agent 改动后的整体一致性）：**P2×2**——⑥ 健康等待 120s 超时仍打「项目已就绪」假卡（HEALTH_OK 分支修正）；② 必填三键（MYSQL_ROOT_PASSWORD/MYSQL_PASSWORD/MYSQL_DATABASE）前置中文拦截（compose 弱口令强制化后缺键会报英文错）——**上线即拦住真问题**：本地 .env 旧形态缺 MYSQL_ROOT_PASSWORD（已按容器卷现值补齐，本地文件不入库）

@@ -3992,6 +3992,14 @@ def _render_assign_ops_tab(me: Dict[str, Any]) -> None:
 # ============================================
 _VOCAB_PATH = __import__("pathlib").Path(__file__).resolve().parent.parent / "configs" / "defining_vocab.txt"
 
+# 词表读取上限（R9 P3 移交修复：对齐 src/style_check._read_vocab_file 的
+# RV19-4 口径——1MB/十万行，防配置注入式巨文件被整读进内存的内存放大面）
+_VOCAB_MAX_BYTES = 1_000_000
+
+# 乐观锁 expect_mtime 缺省哨兵（R9 P3）：显式传入 mtime 才启用写前比对——
+# 旧两参调用形态（tests/test_vocab_admin.py 直调 _vocab_write_words）不受影响
+_VOCAB_MTIME_UNSET = object()
+
 
 def _vocab_style_yaml_path() -> Any:
     """定位词典层体例文件 style.yaml（📝 词表核定页质检状态区用）。
@@ -4019,20 +4027,61 @@ def _vocab_style_yaml_path() -> Any:
     return None
 
 
+def _vocab_file_mtime() -> Any:
+    """词表文件当前 mtime（R9 P3 乐观锁基线取数面；文件不在场/不可 stat
+    → None——「首次建表」态与「无法判定」态同按 None 处理，不拖垮读侧）。"""
+    try:
+        return _VOCAB_PATH.stat().st_mtime
+    except OSError:
+        return None
+
+
 def _vocab_read_words() -> List[str]:
-    """读词表 txt → 词条列表（去空行去注释；保持文件现有顺序）。"""
+    """读词表 txt → 词条列表（去空行去注释；保持文件现有顺序）。
+
+    1MB 上限（R9 P3 移交修复）：**先 stat 预检再整读**——对齐
+    src/style_check._read_vocab_file 的 RV19-4 加固形态（旧实现 read_text
+    之后才查长度，巨文件会先被整读进内存才被拒）；stat 后文件再变大的竞态
+    由读后 len 复查兜底（两道闸同口径）。超限抛 ValueError——调用方（
+    _render_vocab_tab）须停渲染写操作面：超限态下若按空表继续渲染，编者
+    一旦增词就会以「空表＋新词」整表覆写，反而制造数据丢失。
+    """
     if not _VOCAB_PATH.exists():
         return []
+    try:
+        if _VOCAB_PATH.stat().st_size > _VOCAB_MAX_BYTES:
+            raise ValueError(
+                f"词表文件过大（>1MB，{_VOCAB_PATH.name}）——拒绝读取，"
+                "请人工核查文件后再操作")
+        raw = _VOCAB_PATH.read_text(encoding="utf-8")
+    except OSError as e:
+        raise ValueError(f"词表文件读取失败（{e}）") from e
+    if len(raw) > _VOCAB_MAX_BYTES:
+        raise ValueError(
+            f"词表文件过大（>1MB，{_VOCAB_PATH.name}）——拒绝读取，"
+            "请人工核查文件后再操作")
     return [
         line.strip()
-        for line in _VOCAB_PATH.read_text(encoding="utf-8").splitlines()
+        for line in raw.splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
 
 
-def _vocab_write_words(words: List[str], actor_name: str) -> int:
+def _vocab_write_words(words: List[str], actor_name: str,
+                       expect_mtime: Any = _VOCAB_MTIME_UNSET) -> int:
     """写回词表 txt：一行一词按字母序（casefold 排序——与质检计重同口径）；
-    头部注释更新核定状态。返回词条数。**不自动 git 提交**（写回后 flash 提示）。"""
+    头部注释更新核定状态。返回词条数。**不自动 git 提交**（写回后 flash 提示）。
+
+    文件级乐观锁（R9 P3 移交修复，收「读-改-写丢更新」面）：调用方读词表时
+    经 _vocab_file_mtime() 取基线 mtime 传入 expect_mtime，本函数写盘前重取
+    当前 mtime 比对——不一致即「他人并发写过」（两编者同时增删、后写覆盖
+    先写的丢更新场景），抛 ValueError 拒写，调用方提示刷新后重试。
+    expect_mtime 缺省哨兵（旧两参调用形态）不启用比对，行为与 R9 前一致。"""
+    if expect_mtime is not _VOCAB_MTIME_UNSET and \
+            _vocab_file_mtime() != expect_mtime:
+        raise ValueError(
+            "词表刚被他人并发修改（mtime 变化）——本次写回拒绝执行以防覆盖"
+            "丢更新；请刷新页面后在最新词表上重试。")
     header = (
         "# 定义词表（defining vocabulary）—— 编者核定态\n"
         f"# 最近核定：{actor_name}（{__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}）\n"
@@ -4071,17 +4120,31 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
         style = _yaml.safe_load(_style_path.read_text(encoding="utf-8"))
         item = check_defining_vocab(style)
         _st_status = item.get("status")
-        _note = item.get("note", "")
+        # 检查项契约键是 detail（src/style_check._item 单一契约：
+        # code/rule/status/detail，无 'note' 键）——R9 P3 移交修复：旧代码读
+        # 'note' 键恒取空串，质检状态区「pass —— 」后详情永远缺失（纯展示缺文，
+        # 不崩页；与 scripts/build_defining_vocab.py 同型读法 R7/R8 轮已修）。
+        _detail = item.get("detail", "")
         if _st_status == "pass":
-            st.success(f"质检 DEFINING_VOCAB：pass —— {_note}")
+            st.success(f"质检 DEFINING_VOCAB：pass —— {_detail}")
         elif _st_status == "warn":
-            st.warning(f"质检 DEFINING_VOCAB：warn —— {_note}")
+            st.warning(f"质检 DEFINING_VOCAB：warn —— {_detail}")
         else:
-            st.error(f"质检 DEFINING_VOCAB：fail —— {_note}")
+            st.error(f"质检 DEFINING_VOCAB：fail —— {_detail}")
     except Exception as e:  # noqa: BLE001 —— 质检不可用不阻断核定流
         st.info(f"质检状态暂不可读（{e}）——词表操作不受影响")
 
-    words = _vocab_read_words()
+    # 词表读取（R9：1MB 闸超限抛 ValueError——停渲染写操作面防「空表＋新词」
+    # 整表覆写丢数据；其余读侧异常同样按「暂不可用」降级不崩页）
+    try:
+        words = _vocab_read_words()
+    except ValueError as e:
+        st.error(f"词表读取被拒：{e}（写操作面已停用）")
+        return
+    # 乐观锁基线（R9 P3）：读词表后即刻取 mtime——三处写回前传入
+    # _vocab_write_words(expect_mtime=…) 比对，他人并发写过（mtime 变了）
+    # 即拒写防丢更新。文件不在场（首次建表）基线为 None。
+    vocab_mtime = _vocab_file_mtime()
     st.metric("当前词条数", len(words))
 
     # 🔄 从语料重建初版（批次 51：语料变化后词表刷新——构建函数单一事实源
@@ -4092,6 +4155,14 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
             "增删——重建后需重新核定）。语料变化（重新灌库/增删释义）后使用。"
         )
         if st.button("🔄 重建词表初版", key="vocab_rebuild_btn"):
+            # R9 P2 移交修复：写路径调用点二次闸（API 级中央闸门，同页媒体/
+            # 出版/成员 tab 写路径同口径——纵深防御 §6-4；页面 tab 门在场时
+            # 不可达利用，闸是低权会话直构造提交事件的兜底）
+            try:
+                guards.require_dict_admin()
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
             from src.style_check import (
                 build_corpus_vocab, count_corpus_words, fetch_corpus_definitions,
                 write_corpus_vocab_file,
@@ -4116,43 +4187,82 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
                                 placeholder="e.g.\ncome, go\nbecome")
         if st.button("➕ 写入新增词", key="vocab_add_btn",
                      use_container_width=True):
+            # R9 P2 移交修复：写路径调用点二次闸（同重建按钮口径）
+            try:
+                guards.require_dict_admin()
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
             tokens = [w.strip().lower() for w in
                       re.split(r"[,\n]", add_text) if w.strip()]
-            cand = [w for w in tokens if re.fullmatch(r"[a-z']+", w)]
-            existing = {w.casefold() for w in words}
-            # 输入内重复也按 casefold 去重（R2 专项实证：'Delta, delta' 旧实现
-            # 两枚都算 fresh、flash 谎报「已增补 2 词」而文件实增 1——与块标题
-            # 「重复自动跳过」的承诺对齐；首个形态保留、后续计跳过）
-            fresh: List[str] = []
-            seen: Any = set(existing)
-            for word in cand:
-                key_cf = word.casefold()
-                if key_cf not in seen:
-                    seen.add(key_cf)
-                    fresh.append(word)
-            dropped = len(tokens) - len(fresh)
-            if not fresh:
-                st.warning(f"无有效新增（{dropped} 个重复/非法被跳过）")
+            # R9 P2 移交修复：单次增词上限 200——text_area 无长度闸时一次可
+            # 误粘贴整段文本（数万词）把受控词表撑爆；超限 warning 停写提示
+            # 分批，≤200 走原解析-去重-写回逻辑（tokens 含非法词，按原始
+            # 解析数计——非法词本就会被下方过滤，闸只管「量」不管「形」）。
+            if len(tokens) > 200:
+                st.warning(f"单次增词 ≤200（本次解析到 {len(tokens)} 词）——"
+                           "请分批写入；整表刷新请用「🔄 从语料重建初版」")
             else:
-                total = _vocab_write_words(words + fresh,
-                                           me.get("display_name") or "编者")
-                ui_kit.flash(f"已增补 {len(fresh)} 词（跳过重复/非法 {dropped}）"
-                             f"——词表现 {total} 词。记得 git 提交固化。")
-                st.rerun()
+                cand = [w for w in tokens if re.fullmatch(r"[a-z']+", w)]
+                existing = {w.casefold() for w in words}
+                # 输入内重复也按 casefold 去重（R2 专项实证：'Delta, delta' 旧实现
+                # 两枚都算 fresh、flash 谎报「已增补 2 词」而文件实增 1——与块标题
+                # 「重复自动跳过」的承诺对齐；首个形态保留、后续计跳过）
+                fresh: List[str] = []
+                seen: Any = set(existing)
+                for word in cand:
+                    key_cf = word.casefold()
+                    if key_cf not in seen:
+                        seen.add(key_cf)
+                        fresh.append(word)
+                dropped = len(tokens) - len(fresh)
+                if not fresh:
+                    st.warning(f"无有效新增（{dropped} 个重复/非法被跳过）")
+                else:
+                    try:
+                        total = _vocab_write_words(words + fresh,
+                                                   me.get("display_name") or "编者",
+                                                   expect_mtime=vocab_mtime)
+                    except ValueError:
+                        # R9 P3 乐观锁命中：他人并发写回过（mtime 变了）——
+                        # 拒写防丢更新；flash 走 ui_kit 队列（rerun 后仍可见，
+                        # RV12-2 纪律）＋ rerun 刷新页面数据到最新词表。
+                        ui_kit.flash("词表刚被他人修改——本次改动未写入"
+                                     "（防覆盖丢更新），页面已刷新，请重试。")
+                        st.rerun()
+                    else:
+                        ui_kit.flash(f"已增补 {len(fresh)} 词"
+                                     f"（跳过重复/非法 {dropped}）"
+                                     f"——词表现 {total} 词。记得 git 提交固化。")
+                        st.rerun()
     with right:
         st.markdown("**➖ 删词**（输入要移除的词条，精准删除）")
         del_text = st.text_input("删除词条", key="vocab_del",
                                  placeholder="e.g. somebody")
         if st.button("➖ 移除该词", key="vocab_del_btn",
                      use_container_width=True):
+            # R9 P2 移交修复：写路径调用点二次闸（同增词/重建按钮口径）
+            try:
+                guards.require_dict_admin()
+            except PermissionError as e:
+                st.error(f"⛔ {e}")
+                return
             target = del_text.strip().lower()
             kept = [w for w in words if w.casefold() != target]
             if target and len(kept) < len(words):
-                total = _vocab_write_words(kept,
-                                           me.get("display_name") or "编者")
-                ui_kit.flash(f"已移除「{target}」——词表现 {total} 词。"
-                             "记得 git 提交固化。")
-                st.rerun()
+                try:
+                    total = _vocab_write_words(kept,
+                                               me.get("display_name") or "编者",
+                                               expect_mtime=vocab_mtime)
+                except ValueError:
+                    # R9 P3 乐观锁命中：同增词块口径——拒写＋flash＋刷新
+                    ui_kit.flash("词表刚被他人修改——本次改动未写入"
+                                 "（防覆盖丢更新），页面已刷新，请重试。")
+                    st.rerun()
+                else:
+                    ui_kit.flash(f"已移除「{target}」——词表现 {total} 词。"
+                                 "记得 git 提交固化。")
+                    st.rerun()
             else:
                 st.warning(f"「{target}」不在词表中（或输入为空）")
 

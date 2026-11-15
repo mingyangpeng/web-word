@@ -62,6 +62,8 @@ git clone <repo-url> && cd web-word
 ./start logs web         # 日志（web/mysql/all，--tail N）
 ./start update           # 代码更新滚动部署（git pull → 重建 → 平滑替换）
 ./start backup           # 灾备备份（mysqldump＋媒体归档，保留 14 份）
+./start restore <file>   # 灾备恢复（安全闸＋61 表锚点校验）
+./start snapshot         # 固化当前业务库为部署快照（入库——新机 clone 即带业务数据）
 ./start stop             # 停止（数据卷永不删）；./start doctor 全量体检
 ```
 

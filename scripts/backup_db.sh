@@ -51,7 +51,7 @@ while [ $# -gt 0 ]; do
     -h|--help)
       usage ;;
     *)
-      echo "错误：未知参数 $1（用法：backup_db.sh [--keep N]）" >&2; exit 2 ;;
+      echo "错误：未知参数 ${1}（用法：backup_db.sh [--keep N]）" >&2; exit 2 ;;
   esac
 done
 
@@ -128,6 +128,11 @@ mkdir -p "$DB_DIR" "$MEDIA_DIR"
 
 DB_OUT="$DB_DIR/$STAMP.sql.gz"
 DB_TMP="$DB_OUT.part"
+# 临时文件卫生（R9 终审）：.part 半截产物经 trap EXIT 兜底清理——mysqldump
+# 中途失败时 set -euo pipefail 立即退出，若不 trap 会在 backups 目录残留
+# 半截 .part（不匹配 *.sql.gz 归档 glob、永不被保留策略清理）；正式产物
+# 在 mv 之后才存在，trap 的 rm -f 对其无影响。
+trap 'rm -f "$DB_TMP"' EXIT
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始数据库备份：host=$MYSQL_HOST_VAL port=$MYSQL_PORT_VAL db=$MYSQL_DATABASE_VAL"
 

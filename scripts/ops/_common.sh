@@ -36,7 +36,6 @@ ensure_docker_daemon() {
             *)       say_info "安装指引：https://docs.docker.com/get-docker/" ;;
         esac
         exit 1
-        exit 1
     fi
     if docker info >/dev/null 2>&1; then
         say_ok "Docker daemon 运行中"
@@ -60,7 +59,7 @@ ensure_docker_daemon() {
     esac
     # 等 daemon 就绪（最多 40s，Docker Desktop 冷启动常见 10~25s）
     i=0
-    while [ $i -lt 40 ]; do
+    while [ "$i" -lt 40 ]; do
         if docker info >/dev/null 2>&1; then
             say_ok "Docker daemon 已就绪（等待 $i 秒）"
             return 0
@@ -99,7 +98,7 @@ wait_web_healthy() {
     url="http://localhost:8501/_stcore/health"
     say_info "等待 web 健康：$url"
     i=0
-    while [ $i -lt 120 ]; do
+    while [ "$i" -lt 120 ]; do
         body="$(curl -s -m 3 "$url" 2>/dev/null || true)"
         if [ "$body" = "ok" ]; then
             say_ok "web 就绪（http://localhost:8501，等待 $i 秒）"

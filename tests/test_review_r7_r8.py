@@ -5,11 +5,12 @@
 所有权说明：src/dict_admin_pages.py 与 src/app.py 本轮**只读**——涉及二者的
 问题以「现状哨兵」测试钉住当前形态，修复时随移交项一起翻转断言。
 
-R7 判定摘要（详见各测试 docstring）：
+R7 判定摘要（详见各测试 docstring；R9 翻转标注）：
   * 词表核定页：页面级两级角色闸在 render_dict_admin_page 入口（会话判定
-    ＋实时查库兜底）**有闸**；tab 内三处写操作（增/删/重建）**无 API 级
-    二次闸**（同页成员/媒体/出版 tab 均有 guards.require_dict_admin 调用点
-    闸）——防御纵深缺，P2 移交（只读文件），现状哨兵钉住；
+    ＋实时查库兜底）**有闸**；tab 内三处写操作（增/删/重建）的 API 级
+    二次闸缺口（同页成员/媒体/出版 tab 均有 guards.require_dict_admin
+    调用点闸）——**R9 已补闸**（调用点首行 try/except PermissionError
+    口径），哨兵翻转断言闸在位；
   * 双语切换：set_lang 未登录可切（会话态，设计如此）；登录态持久化走
     user_context_db.upsert_profile——**签名不收 user_id**（会话派生唯一
     来源），「伪造 user_id 越权写他人 profiles」在数据层**无构造面**；
@@ -30,8 +31,8 @@ R8 判定摘要：
     常量注释如实声明），「closed 后再认领」因无认领入口而不可能经代码发生；
   * 词表核定：文件直写无状态机——本轮收「写一半」面（write_corpus_vocab_file
     临时文件＋os.replace 原子换名＋失败清 tmp）；「读-改-写丢更新」（两编者
-    并发增删、后写覆盖先写）在页面层 _vocab_write_words（只读文件）——P3
-    移交（文件级乐观锁建议：mtime/版本比对或锁文件）；
+    并发增删、后写覆盖先写）在页面层 _vocab_write_words——**R9 已修**（文件级
+    乐观锁：expect_mtime 基线比对，不一致抛 ValueError 拒写）；
   * i18n：get_lang 两级白名单防御（会话脏值/库脏值均不采信）既有测试已锁
     （test_i18n.py）；本轮补 ZH_EN 字典字面量重复键哨兵（ast 扫描）；
   * style_check_runs：append-only（全模块无 UPDATE/DELETE），消费端
@@ -73,7 +74,7 @@ _LEGACY_ADMIN = {"id": 1, "username": "admin", "role": "admin"}
 
 
 # ============================================
-# R7-1 词表核定页权限闸结构（dict_admin_pages 只读——现状哨兵）
+# R7-1 词表核定页权限闸结构（API 级二次闸缺口 R9 已补——哨兵已翻转）
 # ============================================
 
 class TestR7VocabPageGate:
@@ -97,23 +98,31 @@ class TestR7VocabPageGate:
         assert len(call_sites) == 1, f"词表 tab 出现了新调用点: {call_sites}"
         assert "_render_vocab_tab(me)" in inspect.getsource(dap.render_dict_admin_page)
 
-    def test_vocab_tab_write_ops_lack_api_gate_pinned_gap(self):
-        """P2 移交现状哨兵：tab 内三处写操作（增词/删词/重建）无 API 级二次
-        闸（guards.require_dict_admin）——防御纵深缺一层。页面级闸在场时
-        不可达利用，但与同页成员/媒体/出版 tab（写路径调用点均再过
-        require_dict_admin，纵深防御 §6-4 同页写路径同口径）不一致。
-        **移交修复时翻转本断言**（写路径应改为先 guards.require_dict_admin()
-        再落盘，并补低权会话直调拒绝的交互面测试）。"""
+    def test_vocab_tab_write_ops_have_api_gate(self):
+        """（R9 翻转原现状哨兵 test_vocab_tab_write_ops_lack_api_gate_pinned_gap
+        ——P2 移交项已修复）tab 内三处写操作（增词/删词/重建）的调用点均有
+        API 级二次闸（guards.require_dict_admin），与同页成员/媒体/出版 tab
+        写路径同口径（纵深防御 §6-4）。闸在按钮分支首行：闸过后才进入解析/
+        写盘逻辑——结构断言逐按钮核对「按钮 key 之后、下一写按钮之前」必有
+        闸，且闸前无写盘调用（防闸被挪走/挪到别处造成假阳性）。"""
         import src.dict_admin_pages as dap
 
         src_tab = inspect.getsource(dap._render_vocab_tab)
-        assert "require_dict_admin" not in src_tab, (
-            "词表 tab 已补 API 级二次闸——请同步更新本哨兵与本文件 R7-1 判定："
-            "改为断言三处写操作（vocab_add_btn/vocab_del_btn/vocab_rebuild_btn）"
-            "的调用点都过 guards.require_dict_admin()")
-        # 写操作确实在场（哨兵别钉在空函数上）
-        for key in ("vocab_add_btn", "vocab_del_btn", "vocab_rebuild_btn"):
-            assert key in src_tab, f"写按钮 {key} 不在场（页面结构变了，复核哨兵）"
+        button_keys = ("vocab_add_btn", "vocab_del_btn", "vocab_rebuild_btn")
+        for key in button_keys:
+            assert key in src_tab, f"写按钮 {key} 不在场（页面结构变了，复核断言）"
+            pos = src_tab.index(key)
+            gate = src_tab.find("guards.require_dict_admin()", pos)
+            assert gate != -1, f"写按钮 {key} 分支缺少 guards.require_dict_admin() 二次闸"
+            next_write = min(
+                [p for p in (src_tab.find(k, pos + 1) for k in button_keys)
+                 if p != -1] or [len(src_tab)])
+            assert gate < next_write, f"{key} 的二次闸落到了其他写按钮分支之后"
+            block_head = src_tab[pos:gate]
+            assert "_vocab_write_words" not in block_head, \
+                f"{key} 的闸前出现了写盘调用（闸必须在分支首行）"
+            assert "write_corpus_vocab_file" not in block_head, \
+                f"{key} 的闸前出现了写盘调用（闸必须在分支首行）"
 
     def test_sys_admin_compat_semantics(self):
         """sys_admin 兼判口径：legacy role='admin' 经 effective_six_roles
@@ -334,18 +343,20 @@ class TestR8VocabFileAtomicWrite:
             "换名失败不得破坏既有词表")
         assert not list(target.parent.glob("*.tmp")), "失败路径不得残留 .tmp"
 
-    def test_page_layer_lost_update_is_p3_handoff(self):
-        """P3 移交记录哨兵：页面层「编者增删写回」(_vocab_write_words) 是
-        读-改-写（无版本/mtime 比对、无锁）——两编者并发增删时后写覆盖先写
-        （删词场景丢更新最实）。本轮只修写一半面（上方两测试），丢更新
-        面移交（只读文件）；修复建议：文件级乐观锁（写前重读＋mtime/
-        词条数比对不匹配即拒绝并提示刷新，或 configs 侧锁文件）。
-        修复后翻转：断言 _vocab_write_words 具备版本/mtime 防护。"""
+    def test_page_layer_optimistic_lock_present(self):
+        """（R9 翻转原 P3 移交记录哨兵 test_page_layer_lost_update_is_p3_handoff
+        ——丢更新面已修复）页面层「编者增删写回」(_vocab_write_words) 具备
+        文件级乐观锁：写盘前经 _vocab_file_mtime() 重取当前 mtime 与调用方
+        传入的 expect_mtime 基线比对，不一致抛 ValueError 拒写（两编者并发
+        增删、后写覆盖先写的丢更新场景收口）；缺省哨兵不启用比对（旧两参
+        直调形态兼容）。页面调用点捕获后 flash＋刷新（RV12-2 口径）。功能面
+        回归见 tests/test_review_r9.py。"""
         import src.dict_admin_pages as dap
 
         src_fn = inspect.getsource(dap._vocab_write_words)
-        assert "read_text" not in src_fn and "getmtime" not in src_fn, (
-            "页面写回已具备重读/版本比对——请更新本 P3 记录与断言")
+        assert "expect_mtime" in src_fn, "_vocab_write_words 缺 expect_mtime 乐观锁入参"
+        assert "_vocab_file_mtime" in src_fn, "写盘前未做 mtime 重取比对"
+        assert "raise ValueError" in src_fn, "mtime 不一致须抛 ValueError 拒写"
 
     def test_script_shell_delegates_write_to_style_check(self, monkeypatch,
                                                          capsys):
@@ -405,8 +416,8 @@ class TestR8StyleCheckRunsAppendOnly:
         """检查项字典契约：键恰为 {code, rule, status, detail}（_item 单一
         契约）——**没有 'note' 键**。回归背景：build_defining_vocab.py 旧代码
         读 item.get('note') 恒取空串（R7/R8 review 实证修复为 'detail'）；
-        dict_admin_pages.py:4074 同型读法属只读文件——P3 移交（词表页质检
-        状态区 detail 恒空，状态字样正常、不崩，纯展示缺文）。"""
+        dict_admin_pages.py:4074 同型读法（词表页质检状态区 detail 恒空）
+        —— R9 已同口径修复（读 detail 键）。"""
         style = {"defining_vocab": [f"word{i}" for i in range(12)]}
         item = check_defining_vocab(style)
         assert set(item) == {"code", "rule", "status", "detail"}

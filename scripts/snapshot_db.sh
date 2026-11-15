@@ -18,7 +18,10 @@
 # 可恢复任意时点）；snapshot 是部署资产（固定路径、入库、随仓库分发、
 # 恢复目标=新机空库）。二者互不替代。
 
-set -uo pipefail
+# set -euo pipefail（R9 终审补全：原先只有 -uo 缺 -e——dump 之外的静默失败
+# 链如 mkdir/建临时文件失败会带着旧产物继续跑；补 -e 后 fail-fast，容错分支
+# 均已用 if !/|| 显式接管，不受误伤）
+set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$ROOT/scripts/ops/_common.sh"
 cd "$ROOT"
@@ -32,6 +35,11 @@ mkdir -p "$OUT_DIR"
 
 say_info "① dump 业务库（排除 llm_providers——api_key 不进 git）"
 RAW_SQL="$(mktemp /tmp/web_word_snapshot.XXXXXX.sql)"
+# 临时文件卫生（R9 终审）：mktemp 产物经 trap EXIT 兜底清理——任何退出路径
+# （含 set -e 新增的 fail-fast 分支）都不留 /tmp 残留；唯一例外是 ③ 步
+# gzip -t 失败时显式保留原始 SQL 供排查（KEEP_RAW=1 标记后 trap 放行）。
+KEEP_RAW=0
+trap '[ "$KEEP_RAW" -eq 1 ] || rm -f "$RAW_SQL"' EXIT
 # 口令走 MYSQL_PWD 环境变量（ps 不可见）；stderr 保留输出（dump 失败原因可见）
 if ! docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -uroot --single-transaction --routines --triggers --ignore-table=web_word_db.llm_providers web_word_db' > "$RAW_SQL"; then
     say_err "mysqldump 失败——容器内 stderr 已在上方输出；检查 mysql 容器状态（./start status）"
@@ -43,7 +51,8 @@ sed -i '' '/INSERT INTO `llm_providers`/d' "$RAW_SQL" 2>/dev/null || sed -i '/IN
 
 say_info "③ gzip＋完整性校验"
 gzip -c "$RAW_SQL" > "$OUT_FILE" && rm -f "$RAW_SQL"
-gzip -t "$OUT_FILE" || { say_err "gzip 完整性校验失败——保留原始 $RAW_SQL 供排查"; exit 1; }
+# 校验失败保留原始 SQL 供排查（KEEP_RAW=1 → trap EXIT 放行不清理）
+gzip -t "$OUT_FILE" || { KEEP_RAW=1; say_err "gzip 完整性校验失败——保留原始 $RAW_SQL 供排查"; exit 1; }
 say_info "④ manifest（表数锚点）"
 n_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
 printf 'tables=%s\ngenerated=%s\nsource=container-mysql-3306\nsha256=%s\n' "$n_tables" "$(date '+%Y-%m-%d %H:%M')" "$(shasum -a 256 "$OUT_FILE" | awk '{print $1}')" > "$OUT_DIR/manifest.txt"

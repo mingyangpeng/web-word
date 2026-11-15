@@ -69,7 +69,7 @@ while [ $# -gt 0 ]; do
                    CONTAINER="$2"; shift 2 ;;
     --container=*) CONTAINER="${1#*=}"; shift ;;
     -h|--help)     usage ;;
-    --*)           echo "错误：未知参数 $1（可用：--force / --database <库> / --container <容器名>）" >&2; exit 2 ;;
+    --*)           echo "错误：未知参数 ${1}（可用：--force / --database <库> / --container <容器名>）" >&2; exit 2 ;;
     *)
       # 第一个非选项参数即备份文件；只接受一个
       [ -z "$DUMP_FILE" ] || { echo "错误：只接受一个备份文件，多给了 $1" >&2; exit 2; }
@@ -221,6 +221,12 @@ if ! n_tables="$(mysql_exec -N -e "SELECT COUNT(*) FROM information_schema.table
   say_err "锚点计数查询失败（mysql 连接异常）——导入已执行但无法确认结果；请人工进容器核对 ${TARGET_DB} 表数量后再决定重跑或回滚（恢复前留的 ./start backup 即回滚锚点）"
   exit 1
 fi
+# 计数结果健壮性（R9 终审）：连接闪断/异常客户端可能给出空串或非数字——
+# 直接进下面 -eq 算术比较会把「校验失败」伪装成 test 语法错（bash 退出码 2，
+# 违反头注 0/1/2 契约）。先验数字形态，非数字按导入失败判（退出码 1）。
+case "$n_tables" in
+  ''|*[!0-9]*) say_err "锚点计数结果异常（非数字：${n_tables}）——导入已执行但无法确认结果；请人工进容器核对 ${TARGET_DB} 表数量后再决定重跑或回滚"; exit 1 ;;
+esac
 if [ "$n_tables" -eq "$EXPECTED_TABLES" ]; then
   anchor="✓ 命中归一锚点（$n_tables/$EXPECTED_TABLES 表，完整）"
 elif [ "$n_tables" -eq 0 ]; then
