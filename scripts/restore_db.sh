@@ -78,6 +78,14 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$DUMP_FILE" ] || { echo "错误：缺少备份文件参数（用法：./start restore <备份文件.sql.gz>，详见 -h）" >&2; exit 2; }
 
+# 选项注入闸（R4 扫描加固）：相对路径以 - 开头（如 -f.gz、--help.gz）会被
+# 下游 gzip -t / gunzip -c / du / shasum 当成自己的选项解析而非文件名——
+# 统一补 ./ 前缀归一成路径（绝对路径与普通相对路径不受影响）。含空格/特殊
+# 字符的路径在全部消费点均已双引号包裹，无需改写。
+case "$DUMP_FILE" in
+  -*) DUMP_FILE="./$DUMP_FILE" ;;
+esac
+
 # ---------- 目标库默认值：.env.local（优先）→ .env 的 MYSQL_DATABASE ----------
 env_value() {
   # 取 KEY=VALUE 的 VALUE：依次查 .env.local → .env（与 backup_db.sh 同口径）；

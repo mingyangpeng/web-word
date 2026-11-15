@@ -112,6 +112,24 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 _CONFIGS_ROOT = _REPO_ROOT / "configs"
 
 
+def _is_unsafe_category(cat: str) -> bool:
+    """范畴名路径闸（run_style_check 与 _style_yaml_candidates 共用的单一
+    实现，勿复制第二份）：空名 / 点前缀 / 路径分隔符 / ``..`` 路径段一律
+    视为不安全 —— category 要进 ``configs/<category>/style.yaml`` 文件路径
+    与 style_check_runs SQL 值，脏名不进路径（防配置注入式穿越读；长度闸
+    >64 由 run_style_check 单独给出更精确的归因文案，本闸不重复）。
+
+    注：``a..b``／``..foo`` 这类**含**双点但非独立 ``..`` 段的名字是合法
+    目录名，放行（``..`` in parts 只命中独立段；点前缀已另行拦）。"""
+    return (
+        not cat
+        or cat.startswith(".")
+        or "/" in cat
+        or "\\" in cat
+        or ".." in Path(cat).parts
+    )
+
+
 def _style_yaml_candidates(category: str) -> List[Path]:
     """范畴体例文件候选路径（category 级优先，回退词典层与历史在场路径）。
 
@@ -119,10 +137,15 @@ def _style_yaml_candidates(category: str) -> List[Path]:
     只有词典层 configs/style.yaml（G6 体例终检同款候选路径 dict_admin_pages
     _STYLE_YAML_CANDIDATES），故 category 级缺席时回退词典层文件 —— 范畴级
     文件研制后自然接管，引擎零改动。
+
+    R4 边界加固：category 要进文件路径 —— run_style_check 入口已有闸，但
+    本函数/``load_style_config`` 也可被脚本与测试直调，脏 category（``../``
+    穿越串等）经 ``_is_unsafe_category`` 同口径拒绝进入路径，只走词典层
+    回退候选，不构成任意路径读。
     """
     safe = str(category).strip()
     candidates: List[Path] = []
-    if safe:
+    if not _is_unsafe_category(safe) and len(safe) <= 64:
         candidates.append(_CONFIGS_ROOT / safe / "style.yaml")
     candidates.extend([
         _CONFIGS_ROOT / "style.yaml",
@@ -216,6 +239,14 @@ def _extract_vocab_words(
     vocab_file = defining_vocab.get("vocab_file")
     if isinstance(vocab_file, str) and vocab_file.strip():
         name = vocab_file.strip()
+        if ".." in Path(name).parts:
+            # R4 边界加固（对齐下方 RV19-4 绝对路径拒读纪律）：相对路径含
+            # .. 段可穿出 configs 搜索链（style_dir → configs → 仓库根），
+            # 构成配置注入式任意文件读 —— 拒读不猜，报原因。
+            return [], (
+                f"vocab_file 含 .. 路径段（{name!r}）——按路径闸纪律拒读，"
+                "请改为相对 configs/ 的文件名"
+            )
         vf = Path(name)
         if vf.is_absolute():
             # RV19-4：绝对路径拒读（对齐 RV4-3 媒体路径闸纪律——style.yaml 是
@@ -563,8 +594,10 @@ def run_style_check(category: str, actor: Any = None) -> Dict[str, Any]:
         * pass_rate = passed/(passed+failed)（warn 不入分母；分母 0 → None）。
     """
     cat = str(category).strip() if category is not None else ""
-    if (not cat or cat.startswith(".") or "/" in cat or "\\" in cat
-            or cat in (".", "..")):
+    if _is_unsafe_category(cat):
+        # 路径闸单一实现在 _is_unsafe_category（本闸与 _style_yaml_candidates
+        # 同源同口径 —— 批次 41-51 R3/R4 扫描消缺；message 文案与既有测试
+        # 断言逐字兼容）
         return _declined(
             f"范畴名非法：{category!r}（应为 configs/ 下目录名，"
             "不含路径分隔符与点前缀）"

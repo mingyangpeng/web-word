@@ -230,6 +230,15 @@ def create_assignment(
         int: 新任务 id；参数非法（含 scope_verbs 传了空清单 —— 意图不明，
         页面层「一个不选」已归一为 None）/ 表未建 / 数据库错误返回 0。
 
+    并发边界（R3 竞态扫描结论，记录不修）：负荷上限校验在页面层
+    ``_check_load_limit``（只读 COUNT，见 collab_pages）与本 INSERT 之间
+    无事务包络 —— 读-判-写竞态下，两管理员同时给同一被派人分派可让在途
+    数短时超上限 1~2 个。评估为**可接受**：分派是低频管理操作、超限幅度
+    以并发提交数为上界、INSERT 本身原子无数据损坏面；若未来需严格上限，
+    以 ``get_db_cursor(autocommit=False)``＋``SELECT ... FOR UPDATE`` 包住
+    「计数＋插入」两步即可（本层刻意不引入 —— 单语句外开事务的收益不抵
+    复杂度，见任务口径）。
+
     （自 collab_pages.create_assignment 原样迁入 —— P3 分层抽取，页面层
     同名薄封装委托本函数，签名与返回契约不变。）
     """

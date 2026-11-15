@@ -3993,6 +3993,32 @@ def _render_assign_ops_tab(me: Dict[str, Any]) -> None:
 _VOCAB_PATH = __import__("pathlib").Path(__file__).resolve().parent.parent / "configs" / "defining_vocab.txt"
 
 
+def _vocab_style_yaml_path() -> Any:
+    """定位词典层体例文件 style.yaml（📝 词表核定页质检状态区用）。
+
+    口径（R2 双语/词表专项 review finding 修复）：质检反映的是**仓库侧权威
+    体例文件**（与 scripts/build_defining_vocab.py 的 STYLE_FILE=ROOT/
+    configs/style.yaml、G6 体例终检的 _G6_STYLE_CANDIDATE_RELS 同一候选
+    口径），路径自本模块文件位置推导仓库根——**独立于 _VOCAB_PATH 的运行时
+    落位**（部署重定位/测试 monkeypatch 词表 txt 到别处时，质检状态不再因
+    「style.yaml 不在词表旁边」而误降级为暂不可读）。候选逐一相对仓库根
+    解析，首个落盘者胜；全缺位返回 None（调用方按「质检状态暂不可读」
+    灰注降级，不阻断核定流）。返回 Any（pathlib.Path | None——Path 不在
+    本模块顶层 import 面，见 _VOCAB_PATH 的同款内联导入纪律）。
+    """
+    import pathlib as _pathlib
+
+    repo_root = _pathlib.Path(__file__).resolve().parent.parent
+    for rel in _G6_STYLE_CANDIDATE_RELS:
+        candidate = repo_root / rel
+        try:
+            if candidate.is_file():
+                return candidate
+        except OSError:  # 防御：单路径探测异常按缺位处理，不拖垮候选链
+            continue
+    return None
+
+
 def _vocab_read_words() -> List[str]:
     """读词表 txt → 词条列表（去空行去注释；保持文件现有顺序）。"""
     if not _VOCAB_PATH.exists():
@@ -4034,11 +4060,14 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
         "核定**——写回 configs/defining_vocab.txt（git 留痕），质检即时反映。"
     )
 
-    # 实时质检状态（照质检引擎同口径，本页内直调）
+    # 实时质检状态（照质检引擎同口径，本页内直调；style.yaml 定位走
+    # _vocab_style_yaml_path 仓库侧候选链——不随 _VOCAB_PATH 落位漂移）
     try:
         from src.style_check import check_defining_vocab
         import yaml as _yaml
-        _style_path = _VOCAB_PATH.parent / "style.yaml"
+        _style_path = _vocab_style_yaml_path()
+        if _style_path is None:
+            raise FileNotFoundError("style.yaml 不在场（候选路径全缺位）")
         style = _yaml.safe_load(_style_path.read_text(encoding="utf-8"))
         item = check_defining_vocab(style)
         _st_status = item.get("status")
@@ -4073,7 +4102,11 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
             else:
                 pairs = build_corpus_vocab(count_corpus_words(texts), 2)
                 path = write_corpus_vocab_file(pairs)
-                st.success(f"已重建 {len(pairs)} 词 → {path.name}（记得 git 提交固化）")
+                # RV12-2 纪律（与增删词两块一致）：成功反馈走 ui_kit.flash
+                # —— st.success 紧跟 st.rerun 会被下一轮渲染整体丢弃，用户
+                # 看不到「已重建 N 词」（R2 词表页专项 review 实证修复）。
+                ui_kit.flash(f"已重建 {len(pairs)} 词 → {path.name}"
+                             f"（记得 git 提交固化）")
                 st.rerun()
 
     left, right = st.columns([3, 2])
@@ -4083,12 +4116,21 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
                                 placeholder="e.g.\ncome, go\nbecome")
         if st.button("➕ 写入新增词", key="vocab_add_btn",
                      use_container_width=True):
-            cand = [w.strip().lower() for w in
-                    re.split(r"[,\n]", add_text) if w.strip()]
-            cand = [w for w in cand if re.fullmatch(r"[a-z']+", w)]
+            tokens = [w.strip().lower() for w in
+                      re.split(r"[,\n]", add_text) if w.strip()]
+            cand = [w for w in tokens if re.fullmatch(r"[a-z']+", w)]
             existing = {w.casefold() for w in words}
-            fresh = [w for w in cand if w.casefold() not in existing]
-            dropped = len(cand) - len(fresh)
+            # 输入内重复也按 casefold 去重（R2 专项实证：'Delta, delta' 旧实现
+            # 两枚都算 fresh、flash 谎报「已增补 2 词」而文件实增 1——与块标题
+            # 「重复自动跳过」的承诺对齐；首个形态保留、后续计跳过）
+            fresh: List[str] = []
+            seen: Any = set(existing)
+            for word in cand:
+                key_cf = word.casefold()
+                if key_cf not in seen:
+                    seen.add(key_cf)
+                    fresh.append(word)
+            dropped = len(tokens) - len(fresh)
             if not fresh:
                 st.warning(f"无有效新增（{dropped} 个重复/非法被跳过）")
             else:
