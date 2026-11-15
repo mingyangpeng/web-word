@@ -24,6 +24,13 @@ os.environ.setdefault("MYSQL_PORT", "3307")
 # grant_local_mysql.sql 的授权口径同值。CI 显式设置时不受影响。）
 os.environ.setdefault("MYSQL_PASSWORD", "webword123")
 
+# fail-fast（批次 42 review P2）：测试绝不允许连业务库（3306）——显式设了
+# 3306 即主口径被破坏，立即报错而非静默把测试库建进业务实例
+if os.environ.get("MYSQL_PORT", "3307") != "3307":
+    raise RuntimeError(
+        f"MYSQL_PORT={os.environ['MYSQL_PORT']} —— 测试必须走宿主 mysqld 3307 "
+        "（业务库在容器 3306）。显式覆盖请先确认目标不是业务库。")
+
 # 时序契约收口：共享 helper（tests/helpers.py，review P3 收敛落点）含 src.*
 # import（page_guides、mysql_db 探针），必须在上面 env 设定**之后**加载。
 # pytest 先于一切测试模块导入本文件，这里显式 import 一次即可固定顺序；

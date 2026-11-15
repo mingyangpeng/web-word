@@ -9,7 +9,7 @@
 |------|------|----------|--------|
 | **spec/** | 平台设计与施工契约（架构规范、通用框架、协作规范、需求-实现对照） | **活文档**：随架构演进，修订须评审；与代码冲突以此为准 | 词典管理员（学术侧）／平台管理员（系统侧） |
 | **help/** | 用户与编者帮助（功能使用说明、Word 版手册） | **活文档**：与功能同步交付——没有说明的功能不算完成；各页「📖 使用说明」面板的母本 | 全体（页面施工时同步迁入 page_guides） |
-| **dev/** | 开发者文档：`ARCHITECTURE.md`／`CONFIG.md`／`TESTING.md`／`CHANGELOG.md`（自根目录迁入）、`design-system.md`、`reports/`（功能开发报告）、`reviews/`（评审轮次记录 R0–R5/S1–S3） | **追加型历史**：只增不改写 | 开发过程留痕 |
+| **dev/** | 开发者文档：`ARCHITECTURE.md`／`CONFIG.md`／`TESTING.md`／`CHANGELOG.md`、`design-system.md`、`OPS.md`（运维速查备忘）；历史性 reports/reviews 已归档 `docs/archive/dev-reports-2026-11/` 与 `dev-reviews-2026-11/` | **追加型历史**：只增不改写 | 开发过程留痕 |
 | **research/** | 研究资料（论文侧维护）：`tables/`（研究数据表 xlsx，**被灌库脚本引用，移动须同步改代码**）、`protocols/`（研究规程：判定标准/词表/开题）、`papers/`（journal 期刊论文工程／thesis 大论文／lexikos 论文源文档）、`notes/`（研究过程笔记） | 研究侧自主演进 | 研究者 |
 | **archive/** | 已完结的过程文档（如监工协调），保留原措辞不再更新 | 冻结 | — |
 | 根目录 | 仅保留 **README.md**（入口地图）与 **CLAUDE.md**（AI 助手配置，工具要求在根）——其余工程文档一律在 docs/ | 活文档 | 全体 |
@@ -31,7 +31,7 @@
 ```
 docs/
 ├── README.md                  本规范
-├── spec/                      平台设计与施工契约
+├── spec/                      平台设计与施工契约（活文档 2 份：架构规范＋跨词类通用框架；5 份过程文档已归档）
 │   ├── 平台架构设计规范.md          v5.1 定稿（五构件/十五工序/六闸门/工具插件/出入口纪律）
 │   ├── 跨词类通用框架.md            范畴包六件套与新词类接入判据
 │   ├── 多人标注系统设计规范.md       盲标协作底座（viewer 导出口径已按 v5.1 修订）
@@ -47,8 +47,8 @@ docs/
 │   ├── TESTING.md               测试说明（自根目录迁入）
 │   ├── CHANGELOG.md             变更日志（自根目录迁入）
 │   ├── design-system.md         UI 设计系统常量与样式说明
-│   ├── reports/                 dev_cluster_analysis / dev_hardening / dev_semantic_search / dev_template_engine
-│   └── reviews/                 review_R0_agentA–E、R1–R5、S1–S3（共 12 份评审记录）
+│   ├── reports/                 findings_backlog.md（滚动修复台账；6 份一次性报告已归档）
+│   └── （reviews/ 已移 docs/archive/dev-reviews-2026-11/——R0–S3 共 13 份评审历史）
 ├── research/
 │   ├── tables/                  研究数据表 ×13（Levin 筛选表/表1–3/词表×4/义位筛选/物理位移/域系×2/图式核查/OALD10 导出）
 │   ├── protocols/               义项判定标准(修改稿) · 英语自移移动动词词表 · 词表版本说明 · 研究全流程思维导图 · 开题报告

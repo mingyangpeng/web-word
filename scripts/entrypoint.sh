@@ -3,7 +3,7 @@
 # 等待 MySQL 就绪 → 幂等灌入全部数据（与 ./start 的八步一致）→ 启动 Streamlit
 #
 # 数据与 ./start 同源：词库/语料/范畴深挖/域系初判/域系增强/LLM 初筛草稿/
-# 现汉7 词典。种子文件由 Dockerfile COPY 进镜像的 /app/seed/data（/app/data
+# 现汉7 词典/拼音词形。种子文件由 Dockerfile COPY 进镜像的 /app/seed/data（/app/data
 # 是 named volume 挂载点，COPY 进去的内容会被盖住，故镜像侧只放种子暂存区）；
 # environment 列在 docker-compose.yml（.env 已入库，compose 的 environment
 # 覆盖 env_file，MYSQL_HOST=mysql 由 compose 强制指定）。
@@ -63,6 +63,12 @@ if [ ! -f data/zh_dict_senses.json ] && [ -f data/ModernChineseDict/mdx/dict.mdx
 fi
 run_loader "灌入《现汉7》词典" \
     python scripts/load_zh_dict.py
+# 拼音词形（wordforms kind='pinyin'）：检索页 resolve_form 的词形还原依赖。
+# P2 实证：旧灌库链漏了这一步——zh_dict 灌了而 wordforms 0 行，拼音搜索
+# 静默失效。必须排在《现汉7》词典之后（数据源就是 zh_dict_entries）；
+# run_loader 追加的 --if-empty 由 load_wordforms.py 原生支持（已有词形跳过）。
+run_loader "灌入拼音词形（wordforms，检索词形还原依赖）" \
+    python scripts/load_wordforms.py
 
 echo "🚀 Starting Streamlit..."
 exec streamlit run src/app.py --server.port=8501 --server.address=0.0.0.0

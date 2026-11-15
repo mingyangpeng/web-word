@@ -640,12 +640,19 @@ def _apply_stash_defaults(
 # 私有只读查询（sense_spine _fetch_* 风格：独立降级，绝不编数）
 # ============================================
 
-def _list_categories_dicts() -> List[Dict[str, Any]]:
-    """范畴清单（category_study.get_categories 薄包装；失败返回 []）。
+def _list_categories_dicts() -> Optional[List[Dict[str, Any]]]:
+    """范畴清单（category_study.get_categories 薄包装；失败 None / 空库 []）。
 
     R6-4 改名 _list_categories_dicts：返回 dict 清单（含 code/name_cn 等），
     与 reliability._list_categories（返回 code 元组）同名不同义，就地改名
     消歧 —— 语义与调用点不变。
+
+    RV 第二轮（R4 两态两种级别）：原失败也折 []，页面无法区分「库挂了」与
+    「真没灌」；现查询异常 / import 失败返回 None（页面 warning「勿重跑
+    灌库」）、清单真空返回 []（页面 info 给灌库指引）。边界如实说明：
+    category_study.get_categories 自身把异常折成 []（该模块不在本轮改动
+    面）—— 真断库多半在那层就被折成 [] 按「空态」渲染；本包装的 None
+    覆盖 get_categories 抛异常与延迟 import 失败两种路径。
     """
     try:
         from src.category_study import get_categories
@@ -653,7 +660,7 @@ def _list_categories_dicts() -> List[Dict[str, Any]]:
         return [c for c in (get_categories() or []) if c.get("code")]
     except Exception as e:  # noqa: BLE001 — 降级不崩（页面给占位提示）
         logger.warning(f"writing_pages: 范畴清单查询失败: {e}")
-        return []
+        return None
 
 
 _CANDIDATE_SENSES_SQL = """SELECT s.id AS cs_sense_id, s.sense_no, s.sense_label,
@@ -847,8 +854,21 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         return
 
     categories = _list_categories_dicts()
+    # RV 第二轮（R4 两态两种级别）：None=查询失败（服务端异常，勿重跑灌库）；
+    # []=范畴库真空（给灌库指引）—— 原「数据库未灌语义分析数据…或库不可用」
+    # 混句拆开归因，不让断库用户误跑灌库脚本。
+    if categories is None:
+        st.warning(
+            "数据不可用：范畴清单读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not categories:
-        st.info("范畴清单不可用：数据库未灌语义分析数据（cs_* 表）或库不可用。")
+        st.info(
+            "范畴库为空：先运行 `docker compose exec web python "
+            "scripts/load_category_study.py` 灌入语义分析数据（cs_* 表），"
+            "再回到本页。"
+        )
         return
     cat_options = [c["code"] for c in categories]
     cat_code = st.selectbox(
@@ -1318,8 +1338,21 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         "三版本脊柱第三条（谁标的 → α → 簇 → 模板 → 释义版本）。"
     )
     categories = _list_categories_dicts()
+    # RV 第二轮（R4 两态两种级别）：None=查询失败（服务端异常，勿重跑灌库）；
+    # []=范畴库真空（给灌库指引）—— 原「数据库未灌语义分析数据…或库不可用」
+    # 混句拆开归因，不让断库用户误跑灌库脚本。
+    if categories is None:
+        st.warning(
+            "数据不可用：范畴清单读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not categories:
-        st.info("范畴清单不可用：数据库未灌语义分析数据（cs_* 表）或库不可用。")
+        st.info(
+            "范畴库为空：先运行 `docker compose exec web python "
+            "scripts/load_category_study.py` 灌入语义分析数据（cs_* 表），"
+            "再回到本页。"
+        )
         return
     cat_options = [c["code"] for c in categories]
     cat_code = st.selectbox(

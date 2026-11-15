@@ -78,7 +78,7 @@ import streamlit as st
 
 from src import users_db
 from src.db_utils import current_user as _current_user
-from src.design_system import HEADER_H3, get_badge_html, get_card_style
+from src.design_system import HEADER_H1, HEADER_H3, get_badge_html, get_card_style
 from src.guards import require_dict_admin
 
 try:
@@ -864,7 +864,10 @@ def render_model_settings_page() -> None:
         st.error("⛔ 模型供应商管理仅词典管理员可用。")
         return
 
-    st.title("🤖 模型供应商")
+    # RV 第二轮（P2 页头统一）：st.title 的字号/边距与设计系统页头不同源，
+    # 统一为其他页面一致的 `<h1 style='{HEADER_H1}'>` 形态（视觉规格相同：
+    # 2.5rem/700，无 title 自带的底部留白差异）。
+    st.markdown(f"<h1 style='{HEADER_H1}'>🤖 模型供应商</h1>", unsafe_allow_html=True)
     st.caption("管理 LLM 模型供应商，配置后在释义生成等 AI 功能中使用。")
 
     if llm_providers_db is None:

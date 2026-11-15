@@ -1307,7 +1307,14 @@ def render_template_page() -> None:
         return
     categories = get_categories()
     if not categories:
-        st.warning("数据库中没有范畴记录。")
+        # RV 第二轮（R4 口径）：「范畴记录为空」是空态不是异常 → warning 降
+        # info ＋灌库指引。get_categories 自身把查询失败也折成 []（见
+        # category_study.get_categories，不在本轮改动面）；上游 ready 面
+        # 已确认 categories 有行，走到这里主要是范畴被清空的边界态，
+        # 按空态归因、不再用「数据库中没有范畴记录」的库级措辞。
+        st.info("范畴库为空：先运行 `docker compose exec web python "
+                "scripts/load_category_study.py` 灌入范畴深挖数据，"
+                "再回到本页。")
         return
 
     cat_options = [c["code"] for c in categories]
@@ -1335,7 +1342,13 @@ def render_template_page() -> None:
 
     schemas = derive_cluster_schemas(cat_code, language)
     if not schemas:
-        st.warning("该语言没有可用的聚类运行（cs_cluster_runs 为空）。")
+        # RV 第二轮（R4 口径）：「cs_cluster_runs 为空」是空态不是异常 →
+        # warning 降 info ＋灌库指引（derive_cluster_schemas 把无数据 /
+        # 库不可用 / 配置缺失一律折 [] 并记日志；空态归因给指引，断库归因
+        # 由服务端日志承载，页面不给重跑类误导）。
+        st.info("该范畴/语言暂无聚类运行（cs_cluster_runs 为空）：先运行 "
+                "`docker compose exec web python scripts/load_category_study.py` "
+                "灌入范畴深挖数据，再回到本页。")
         return
 
     # ---- 母图式卡片（核心要素 vs 可变槽位 两栏）----

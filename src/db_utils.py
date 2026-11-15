@@ -1,4 +1,5 @@
-"""跨模块公共小件收敛点（R6-4）—— _as_int/_current_user/_column_exists/_table_exists。
+"""跨模块公共小件收敛点（R6-4）—— _as_int/_current_user/_column_exists/_table_exists
+＋ LIKE 转义小件（_escape_like/LIKE_ESCAPE，第二轮 review 自 data_pages 下沉）。
 
 背景（R6 代码质量巡检）：同一语义的四个小件曾在 8+ 个模块各复制一份
 （同名同义，行为逐字节一致），漂移风险随份数增长。本模块把它们收敛为
@@ -6,7 +7,14 @@
 式别名导入 —— 调用点零改动（模块内名字不变，测试 monkeypatch 模块属性
 依旧生效），实现只剩这一份。
 
-四个小件的语义（与既有各副本逐字节一致，收敛不改行为）：
+下沉件（第二轮 review P2 分层修复）：``_escape_like``（含 ``LIKE_ESCAPE``
+常量）原是页面层 data_pages 的私有件，数据层 collab_db 反向 import 页面
+模块才拿到转义 —— 分层违例，且 collab_db 被连带拖进 streamlit/pandas
+UI 依赖链。现按本模块「零内部依赖公共小件收敛点」定位下沉：data_pages
+保留同名 re-export（测试锚点 ``from src.data_pages import _escape_like``
+的 ``is`` 同源断言与转义行为断言不动），collab_db 直接 import 本模块。
+
+五个小件的语义（与既有各副本逐字节一致，收敛不改行为）：
 
   as_int(value)         宽松转 int：int/int-str/float 整数可转；
                         bool/None/其余 → None（bool 是 int 子类，须先拦）。
@@ -20,6 +28,10 @@
   table_exists(cursor, table)
                         当前库是否存在该表（information_schema 探测，
                         rollback_batch 动态表名闸门等用）。
+  _escape_like(value)   LIKE 通配符转义（纯函数；'!' 先转义再转 % _，
+                        与 SQL 侧 ``ESCAPE '!'`` 配套，防通配符注入）。
+                        下划线名保留为历史口径 —— R2-5 起 data_pages 与
+                        collab_db 的测试锚点都按这个名字寻址。
 
 边界（刻意不收进来的同名不同义件，R6-4 已就地改名消歧）：
   * dict_admin_db._dump_json_strict（原 _dump_json）—— JSON 序列化非
@@ -114,3 +126,32 @@ def table_exists(cursor, table: str) -> bool:
         (table,),
     )
     return int(cursor.fetchone()["n"] or 0) > 0
+
+
+# ============================================
+# LIKE 转义小件（R2-5 单一实现点；第二轮 review 自 data_pages 下沉）
+# ============================================
+
+# LIKE 转义字符（SQL 侧 ESCAPE '!'，避开 MySQL 反斜杠双重转义的坑）。
+LIKE_ESCAPE = "!"
+
+
+def _escape_like(value: Any) -> str:
+    """转义 LIKE 通配符与本模块的转义字符（纯函数，防通配符注入）。
+
+    与 SQL 侧 ``LIKE %s ESCAPE '!'`` 配套：'!' 是转义字符必须先转义，然后
+    % 与 _ 转为字面字符；反斜杠在显式 ESCAPE 下无特殊含义，不处理。
+    非 str 入参（None/数字等）返回空串 —— 调用方按「空搜索词」处理。
+
+    分层（第二轮 review）：实现自页面层 data_pages 原样下沉 —— 行为逐字节
+    一致（tests/test_data_pages.py 的转义行为断言与 tests/test_review_
+    regression.py R2-5 的 ``is`` 同源断言继续成立）；data_pages 保留同名
+    re-export、collab_db 直接 import 本模块，数据层不再反向依赖页面层。
+    """
+    if not isinstance(value, str):
+        return ""
+    return (
+        value.replace(LIKE_ESCAPE, LIKE_ESCAPE + LIKE_ESCAPE)
+        .replace("%", LIKE_ESCAPE + "%")
+        .replace("_", LIKE_ESCAPE + "_")
+    )

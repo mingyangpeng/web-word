@@ -1,5 +1,14 @@
 # 更新日志
 
+## 2026-11-15 · 批次 43：第二轮全项目 review——四维勘察（数据一致性/新代码/UX/文档漂移）
+
+- **数据一致性（好消息为主）**：迁移对账全过（_migrate_schema 全部对象在位）、孤儿 0、级联链 DB 层强制、种子哈希一致——修复：3307 旧业务副本整库归档 web_word_db_hist（60 表）＋web_word_db 恢复为测试专用快照（61 表/oald 996——禁止应用连接标注）；容器业务实例 6 个空测试库清零；conftest fail-fast（MYSQL_PORT≠3307 即 raise）；load_zh_dict readiness 三层判据（拦半截灌入实证修复）；wordforms 0 行启动链补灌（entrypoint＋start 指引）
+- **新代码交叉验证**：restore_db.sh 锚点失败分支＋维护窗口告警；start lsof 缺失降级＋MYSQL_PWD 口令形态＋wordforms 提示；insert_feedback 补缓存 clear；_escape_like/LIKE_ESCAPE 下沉 db_utils（collab_db 分层违例闭环——data_pages re-export 保 R2-5 锚点，`is` 断言两侧过）
+- **UX 一致性（P2×5）**：badge 红 #e53e3e→#c53030（AA 5.47:1）×2 处；model_settings 页头 st.title→HEADER_H1；降级混句拆分四处（template_engine×2/collab_pages/writing_pages×2/data_pages——R4 两态两级别）；漏斗降级拆句＋_funnel_query_failed 纯函数
+- **文档漂移终检（P2×11）**：README .env 口径/94 模块 3047 项/spec 归档链接/路径 B 断引用；OPS 敏感串表述精确化；TESTING 测试口令约定节；ARCHITECTURE 三脚本→start；ops/README start 口径＋restore；docs/README 文档地图对齐归档；.gitignore 注释矛盾
+- **移交项**：app.py 4 处 UX 修复（并行会话区）／灌库指引全局统一／category_study 失败折空——均已记录
+- 全量 **3047 passed / 0 failed**
+
 ## 2026-11-15 · 批次 41-cont：collab_db 分层＋测试 helper 收敛（多 agent 并行）
 
 - **collab_db 分层抽取**（P3）：collab_pages 8 段直写 SQL 全部收口新 src/collab_db.py（create_assignment 唯一写路径＋7 读函数逐字搬运；页面层薄封装零签名变化；execute 计数 8→0）；_escape_like 经 data_pages 同源 import（R2-5 契约保真）

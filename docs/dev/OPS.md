@@ -33,7 +33,7 @@ docker compose restart web   # 改码后让 8501 生效（bind mount 动态映�
 
 ## 三·五、git 史清理记录（2026-11-15）
 
-- `git filter-repo` 全史重写：.env 全部历史抹除（4 个提交）、webword123 全历史替换为 `<your-mysql-password>`（6 文件）——双分支强推对齐（main＋gsd/phase-01-verb-tool），全 refs 敏感串 0 命中
+- `git filter-repo` 全史重写：.env 全部历史抹除（4 个提交）、webword123 全历史替换为 `<your-mysql-password>`（6 文件）——双分支强推对齐，业务口令全史 0 命中（测试专用口令 webword123 有意保留于 tests/conftest.py——与 grant 授权同值的约定，非泄露）
 - **.env 从此不入库**（gitignore，本地维护；clone 不带凭据——新环境用 `.env.example` 占位模板复制填写）；`.env.local` 约定不变
 - 全量 bundle 备份：/tmp/git-clean-backup-20261115-1955/web-word-full.bundle（含清理前旧史，仅供灾难回滚，勿再分发）
 - 残余风险：GitHub 服务端旧 commit 缓存可能经 SHA 直达（key 已作废+密码已换即无实效）；公开前可再请 GitHub Support 清缓存

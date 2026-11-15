@@ -543,11 +543,12 @@ def _search_verbs(keyword: str, limit: int = 20) -> List[Dict[str, Any]]:
     return collab_db.search_verbs(keyword, limit, cursor_factory=get_db_cursor)
 
 
-def _list_proposal_stages() -> List[str]:
+def _list_proposal_stages() -> Optional[List[str]]:
     """台账出现过的全部工序（stage）清单（薄封装 → collab_db.list_proposal_stages）。
 
-    协同度量按工序下钻的工序枚举；实现（SELECT DISTINCT 常量 SQL，库不可用
-    返回 []）随 P3 分层抽取迁至数据层。
+    协同度量按工序下钻的工序枚举；实现（SELECT DISTINCT 常量 SQL）随 P3
+    分层抽取迁至数据层。RV 第二轮 R4 两态：空台账 []（页面 info 空态）/
+    查询失败 None（页面 warning「勿重跑灌库」）—— 不再把失败折成 []。
     """
     return collab_db.list_proposal_stages()
 
@@ -1022,8 +1023,17 @@ def _render_metrics_tab() -> None:
 
     st.markdown(f"<h3 style='{HEADER_H3}'>🔬 按工序下钻</h3>", unsafe_allow_html=True)
     stages = _list_proposal_stages()
+    # RV 第二轮（R4 两态两种级别）：原混句「台账暂无提案记录（或数据库不可用）」
+    # 拆句 —— None=查询失败（服务端异常，勿重跑灌库）；[]=空台账（等业务工序
+    # 登记），两种归因两种级别，不让断库用户误以为「只是没数据」。
+    if stages is None:
+        st.warning(
+            "数据不可用：提案台账读取失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not stages:
-        st.info("台账暂无提案记录（或数据库不可用）—— 提案由各业务工序登记后按工序汇总。")
+        st.info("台账暂无提案记录 —— 提案由各业务工序登记后按工序汇总。")
         return
     drill_rows = []
     for stage in stages:

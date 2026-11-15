@@ -53,9 +53,9 @@ collab_pages.py 留同名薄封装，对外签名与返回契约逐项不变。
 安全规则（同 users_db / ai_ledger 口径）：
   1. SQL 一律参数化（get_db_cursor 模式），本文件无一处把值拼进 SQL 文本
      （表名 / 枚举 / 状态值全是本模块常量或 import 的单一事实源；search_verbs
-     的 ``%`` 包裹拼在**值**里，通配符经 data_pages._escape_like 转义 ——
-     R2-5 单一实现复用，不复制第二份转义逻辑；该 import 暂指向页面模块，
-     待转义小件下沉公共件（db_utils）时一并归位）；
+     的 ``%`` 包裹拼在**值**里，通配符经 db_utils._escape_like 转义 ——
+     R2-5 单一实现复用，不复制第二份转义逻辑；第二轮 review 已把该小件
+     从页面层 data_pages 下沉公共件（db_utils），本模块不再反向依赖页面层）；
   2. 入参应用层先校验再入库：非法 id / task_type / category / scope_verbs
      根本不进数据库（不依赖 ENUM / FK 报错兜底，FK 只作最后防线）；
   3. task_type 枚举 import 自 annotation_flow.TASK_TYPES（assignments DDL
@@ -67,7 +67,10 @@ import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from src.annotation_flow import TASK_TYPES as ASSIGNMENT_TASK_TYPES
-from src.data_pages import _escape_like  # R2-5：LIKE 转义与 data_pages 同源
+# R2-5：LIKE 转义单一实现点 —— 第二轮 review 已自页面层 data_pages 下沉
+# src/db_utils，数据层不再反向 import 页面模块（分层修复；data_pages 是
+# 同一实现的 re-export，`is` 同源断言两边都成立）。
+from src.db_utils import _escape_like
 from src.mysql_db import get_db_cursor
 
 logger = logging.getLogger(__name__)
@@ -286,8 +289,8 @@ def search_verbs(
 
     词目（definitions.verb）或 OALD 义项词目（oald_senses.headword）LIKE 匹配：
     关键词走占位符，包裹用的 ``%`` 由本函数拼在**值**里（``%kw%``）；R2-5 起
-    关键词先经 data_pages._escape_like 转义（``!``/``%``/``_``，SQL 侧
-    ``ESCAPE '!'`` 与 data_pages.LIKE_ESCAPE 同源同口径）—— 通配符按字面
+    关键词先经 db_utils._escape_like 转义（``!``/``%``/``_``，SQL 侧
+    ``ESCAPE '!'`` 与 db_utils.LIKE_ESCAPE 同源同口径）—— 通配符按字面
     处理：搜 ``100%`` 匹配字面「100%」而不是「100」开头的任意串（与
     data_pages 词条搜索口径一致，无 SQL 文本拼接）。
 
@@ -334,12 +337,16 @@ def search_verbs(
         return []
 
 
-def list_proposal_stages() -> List[str]:
+def list_proposal_stages() -> Optional[List[str]]:
     """台账出现过的全部工序（stage）清单（参数化只读）。
 
     协同度量按工序下钻需要工序枚举；ai_proposals 的 stage 无独立维表，
     直接 SELECT DISTINCT（SQL 文本为常量，无用户输入参与）。
-    数据库不可用返回 []（下钻表降级为「暂无记录」提示）。
+
+    两态（RV 第二轮 R4 口径）：空台账返回 []（页面 info「暂无记录」）；
+    查询失败（库不可用等）返回 None（页面 warning「勿重跑灌库」）——
+    原失败也折 [] 的口径让页面无法区分「等恢复」与「真没数据」，拆开
+    归因（真库空表行为不变，tests/test_collab_pages 的 [] 断言不受影响）。
 
     （自 collab_pages._list_proposal_stages 原样迁入 —— P3 分层抽取，
     页面层同名薄封装委托本函数。）
@@ -351,7 +358,7 @@ def list_proposal_stages() -> List[str]:
             return [str(r["stage"]) for r in rows if r.get("stage")]
     except Exception as e:  # noqa: BLE001
         logger.error(f"枚举提案工序失败: {e}")
-        return []
+        return None
 
 
 def pending_inbox_count() -> int:

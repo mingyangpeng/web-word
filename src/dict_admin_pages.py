@@ -455,8 +455,11 @@ G6_PASSED = "passed"
 G6_PLACEHOLDER = "placeholder"
 G6_FAILED = "failed"
 G6_STATUS_LABELS = {"passed": "已过", "placeholder": "占位", "failed": "未过"}
+# RV 第二轮（P2 对比度）：failed 徽章残留旧值 #e53e3e（白字 4.13:1 不达 AA），
+# 收敛 design_system.ERROR_COLOR（#c53030，白字 5.47:1；users_admin_page
+# _INACTIVE_RED 同值）—— 不再写字面量。
 G6_STATUS_COLORS = {
-    "passed": _ACTIVE_GREEN, "placeholder": _INACTIVE_GRAY, "failed": "#e53e3e",
+    "passed": _ACTIVE_GREEN, "placeholder": _INACTIVE_GRAY, "failed": ERROR_COLOR,
 }
 
 # G6 检查项 key（三卡固定顺序：许可 → 体例 → 备份）
@@ -917,6 +920,25 @@ def _render_cockpit_metrics(projects: List[Dict[str, Any]],
                   "—" if stats_degraded else _format_uncertainty(stats.get("avg_uncertainty")))
 
 
+def _funnel_query_failed(funnel_status: Any) -> bool:
+    """漏斗聚合里是否存在「查询失败」级段（RV 第二轮 R4 拆句判据；纯函数）。
+
+    pipeline_status 各段 data/reason 互斥：查询失败段的 reason 含
+    「查询失败 / 库不可用」；表未建 / 暂无数据 / 范畴未登记是**预期空态**，
+    不算失败。聚合退化（status 非约定 dict / segments 缺失）按「未失败」
+    处理 —— 页面走空态 info，不虚构失败归因（拿不到段信息时不编故事）。
+    """
+    segments = funnel_status.get("segments") if isinstance(funnel_status, dict) else None
+    if not isinstance(segments, dict):
+        return False
+    for seg in segments.values():
+        if isinstance(seg, dict) and seg.get("data") is None:
+            reason = str(seg.get("reason") or "")
+            if "查询失败" in reason or "库不可用" in reason:
+                return True
+    return False
+
+
 def _render_cockpit_tab() -> None:
     """驾驶舱：规模与台账指标卡（st.metric）+ 十五工序漏斗 + 逐项目自检清单
     ＋ FX-24 两段（⚠️ 风险清单 / 📥 待我裁决汇总）＋ FX-26 体例质检段
@@ -968,7 +990,22 @@ def _render_cockpit_tab() -> None:
         )
     segments = pipeline_status.format_funnel_segments(funnel_status)
     if not segments:
-        st.info("漏斗数据不可用（聚合结果为空，通常是数据库不可用）。")
+        # RV 第二轮（R4 两态两种级别）：原混句「漏斗数据不可用（聚合结果为空，
+        # 通常是数据库不可用）」拆句 —— 查询失败=warning（服务端异常，勿重跑
+        # 灌库）；聚合为空=info（范畴未灌数据，给灌库指引），不再把「空」
+        # 武断归因成断库。注：正常契约下六段恒有渲染行（缺数段以灰行呈现，
+        # 见下方 else 分支与漏斗 caption），本分支是聚合退化时的防御降级。
+        if _funnel_query_failed(funnel_status):
+            st.warning(
+                "数据不可用：漏斗聚合查询失败（数据库查询出错或连接中断）。"
+                "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+            )
+        else:
+            st.info(
+                "漏斗暂无数据（聚合结果为空）：范畴深挖数据尚未灌入 —— 先运行 "
+                "`docker compose exec web python scripts/load_category_study.py` "
+                "灌库后刷新本页。"
+            )
     else:
         funnel_rows = []
         for label, text in segments:
@@ -1814,7 +1851,10 @@ def _render_members_table(members: List[Dict[str, Any]]) -> None:
         if int(m.get("active") or 0):
             status_badge = _badge("启用", _ACTIVE_GREEN)
         else:
-            status_badge = _badge("已停用", "#e53e3e")
+            # RV 第二轮（P2 对比度）：#e53e3e 白字 4.13:1 不达 AA，收敛
+            # ERROR_COLOR（#c53030，白字 5.47:1；users_admin_page._INACTIVE_RED
+            # 与 design_system.ERROR_COLOR 同值口径）。
+            status_badge = _badge("已停用", ERROR_COLOR)
         granter = m.get("granted_by")
         rows.append([
             str(int(m.get("user_id") or 0)),

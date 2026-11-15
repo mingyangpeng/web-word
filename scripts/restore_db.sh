@@ -19,10 +19,13 @@
 #      不经宿主命令行——容器内导入不依赖宿主 mysql 客户端（与
 #      backup_db.sh 宿主 mysqldump 口径互补：那边靠 127.0.0.1 容器映射）；
 #   4. 安全闸：目标库非空且未加 --force 时——交互终端要求键入 yes 确认
-#      覆盖；非交互终端（cron/管道）直接拒绝，防无人值守静默覆盖；
+#      覆盖；非交互终端（cron/管道）直接拒绝，防无人值守静默覆盖；覆盖的
+#      若是业务库且 web 应用容器在跑，提示选维护窗口（恢复期应用会撞瞬时
+#      表缺失）；
 #   5. 建库：CREATE DATABASE IF NOT EXISTS（utf8mb4 / utf8mb4_unicode_ci，
 #      与 compose 服务端字符集口径一致）→ gunzip 管道导入；
-#   6. 61 表锚点校验：information_schema 计数，≠61 告警（0 表判失败）；
+#   6. 61 表锚点校验：information_schema 计数，≠61 告警（0 表判失败；
+#      计数查询本身失败也判失败，退出码 1）；
 #   7. 打印恢复摘要。
 #
 # 用法：
@@ -96,6 +99,16 @@ env_value() {
 [ -n "$TARGET_DB" ] || TARGET_DB="$(env_value MYSQL_DATABASE)"
 [ -n "$TARGET_DB" ] || TARGET_DB="web_word_db"
 
+# 业务库判定：目标库 == 默认业务库（.env(.local) 的 MYSQL_DATABASE，兜底
+# web_word_db）即视为业务库——不管用户是默认走到的还是 --database 显式指的。
+# 供维护窗口提示用（沙箱演练库不打扰）。
+BUSINESS_DB="$(env_value MYSQL_DATABASE)"
+[ -n "$BUSINESS_DB" ] || BUSINESS_DB="web_word_db"
+IS_BUSINESS_DB=0
+if [ "$TARGET_DB" = "$BUSINESS_DB" ]; then
+  IS_BUSINESS_DB=1
+fi
+
 # 库名/容器名白名单（进 SQL 语句，防注入防怪字符）：字母数字下划线 / 容器名再放宽 .-
 case "$TARGET_DB" in
   ''|*[!A-Za-z0-9_]*) say_err "目标库名不合法：${TARGET_DB}（只允许字母数字下划线）"; exit 2 ;;
@@ -145,6 +158,13 @@ if ! n_before="$(mysql_exec -N -e "SELECT COUNT(*) FROM information_schema.table
   say_err "查询目标库 $TARGET_DB 现状失败（mysql 连接异常）——中止，未做任何改动"
   exit 1
 fi
+# 覆盖非空业务库且 web 应用容器在跑：dump 自带 DROP TABLE，恢复期间应用会
+# 撞「表不存在」的瞬时错误——提醒选维护窗口。告警不阻断：灾备恢复多为紧急
+# 场景，是否先 ./start stop 由管理员按当时情况权衡。
+if [ "${n_before:-0}" -gt 0 ] && [ "$IS_BUSINESS_DB" -eq 1 ] && \
+   [ "$(docker inspect -f '{{.State.Running}}' web-word-app 2>/dev/null || true)" = "true" ]; then
+  say_warn "建议维护窗口（./start stop）——恢复期间应用会出现瞬时表缺失"
+fi
 if [ "${n_before:-0}" -gt 0 ] && [ "$FORCE" -ne 1 ]; then
   say_warn "目标库 $TARGET_DB 已存在且有 $n_before 张表——恢复将整库覆盖（不可撤销）！"
   if [ -t 0 ]; then
@@ -177,7 +197,13 @@ say_ok "导入完成（耗时 ${SECONDS}s）"
 
 # ---------- 5) 61 表锚点校验 ----------
 say_info "⑥ 锚点校验：${TARGET_DB} 表数量（预期 ${EXPECTED_TABLES}）"
-n_tables="$(mysql_exec -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${TARGET_DB}'")"
+# 计数查询本身也可能失败（连接闪断/容器恰在重启）——不能放任空/非数字的
+# n_tables 混进下面的 -eq 算术比较（那会把「校验失败」伪装成 test 语法报错
+# 崩溃）。显式 if ! 接管：按头部退出码契约判导入失败（1），给人工核对指引。
+if ! n_tables="$(mysql_exec -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${TARGET_DB}'")"; then
+  say_err "锚点计数查询失败（mysql 连接异常）——导入已执行但无法确认结果；请人工进容器核对 ${TARGET_DB} 表数量后再决定重跑或回滚（恢复前留的 ./start backup 即回滚锚点）"
+  exit 1
+fi
 if [ "$n_tables" -eq "$EXPECTED_TABLES" ]; then
   anchor="✓ 命中归一锚点（$n_tables/$EXPECTED_TABLES 表，完整）"
 elif [ "$n_tables" -eq 0 ]; then

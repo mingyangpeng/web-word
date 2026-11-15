@@ -19,6 +19,8 @@
 - **用户反馈**：1–5 星评分 + 文字建议，写入 `feedbacks` 表。
 - **安全校验**：`src/security.py` 对输入做 SQL 注入与 XSS 模式校验，输出做 HTML 转义。
 - **离线可用**：没有智谱 API key 也能启动并返回释义（详见下文「常见问题」）。
+- **图式范畴化（批次 32）**：对各簇图式做二级归纳——三级归属向量 → Gower → UPGMA → 图式家族＋medoid 代表图式，建立更高层级事件类型谱系（第 12 个内置工具＋语义分析第 10 tab）。
+- **五构件插件（批次 30）**：D·C·P·A·U 五模块做成可勾选启停的插件（词典管理员勾选持久化＋直访拦截），C/U 平台底线锁定。
 - **多人协作标注系统**：六角色账号体系（词典管理员/平台管理员/审校/编纂/标注/只读）、登录态与页面权限过滤、
   盲标工作台（所有标注者看相同 AI 草稿，互不可见对方提交）、提交→审核→仲裁→定稿流程、
   Krippendorff's α 信度报告（AI-assisted IAA 口径），支撑论文 §4 的双标注信度检验。
@@ -40,7 +42,7 @@
 | [docs/help/平台功能使用说明.md](docs/help/平台功能使用说明.md) | 每个功能的说明/使用介绍/原理说明（四段式，按七区菜单组织；应用内「📖 使用说明」面板的母本） | 编者与用户 |
 | [docs/spec/平台架构设计规范.md](docs/spec/平台架构设计规范.md) | 平台架构 v5.1 定稿：五构件、十五工序、六闸门、工具插件化、协作范式、配置治理、数据出入口纪律 | 开发者与审稿人 |
 | [docs/spec/跨词类通用框架.md](docs/spec/跨词类通用框架.md) | 范畴包六件套规范与新词类接入判据 | 研究者 |
-| [docs/spec/多人标注系统设计规范.md](docs/spec/多人标注系统设计规范.md) | 盲标协作底座（表结构/模块契约/验收标准） | 开发者 |
+| [docs/archive/spec-2026-11/多人标注系统设计规范.md](docs/archive/spec-2026-11/多人标注系统设计规范.md) | 盲标协作底座（表结构/模块契约/验收标准） | 开发者 |
 
 ## 🚀 快速开始
 
@@ -464,7 +466,7 @@ graphify god-nodes --top 10                # 架构枢纽节点
 MySQL 8.0。全部表结构的权威是各数据层模块的 DDL（`src/mysql_db.py` 的
 `CREATE_TABLES_SQL` 与 users_db / annotation_flow / reliability / category_study /
 zh_dict / media_db / writing_db / lexical_db / llm_providers_db / registry_db 等
-协作与编纂域模块各自的建表语句），共 **58 张表**（`CREATE TABLE` 语句去重口径，含
+协作与编纂域模块各自的建表语句），共 **61 张表**（`CREATE TABLE` 语句去重口径，含
 `schema_migrations` 版本表）＋ 1 个对照视图（`init_db.sql` **不再复制建表语句**，
 只建库与授权，避免两份会漂移的 DDL）。`./start doctor` 对其中 **22 张核心内容表**
 执行行数验收基线（12 项种子数据在位性另行核对）。
@@ -554,7 +556,7 @@ zh_dict / media_db / writing_db / lexical_db / llm_providers_db / registry_db �
 
 ## 👥 多人标注（MOVECAT Collab）
 
-> 设计规范：`docs/spec/多人标注系统设计规范.md`（唯一事实源）。端到端验收脚本：
+> 设计规范：`docs/archive/spec-2026-11/多人标注系统设计规范.md`（唯一事实源）。端到端验收脚本：
 > `tests/test_e2e_workflow.py`（真实 MySQL 七步协作工作流，无库自动跳过，可重复执行）。
 
 - **四角色**（legacy 列名口径，已映射进六角色：`admin`→词典管理员＋平台管理员、
@@ -648,7 +650,7 @@ pytest tests/test_security.py
 开启 `--cov` 后，覆盖率 HTML 报告输出到 `htmlcov/index.html`。绝大多数测试用 `monkeypatch` 隔离外部依赖，
 不会真实调用智谱 API 或 MySQL。
 
-套件规模（2026-11-10 口径）：**74 个测试模块、2569 项**（`pytest --collect-only`）。
+套件规模（2026-11-10 口径）：**94 个测试模块、3047 项**（`pytest --collect-only`）。
 真库集成用例（如 `test_migration_integration.py`、e2e 工作流）在无库环境**自动 skip**
 （不是 fail）；CI 已加 MySQL 8 服务承载真库用例。
 
@@ -705,7 +707,7 @@ python -c "from src.mysql_db import MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQ
   自动注入 `mysql`。
 - **账号/密码**：默认开发凭据是 `web_word_user` / `<your-mysql-password>`，需与
   `docker-compose.yml` 的 `MYSQL_PASSWORD`（默认 `<your-mysql-password>`）一致。
-- **库没建**：见「快速开始 → 路径 B」第 1 步的 `CREATE DATABASE` / `CREATE USER` / `GRANT`。
+- **库没建**：`./start` 会自动建库并执行 `scripts/grant_local_mysql.sql`（本地双轨授权）。
 
 **智谱 API key 怎么配？**
 
@@ -717,7 +719,7 @@ export ZHIPUAI_API_KEY=你的key
 streamlit run src/app.py
 ```
 
-或写进 `.env`（已随仓库入库，`./start` 自动加载）后 `set -a; source .env; set +a`。
+或写进 `.env`（本地维护——不入库，史清理后 clone 不带凭据；从 `.env.example` 复制填写，`./start` 自动加载）后 `set -a; source .env; set +a`。
 模型名用 `ZHIPUAI_MODEL`（或 `LLM_MODEL`，默认 `glm-4`）；可选调优变量
 `LLM_TEMPERATURE`、`LLM_MAX_TOKENS`、`LLM_TIMEOUT`、`CACHE_TTL_HOURS`；
 多供应商接入变量（`LLM_PROVIDER`、`OPENAI_API_KEY`/`OPENAI_BASE_URL`、
@@ -759,7 +761,7 @@ docker compose down            # 停止
 ```
 
 - web 容器启动流程：`scripts/entrypoint.sh` → `scripts/wait_for_mysql.py` 探活
-  `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ 八步幂等灌库（与 `./develop.sh` 的
+  `$MYSQL_HOST:$MYSQL_PORT`（最多 30 次 × 2 秒）→ 八步幂等灌库（与 `./start` 的
   `run_all_loaders` 同源同序：词库 / 人工补充义位 / 语料 / 跑范畴 / 域系初判 /
   域系增强 / LLM 初筛 / 《现汉7》）→ `streamlit run src/app.py`。
 - **镜像安全与自愈（RV-11/RV-9）**：Dockerfile 以非 root 运行（`USER app`，uid 1000；

@@ -20,6 +20,7 @@
 
 ```bash
 ./start                       # 唯一入口：自检＋缺啥补啥＋启动 → http://localhost:8501
+./start restore <backup.sql.gz>  # 灾备恢复（批次 41 上线；含安全闸与 61 表锚点）
 ```
 
 ## 口径与红线

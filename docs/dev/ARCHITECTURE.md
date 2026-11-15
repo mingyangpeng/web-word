@@ -210,8 +210,7 @@ schema_migrations  结构版本，供 init_database() 决定是否迁移
   需 Compose v2.24+）。
 - **本地**：本机 MySQL 8.0 + `streamlit run src/app.py`，连接参数由
   `scripts/lib_deploy.sh` 从 `MYSQL_*` 环境变量归一为内部 `DB_*`（已导出的优先、
-  `.env.local` 覆盖 `.env`，不再硬编码 127.0.0.1/<your-mysql-password>）；`./develop.sh` 部署、
-  `./start.sh` 启动、`./repair.sh --fix` 修复，三脚本共享同一函数库。
+  `.env.local` 覆盖 `.env`，不再硬编码 127.0.0.1/<your-mysql-password>）；根目录唯一入口 `./start`（八步幂等流＋子命令分发 scripts/ops/；旧三脚本已归档）。
 
 两种形态共用同一份被跟踪的 `config/config.yaml`，靠环境变量优先级区分 —— 详见
 [`config/README.md`](config/README.md)。

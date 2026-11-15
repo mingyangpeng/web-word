@@ -49,7 +49,9 @@ docs/spec/阶段1施工规范.md §5（批次 2 页面层契约，Agent G 行）
   GUIDE（四段式 dict，集成时并入 PAGE_GUIDES）/
   render_import_page() -> None / render_browser_page() -> None
   其余下划线函数均为模块私有：纯函数（_escape_like/_like_pattern/_total_pages/
-  _clamp_page/_sha256_bytes/_is_dict_admin/_sanitize_preview）与参数化只读
+  _clamp_page/_sha256_bytes/_is_dict_admin/_sanitize_preview —— 其中
+  _escape_like 是 src/db_utils 单一实现点的同名 re-export，第二轮 review
+  下沉；本模块与 collab_db 等数据层共用同一实现）与参数化只读
   查询辅助（_search_definitions/_senses_for_verbs/_list_recent_batches/
   _definitions_source_column）。业务写入不落在本模块 —— 全部委托
   src/import_engine.py（plan_import / run_import），本模块只做映射 UI、
@@ -90,6 +92,13 @@ import pandas as pd
 import streamlit as st
 
 from src.dict_admin_db import finish_batch, persist_revert_log, rollback_batch, start_batch
+# R2-5 转义小件：单一实现点在 db_utils（第二轮 review 自本模块下沉）——
+# 本行是**有意的同名 re-export**：tests/test_review_regression.py R2-5 的
+# `from src.data_pages import _escape_like` ＋ `is` 同源断言、tests/test_
+# data_pages.py 的模块属性寻址断言都锚在 data_pages 这个名字上，不可删。
+# LIKE_ESCAPE 本模块体内已不直接使用，保留同名 re-export 供
+# 「data_pages.LIKE_ESCAPE 口径」的外部引用（collab_db 文档口径）寻址。
+from src.db_utils import LIKE_ESCAPE, _escape_like  # noqa: F401 —— 同名 re-export
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点（调用点零变化）
 from src.import_engine import TARGET_FIELDS, plan_import, run_import, validate_mapping
 from src.mysql_db import get_db_cursor
@@ -123,8 +132,8 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 # 搜索词长度上限（与主搜索框 1–50 字符口径一致）。
 MAX_TERM_LEN = 50
 
-# LIKE 转义字符（SQL 侧 ESCAPE '!'，避开 MySQL 反斜杠双重转义的坑）。
-LIKE_ESCAPE = "!"
+# LIKE 转义字符（SQL 侧 ESCAPE '!'，避开 MySQL 反斜杠双重转义的坑）——
+# 定义已下沉 src/db_utils.LIKE_ESCAPE（本模块头部 import re-export，名字不变）。
 
 # coverage 列的如实标注值（覆盖阶梯 RUN 试点 32 → 352 → 996 尚未接入浏览器）。
 COVERAGE_PENDING = "待补"
@@ -298,21 +307,8 @@ def _is_dict_admin(user: Optional[Dict[str, Any]]) -> bool:
 # 纯函数（搜索词清洗 / 分页 / 指纹 / 预览防护）
 # ============================================
 
-def _escape_like(value: Any) -> str:
-    """转义 LIKE 通配符与本模块的转义字符（纯函数，防通配符注入）。
-
-    与 SQL 侧 ``LIKE %s ESCAPE '!'`` 配套：'!' 是转义字符必须先转义，然后
-    % 与 _ 转为字面字符；反斜杠在显式 ESCAPE 下无特殊含义，不处理。
-    非 str 入参（None/数字等）返回空串 —— 页面按「空搜索词」处理。
-    """
-    if not isinstance(value, str):
-        return ""
-    return (
-        value.replace(LIKE_ESCAPE, LIKE_ESCAPE + LIKE_ESCAPE)
-        .replace("%", LIKE_ESCAPE + "%")
-        .replace("_", LIKE_ESCAPE + "_")
-    )
-
+# （_escape_like 已下沉 src/db_utils 单一实现点 —— 第二轮 review P2 分层修复；
+#  本模块头部同名 re-export，`data_pages._escape_like` 寻址与 `is` 同源断言不变。）
 
 def _like_pattern(term: Any, prefix_only: bool = True) -> str:
     """把搜索词清洗成 LIKE 模式串（纯函数；前缀/子串两种口径）。
@@ -474,7 +470,9 @@ def _search_definitions(
     Returns:
         (rows, total, page)：rows 为当前页词条行（verb/sense_total/source_label），
         total 为匹配词目总数，page 为实际生效页码（收敛后）。搜索词为空、
-        无匹配或数据库不可用返回 ([], 0, 1)。
+        无匹配返回 ([], 0, 1)；数据库不可用（查询失败）返回 (None, 0, 1) ——
+        RV 第二轮 R4 两态拆句：页面据此分流「勿重跑灌库」警告与空态指引，
+        不再把失败与真空混在同一个 ([], 0, 1) 里。
     """
     pattern = _like_pattern(term, prefix_only)
     if not pattern:
@@ -514,7 +512,7 @@ def _search_definitions(
             return rows, total, current
     except Exception as e:
         logger.error(f"词目搜索失败（term={term!r}）: {e}")
-        return [], 0, 1
+        return None, 0, 1
 
 
 def _senses_for_verbs(verbs: List[Any]) -> Dict[str, List[Dict[str, Any]]]:
@@ -1256,8 +1254,20 @@ def render_browser_page() -> None:
         return
 
     rows, total, page = _search_definitions(query, prefix_only, int(page_input))
+    # RV 第二轮（R4 两态两种级别）：None=查询失败（服务端异常，勿重跑灌库）；
+    # []=真无匹配（或词表未灌入，给灌库指引）—— 原混句「无匹配词目（或数据
+    # 库不可用 / 词表未灌入）」拆开归因，断库时不误导用户去跑灌库脚本。
+    if rows is None:
+        st.warning(
+            "数据不可用：词目检索失败（数据库查询出错或连接中断）。"
+            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+        )
+        return
     if not rows:
-        st.warning("无匹配词目（或数据库不可用 / 词表未灌入）。")
+        st.info(
+            "无匹配词目 —— 试试更短的前缀或切换匹配方式；词表未灌入时先运行 "
+            "`docker compose exec web python scripts/load_word_library.py` 灌库。"
+        )
         return
     total_pages = _total_pages(total, PAGE_SIZE)
     st.caption(

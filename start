@@ -72,17 +72,24 @@ fi
 
 # ③ 数据库端口预检——宿主进程若占 3306，容器映射起不来（my.cnf 已固化 3307）
 say_info "③ 数据库端口 3306"
-p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
-if [ -n "$p3306" ] && ! echo "$p3306" | grep -qi "dock"; then
-    say_warn "3306 被宿主进程 '$p3306' 占用——精确停掉 3306 监听者（不碰 3307 测试库与 mysqldump）"
-    lsof -t -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
-    sleep 3
-    if lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1; then
-        say_err "3306 仍被占用且无法安全释放——请人工处置（lsof -nP -iTCP:3306 -sTCP:LISTEN）"
-        exit 1
+# lsof 缺失（裁剪版宿主/极简容器镜像常见）：预检做不了，也**不能假报可用**
+# ——降级跳过本步。端口真冲突时由 ⑤ docker compose up 的端口绑定报错兜底，
+# 处置路径不变（报错 → ./start logs → 人工释放或换端口）。
+if ! command -v lsof >/dev/null 2>&1; then
+    say_warn "lsof 不可用——端口预检降级跳过（3306 若被宿主进程占用，会在 ⑤ 起容器时报错并给出指引）"
+else
+    p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
+    if [ -n "$p3306" ] && ! echo "$p3306" | grep -qi "dock"; then
+        say_warn "3306 被宿主进程 '$p3306' 占用——精确停掉 3306 监听者（不碰 3307 测试库与 mysqldump）"
+        lsof -t -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
+        sleep 3
+        if lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1; then
+            say_err "3306 仍被占用且无法安全释放——请人工处置（lsof -nP -iTCP:3306 -sTCP:LISTEN）"
+            exit 1
+        fi
     fi
+    say_ok "3306 可用（容器 MySQL 监听）"
 fi
-say_ok "3306 可用（容器 MySQL 监听）"
 
 # ④ web 镜像——缺失自动构建（首次部署零手工）
 say_info "④ 应用镜像"
@@ -102,11 +109,22 @@ wait_web_healthy || true
 
 # ⑦ 数据库完整性——归一锚点校验（61 表），异常只告警不阻断
 say_info "⑦ 数据库完整性"
-n_tables="$(docker exec web-word-mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
+# 口令经 MYSQL_PWD 环境变量传给容器内 mysql（与 compose healthcheck 同款形态，
+# compose YAML 里的 $$ 转义在 direct sh -c 中即单个 $）：不上命令行——
+# ps 不可见、无「Using a password on the command line」insecure 告警
+n_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
 if [ "$n_tables" = "61" ]; then
     say_ok "业务库 web_word_db = 61 表（归一锚点，完整）"
 else
     say_warn "业务库 $n_tables 表（预期 61）——数据可能未灌/异常；回滚锚点见 data/backups/db/"
+fi
+
+# wordforms 拼音词形计数（P2 实证：业务库曾出现 61 表齐全但 wordforms
+# kind='pinyin' 0 行——搜索页 resolve_form 的拼音还原会静默失效，故锚点
+# 之后单独点名）。查询失败（"?"）不再重复告警：上面的表锚点已提示连接异常
+n_pinyin="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM web_word_db.wordforms WHERE kind=\"pinyin\""' 2>/dev/null || echo "?")"
+if [ "$n_pinyin" = "0" ]; then
+    say_info "wordforms 拼音词形 0 行——搜索页拼音还原不可用；补灌：docker compose exec web python scripts/load_wordforms.py"
 fi
 
 # ⑧ 收尾卡片

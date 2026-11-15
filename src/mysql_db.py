@@ -2413,6 +2413,12 @@ def insert_feedback(verb: str, rating: int, feedback_text: Optional[str] = None)
             )
 
             logger.info(f"Feedback inserted for '{verb}': rating={rating}")
+            # RV 第二轮（P3 缓存一致性）：反馈写入直接改变 count_feedbacks 与
+            # get_stats 的聚合结果（avg_rating / total_feedbacks），写后即时
+            # 失效两槽 —— 否则 60s TTL 内侧边栏展示旧值（新反馈「消失」）。
+            # 与 get_annotation_progress 写后 clear（RV24-3 先例）同口径。
+            _agg_cache_drop("count_feedbacks")
+            _agg_cache_drop("get_stats")
             return True
 
     except pymysql.Error as e:
@@ -2724,6 +2730,12 @@ def log_usage(verb: str, device_info: Optional[str] = None,
                     "VALUES (%s, %s, %s)",
                     (verb, device_info, user_id)
                 )
+            # RV 第二轮豁免（有意不 _agg_cache_drop）：本函数每次用户搜索都写
+            # （高频路径），若写后 drop get_stats 会把侧边栏 60s 聚合缓存打穿
+            # —— 每轮 rerun 重算 7 条全表聚合，得不偿失；usage 侧统计
+            # （total_queries / queries_today）至多延迟一个 _AGG_TTL 展示，
+            # 与 _AGG_CACHE 的 TTL 语义一致，属可接受口径。对比：insert_feedback
+            # 是低频写且直接改变聚合值，写后 clear（见该函数）。
             return True
     except pymysql.Error as e:
         logger.error(f"Failed to log usage for '{verb}': {e}")

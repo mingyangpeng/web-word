@@ -79,6 +79,12 @@ CI 与本地的 MySQL 授权口径不同步，新增测试库名时存在一个�
 ```bash
 ./start status                      # 状态一览（容器/健康端点/数据库拓扑自检）
 bash scripts/ops/status.sh          # 拓扑自检细目：3306=容器业务库 / 3307=宿主 pytest 测试库
+
+> **测试口令约定（批次 41 后）**：conftest.py `setdefault(MYSQL_PASSWORD, webword123)`
+> （测试专用，与 grant_local_mysql.sql 授权同值）——本地 mysqld 的 web_word_user 口令
+> 若不同，DB 用例将**静默全 skip**（批次 41 曾实证 625 skip＋24 error）。CI 显式设置
+> MYSQL_PASSWORD（root）不受影响。
+
 pytest -q --no-cov 2>&1 | tail -3   # 本地全量跑一遍：skipped 数 0 = 授权齐
 ```
 

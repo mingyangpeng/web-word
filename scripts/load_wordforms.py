@@ -13,6 +13,7 @@
 用法：
     MYSQL_HOST=127.0.0.1 python3 scripts/load_wordforms.py            # 灌入
     MYSQL_HOST=127.0.0.1 python3 scripts/load_wordforms.py --dry-run  # 预演，不写库
+    MYSQL_HOST=127.0.0.1 python3 scripts/load_wordforms.py --if-empty # 已有拼音词形则跳过
 """
 
 import argparse
@@ -30,9 +31,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="灌入《现汉7》拼音词形（幂等）")
     parser.add_argument("--dry-run", action="store_true",
                         help="只预估不写库（候选/已有/将新增行数）")
+    parser.add_argument("--if-empty", action="store_true",
+                        help="仅当 wordforms 尚无 kind='pinyin' 行时灌入"
+                             "（entrypoint 幂等链同款口径：已有词形不碰，"
+                             "同族 loader 如 load_zh_dict 的 --if-empty 语义）")
     args = parser.parse_args()
 
     plan = wordforms_db.plan_pinyin_load()
+
+    # --if-empty：wordforms 已有拼音词形即视为已灌，跳过（本脚本 INSERT IGNORE
+    # 本就幂等，这里只为让 entrypoint 链的「有数据不重跑」口径与其他 loader 一致）
+    if args.if_empty and plan["existing"] > 0:
+        print(f"wordforms 已有 kind='pinyin' {plan['existing']} 行，跳过（--if-empty）。")
+        return 0
+
     if plan["candidates"] == 0 and plan["existing"] == 0:
         print("zh_dict_entries 无拼音候选且 wordforms 为空（全 0 口径亦可能是"
               "数据库不可用——查上方 ERROR 日志确认）。")
