@@ -19,6 +19,10 @@ os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 # 测试专用端口（宿主 mysqld 3307；容器业务库占 3306）。CI 里 services:
 # mysql:8 容器映射的是 3306，显式设置了 MYSQL_PORT 时不覆盖。
 os.environ.setdefault("MYSQL_PORT", "3307")
+# 测试账号口令（批次 41 史清理后 config.yaml 的密码位为占位——测试进程 env
+# 优先级高于 config.yaml，这里 setdefault 保证本地 pytest 连接；与
+# grant_local_mysql.sql 的授权口径同值。CI 显式设置时不受影响。）
+os.environ.setdefault("MYSQL_PASSWORD", "webword123")
 
 # 时序契约收口：共享 helper（tests/helpers.py，review P3 收敛落点）含 src.*
 # import（page_guides、mysql_db 探针），必须在上面 env 设定**之后**加载。
