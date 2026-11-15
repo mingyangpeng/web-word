@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-15 · 批次 40：全项目四维 review——50 findings 收敛（P1×4/P2×25/P3×21）
+
+- 四 agent 只读勘察：代码质量（AST 全扫）/安全/测试保障/运维一致性
+- **P1 修复**：start 的 `pkill -f mysqld` 误杀面（连 3307 测试库与 mysqldump 都会中招）→ `lsof -t -iTCP:3306 | xargs kill` 只杀 3306 监听者
+- **P2 快速修复**：images 判据改 `-q`、backup 参数透传、status.sh 3306 空监听分支、export_center CSV 过 sanitize_csv_cell（对齐四导出口径）、category_study definition 补 _esc、compose healthcheck 密码改 MYSQL_PWD 环境变量（进程列表不可见）＋弱口令兜底改 `:?required` 强制、.dockerignore 收窄（!docs/research → !docs/research/tables＋补 tests/.mypy_cache/data/media）、config/README 与 ops/README 与 package_deploy 三处口径
+- **死代码清理**：llm_api×4（旧批量链路）＋mysql_db×2＋word_source×2 全库零引用删除（graph_export._esc_js 误判已恢复——模块内后向引用＋测试在用，AST 扫描盲区教训）
+- 全量 **3037 passed / 0 failed**；其余 findings（P3×21＋结构性 P2）挂账 findings_backlog
+
 ## 2026-11-15 · 批次 38：三层记忆锚点——忘了怎么办
 
 - `./start help`（打印用法表）；README 快速开始节重写为 start 口径（拓扑表内嵌）

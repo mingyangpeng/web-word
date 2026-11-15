@@ -29,7 +29,7 @@ data/dictionary.db
 # 「父目录被整体排除时，无法再用 ! 把它里面的文件加回来」（官方文档明确说明）。
 # 写成 `docs/*` 只排除目录**内容**、不排除目录本身，! 例外才能生效。
 docs/*
-!docs/research
+!docs/research/tables
 !docs/research/tables
 !docs/research/tables/Levin移动动词候选词筛选表.xlsx
 !docs/research/tables/output-oald10en-for-senselist-1020.xlsx
@@ -51,3 +51,6 @@ data/logs/
 data/cache/
 data/.mysql_root_pw
 .gsd/
+tests
+.mypy_cache
+data/media

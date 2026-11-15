@@ -411,27 +411,6 @@ def get_llm_client():
 # ============================================
 # Cache Management
 # ============================================
-def _get_cache_key(verb: str) -> str:
-    """
-    Generate a cache key for a verb.
-
-    Args:
-        verb: The verb to cache
-
-    Returns:
-        MD5 hash string
-    """
-    return hashlib.md5(verb.lower().encode()).hexdigest()
-
-
-def is_cache_available() -> bool:
-    """
-    Check if caching is available.
-
-    Returns:
-        bool: True if MySQL caching is available
-    """
-    return MYSQL_AVAILABLE
 
 
 def get_definition_from_cache(verb: str) -> Optional[Dict[str, Any]]:
@@ -646,41 +625,7 @@ def _parse_llm_response(content: str, verb: str) -> Optional[Dict[str, Any]]:
 # ============================================
 # Batch Definition Generation
 # ============================================
-def generate_batch_definitions(verbs: List[str]) -> Dict[str, Any]:
-    """
-    Generate definitions for multiple verbs.
 
-    Args:
-        verbs: List of verbs to define
-
-    Returns:
-        Dictionary with results and errors
-    """
-    results = {
-        "successful": [],
-        "failed": [],
-        "errors": {}
-    }
-
-    for verb in verbs:
-        result = get_definition(verb, force_refresh=False)
-        if result:
-            results["successful"].append(result)
-        else:
-            results["failed"].append(verb)
-            results["errors"][verb] = "Failed to generate definition"
-
-    logger.info(
-        "Batch generation complete: %d successful, %d failed",
-        len(results['successful']), len(results['failed'])
-    )
-
-    return results
-
-
-# ============================================
-# Fallback Definitions
-# ============================================
 def get_fallback_definition(verb: str) -> Optional[Dict[str, Any]]:
     """
     Get a simple fallback definition when LLM is unavailable.
@@ -728,26 +673,3 @@ class RateLimitError(LLMError):
     pass
 
 
-def handle_llm_error(error: Exception, verb: str) -> None:
-    """
-    Handle LLM API errors gracefully.
-
-    Args:
-        error: The exception that occurred
-        verb: The verb that caused the error
-    """
-    if isinstance(error, APIKeyError):
-        logger.error(f"API key error for '{verb}': {error}")
-    elif isinstance(error, RateLimitError):
-        logger.warning(f"Rate limit exceeded for '{verb}': {error}")
-    elif hasattr(error, 'status_code'):
-        if error.status_code == 401:
-            raise APIKeyError(f"Invalid API key for '{verb}'")
-        elif error.status_code == 429:
-            raise RateLimitError(f"Rate limit exceeded for '{verb}'")
-        elif error.status_code == 500:
-            logger.error(f"Server error for '{verb}': {error}")
-        elif error.status_code == 503:
-            logger.error(f"Service unavailable for '{verb}': {error}")
-    else:
-        logger.error(f"Unexpected error for '{verb}': {error}")

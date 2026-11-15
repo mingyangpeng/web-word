@@ -175,7 +175,7 @@ def _render_member_expander(cl: Dict[str, Any], key_prefix: str) -> None:
 
 def render_cluster_compare_view(data: Dict[str, Any]) -> None:
     """英 5 簇 vs 汉 5 簇卡片对照：左英右汉，按对齐关系配对排序。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>双语独立聚类对比"
+    st.markdown(f"<h3 style='{HEADER_H3}'>🫱🫲 双语独立聚类对比"
                 f"（Gower + average）</h3>", unsafe_allow_html=True)
 
     en_run, zh_run = data["en_run"], data["zh_run"]
@@ -254,7 +254,7 @@ def _render_cluster_card(cl: Dict[str, Any], language: str,
 
 def render_matrix_view(data: Dict[str, Any]) -> None:
     """编码矩阵热图：行=义位，列=P/M/C/A 特征，值 0/1/2 三色。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>义位 × 特征编码矩阵</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🔢 义位 × 特征编码矩阵</h3>",
                 unsafe_allow_html=True)
 
     # R8-3 口径统一：语言侧标签的条数此前写死在文案里（灌数变更即腐烂），
@@ -340,7 +340,7 @@ def render_matrix_view(data: Dict[str, Any]) -> None:
 
 def render_alignment_view(data: Dict[str, Any]) -> None:
     """跨语言对齐：簇对齐（二部图+雷达）与图式对齐（四类图式矩阵）两个子视图。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>跨语言簇对齐（四类判定）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🔀 跨语言簇对齐（四类判定）</h3>",
                 unsafe_allow_html=True)
 
     alignments = data["alignments"]
@@ -451,7 +451,7 @@ def _render_schema_alignment(data: Dict[str, Any]) -> None:
     P1=1 → 源点脱离；P2/P3=1 → 终点抵达；其余 → 方式伴随。
     对齐距离 = 两侧图式中心的 15 列聚类特征均值差的平均（/2 归一）。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>图式层中英对齐"
+    st.markdown(f"<h3 style='{HEADER_H3}'>⚖️ 图式层中英对齐"
                 f"（四类意象图式）</h3>", unsafe_allow_html=True)
 
     rows = compute_schema_alignment(data["senses"])
@@ -639,7 +639,7 @@ def _render_feature_mean_chart(senses: List[Dict[str, Any]]) -> None:
 def _render_zh_dict_chain() -> None:
     """《现汉7》词典证据链：词典原始层规模 + 与研究加工层的回链说明。"""
     from src.zh_dict import get_zh_dict_stats, zh_dict_ready
-    st.markdown(f"<h3 style='{HEADER_H3}'>《现汉7》词典证据链"
+    st.markdown(f"<h3 style='{HEADER_H3}'>📖 《现汉7》词典证据链"
                 f"（汉语侧证据源）</h3>", unsafe_allow_html=True)
     if not zh_dict_ready():
         st.caption("《现汉7》词典层未灌入：运行 "
@@ -686,7 +686,7 @@ def render_schema_view(data: Dict[str, Any]) -> None:
     _render_schema_alignment(data)
     st.divider()
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>双语特征均值对比"
+    st.markdown(f"<h3 style='{HEADER_H3}'>📊 双语特征均值对比"
                 f"（15 维聚类特征）</h3>", unsafe_allow_html=True)
     _render_feature_mean_chart(data["senses"])
     st.divider()
@@ -889,7 +889,7 @@ def _render_en_dict_evidence(data: Dict[str, Any]) -> None:
                 )
             st.markdown(head, unsafe_allow_html=True)
             if e.get("definition"):
-                st.markdown(f"&nbsp;&nbsp;{e['definition']}",
+                st.markdown(f"&nbsp;&nbsp;{_esc(e['definition'])}",
                             unsafe_allow_html=True)
             study = studied.get(int(e["sense_index"]))
             if study:

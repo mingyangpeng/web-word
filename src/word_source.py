@@ -495,17 +495,6 @@ def brief_overlap(sense: Dict[str, Any], brief: str,
     return (hit / total) if total > 0 else 0.0
 
 
-def score_sense(sense: Dict[str, Any], brief: str,
-                weights: Optional[Dict[str, float]] = None) -> float:
-    """综合分，只用于同一词内部的义位排序。"""
-    score = 10.0 * brief_overlap(sense, brief, weights)
-    if has_motion_content(sense):
-        score += 2.0
-    # 极短释义（如「sth runs」这种只给搭配框架、没给释义的残留条目）降权
-    if len(sense.get("ch_ndef") or "") <= 6:
-        score -= 1.0
-    return score
-
 
 def select_prototype_index(senses: List[Dict[str, Any]], brief: str) -> int:
     """
@@ -553,12 +542,6 @@ def select_prototype_index(senses: List[Dict[str, Any]], brief: str) -> int:
         return first
     return best_i
 
-
-def prototype_is_confident(senses: List[Dict[str, Any]], brief: str) -> bool:
-    """首条义位是否就是得分最高的那一条（即「直接取首条」没有选错）。"""
-    if not senses:
-        return False
-    return select_prototype_index(senses, brief) == 0
 
 
 def _parse_sense(sense: ET.Element) -> Optional[Dict[str, Any]]:

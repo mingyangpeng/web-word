@@ -1615,50 +1615,7 @@ def get_definition_by_verb(verb: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def get_all_definitions(limit: int = 100) -> List[Dict[str, Any]]:
-    """
-    Get all definitions from the database.
 
-    Args:
-        limit: Maximum number of definitions to return
-
-    Returns:
-        List of definition dictionaries
-    """
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute("""
-                SELECT * FROM definitions
-                ORDER BY created_at DESC
-                LIMIT %s
-            """, (limit,))
-
-            rows = cursor.fetchall()
-            results = []
-            for row in rows:
-                semantic_table = json.loads(row['semantic_table']) if isinstance(row['semantic_table'], str) else row['semantic_table']
-                results.append({
-                    'verb': row['verb'],
-                    'chinese_ndef': row['chinese_ndef'],
-                    'semantic_table': semantic_table,
-                    'example_sentence': row['example_sentence'],
-                    'model_version': row['model_version'],
-                    'created_at': row['created_at'],
-                    'updated_at': row['updated_at']
-                })
-            return results
-
-    except pymysql.Error as e:
-        logger.error(f"Failed to get all definitions: {e}")
-        return []
-    except Exception as e:
-        logger.error(f"Unexpected error getting all definitions: {e}")
-        return []
-
-
-# ============================================
-# 词簇与词间关系
-# ============================================
 def get_or_create_cluster(main_cat: str, sub_cat: str, label: str = None,
                            image_schema: str = None, cn_syntax: str = None,
                            translation_strategy: str = None) -> Optional[int]:
@@ -2458,34 +2415,6 @@ def insert_feedback(verb: str, rating: int, feedback_text: Optional[str] = None)
         logger.error(f"Unexpected error inserting feedback: {e}")
         return False
 
-
-def get_feedback_by_verb(verb: str, limit: int = 10) -> List[Dict[str, Any]]:
-    """
-    Get feedback for a specific verb.
-
-    Args:
-        verb: The verb to get feedback for
-        limit: Maximum number of feedback entries to return
-
-    Returns:
-        List of feedback dictionaries
-    """
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "SELECT * FROM feedbacks WHERE verb = %s ORDER BY created_at DESC LIMIT %s",
-                (verb, limit)
-            )
-
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
-
-    except pymysql.Error as e:
-        logger.error(f"Failed to get feedback for '{verb}': {e}")
-        return []
-    except Exception as e:
-        logger.error(f"Unexpected error getting feedback: {e}")
-        return []
 
 
 def get_feedback_data() -> List[Dict[str, Any]]:

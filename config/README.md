@@ -7,7 +7,7 @@
 | `config/config.yaml` | 应用实际读取的配置（`src/mysql_db.py`） | ✅ 已提交，不要删除 |
 | `config/config.example.yaml` | 同结构模板，含注释与占位值 | ✅ 已提交 |
 | `.env.example` | 环境变量模板（Docker 与本地都可参考） | ✅ 已提交 |
-| `.env` | 你本机的实际环境变量 | ❌ 已被 `.gitignore` 忽略 |
+| `.env` | 你本机的实际环境变量 | ✅ 已随仓库分发（既定决策；`.env.local` 忽略——真实凭据落点） |
 
 换一台机器部署时，把示例复制成正式配置再改值即可：
 

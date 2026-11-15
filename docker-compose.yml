@@ -4,10 +4,10 @@ services:
     container_name: web-word-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 设置 MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: web_word_db
       MYSQL_USER: web_word_user
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-<your-mysql-password>}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?请在 .env 设置 MYSQL_PASSWORD}
     ports:
       - "127.0.0.1:3306:3306"
     volumes:
@@ -22,7 +22,9 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpass123}"]
+      # 批次 39 review：密码不再走 -p 明文参数（ps/inspect 可读）——改环境变量
+      # MYSQL_PWD（mysqladmin 原生识别，进程列表不可见）
+      test: ["CMD", "sh", "-c", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h localhost -u root"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -55,7 +57,7 @@ services:
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=web_word_db
       - MYSQL_USER=web_word_user
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-<your-mysql-password>}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:?请在 .env 设置 MYSQL_PASSWORD}
     extra_hosts:
       # 让容器内的 host.docker.internal 指向宿主机，便于连宿主机的 MySQL
       - "host.docker.internal:host-gateway"

@@ -132,7 +132,7 @@ cp .env.example .env
 # 编辑 .env 设置密码
 
 # 5. 灌库＋启动
-chmod +x start develop.sh start.sh repair.sh
+chmod +x start
 ./start
 ```
 

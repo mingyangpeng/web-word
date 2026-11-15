@@ -125,8 +125,9 @@ def _dump_table_csv(table: str) -> tuple[str, int]:
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(headers)
+    from src.security import sanitize_csv_cell  # 与 reliability/template_engine 导出同口径
     for row in rows:
-        writer.writerow([row.get(h) for h in headers])
+        writer.writerow([sanitize_csv_cell(row.get(h)) for h in headers])
     return buffer.getvalue(), len(rows)
 
 

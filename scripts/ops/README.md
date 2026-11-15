@@ -19,8 +19,7 @@
 ## 快速开始（新机器）
 
 ```bash
-bash scripts/ops/install.sh   # 环境自检＋构建镜像
-bash scripts/ops/start.sh     # 启动 → http://localhost:8501
+./start                       # 唯一入口：自检＋缺啥补啥＋启动 → http://localhost:8501
 ```
 
 ## 口径与红线

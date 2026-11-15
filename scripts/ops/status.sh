@@ -37,7 +37,9 @@ docker system df 2>/dev/null | head -5 || say_warn "docker system df 不可用"
 # 口径：3306=容器 MySQL 业务库（61 表）；3307=宿主 mysqld 仅 pytest 用。
 say_info "数据库拓扑自检（批次 36 归一口径）"
 p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
-if echo "$p3306" | grep -qi "dock"; then
+if [ -z "$p3306" ]; then
+    say_warn "3306 无监听（mysql 容器未起）—— ./start 会自动拉起"
+elif echo "$p3306" | grep -qi "dock"; then
     say_ok "3306 = 容器 MySQL（业务库，正确）"
 else
     say_err "3306 被 '$p3306' 占用（应为容器！）—— 宿主 mysqld 抢了业务端口，先停它再 docker compose up -d mysql"

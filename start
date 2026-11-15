@@ -39,7 +39,7 @@ case "${1:-}" in
     status)  exec bash "$OPS/status.sh" ;;
     logs)    shift; exec bash "$OPS/logs.sh" "$@" ;;
     update)  exec bash "$OPS/update.sh" ;;
-    backup)  exec bash "$ROOT/scripts/backup_db.sh" ;;
+    backup)  shift; exec bash "$ROOT/scripts/backup_db.sh" "$@" ;;
     doctor)
         shift
         bash "$OPS/status.sh"
@@ -72,8 +72,8 @@ fi
 say_info "③ 数据库端口 3306"
 p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
 if [ -n "$p3306" ] && ! echo "$p3306" | grep -qi "dock"; then
-    say_warn "3306 被宿主进程 '$p3306' 占用——尝试停它（宿主 mysqld 已固化 3307，数据无损）"
-    pkill -f "mysqld" 2>/dev/null || true
+    say_warn "3306 被宿主进程 '$p3306' 占用——精确停掉 3306 监听者（不碰 3307 测试库与 mysqldump）"
+    lsof -t -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
     sleep 3
     if lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1; then
         say_err "3306 仍被占用且无法安全释放——请人工处置（lsof -nP -iTCP:3306 -sTCP:LISTEN）"
@@ -84,7 +84,7 @@ say_ok "3306 可用（容器 MySQL 监听）"
 
 # ④ web 镜像——缺失自动构建（首次部署零手工）
 say_info "④ 应用镜像"
-if ! docker compose images web 2>/dev/null | grep -q "web-word"; then
+if [ -z "$(docker compose images -q web 2>/dev/null)" ]; then
     say_warn "web 镜像不存在——自动构建（首次约 3~5 分钟）"
     docker compose build web || { say_err "镜像构建失败——见上方日志"; exit 1; }
 else
