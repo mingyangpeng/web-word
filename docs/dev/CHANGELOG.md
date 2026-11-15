@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2026-11-15 · 批次 44：start 深审——六处一致性修复＋必填三键拦截
+
+- 专项深审 start 全文（多轮多 agent 改动后的整体一致性）：**P2×2**——⑥ 健康等待 120s 超时仍打「项目已就绪」假卡（HEALTH_OK 分支修正）；② 必填三键（MYSQL_ROOT_PASSWORD/MYSQL_PASSWORD/MYSQL_DATABASE）前置中文拦截（compose 弱口令强制化后缺键会报英文错）——**上线即拦住真问题**：本地 .env 旧形态缺 MYSQL_ROOT_PASSWORD（已按容器卷现值补齐，本地文件不入库）
+- **P3×4**：③ 3306 三分支文案（空闲/容器监听/宿主占用——首启不再假报「已在监听」）；kill 前核进程身份（只放行 mysqld/mysql 系，防误杀无关占端服务）；② AI key warn 补 DB 供应商路径（llm_api 降级链实际可用）；⑧ 卡片补全 restore/update/doctor 命令
+- 全流真机冒烟 8 步全绿（②拦截→补键→复跑全绿）
+
 ## 2026-11-15 · 批次 43：第二轮全项目 review——四维勘察（数据一致性/新代码/UX/文档漂移）
 
 - **数据一致性（好消息为主）**：迁移对账全过（_migrate_schema 全部对象在位）、孤儿 0、级联链 DB 层强制、种子哈希一致——修复：3307 旧业务副本整库归档 web_word_db_hist（60 表）＋web_word_db 恢复为测试专用快照（61 表/oald 996——禁止应用连接标注）；容器业务实例 6 个空测试库清零；conftest fail-fast（MYSQL_PORT≠3307 即 raise）；load_zh_dict readiness 三层判据（拦半截灌入实证修复）；wordforms 0 行启动链补灌（entrypoint＋start 指引）

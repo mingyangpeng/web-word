@@ -60,13 +60,21 @@ say_info "① Docker 环境"
 ensure_docker_daemon
 require_compose
 
-# ② .env——缺失自动补模板（AI key 可后补，不阻断启动）
+# ② .env——缺失自动补模板；必填三键前置校验（compose 弱口令已强制化，
+# 缺键会在 ⑤ 报英文错——违背「每步中文指引」目标，故前置中文拦截）
 say_info "② 环境配置"
 if require_env_file; then
+    for key in MYSQL_ROOT_PASSWORD MYSQL_PASSWORD MYSQL_DATABASE; do
+        if ! grep -qE "^${key}=..*" "$ROOT/.env"; then
+            say_err ".env 缺必填键 ${key}——补齐后重试（模板见 .env.example）"
+            exit 1
+        fi
+    done
+    say_ok ".env 必填三键（MySQL 口令/库名）在位"
     if grep -qE '^(ZHIPUAI_API_KEY|OPENAI_API_KEY|DEEPSEEK_API_KEY)=..*' "$ROOT/.env"; then
-        say_ok ".env 在位，AI key 非空"
+        say_ok ".env AI key 非空"
     else
-        say_warn ".env 在位但无 AI key——AI 功能不可用，其余正常（后补 .env 即可）"
+        say_warn ".env 无 AI key——AI 可走应用「🤖 模型供应商」页的 DB 供应商配置，或后补 .env"
     fi
 fi
 
@@ -79,16 +87,23 @@ if ! command -v lsof >/dev/null 2>&1; then
     say_warn "lsof 不可用——端口预检降级跳过（3306 若被宿主进程占用，会在 ⑤ 起容器时报错并给出指引）"
 else
     p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
-    if [ -n "$p3306" ] && ! echo "$p3306" | grep -qi "dock"; then
+    if [ -z "$p3306" ]; then
+        say_ok "3306 空闲（容器 MySQL 将监听）"
+    elif echo "$p3306" | grep -qi "dock"; then
+        say_ok "3306 = 容器 MySQL（已在监听）"
+    else
         say_warn "3306 被宿主进程 '$p3306' 占用——精确停掉 3306 监听者（不碰 3307 测试库与 mysqldump）"
-        lsof -t -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
+        # kill 前核身份：只放行 mysqld/mysql 系（防误杀无关服务占端口）
+        lsof -t -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | while read -r pid; do
+            pname="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+            case "$pname" in *mysqld*|*mysql*) kill "$pid" 2>/dev/null || true ;; *) say_warn "  跳过非 MySQL 进程 pid=$pid ($pname)——请人工处置" ;; esac
+        done
         sleep 3
         if lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1; then
             say_err "3306 仍被占用且无法安全释放——请人工处置（lsof -nP -iTCP:3306 -sTCP:LISTEN）"
             exit 1
         fi
     fi
-    say_ok "3306 可用（容器 MySQL 监听）"
 fi
 
 # ④ web 镜像——缺失自动构建（首次部署零手工）
@@ -104,8 +119,9 @@ fi
 say_info "⑤ 启动容器（mysql＋web）"
 docker compose up -d || { say_err "容器启动失败——日志：./start logs"; exit 1; }
 
-# ⑥ 健康等待——web 端点轮询 ≤120s
-wait_web_healthy || true
+# ⑥ 健康等待——web 端点轮询 ≤120s（失败置标记：⑧ 不打「已就绪」假卡）
+HEALTH_OK=1
+wait_web_healthy || HEALTH_OK=0
 
 # ⑦ 数据库完整性——归一锚点校验（61 表），异常只告警不阻断
 say_info "⑦ 数据库完整性"
@@ -130,6 +146,10 @@ fi
 # ⑧ 收尾卡片
 echo
 echo "════════════════════════════════════════════"
-say_ok "项目已就绪 → http://localhost:8501"
-say_info "日常命令：./start status（巡检）｜./start logs web（日志）｜./start stop（停止）｜./start backup（备份）"
+if [ "$HEALTH_OK" = "1" ]; then
+    say_ok "项目已就绪 → http://localhost:8501"
+else
+    say_err "web 健康等待超时——容器可能仍在预热/启动失败：./start logs web 排查"
+fi
+say_info "日常命令：./start status（巡检）｜./start logs web｜./start stop｜./start backup｜./start restore <file>｜./start update｜./start doctor"
 echo "════════════════════════════════════════════"
