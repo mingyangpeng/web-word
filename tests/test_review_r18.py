@@ -364,10 +364,11 @@ class TestChain2StyleCheckToMetrics:
         passed, failed = status["passed"], status["failed"]
         assert status["total"] == passed + failed + status["warned"]
         assert status["pass_rate"] == pytest.approx(passed / (passed + failed))
-        # 现状锚（configs/style.yaml @ style_version 1.0：3 pass/1 fail/1 warn，
+        # 现状锚（configs/style.yaml @ style_version 1.0：4 pass/0 fail/1 warn，
+        # 批次 50 词表核定落地——原 1 fail（DEFINING_VOCAB 待编者核定）转 pass；
         # 沙箱无媒体绑定 → 媒体抽查 warn；configs 变更漂移时改按上两行结构锚）
-        assert (passed, failed, status["warned"], status["total"]) == (3, 1, 1, 5)
-        assert status["pass_rate"] == 0.75
+        assert (passed, failed, status["warned"], status["total"]) == (4, 0, 1, 5)
+        assert status["pass_rate"] == 1.0  # 批次 50 词表核定后 4 pass/0 fail = 100%
 
         # 灰注三态之二：无记录范畴（speech 无 run 记录 → 占位不编数字）
         empty_status = cm.style_check_status("speech")

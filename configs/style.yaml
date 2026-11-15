@@ -37,7 +37,9 @@ defining_vocab:
     参照 OALD/Longman/Collins 等学习词典的 defining vocabulary 通行做法：
     受控定义词表＋超表回改＋循环定义防护（详见上方节引言）。
   vocab_size: 待编者核定          # 定义词表词条数（学习词典通行量级 2000–3000）
-  vocab_file: 待编者核定          # 词表本体文件路径（如 configs/defining_vocab.txt）
+  vocab_file: configs/defining_vocab.txt   # 词表本体（仓库根相对；初版=语料高频自动提取，
+                                         # 编者在「📝 词表核定」页增删定稿）   # 词表本体（初版=语料高频自动提取，
+                                  # 编者在「📝 词表核定」页增删定稿）          # 词表本体文件路径（如 configs/defining_vocab.txt）
   allow_gloss_terms: true         # 范畴包术语允许括注出现，不计违例
   circular_definition_check: true # 循环定义防护：A 释 B 且 B 释 A 须人工复核
   ai_audit: 体例质检-定义词表检查   # §5 质检通道挂接点（ai_proposals kind=audit）

@@ -3987,6 +3987,122 @@ def _render_assign_ops_tab(me: Dict[str, Any]) -> None:
 # 页面入口
 # ============================================
 
+# ============================================
+# 📝 词表核定（批次 50：受控定义词表的编者核定流）
+# ============================================
+_VOCAB_PATH = __import__("pathlib").Path(__file__).resolve().parent.parent / "configs" / "defining_vocab.txt"
+
+
+def _vocab_read_words() -> List[str]:
+    """读词表 txt → 词条列表（去空行去注释；保持文件现有顺序）。"""
+    if not _VOCAB_PATH.exists():
+        return []
+    return [
+        line.strip()
+        for line in _VOCAB_PATH.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def _vocab_write_words(words: List[str], actor_name: str) -> int:
+    """写回词表 txt：一行一词按字母序（casefold 排序——与质检计重同口径）；
+    头部注释更新核定状态。返回词条数。**不自动 git 提交**（写回后 flash 提示）。"""
+    header = (
+        "# 定义词表（defining vocabulary）—— 编者核定态\n"
+        f"# 最近核定：{actor_name}（{__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}）\n"
+        f"# 词条 {len(words)}；来源：语料高频自动提取初版 + 编者增删\n"
+        "# 判定口径：casefold 无重复（与质检 DEFINING_VOCAB 同口径）\n"
+    )
+    ordered = sorted(set(words), key=lambda w: (w.casefold(), w))
+    _VOCAB_PATH.write_text(header + "\n".join(ordered) + "\n", encoding="utf-8")
+    return len(ordered)
+
+
+def _render_vocab_tab(me: Dict[str, Any]) -> None:
+    """📝 词表核定：受控定义词表（defining vocabulary）的编者核定流。
+
+    词表本体 configs/defining_vocab.txt（初版=语料高频自动提取，批次 50）；
+    本页提供：质检状态实时反映 ＋ 词表浏览 ＋ 增词/删词（写回 txt 留痕）。
+    语言学分寸（该不该用 X 解释 Y）由编者判断——本页只管「表里有哪些词」。
+    """
+    st.markdown(f"<h3 style='{HEADER_H3}'>📝 词表核定（受控定义词表）</h3>",
+                unsafe_allow_html=True)
+    st.caption(
+        "定义词表＝释义正文的受控用词封闭集（OALD/Longman 通行做法）：释义用词"
+        "原则上不出表，防循环定义、控可读性。初版由释义语料高频词自动提取"
+        "（scripts/build_defining_vocab.py，996 条释义 → 809 词）；**增删词即"
+        "核定**——写回 configs/defining_vocab.txt（git 留痕），质检即时反映。"
+    )
+
+    # 实时质检状态（照质检引擎同口径，本页内直调）
+    try:
+        from src.style_check import check_defining_vocab
+        import yaml as _yaml
+        _style_path = _VOCAB_PATH.parent / "style.yaml"
+        style = _yaml.safe_load(_style_path.read_text(encoding="utf-8"))
+        item = check_defining_vocab(style)
+        _st_status = item.get("status")
+        _note = item.get("note", "")
+        if _st_status == "pass":
+            st.success(f"质检 DEFINING_VOCAB：pass —— {_note}")
+        elif _st_status == "warn":
+            st.warning(f"质检 DEFINING_VOCAB：warn —— {_note}")
+        else:
+            st.error(f"质检 DEFINING_VOCAB：fail —— {_note}")
+    except Exception as e:  # noqa: BLE001 —— 质检不可用不阻断核定流
+        st.info(f"质检状态暂不可读（{e}）——词表操作不受影响")
+
+    words = _vocab_read_words()
+    st.metric("当前词条数", len(words))
+
+    left, right = st.columns([3, 2])
+    with left:
+        st.markdown("**➕ 增词**（每行一词或逗号分隔；只收字母词，重复自动跳过）")
+        add_text = st.text_area("新增词条", key="vocab_add", height=100,
+                                placeholder="e.g.\ncome, go\nbecome")
+        if st.button("➕ 写入新增词", key="vocab_add_btn",
+                     use_container_width=True):
+            cand = [w.strip().lower() for w in
+                    re.split(r"[,\n]", add_text) if w.strip()]
+            cand = [w for w in cand if re.fullmatch(r"[a-z']+", w)]
+            existing = {w.casefold() for w in words}
+            fresh = [w for w in cand if w.casefold() not in existing]
+            dropped = len(cand) - len(fresh)
+            if not fresh:
+                st.warning(f"无有效新增（{dropped} 个重复/非法被跳过）")
+            else:
+                total = _vocab_write_words(words + fresh,
+                                           me.get("display_name") or "编者")
+                ui_kit.flash(f"已增补 {len(fresh)} 词（跳过重复/非法 {dropped}）"
+                             f"——词表现 {total} 词。记得 git 提交固化。")
+                st.rerun()
+    with right:
+        st.markdown("**➖ 删词**（输入要移除的词条，精准删除）")
+        del_text = st.text_input("删除词条", key="vocab_del",
+                                 placeholder="e.g. somebody")
+        if st.button("➖ 移除该词", key="vocab_del_btn",
+                     use_container_width=True):
+            target = del_text.strip().lower()
+            kept = [w for w in words if w.casefold() != target]
+            if target and len(kept) < len(words):
+                total = _vocab_write_words(kept,
+                                           me.get("display_name") or "编者")
+                ui_kit.flash(f"已移除「{target}」——词表现 {total} 词。"
+                             "记得 git 提交固化。")
+                st.rerun()
+            else:
+                st.warning(f"「{target}」不在词表中（或输入为空）")
+
+    st.markdown(f"**词表浏览**（{len(words)} 词，按字母序）")
+    st.dataframe(
+        __import__("pandas").DataFrame({"词条": sorted(words, key=str.casefold)}),
+        use_container_width=True, height=420, hide_index=True,
+    )
+    st.download_button("📥 下载词表 txt", data=_VOCAB_PATH.read_text(encoding="utf-8"),
+                       file_name="defining_vocab.txt", mime="text/plain",
+                       use_container_width=True)
+
+
 def render_dict_admin_page() -> None:
     """📖 词典管理区入口（区级页面；页内八 tab，集成步骤挂进 app.py；
     批次 8 G6 末位增「📤 出版导出」tab；批次 11 该 tab 增「🗂️ 资源登记」块，
@@ -4045,10 +4161,10 @@ def render_dict_admin_page() -> None:
     import src.data_pages as data_pages
     import src.collab_pages as collab_pages
 
-    (tab_cockpit, tab_members, tab_fields, tab_import,
+    (tab_cockpit, tab_members, tab_fields, tab_import, tab_vocab,
      tab_browser, tab_assign, tab_media, tab_publish) = st.tabs(
-        ["🧭 主编驾驶舱", "👥 项目成员", "🏷️ 定制属性", "📥 数据导入", "📖 词条浏览器",
-         "📋 任务分配", "🖼️ 媒体库", "📤 出版导出"],
+        ["🧭 主编驾驶舱", "👥 项目成员", "🏷️ 定制属性", "📥 数据导入", "📝 词表核定",
+         "📖 词条浏览器", "📋 任务分配", "🖼️ 媒体库", "📤 出版导出"],
     )
     with tab_cockpit:
         _render_cockpit_tab()
@@ -4058,6 +4174,8 @@ def render_dict_admin_page() -> None:
         _render_fields_tab(me)
     with tab_import:
         data_pages.render_import_page()
+    with tab_vocab:
+        _render_vocab_tab(me)
     with tab_browser:
         data_pages.render_browser_page()
     with tab_assign:

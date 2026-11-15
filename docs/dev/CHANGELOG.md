@@ -8,6 +8,21 @@
 - 字典补 4 条登录区（🚪/🔐/用户名/密码）；en 态未登录权限集零中文残留实证
 - 全量 **3047 passed / 0 failed**
 
+## 2026-11-15 · 批次 49：双语第二波——页面 H1 全量接线
+
+- 7 文件 8 处页 H1 接 _t（writing/lexical/data×2/collab/users_admin/dict_admin/model_settings——template_engine 无 h1 核实跳过）；collab 复合 H1 走「字典＋显式 en 参数」双轨（_html_escape 次序保住）
+- ZH_EN 字典 76→79 条（补 🧰 数据导入向导/📖 词条浏览器/👥 用户管理——H1 与侧栏 label 不同串的三条）
+- en 态覆盖面：侧边栏 17 label＋七区头＋页 H1＋登录区——**框架层全部英文化**；页面研究正文按渐进式保持中文（按需扩字典）
+- 全量 **3074 passed / 0 failed**（+27 i18n）
+
+## 2026-11-15 · 批次 50：词表核定辅助落地——质检唯一 fail 清零（DEFINING_VOCAB fail→pass）
+
+- **语料高频词自动提取**（scripts/build_defining_vocab.py——确定性统计非学术判断）：996 条英文释义（definitions.en_ndef＋oald_senses.definition）→ 分词计频（casefold）→ min_freq≥2 → **809 词受控定义词表初版** → configs/defining_vocab.txt（一行一词＋编者核定头注）→ style.yaml vocab_file 占位「待编者核定」→ configs/defining_vocab.txt（仓库根相对路径）
+- **质检红线**：DEFINING_VOCAB **fail→pass**（唯一 fail 清零——style_check 六项 **4 pass/0 fail/1 warn**，pass_rate 100%）——现状锚测试（fx25/r18）随核定落地更新
+- **📝 词表核定页**（词典管理区第 5 tab）：质检状态实时反映＋809 词浏览＋增词/删词（casefold 查重＋排序 key=(casefold,原词) 二级确定性＋写回留痕 actor/时间戳）＋下载 txt；写回不自动 git 提交（flash 提醒）
+- tests/test_vocab_admin.py 6 条（往返/注释剔除/header 契约/casefold 防线分层——ASCII 序教训入注）
+- 全量 **3080 passed / 0 failed**（+33：vocab_admin 6＋i18n 27）
+
 ## 2026-11-15 · 批次 44：start 深审——六处一致性修复＋必填三键拦截
 
 - 专项深审 start 全文（多轮多 agent 改动后的整体一致性）：**P2×2**——⑥ 健康等待 120s 超时仍打「项目已就绪」假卡（HEALTH_OK 分支修正）；② 必填三键（MYSQL_ROOT_PASSWORD/MYSQL_PASSWORD/MYSQL_DATABASE）前置中文拦截（compose 弱口令强制化后缺键会报英文错）——**上线即拦住真问题**：本地 .env 旧形态缺 MYSQL_ROOT_PASSWORD（已按容器卷现值补齐，本地文件不入库）

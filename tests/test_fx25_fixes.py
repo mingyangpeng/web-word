@@ -397,8 +397,9 @@ class TestPureCheckItems:
         items = _items_by_code(sc.run_config_check_items(style))
         assert items["CFG_COMPLETE"]["status"] == "pass"
         assert items["SENSE_ORDERING"]["status"] == "pass"
-        # 词表本体未编制（vocab_size/vocab_file 待编者核定）→ 如实 fail
-        assert items["DEFINING_VOCAB"]["status"] == "fail"
+        # 词表本体已编制（批次 50：语料高频自动提取 809 词＋编者核定流）
+        # → pass（原「待编者核定」fail 锚随核定落地更新）
+        assert items["DEFINING_VOCAB"]["status"] == "pass"
 
     def test_microstructure_spine_uncovered_key_fails(self, monkeypatch):
         """spine 七段面缺映射段 → fail（配置声明与 spine 实现面脱钩即报警）。"""
