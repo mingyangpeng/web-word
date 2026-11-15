@@ -49,10 +49,7 @@ import src.reliability as reliability  # noqa: E402
 from src.tools.builtin.admission_tool import AdmissionTool  # noqa: E402
 from src.tools.builtin.reliability_tool import ReliabilityTool  # noqa: E402
 from src.tools.registry import get_tool  # noqa: E402
-
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
-TIMEOUT = 120
+from tests.helpers import _new_at  # noqa: E402  （default_timeout 统一 180，原 120 只是等待上限）
 
 # 探针会话（结构与 verify_login_full 输出一致；仅注入 session_state 不触库）
 _ADMIN = {"id": 901, "username": "fx35_admin", "display_name": "管理员",
@@ -75,12 +72,6 @@ def _clean_session_flags():
     from src import ui_kit
 
     ui_kit.st.session_state.pop(ui_kit._FLASH_QUEUE_KEY, None)
-
-
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
 
 
 def _exceptions(at):

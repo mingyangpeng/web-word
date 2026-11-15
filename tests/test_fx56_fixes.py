@@ -38,6 +38,7 @@ from src.module_plugins import (  # noqa: E402
     set_module_enabled,
 )
 from src.page_guides import PAGE_KEYS  # noqa: E402
+from tests.helpers import _new_at  # noqa: E402
 
 # 沙箱库名：本环境 MySQL 账号按库逐名授权（scripts/grant_local_mysql.sql），
 # 新库名无法 CREATE——复用已授权且现无任何测试消费的历史探针库名
@@ -105,16 +106,6 @@ def fx56_env(monkeypatch):
     if conn:
         conn.cursor().execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
         conn.close()
-
-
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "src", "app.py"),
-        default_timeout=180,
-    )
 
 
 _PAGE_SCRIPT = (

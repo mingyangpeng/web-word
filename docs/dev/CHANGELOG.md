@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-11-15 · 批次 41-cont：collab_db 分层＋测试 helper 收敛（多 agent 并行）
+
+- **collab_db 分层抽取**（P3）：collab_pages 8 段直写 SQL 全部收口新 src/collab_db.py（create_assignment 唯一写路径＋7 读函数逐字搬运；页面层薄封装零签名变化；execute 计数 8→0）；_escape_like 经 data_pages 同源 import（R2-5 契约保真）
+- **测试 helper 收敛（P3）**：五套实现 → tests/helpers.py 一套（_new_at×10/_pget×6/_form_login×4/_goto×3/_nav_buttons×2/_radio_keys×2/_nav_click/requires_db×3；净 −313/+60 行）；fx29/r18 的 _goto 语义漂移经等价性论证统一 fx23 口径；conftest env 时序契约保留
+- 适配：fx5 桩缝/文本断言跟随 collab_db（pending_stage_counts 函数名去前缀口径）、review_regression 导入收口、collab docstring 库名修正
+- 全量 **3047 passed / 0 failed**
+
 ## 2026-11-15 · 批次 41：review 收敛第二波——多 agent 并行修复
 
 - **测试库唯一化（P1 结构性）**：6 文件共用 web_word_users_test 各自唯一（f13965d）——AppTest 跨文件漂移的结构根源消除；grant 补 5 库转义授权（哨兵回绿）

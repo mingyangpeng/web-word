@@ -74,13 +74,10 @@ os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
 import src.user_context_db as ucdb  # noqa: E402
-from src.page_guides import page_label  # noqa: E402
 from src.tools import builtin  # noqa: E402,F401  导入即注册内置 11 工具（真实注册路径）
+from tests.helpers import _form_login, _goto, _new_at, _pget  # noqa: E402
 
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
 TEST_DB = "web_word_review_r18_test"
-TIMEOUT = 180
 PREFIX = "r18_"
 PASSWORD = "R18#regression-pass"
 
@@ -241,48 +238,15 @@ def r18_env():
 
 
 # ============================================
-# AppTest 辅助（fx29 真登录打桩同手法）
+# AppTest 辅助（fx29 真登录打桩同手法）—— 已收敛至 tests/helpers.py；
+# _goto 统一 fx23 口径（先滤 page_label(PAGE_KEYS) 导航按钮再点），本文件
+# 调用点只传页键（cluster），page_label 带 emoji 前缀与非导航按钮无重合，
+# 与原「直扫 sidebar.button」实现严格等价。requires_db 走本文件 HAS_MYSQL
+# 口径（reason 带专用测试库名），不收 helpers 版。
 # ============================================
-
-def _pget(at, key, default=None):
-    """AppTest 会话读取（SafeSessionState 不支持 .get()）。"""
-    try:
-        return at.session_state[key]
-    except Exception:  # noqa: BLE001
-        return default
-
 
 def _any_warning_containing(at, needle: str) -> bool:
     return any(needle in str(w.value) for w in at.warning)
-
-
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
-
-
-def _form_login(at, username: str, password: str):
-    """侧边栏登录表单真实提交（test_integration_apptest / fx29 同一手法）。"""
-    inputs = {t.key: t for t in at.sidebar.text_input}
-    inputs["login_username"].set_value(username)
-    inputs["login_password"].set_value(password)
-    submit = [b for b in at.sidebar.button
-              if b.form_id and "登录" in str(b.label)]
-    assert submit, "登录提交按钮未找到"
-    submit[0].click()
-    at.run()
-    return at
-
-
-def _goto(at, key: str):
-    """点侧边栏导航按钮切页（批次 22 按钮式侧边栏）。"""
-    for b in at.sidebar.button:
-        if str(b.label) == page_label(key):
-            b.click()
-            at.run()
-            return
-    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 # ============================================

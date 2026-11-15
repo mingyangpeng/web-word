@@ -24,13 +24,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
-from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
+from src.page_guides import PAGE_KEYS  # noqa: E402
 from src.users_db import create_user, ensure_user_tables  # noqa: E402
+from tests.helpers import (  # noqa: E402
+    _form_login,
+    _nav_buttons,
+    _new_at,
+    _pget,
+    _radio_keys,
+)
 
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
 TEST_DB = "web_word_integration_test"
-TIMEOUT = 180
 
 # 测试账号（username → (password, display_name, role)）；display_name 特意含
 # HTML 特殊字符，兼做转义回归（R3 清单 7）
@@ -42,13 +46,9 @@ _R3_ESCAPE = ("r3_esc", "r3-esc-pw", "<b>x</b>&跑", "annotator")
 _R3_USERS = (_R3_ADMIN, _R3_REVIEWER, _R3_CODER, _R3_VIEWER, _R3_ESCAPE)
 
 
-def _pget(at, key, default=None):
-    """AppTest 会话读取（SafeSessionState 不支持 .get()）。"""
-    try:
-        return at.session_state[key]
-    except Exception:  # noqa: BLE001
-        return default
-
+# AppTest 辅助（_pget/_new_at/_form_login/_nav_buttons/_radio_keys）已收敛至
+# tests/helpers.py；原 _nav_click 与 helpers._goto 语义一致（helpers 里保留
+# _nav_click 别名），本文件内该函数此前并无调用点，直接随之删除。
 
 def _page_text(at) -> str:
     """主区域全部文本（markdown/caption/标题/各消息通道）。"""
@@ -58,57 +58,6 @@ def _page_text(at) -> str:
         elements = getattr(at, accessor, None) or []
         parts.extend(str(e.value) for e in elements)
     return "\n".join(parts)
-
-
-def _new_at() -> "object":
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
-
-
-def _form_login(at, username: str, password: str):
-    """侧边栏登录表单真实提交（填账号密码 → 点「登录」提交按钮 → rerun）。"""
-    inputs = {t.key: t for t in at.sidebar.text_input}
-    inputs["login_username"].set_value(username)
-    inputs["login_password"].set_value(password)
-    submit = [b for b in at.sidebar.button
-              if b.form_id and "登录" in str(b.label)]
-    assert submit, "登录提交按钮未找到"
-    submit[0].click()
-    at.run()
-    return at
-
-
-def _nav_buttons(at) -> list:
-    """侧边栏导航按钮（批次 22 升级：radio → 按钮式真侧边栏）。
-
-    导航按钮在 st.sidebar.container(key="ls_nav") 内按七区序渲染，label
-    即 page_label（与登录/退出/热门动词等按钮以 PAGE_KEYS 键集区分）。
-    返回按渲染序排列的按钮元素（顺序即七区序）。
-    """
-    label2key = {page_label(k): k for k in PAGE_KEYS}
-    out = []
-    for b in at.sidebar.button:
-        if str(b.label) in label2key:  # label=page_label 值（非键）
-            out.append(b)
-    return out
-
-
-def _radio_keys(at) -> list:
-    """侧边栏可见页键（批次 22 起经导航按钮还原；函数名保留兼容调用面）。"""
-    label2key = {page_label(k): k for k in PAGE_KEYS}
-    return [label2key[str(b.label)] for b in _nav_buttons(at)
-            if str(b.label) in label2key]
-
-
-def _nav_click(at, key: str):
-    """点导航按钮切页（on_click 回调写 session_state["page"] 后 rerun）。"""
-    for b in _nav_buttons(at):
-        if str(b.label) == page_label(key):
-            b.click()
-            at.run()
-            return
-    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 def _run_page_as(page: str, user: dict):

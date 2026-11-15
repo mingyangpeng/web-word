@@ -50,6 +50,7 @@ from src.users_db import (  # noqa: E402
     verify_login,
     verify_password,
 )
+from tests.helpers import _form_login, _new_at, _pget  # noqa: E402
 
 TEST_DB = "web_word_sec_test"
 
@@ -534,8 +535,6 @@ class TestCreatedByMigration:
 # ============================================
 # 3) UI 层：默认口令横幅 / 角色实时生效 / 停用登出（AppTest，真实库）
 # ============================================
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
 
 
 @pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过安全加固 AppTest")
@@ -580,26 +579,8 @@ class TestHardeningUi:
         conn.cursor().execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
         conn.close()
 
-    def _new_at(self):
-        from streamlit.testing.v1 import AppTest
-
-        return AppTest.from_file(APP, default_timeout=180)
-
-    def _form_login(self, at, username, password):
-        inputs = {t.key: t for t in at.sidebar.text_input}
-        inputs["login_username"].set_value(username)
-        inputs["login_password"].set_value(password)
-        submit = [b for b in at.sidebar.button if b.form_id and "登录" in str(b.label)]
-        assert submit, "登录提交按钮未找到"
-        submit[0].click()
-        at.run()
-        return at
-
-    def _pget(self, at, key, default=None):
-        try:
-            return at.session_state[key]
-        except Exception:  # noqa: BLE001
-            return default
+    # _new_at/_form_login/_pget 已收敛至 tests/helpers.py（模块级函数），
+    # 原方法为同语义的 self 绑定副本，调用点改为直接调用共享实现。
 
     def test_default_password_banner_and_dismiss(self, ui_env):
         """默认口令用户登录 → 侧边栏横幅（唯一入口指向自助面板）；经自助面板改密 → 横幅消失。
@@ -608,9 +589,9 @@ class TestHardeningUi:
         「🔑 修改密码」自助面板（_render_self_change_password_form）。本用例改经
         自助面板走完整改密流，横幅「改密后消失」语义不变。
         """
-        at = self._new_at()
+        at = _new_at()
         at.run()
-        at = self._form_login(at, "admin", "admin123")
+        at = _form_login(at, "admin", "admin123")
         assert not at.exception
         # 批次 31：横幅压一行 caption（侧边栏净化——保留语义，文案精简）
         assert any("默认密码未修改" in str(c.value) for c in at.sidebar.caption), \
@@ -655,10 +636,10 @@ class TestHardeningUi:
 
     def test_role_change_takes_effect_immediately(self, ui_env):
         """管理员改角色后，旧会话下次操作即按新角色判定（标注页立即失去 annotator 权限）"""
-        at = self._new_at()
+        at = _new_at()
         at.run()
-        at = self._form_login(at, "hd_ann", "hd-ann-pw-8")
-        assert self._pget(at, "user") is not None
+        at = _form_login(at, "hd_ann", "hd-ann-pw-8")
+        assert _pget(at, "user") is not None
         at.session_state["page"] = "annotate"
         at.run()
         assert not at.exception
@@ -667,7 +648,7 @@ class TestHardeningUi:
         assert set_role(ui_env["ann_id"], "viewer") is True
         at.run()
         assert not at.exception
-        user = self._pget(at, "user")
+        user = _pget(at, "user")
         assert user is not None and user["role"] == "viewer", "会话快照未刷新"
         # 标注页（残留页）入口按新角色拦下：viewer 无权限
         assert any("无权限" in str(w.value) for w in at.warning), \
@@ -675,14 +656,14 @@ class TestHardeningUi:
 
     def test_deactivated_user_logged_out_on_next_action(self, ui_env):
         """停用用户会话在下次任意操作被登出并提示"""
-        at = self._new_at()
+        at = _new_at()
         at.run()
-        at = self._form_login(at, "hd_ann", "hd-ann-pw-8")
-        assert self._pget(at, "user") is not None
+        at = _form_login(at, "hd_ann", "hd-ann-pw-8")
+        assert _pget(at, "user") is not None
 
         assert set_active(ui_env["ann_id"], False) is True
         at.session_state["page"] = "search"
         at.run()  # 任意操作（基础页也触发实时回查）
         assert not at.exception
-        assert self._pget(at, "user") is None, "停用用户会话未被登出"
+        assert _pget(at, "user") is None, "停用用户会话未被登出"
         assert any("停用" in str(w.value) for w in at.warning), "登出未给出提示"

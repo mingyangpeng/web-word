@@ -51,10 +51,9 @@ from src.users_db import (  # noqa: E402
     set_role,
 )
 
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
+from tests.helpers import _new_at, _pget  # noqa: E402
+
 TEST_DB = "web_word_r1_test"  # 测试库按文件唯一（批次 40 review）
-TIMEOUT = 180
 
 
 # ============================================
@@ -149,15 +148,8 @@ class TestR1SignaturesAndSources:
 
 # ============================================
 # AppTest 权限矩阵：八会话 × 四门（R1-2/R1-5/R1-6）
+# （_pget/_new_at 已收敛至 tests/helpers.py）
 # ============================================
-
-def _pget(at, key, default=None):
-    """AppTest 会话读取（SafeSessionState 不支持 .get()）。"""
-    try:
-        return at.session_state[key]
-    except Exception:  # noqa: BLE001
-        return default
-
 
 def _page_text(at) -> str:
     """主区域全部文本（markdown/caption/标题/各消息通道）。"""
@@ -167,12 +159,6 @@ def _page_text(at) -> str:
         elements = getattr(at, accessor, None) or []
         parts.extend(str(e.value) for e in elements)
     return "\n".join(parts)
-
-
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
 
 
 def _run_page_as(page: str, user):

@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src import llm_api  # noqa: E402
 from src import semantic_search as ss  # noqa: E402
 from src.category_pack import load_pack  # noqa: E402
+from tests.helpers import requires_db  # noqa: E402  （统一库面可用性探针，原本地 _db_available 同判据）
 
 
 @pytest.fixture(scope="module")
@@ -397,18 +398,8 @@ class TestSearchSynthetic:
 # 5. MySQL 路径（真实 RUN 数据端到端；不可用 skip）
 # ============================================
 
-def _db_available() -> bool:
-    try:
-        from src.mysql_db import get_db_cursor
-        with get_db_cursor() as cursor:
-            cursor.execute("SELECT 1")
-        return True
-    except Exception:
-        return False
-
-
-requires_db = pytest.mark.skipif(
-    not _db_available(), reason="MySQL 不可用，跳过以句搜义数据层测试")
+# requires_db 已收敛至 tests/helpers.py（get_db_cursor 真连 SELECT 1 探针，
+# 与本文件原 _db_available 判据一致）。
 
 
 PAPER_QUERY = "一个士兵整齐地走"

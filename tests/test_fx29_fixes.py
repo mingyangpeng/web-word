@@ -44,8 +44,9 @@ import pytest  # noqa: E402
 import src.app as app_module  # noqa: E402
 import src.collab_pages as collab_pages  # noqa: E402
 import src.mysql_db as db  # noqa: E402
-from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
+from src.page_guides import PAGE_KEYS  # noqa: E402
 from src.users_db import create_user, ensure_user_tables  # noqa: E402
+from tests.helpers import _form_login, _goto, _new_at, _pget  # noqa: E402
 
 # ============================================
 # 探针会话（纯会话计算，不触库；结构与 verify_login_full 输出一致）
@@ -180,14 +181,11 @@ def test_landing_targets_always_valid_page_keys(monkeypatch):
 # AppTest 测试库（建库失败 → 仅 AppTest 用例 skip；单元用例不受影响）
 # ============================================
 
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
 # 预授权测试库（scripts/grant_local_mysql.sql 授权覆盖，自建库名无 GRANT）。
 # 专用沙箱库（批次 27 监工轮 RV18-3 归位：此前复用 writing_test 与
 # test_writing_db 共享面存在并行互踩风险；本库授权见 grant_local_mysql.sql）
 # （pytest 串行约定下各模块 fixture 建库/删库互不重叠 —— 并行会话另论。）
 TEST_DB = "web_word_fx29_test"
-TIMEOUT = 180
 
 _USERS = (("fx29_ann", "fx29-ann-pw", "标注员", "annotator"),
           ("fx29_view", "fx29-view-pw", "只读用户", "viewer"),
@@ -254,42 +252,10 @@ def fx29_db():
         conn.close()
 
 
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
-
-
-def _pget(at, key, default=None):
-    """AppTest 会话读取（SafeSessionState 不支持 .get()）。"""
-    try:
-        return at.session_state[key]
-    except Exception:  # noqa: BLE001
-        return default
-
-
-def _form_login(at, username: str, password: str):
-    """侧边栏登录表单真实提交（与 test_integration_apptest 同一手法）。"""
-    inputs = {t.key: t for t in at.sidebar.text_input}
-    inputs["login_username"].set_value(username)
-    inputs["login_password"].set_value(password)
-    submit = [b for b in at.sidebar.button
-              if b.form_id and "登录" in str(b.label)]
-    assert submit, "登录提交按钮未找到"
-    submit[0].click()
-    at.run()
-    return at
-
-
-def _goto(at, key: str):
-    """点侧边栏导航按钮切页（批次 22 按钮式侧边栏；on_click 后 rerun）。"""
-    for b in at.sidebar.button:
-        if str(b.label) == page_label(key):
-            b.click()
-            at.run()
-            return
-    raise AssertionError(f"导航按钮不存在: {key}")
-
+# AppTest 辅助（_new_at/_pget/_form_login/_goto）已收敛至 tests/helpers.py：
+# _goto 统一 fx23 口径（先按 page_label(PAGE_KEYS) 滤导航按钮再点），本文件
+# 调用点只传页键（search/graph），page_label 带 emoji 前缀与非导航按钮无重合，
+# 与原「直扫 sidebar.button」实现严格等价。
 
 # ============================================
 # 3. 落地写页锁（AppTest 真登录表单）

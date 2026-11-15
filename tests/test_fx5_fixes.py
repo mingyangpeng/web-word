@@ -260,19 +260,23 @@ class TestR610:
         def _boom():
             raise RuntimeError("db down")
 
-        monkey_token = caplog.at_level(logging.WARNING, logger=collab_pages.__name__)
+        # 批次 41 R2-5 分层：pending_stage_counts 抽入 collab_db——桩缝与断言跟随
+        import src.collab_db as collab_db_mod
+        monkey_token = caplog.at_level(logging.WARNING, logger=collab_db_mod.__name__)
         with monkey_token:
-            original = collab_pages.get_db_cursor
-            collab_pages.get_db_cursor = _boom
+            original = collab_db_mod.get_db_cursor
+            collab_db_mod.get_db_cursor = _boom
             try:
-                assert collab_pages._pending_stage_counts() == []
+                assert collab_db_mod.pending_stage_counts() == []
             finally:
-                collab_pages.get_db_cursor = original
+                collab_db_mod.get_db_cursor = original
         assert any("pending_stage_counts" in r.message for r in caplog.records)
 
     def test_pending_inbox_count_source_has_warning(self):
         """侧边栏徽章计数失败留 warning（源码口径断言；函数带 30s 缓存）。"""
-        src = inspect.getsource(collab_pages)
+        # 批次 41 R2-5 分层：计数实现抽入 collab_db——源码口径断言跟随
+        from src import collab_db as collab_db_mod2
+        src = inspect.getsource(collab_db_mod2)
         assert "pending_inbox_count 侧边栏待办计数失败" in src
 
 

@@ -36,6 +36,7 @@ from src.app import (  # noqa: E402
     sidebar_option_label,
 )
 from src.page_guides import PAGE_KEYS, page_label  # noqa: E402
+from tests.helpers import _goto, _nav_buttons, _new_at, _radio_keys  # noqa: E402
 
 # 七区权威口径（区名 → 页键集合），与 docs/使用说明书.md §四 界面导览一致
 EXPECTED_ZONES = {
@@ -72,22 +73,6 @@ _PROBE_SESSIONS = {
 _ADMIN_SESSION = _PROBE_SESSIONS["admin"]
 
 
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "src", "app.py"),
-        default_timeout=180,
-    )
-
-
-def _nav_buttons(at):
-    """侧边栏导航按钮（批次 22 按钮式侧边栏；label=page_label）。"""
-    return [b for b in at.sidebar.button
-            if str(b.label) in {page_label(k) for k in PAGE_KEYS}]
-
-
 def _nav_keys(at) -> list:
     label2key = {page_label(k): k for k in PAGE_KEYS}
     return [label2key[str(b.label)] for b in _nav_buttons(at)
@@ -97,23 +82,6 @@ def _nav_keys(at) -> list:
 def _radio_labels(at) -> list:
     """兼容名：导航按钮标签序（七区序）。"""
     return [str(b.label) for b in _nav_buttons(at)]
-
-
-def _radio_keys(at) -> list:
-    """侧边栏可见页键（导航按钮按七区序还原；批次 22 按钮式侧边栏）。"""
-    label2key = {page_label(k): k for k in PAGE_KEYS}
-    return [label2key[str(b.label)] for b in _nav_buttons(at)
-            if str(b.label) in label2key]
-
-
-def _goto(at, key: str):
-    """点导航按钮切页（on_click 写 session_state["page"] 后 rerun）。"""
-    for b in _nav_buttons(at):
-        if str(b.label) == page_label(key):
-            b.click()
-            at.run()
-            return
-    raise AssertionError(f"导航按钮不存在: {key}")
 
 
 # ============================================

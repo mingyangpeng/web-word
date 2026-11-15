@@ -78,12 +78,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 
 import src.mysql_db as db  # noqa: E402
+from tests.helpers import _new_at, _pget  # noqa: E402
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "src", "app.py")
 TEST_DB = (os.environ.get("REVIEW_REGRESSION_TEST_DB")
            or "web_word_review_regression_test").strip()
-TIMEOUT = 180
 PREFIX = "r9_"
 PASSWORD = "R9#regression-pass"
 
@@ -268,16 +268,8 @@ def r9_env():
 
 
 # ============================================
-# AppTest 辅助（test_r1_fixes 同手法）
+# AppTest 辅助（test_r1_fixes 同手法）—— _pget/_new_at 已收敛至 tests/helpers.py
 # ============================================
-
-def _pget(at, key, default=None):
-    """AppTest 会话读取（SafeSessionState 不支持 .get()）。"""
-    try:
-        return at.session_state[key]
-    except Exception:  # noqa: BLE001
-        return default
-
 
 def _page_text(at) -> str:
     """主区域全部文本（markdown/caption/标题/各消息通道）。"""
@@ -291,12 +283,6 @@ def _page_text(at) -> str:
 
 def _any_warning_containing(at, needle: str) -> bool:
     return any(needle in str(w.value) for w in at.warning)
-
-
-def _new_at():
-    from streamlit.testing.v1 import AppTest
-
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
 
 
 def _run_page_as(page: str, user):
@@ -639,7 +625,8 @@ class TestR2ContentLimitsAndCollabLike:
     def test_collab_search_like_is_literal(self, r9_env):
         """R2-5：walk_100 按字面命中，不误中 walkz100（下划线不再是通配符）；
         普通前缀搜索照常工作。"""
-        from src.collab_pages import _escape_like, _search_verbs
+        # 批次 41 R2-5 分层：实现收口 collab_db（_escape_like 与 data_pages 同源 import）
+        from src.collab_db import _escape_like, search_verbs as _search_verbs
         from src.data_pages import _escape_like as _escape_like_ref
 
         # 转义与 data_pages 同源同口径（R2-5 修复点）

@@ -60,22 +60,11 @@ _GRAPH_PAGE_SCRIPT = (
     "app_module.render_interactive_graph_page()\n"
 )
 
-
-def _db_available() -> bool:
-    try:
-        conn = pymysql.connect(
-            host=db.MYSQL_HOST, port=db.MYSQL_PORT, user=db.MYSQL_USER,
-            password=db.MYSQL_PASSWORD, charset=db.MYSQL_CHARSET,
-            connect_timeout=3,
-        )
-        conn.close()
-        return True
-    except Exception:
-        return False
-
-
-requires_db = pytest.mark.skipif(
-    not _db_available(), reason="MySQL 不可用，跳过 AppTest 真库用例")
+# requires_db 已收敛至 tests/helpers.py。原 _db_available 只探 TCP 裸连
+# （pymysql.connect 不选库），统一后的判据为 get_db_cursor 真连配置库跑
+# SELECT 1 —— 库不可用时宁可 skip 不裸跑，语义更严格；本地 MySQL 正常时
+# 两者判定一致。
+from tests.helpers import requires_db  # noqa: E402
 
 
 # ============================================

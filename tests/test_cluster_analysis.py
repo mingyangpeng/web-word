@@ -62,23 +62,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src import category_study as cs  # noqa: E402
 from src import cluster_analysis as ca  # noqa: E402
+from tests.helpers import _db_available, requires_db  # noqa: E402  （统一库面可用性探针，原本地 _db_available 走 cs.get_db_cursor 同判据）
 
 # 合成特征元数据：F1/F2 binary、F3 ordinal（值域 0-2，归一除以 2）
 VT = {"F1": "binary", "F2": "binary", "F3": "ordinal"}
 RG = {"F3": (0, 2)}
-
-
-def _db_available() -> bool:
-    try:
-        with cs.get_db_cursor() as cursor:
-            cursor.execute("SELECT 1")
-        return True
-    except Exception:
-        return False
-
-
-requires_db = pytest.mark.skipif(
-    not _db_available(), reason="MySQL 不可用，跳过聚类分析数据层测试")
 
 
 # ============================================

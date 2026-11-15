@@ -36,20 +36,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")  # test_pages 同口径：env 优先于 config.yaml
 
-from streamlit.testing.v1 import AppTest  # noqa: E402
-
 from src import ui_kit  # noqa: E402
 from src import user_context_db as ucdb  # noqa: E402
 from src.page_guides import PAGE_KEYS  # noqa: E402
 import src.app as app_mod  # noqa: E402
+from tests.helpers import _new_at  # noqa: E402  （default_timeout 统一 180，原 120 只是等待上限）
 
 _ME = {"id": 951, "username": "fx51", "display_name": "FX51 用户", "role": "admin"}
 _VIEWER_ONLY = {"id": 952, "username": "fx51v", "display_name": "FX51 只读",
                 "role": "viewer"}
-
-APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "src", "app.py")
-TIMEOUT = 120
 
 
 # ============================================
@@ -384,10 +379,6 @@ _SMOKE_ROWS = [
     _bm(3, "entry", "chase", "chase 词条"),
     _bm(4, "page", "graph", "图谱页"),   # 第 4 条不得出现在侧边栏
 ]
-
-
-def _new_at():
-    return AppTest.from_file(APP, default_timeout=TIMEOUT)
 
 
 def _exceptions(at):

@@ -20,17 +20,22 @@ docs/help/平台功能使用说明.md §5（AI 协作区）与 §6.6（任务分
   * 📋 任务分配（词典管理员门）：选动词/义位（oald_senses × definitions 参数化
     只读搜索）→ 选标注员（users_db.list_users 过滤 role）→ task_type
     （admission/feature_coding/alignment）→ scope_verbs（可空 = 不限动词）→
-    「创建分派」INSERT assignments（assigned_by = 当前登录用户）。
+    「创建分派」经数据层 collab_db.create_assignment 落库（INSERT assignments，
+    assigned_by = 当前登录用户）。
 
 数据链：
   ai_ledger（提案台账，全部读写走数据层）＋ annotation_flow 建的 assignments 表
   ＋ users_db（账号/角色）＋ org_db（入册项目上下文）＋ mysql_db 的
-  oald_senses/definitions（只读搜索）。本模块只写少量参数化查询辅助
-  （list_my_assignments 我的任务查询 / create_assignment 创建分派 /
-  _search_verbs 动词搜索 / _list_proposal_stages 工序枚举 /
-  _assignments_table_ready 表就绪探测），其余一律走批次 1 数据层函数；
-  task_type 枚举 import 自 annotation_flow.TASK_TYPES（assignments DDL ENUM
-  的单一事实源，避免两处常量漂移）。
+  oald_senses/definitions（只读搜索）。assignments 写读与协作区台账读面的
+  参数化查询已整体迁至数据层 src/collab_db.py（P3 分层抽取：create_assignment
+  创建分派 / list_my_assignments 我的任务查询 / count_open_assignments 在途
+  计数 / assignments_table_ready 表就绪探测 / search_verbs 动词搜索 /
+  list_proposal_stages 工序枚举 / pending_inbox_count 收件箱徽章计数 /
+  pending_stage_counts 按工序计数），本模块只留同名薄封装（签名与返回契约
+  不变，页面层不再持有任何 SQL）—— 与 dict_admin_db / writing_db
+  「页面层调数据层」分层惯例对齐；task_type 枚举 import 自
+  annotation_flow.TASK_TYPES（assignments DDL ENUM 的单一事实源，避免两处
+  常量漂移）。
 
 角色门（纵深防御，施工规范 §5 通用约定）：
   * 页面入口未登录拦截（st.warning + return）；任务分配 tab 内再做
@@ -56,12 +61,12 @@ docs/help/平台功能使用说明.md §5（AI 协作区）与 §6.6（任务分
 安全规则（同 users_admin_page.py 口径）：
   * 用户生成内容进 unsafe_allow_html 前一律 _html_escape；本页尽量用 Streamlit
     原生组件（自带转义），HTML 仅标题/卡片且插值全部过 _html_escape；
-  * SQL 一律参数化：本模块无一处把用户输入拼进 SQL 文本（LIMIT/占位符外无拼接）；
+  * SQL 一律参数化：本模块已不持有任何 SQL（P3 分层抽取后全部在数据层
+    src/collab_db.py，其安全规则段同注 —— 值全走占位符，无一处拼接）；
   * widget key 统一前缀 KEY_PREFIX = "collab_"，裁决理由/搜索词等用户输入
     只存 st.session_state 对应键，不落日志。
 """
 
-import json
 import logging
 from html import escape as _html_escape
 from typing import Any, Dict, List, Optional
@@ -83,11 +88,11 @@ from src.ai_ledger import (
 from src.annotation_flow import TASK_TYPES as ASSIGNMENT_TASK_TYPES
 from src.annotation_flow import TASK_TYPE_LABELS  # R6-8：单一导出，本模块改引
 from src import broadcast_db  # FX-30：项目广播数据层（收件箱顶部广播条）
+from src import collab_db  # P3 分层抽取：协作区数据层（assignments 写读/台账读面）
 from src import collab_metrics  # FX-19：协同度量五指标数据层（本页薄渲染）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
-from src.data_pages import _escape_like  # R2-5：LIKE 转义与 data_pages 同源
 from src.design_system import HEADER_H1, HEADER_H2, HEADER_H3, get_card_style  # 卡片样式：FX-30 广播条
-from src.mysql_db import get_db_cursor
+from src.mysql_db import get_db_cursor  # 仅 _search_verbs 薄封装注入游标工厂（R2-5 测试锚点）
 from src.org_db import get_projects_for_user
 from src import guards
 from src import ui_kit  # RV12-2：一次性提示（flash）统一收口到公共件
@@ -202,7 +207,7 @@ GUIDE = {
         "assignments 表（annotation_flow.ensure_flow_tables 建，DDL 见多人标注系统"
         "设计规范 §2）：「我的任务」查当前用户 status≠closed 的行；「任务分配」"
         "（词典管理区标签页复用本模块）INSERT 新行（assigned_by=当前登录词典管理员）"
-        "—— 两处是本模块的参数化查询辅助，SQL 全占位符。",
+        "—— 两处取数/写入收口在数据层 src/collab_db.py（P3 分层抽取），SQL 全占位符。",
         "src/users_db.py：list_users 全量账号（角色/在用状态）；list_roles 六角色"
         "事实源，与旧 role 列取并集筛「标注任务可承担」（annotator+）的账号。",
         "src/org_db.py：get_projects_for_user 取当前用户入册项目与项目内职能，"
@@ -435,121 +440,47 @@ def _fmt_uncertainty(value: Optional[float]) -> str:
 
 
 # ============================================
-# 本模块参数化查询辅助（assignments / oald_senses 只读＋一处 INSERT；
-# 除注释/常量外无任何字符串拼接进 SQL，值全走占位符）
+# 页面层薄封装（P3 分层抽取：本模块原参数化查询辅助 —— assignments 写读 /
+# 表就绪探测 / 动词搜索 / 工序枚举 —— 的 SQL 已整体迁至 src/collab_db.py，
+# 与 dict_admin_db / writing_db「页面层调数据层」分层惯例对齐；此处同名薄
+# 封装只为保住页面内外既有调用点与测试导入锚点，签名与返回契约逐项不变，
+# 「值全走占位符」的参数化纪律随 SQL 移交数据层，collab_db 安全规则段同注）
 # ============================================
 
 def _assignments_table_ready() -> bool:
-    """assignments 表是否已建（annotation_flow.ensure_flow_tables 的产物）。
+    """assignments 表是否已建（薄封装 → collab_db.assignments_table_ready）。
 
-    只读探测（information_schema，表名是本模块常量非用户输入）。表缺失是合法
-    状态（任务分派未启用），页面据此给修复指引而不是抛错 —— 与 org_db
-    「查 assignments 占位，MVP 放行」同口径。
+    表缺失是合法状态（任务分派未启用），页面据此给修复指引而不是抛错；
+    探测实现（information_schema 只读，库不可用按表未就绪降级）随 P3 分层
+    抽取迁至数据层，本封装保住调用点与测试导入锚点，签名不变。
     """
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "SELECT COUNT(*) AS n FROM information_schema.TABLES "
-                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'assignments'"
-            )
-            row = cursor.fetchone()
-            return bool(row) and int(row["n"] or 0) > 0
-    except Exception as e:  # noqa: BLE001 —— 库不可用按表未就绪渲染
-        logger.error(f"探测 assignments 表就绪失败: {e}")
-        return False
+    return collab_db.assignments_table_ready()
 
 
-def _parse_scope_verbs(raw: Any) -> Optional[List[str]]:
-    """assignments.scope_verbs JSON 列 → 动词清单（纯函数，脏数据容错）。
-
-    None → None（DDL 语义：NULL = 全部动词）；JSON 串/list → str 清单；
-    解析失败/结构不对 → None（按未限范围渲染，不打崩「我的任务」）。
-    """
-    if raw is None:
-        return None
-    if isinstance(raw, (bytes, bytearray)):
-        try:
-            raw = raw.decode("utf-8")
-        except UnicodeDecodeError:
-            return None
-    if isinstance(raw, str):
-        try:
-            raw = json.loads(raw)
-        except (TypeError, ValueError):
-            return None
-    if isinstance(raw, (list, tuple)):
-        return [str(v).strip() for v in raw if str(v).strip()]
-    return None
+# scope_verbs JSON 解析纯函数随数据层迁至 collab_db（list_my_assignments 的
+# 行后处理归数据层）；本名保留为别名 —— tests/test_collab_pages.py 锚定本
+# 模块导入名，指向同一函数对象，调用语义与迁出前逐字节一致。
+_parse_scope_verbs = collab_db._parse_scope_verbs
 
 
 def list_my_assignments(assignee_id: int, limit: int = 100) -> List[Dict[str, Any]]:
-    """当前用户的在途任务（assignments，status ≠ 'closed'；本模块参数化只读辅助）。
+    """当前用户的在途任务（薄封装 → collab_db.list_my_assignments；只读展示）。
 
-    「我的任务」段数据源：**只读展示** —— 任务的标注与提交动作在
-    「语义建模 → 标注任务」页完成，本列表刻意不提供提交入口（避免双入口造成
-    状态口径分裂，见 GUIDE notes）。
-
-    Args:
-        assignee_id: 当前登录用户 users.id
-        limit: 返回条数上限（≤0 返回 []；防一次性拖全表）
-
-    Returns:
-        list[dict]: {id, category, task_type, scope_verbs(None=全部动词 或
-        list[str]), status, assigned_by, created_at}，按 id 降序（最新分派在前）；
-        参数非法 / 表未建 / 数据库不可用返回 []。
+    「我的任务」段数据源：任务的标注与提交动作在「语义建模 → 标注任务」页
+    完成，本列表刻意不提供提交入口（避免双入口造成状态口径分裂，见 GUIDE
+    notes）；取数字段 / 排序 / 降级契约见 collab_db.list_my_assignments
+    docstring（P3 分层抽取，签名与返回契约不变）。
     """
-    try:
-        uid = int(assignee_id)
-        lim = int(limit)
-    except (TypeError, ValueError):
-        return []
-    if uid <= 0 or lim <= 0:
-        return []
-    sql = (
-        "SELECT id, category, task_type, scope_verbs, status, assigned_by, created_at "
-        "FROM assignments WHERE assignee_id = %s AND status <> 'closed' "
-        "ORDER BY id DESC LIMIT %s"
-    )
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(sql, (uid, lim))
-            rows = cursor.fetchall()
-    except Exception as e:  # noqa: BLE001 —— 表缺失/库不可用按空列表降级渲染
-        logger.error(f"查询用户 {uid} 的在途任务失败: {e}")
-        return []
-    result: List[Dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
-        item["scope_verbs"] = _parse_scope_verbs(item.get("scope_verbs"))
-        result.append(item)
-    return result
+    return collab_db.list_my_assignments(assignee_id, limit)
 
 
 def _count_open_assignments(assignee_id: int) -> Optional[int]:
-    """被派人的在途任务数（assignments status ∈ open/in_progress；只读辅助）。
+    """被派人的在途任务数（薄封装 → collab_db.count_open_assignments）。
 
-    负荷上限校验（_check_load_limit）的计数口径。表未建 / 参数非法 / 库不可用
-    返回 None（按「未知」处理）—— 体检性校验不阻断页面，真正建分派时
-    create_assignment 的失败路径会给出明确报错。
+    负荷上限校验（_check_load_limit）的计数口径；表未建 / 参数非法 / 库不可用
+    返回 None（按「未知」处理）的语义由数据层保证。
     """
-    try:
-        uid = int(assignee_id)
-    except (TypeError, ValueError):
-        return None
-    if uid <= 0:
-        return None
-    sql = (
-        "SELECT COUNT(*) AS n FROM assignments "
-        "WHERE assignee_id = %s AND status IN ('open', 'in_progress')"
-    )
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(sql, (uid,))
-            row = cursor.fetchone()
-            return int(row["n"] or 0) if row else 0
-    except Exception as e:  # noqa: BLE001 —— 表缺失/库不可用按未知处理
-        logger.error(f"统计在途任务数失败（assignee={uid}）: {e}")
-        return None
+    return collab_db.count_open_assignments(assignee_id)
 
 
 def _check_load_limit(assignee_id: int, limit: int = LOAD_LIMIT_DEFAULT) -> Optional[str]:
@@ -582,133 +513,43 @@ def create_assignment(
     assigned_by: int = 0,
     category: str = "motion",
 ) -> int:
-    """创建任务分派（INSERT assignments；本模块参数化写辅助，docstring 注明）。
+    """创建任务分派（薄封装 → collab_db.create_assignment；页面层唯一写入口）。
 
     assignments 表由 annotation_flow.ensure_flow_tables() 建（DDL：多人标注
-    系统设计规范 §2）。本函数不建表；任务×角色矩阵 / 负荷上限 / 回避制三重
-    校验在调用前完成（批次 3 起，_render_assign_tab 用 _check_role_matrix /
-    _check_load_limit / _check_recusal 接线）—— 本函数保持薄 INSERT 不重复
-    校验，数据层直调（脚本/测试）仍走参数与 FK 兜底。
-
-    Args:
-        assignee_id: 标注员 users.id
-        task_type: 任务类型 ∈ ASSIGNMENT_TASK_TYPES（import 自 annotation_flow，
-        与 assignments DDL ENUM 一致）
-        scope_verbs: 范围动词清单（list/tuple，元素去空白后须非空）；
-        None = 全部动词（DDL 语义：scope_verbs NULL）
-        assigned_by: 分派人 users.id（词典管理员，= 页面当前登录用户）
-        category: 范畴（DDL 默认 'motion'；批次 3 簇为粒度分派时按所选动词
-        所在簇推导，本页不暴露该参数）
-
-    Returns:
-        int: 新任务 id；参数非法（含 scope_verbs 传了空清单 —— 意图不明，
-        页面层「一个不选」已归一为 None）/ 表未建 / 数据库错误返回 0。
+    系统设计规范 §2）。任务×角色矩阵 / 负荷上限 / 回避制三重校验在调用前
+    完成（_render_assign_tab 用 _check_role_matrix / _check_load_limit /
+    _check_recusal 接线）；参数校验与 INSERT 落库收口在数据层
+    collab_db.create_assignment（P3 分层抽取）—— 返回新任务 id，参数非法 /
+    表未建 / 数据库错误返回 0，签名与返回契约不变。
     """
-    try:
-        assignee = int(assignee_id)
-        granter = int(assigned_by)
-    except (TypeError, ValueError):
-        logger.error(f"create_assignment 拒绝非法 id: assignee_id={assignee_id!r}, "
-                     f"assigned_by={assigned_by!r}")
-        return 0
-    if assignee <= 0 or granter <= 0:
-        logger.error(f"create_assignment 拒绝非正 id: assignee={assignee}, "
-                     f"assigned_by={granter}")
-        return 0
-    if task_type not in ASSIGNMENT_TASK_TYPES:
-        logger.error(f"create_assignment 拒绝非法 task_type: {task_type!r}")
-        return 0
-    if not isinstance(category, str) or not category.strip() or len(category) > 40:
-        logger.error(f"create_assignment 拒绝非法 category: {category!r}")
-        return 0
-    scope_json: Optional[str] = None
-    if scope_verbs is not None:
-        if not isinstance(scope_verbs, (list, tuple)):
-            logger.error(f"create_assignment 拒绝非法 scope_verbs: {scope_verbs!r}")
-            return 0
-        cleaned = [str(v).strip() for v in scope_verbs if str(v).strip()]
-        if not cleaned:
-            logger.error("create_assignment 拒绝空 scope_verbs 清单"
-                         "（不限动词请传 None，DDL 语义 NULL=全部动词）")
-            return 0
-        try:
-            scope_json = json.dumps(cleaned, ensure_ascii=False)
-        except (TypeError, ValueError) as e:
-            logger.error(f"create_assignment 序列化 scope_verbs 失败: {e}")
-            return 0
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO assignments (assignee_id, category, task_type, "
-                "scope_verbs, status, assigned_by) "
-                "VALUES (%s, %s, %s, %s, 'open', %s)",
-                (assignee, category.strip(), task_type, scope_json, granter),
-            )
-            return int(cursor.lastrowid)
-    except Exception as e:  # noqa: BLE001 —— FK 无此人/表缺失/库不可用按失败
-        logger.error(f"创建任务分派失败（assignee={assignee}, task_type={task_type}）: {e}")
-        return 0
+    return collab_db.create_assignment(
+        assignee_id=assignee_id,
+        task_type=task_type,
+        scope_verbs=scope_verbs,
+        assigned_by=assigned_by,
+        category=category,
+    )
 
 
 def _search_verbs(keyword: str, limit: int = 20) -> List[Dict[str, Any]]:
-    """动词/义位搜索（definitions × oald_senses 参数化只读查询，本模块辅助）。
+    """动词/义位搜索（薄封装 → collab_db.search_verbs）。
 
-    词目（definitions.verb）或 OALD 义项词目（oald_senses.headword）LIKE 匹配：
-    关键词走占位符，包裹用的 ``%`` 由本函数拼在**值**里（``%kw%``）；R2-5 起
-    关键词先经 data_pages._escape_like 转义（``!``/``%``/``_``，SQL 侧
-    ``ESCAPE '!'`` 与 data_pages.LIKE_ESCAPE 同源同口径）—— 通配符按字面
-    处理：搜 ``100%`` 匹配字面「100%」而不是「100」开头的任意串（与
-    data_pages 词条搜索口径一致，无 SQL 文本拼接）。
-
-    Args:
-        keyword: 搜索关键词（去空白后为空返回 []；通配符按字面处理）
-        limit: 返回条数上限（去重到动词，按词目排序）
-
-    Returns:
-        list[dict]: {verb, sense_count, cluster_id, oald_senses（OALD 义项数）}；
-        两表由 mysql_db.init_database 建，库不可用/无命中返回 []。
+    R2-5 转义守约（``!``/``%``/``_`` 字面匹配，SQL 侧 ``ESCAPE '!'``）的
+    实现随数据层迁至 collab_db.search_verbs；本封装把**本模块的**
+    get_db_cursor 注入为游标工厂 —— tests/test_collab_pages.py 的 R2-5 契约
+    测试 monkeypatch 本模块属性（collab_mod.get_db_cursor），经注入保住该
+    锚点（生产路径注入的与本层默认工厂是同一对象，行为零差异）。
     """
-    kw = (keyword or "").strip()
-    if not kw:
-        return []
-    try:
-        lim = max(1, int(limit))
-    except (TypeError, ValueError):
-        return []
-    like = f"%{_escape_like(kw)}%"  # 值，不进 SQL 文本；通配符按字面处理
-    sql = (
-        "SELECT d.verb AS verb, d.sense_count AS sense_count, "
-        "d.cluster_id AS cluster_id, COUNT(os.id) AS oald_senses "
-        "FROM definitions d "
-        "JOIN oald_senses os ON os.definition_id = d.id "
-        "WHERE d.verb LIKE %s ESCAPE '!' OR os.headword LIKE %s ESCAPE '!' "
-        "GROUP BY d.id, d.verb, d.sense_count, d.cluster_id "
-        "ORDER BY d.verb LIMIT %s"
-    )
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(sql, (like, like, lim))
-            return [dict(row) for row in cursor.fetchall()]
-    except Exception as e:  # noqa: BLE001 —— 表缺失/库不可用按无命中降级
-        logger.error(f"动词搜索失败（keyword 长度 {len(kw)}）: {e}")
-        return []
+    return collab_db.search_verbs(keyword, limit, cursor_factory=get_db_cursor)
 
 
 def _list_proposal_stages() -> List[str]:
-    """台账出现过的全部工序（stage）清单（本模块参数化只读辅助）。
+    """台账出现过的全部工序（stage）清单（薄封装 → collab_db.list_proposal_stages）。
 
-    协同度量按工序下钻需要工序枚举；ai_proposals 的 stage 无独立维表，
-    直接 SELECT DISTINCT（SQL 文本为常量，无用户输入参与）。
-    数据库不可用返回 []（下钻表降级为「暂无记录」提示）。
+    协同度量按工序下钻的工序枚举；实现（SELECT DISTINCT 常量 SQL，库不可用
+    返回 []）随 P3 分层抽取迁至数据层。
     """
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute("SELECT DISTINCT stage FROM ai_proposals ORDER BY stage")
-            rows = cursor.fetchall()
-            return [str(r["stage"]) for r in rows if r.get("stage")]
-    except Exception as e:  # noqa: BLE001
-        logger.error(f"枚举提案工序失败: {e}")
-        return []
+    return collab_db.list_proposal_stages()
 
 
 # ============================================
@@ -914,34 +755,17 @@ def _render_my_tasks(me: Dict[str, Any]) -> None:
 def pending_inbox_count() -> int:
     """侧边栏待办徽章：pending 的 draft/audit 提议数（probe 不计；30s 缓存）。
 
-    供 app.py 侧边栏渲染；库不可用/表未建返回 0（徽章自然隐藏），
+    供 app.py 侧边栏渲染；取数实现随 P3 分层抽取迁至
+    collab_db.pending_inbox_count（本封装只保留 Streamlit 缓存这一页面关注
+    点，导入锚点与缓存行为不变）；库不可用/表未建返回 0（徽章自然隐藏），
     异常不外抛——侧边栏计数失败不该影响页面主流程。
     """
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "SELECT COUNT(*) AS n FROM ai_proposals "
-                "WHERE status = 'pending' AND kind IN ('draft', 'audit')"
-            )
-            row = cursor.fetchone()
-            return int(row["n"] or 0) if row else 0
-    except Exception as e:  # noqa: BLE001 —— 计数失败降级为 0（R6-10 补留痕）
-        logger.warning(f"pending_inbox_count 侧边栏待办计数失败（按 0 降级）: {e}")
-        return 0
+    return collab_db.pending_inbox_count()
 
 
 def _pending_stage_counts() -> list:
-    """按 stage 分组的 pending 计数（待我裁决类目；参数化只读辅助）。"""
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "SELECT stage, COUNT(*) AS n FROM ai_proposals "
-                "WHERE status = 'pending' GROUP BY stage ORDER BY n DESC"
-            )
-            return [(str(r["stage"]), int(r["n"] or 0)) for r in cursor.fetchall()]
-    except Exception as e:  # noqa: BLE001 —— R6-10：吞错补留痕
-        logger.warning(f"_pending_stage_counts 按工序分组计数失败（按空降级）: {e}")
-        return []
+    """按 stage 分组的 pending 计数（薄封装 → collab_db.pending_stage_counts）。"""
+    return collab_db.pending_stage_counts()
 
 
 def _render_adjudication_section(me: Dict[str, Any]) -> None:

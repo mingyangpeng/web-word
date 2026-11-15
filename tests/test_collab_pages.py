@@ -405,7 +405,7 @@ _OALD_SENSES_MIN_SQL = """CREATE TABLE oald_senses (
 
 @pytest.mark.skipif(not HAS_MYSQL, reason="MySQL 不可用，跳过协作区辅助查询集成测试")
 class TestCollabDbHelpers:
-    """参数化查询辅助（跑在独立测试库 web_word_collab_pages_test）。"""
+    """参数化查询辅助（跑在独立测试库 web_word_collab_test）。"""
 
     @pytest.fixture
     def collab_db(self, monkeypatch):

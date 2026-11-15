@@ -19,3 +19,9 @@ os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
 # 测试专用端口（宿主 mysqld 3307；容器业务库占 3306）。CI 里 services:
 # mysql:8 容器映射的是 3306，显式设置了 MYSQL_PORT 时不覆盖。
 os.environ.setdefault("MYSQL_PORT", "3307")
+
+# 时序契约收口：共享 helper（tests/helpers.py，review P3 收敛落点）含 src.*
+# import（page_guides、mysql_db 探针），必须在上面 env 设定**之后**加载。
+# pytest 先于一切测试模块导入本文件，这里显式 import 一次即可固定顺序；
+# 各测试文件 `from tests.helpers import ...` 命中 sys.modules 缓存，不会重复执行。
+from tests import helpers  # noqa: E402,F401  (导入即固定 helper 的 src 加载时序)
