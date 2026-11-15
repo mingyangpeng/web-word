@@ -77,9 +77,14 @@ def get_lang() -> str:
     （无 DB、无 Streamlit 运行时、离线单测）都可安全调用。
     """
     # 一级：会话（bare 模式/异常路径下 session 不可用 → 视同无值）
+    # AppTest 兼容（review P1）：SafeSessionState 不支持 .get()（AttributeError
+    # 会被 except 吞掉导致 en 态永远读不到——tests/helpers._pget 注释早有记录）
+    # ——改用 in + [key] 形态（真实浏览器与 AppTest 双兼容）
     try:
-        lang = st.session_state.get(LANG_SESSION_KEY)
-    except Exception:  # noqa: BLE001 —— 读会话失败按无值降级，不崩
+        lang = st.session_state[LANG_SESSION_KEY]
+    except KeyError:  # 键未设（正常路径——未切换过语言）
+        lang = None
+    except Exception:  # noqa: BLE001 —— SafeSessionState/bare 模式异常按无值降级
         lang = None
     if lang in SUPPORTED_LANGS:
         return lang
@@ -97,6 +102,12 @@ def get_lang() -> str:
         row = None
     val = row.get("pref_value") if isinstance(row, dict) else None
     if val in SUPPORTED_LANGS:
+        # 写回会话缓存（review 优化：偏好极少变——命中后本会话零触库；
+        # 用户切语言走 set_lang 显式更新，粘滞无影响）
+        try:
+            st.session_state[LANG_SESSION_KEY] = val
+        except Exception:  # noqa: BLE001 —— bare 模式缓存失败不影响返回
+            pass
         return val
 
     # 三级：默认中文

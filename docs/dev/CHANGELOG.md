@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-15 · 批次 48：双语 review——get_lang 的 AppTest 兼容 P1＋导航按钮形态跟进
+
+- **P1 破案**（AppTest en 态实证链）：SafeSessionState **不支持 .get()**——i18n 用了 `st.session_state.get(ui_lang)` → 每次 AttributeError 被 except 吞 → en 态永远回退 zh（tests/helpers._pget 注释早有记录的坑）。KeyError 精确捕获形态修复——**en 态 AppTest 终验：按钮零中文残留＋区头 Browse/Semantic Modeling 英文化 ✓**；真实浏览器不受影响（正常 SessionState 支持 .get()）
+- get_lang 二级命中写回会话缓存（review 优化：未切语言用户每轮 rerun 落 DB 查询→命中后零触库）
+- 导航按钮 `st.sidebar.button → st.button` 形态跟进（并行会话已自修——接线重应用的旧锚静默跳过教训：**锚不命中必须 assert**）
+- 字典补 4 条登录区（🚪/🔐/用户名/密码）；en 态未登录权限集零中文残留实证
+- 全量 **3047 passed / 0 failed**
+
 ## 2026-11-15 · 批次 44：start 深审——六处一致性修复＋必填三键拦截
 
 - 专项深审 start 全文（多轮多 agent 改动后的整体一致性）：**P2×2**——⑥ 健康等待 120s 超时仍打「项目已就绪」假卡（HEALTH_OK 分支修正）；② 必填三键（MYSQL_ROOT_PASSWORD/MYSQL_PASSWORD/MYSQL_DATABASE）前置中文拦截（compose 弱口令强制化后缺键会报英文错）——**上线即拦住真问题**：本地 .env 旧形态缺 MYSQL_ROOT_PASSWORD（已按容器卷现值补齐，本地文件不入库）

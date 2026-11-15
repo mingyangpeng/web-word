@@ -105,6 +105,10 @@ from src.design_system import (
     get_card_style,
     get_section_spacing, get_badge_style, hex_to_rgba
 )
+# 页内快捷导航条（顶部悬浮胶囊，段/tab 由前端扫 DOM 得出，零页面改动）
+from src.section_dock import render_section_dock
+# 页内快捷导航条（批次 35）：顶部悬浮胶囊，段/tab 由前端扫 DOM 得出
+from src.section_dock import render_section_dock
 
 # ============================================
 # 页面配置
@@ -2272,7 +2276,15 @@ def render_sidebar():
             )
             for key in zone_visible:
                 selected = st.session_state.get("page") == key
-                st.sidebar.button(
+                # 批次 35：st.sidebar.button → st.button——sidebar.button 显式
+                # 绑定 sidebar 根容器，会**脱离 with st.sidebar.container(
+                # key="ls_nav") 上下文**（按钮全部平铺在容器外、三个区头独自
+                # 堆在顶部——用户 review 截图「这些干啥的」反馈的根因；连带
+                # design_system.py 的 .st-key-ls_nav .stButton 选择器失配，
+                # 选中页 accent 药丸不亮）。与批次 34 self_change_password_form
+                # 的 st.sidebar.form → st.form 同一根因同一修法：st.button
+                # 继承 with 上下文，按钮真正落进 ls_nav 容器。
+                st.button(
                     _t(page_label(key)),
                     key=f"nav_{key}",
                     type="primary" if selected else "secondary",
@@ -2520,7 +2532,7 @@ def render_main_area():
         verb = st.session_state.verb_result
 
         # 显示四张卡片布局
-        st.markdown(f"<h2 style='{HEADER_H2}'>结果展示</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='{HEADER_H2}'>📊 结果展示</h2>", unsafe_allow_html=True)
 
         # 四卡布局：头部是真正可点击的折叠按钮（render_card_header 内部用
         # st.button + on_click 写入 session_state.card_expanded）
@@ -2704,7 +2716,7 @@ def render_interactive_graph_page() -> None:
     # iframe 的 src 不变，浏览器不会重载，图谱的布局与交互状态得以保留。
     st.iframe(url, height=820)
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>按词簇浏览</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ 按词簇浏览</h3>", unsafe_allow_html=True)
     st.caption("点击任一词即切换搜索词，并在结果页展示该词所在簇的完全图。")
     clusters = graph.get("clusters", [])
     per_row = 4
@@ -2826,7 +2838,7 @@ def render_corpus_dataset_page() -> None:
         "candidate_schema": "候选凸显图式(AI初筛)", "max_score": "最高重心得分",
     })
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>总表（按频次降序）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>📋 总表（按频次降序）</h3>", unsafe_allow_html=True)
     kw = st.text_input("筛选动词", key="corpus_filter", placeholder="输入关键字筛选…")
     view = df[df["动词"].str.contains(kw, case=False, na=False)] if kw else df
     st.dataframe(
@@ -2842,7 +2854,7 @@ def render_corpus_dataset_page() -> None:
     st.caption("候选凸显图式为 AI 初筛（未语义归类），最终图式标签以义位标注为准。")
 
     # ---- 逐词下钻 ----
-    st.markdown(f"<h3 style='{HEADER_H3}'>逐词详情</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🔎 逐词详情</h3>", unsafe_allow_html=True)
     verbs = [r["verb"] for r in overview]
     picked = st.selectbox("选择动词", options=verbs, index=verbs.index("walk") if "walk" in verbs else 0)
 
@@ -2853,7 +2865,7 @@ def render_corpus_dataset_page() -> None:
     m3.metric("槽位数", stats.get("slot_count", 0))
     m4.metric("搭配词型", f"{stats.get('collocate_count', 0):,}")
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>四类意象图式重心（AI初筛）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>📐 四类意象图式重心（AI初筛）</h3>", unsafe_allow_html=True)
     scores = get_corpus_schema_scores(picked)
     if scores:
         sc_df = pd.DataFrame(scores).rename(columns={
@@ -2867,7 +2879,7 @@ def render_corpus_dataset_page() -> None:
     else:
         st.info(f"「{picked}」暂无重心得分数据。")
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>图式证据搭配（每图式 Top5）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🧩 图式证据搭配（每图式 Top5）</h3>", unsafe_allow_html=True)
     evidence = get_corpus_schema_evidence(picked, top_n=5)
     if evidence:
         ev_df = pd.DataFrame(evidence).rename(columns={
@@ -2878,7 +2890,7 @@ def render_corpus_dataset_page() -> None:
     else:
         st.info("暂无图式证据数据。")
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>搭配明细（按槽位，可编辑）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>✏️ 搭配明细（按槽位，可编辑）</h3>", unsafe_allow_html=True)
     st.caption("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
                "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。")
     # FX-29 接线（架构 §4/§9 页面经中央注册表调工具）：搭配明细查询改经
@@ -3153,7 +3165,7 @@ def render_domain_family_page() -> None:
     )
 
     # ---- 总览表（域 → 系 → 数量）----
-    st.markdown(f"<h3 style='{HEADER_H3}'>三域十二系总览</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🗺️ 三域十二系总览</h3>", unsafe_allow_html=True)
     df = pd.DataFrame(overview).rename(columns={
         "domain": "认知域（初判）", "family": "语义系（初判）",
         "n_senses": "义位数", "n_verbs": "词数",
@@ -3162,7 +3174,7 @@ def render_domain_family_page() -> None:
     st.bar_chart(df.set_index("语义系（初判）")["义位数"], height=260)
 
     # ---- 逐义位明细（域/系/词三级过滤）----
-    st.markdown(f"<h3 style='{HEADER_H3}'>逐义位明细</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>📑 逐义位明细</h3>", unsafe_allow_html=True)
     domains = ["全部"] + sorted({r["domain"] for r in overview})
     fcol1, fcol2, fcol3 = st.columns(3)
     sel_domain = fcol1.selectbox("认知域", options=domains, key="df_domain")
@@ -3209,7 +3221,7 @@ def render_domain_family_page() -> None:
 
     # ---- 单义位下钻 ----
     if not sdf.empty:
-        st.markdown(f"<h3 style='{HEADER_H3}'>义位详情</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='{HEADER_H3}'>📄 义位详情</h3>", unsafe_allow_html=True)
         sid = st.selectbox(
             "选择义位（word + 义项序号）",
             options=[f"{w} · S{n}" for w, n in zip(sdf["词目"], sdf["义项序号"])],
@@ -3323,7 +3335,7 @@ def render_annotation_page() -> None:
 
     if "dict_admin" in effective:
         st.info(
-            "🛠️ 管理员快速通道：本页表单**直写权威层**（word_senses / oald_senses）；"
+            "管理员快速通道：本页表单**直写权威层**（word_senses / oald_senses）；"
             "多人提交流见「📥 标注提交」页。",
             icon="🛠️",
         )
@@ -3435,10 +3447,10 @@ def _render_annotation_admin_view() -> None:
     if cstats and cscores:
         cand = next((s for s in cscores if s["cand_rank"] == 1), None)
         st.info(
-            "🌐 语料证据（enTenTen21，辅助判断）："
+            "语料证据（enTenTen21，辅助判断）："
             f"总频次 {(cstats.get('freq') or 0):,} · 每百万 {(cstats.get('relfreq') or 0):.1f} · "
             f"候选凸显图式（AI初筛）：**{cand['schema_name'] if cand else '—'}**"
-            f"（S={cand['prominence_score']:.2f}）" if cand else "🌐 语料证据：暂无",
+            f"（S={cand['prominence_score']:.2f}）" if cand else "语料证据：暂无",
             icon="🔎",
         )
 
@@ -3471,7 +3483,7 @@ def _render_annotation_admin_view() -> None:
     sid = sense["id"]
     sense_id_label = f"{picked_verb}-S{sense['sense_index']}"
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>义位 {sense_id_label}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🎯 义位 {sense_id_label}</h3>", unsafe_allow_html=True)
     idiom = bool(sense.get("is_idiom"))
     if idiom:
         st.warning("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或 EXT")
@@ -3479,7 +3491,7 @@ def _render_annotation_admin_view() -> None:
     # 人工撰写条（无词典原文背书）复核时应加倍留意
     _src = str(sense.get("source") or "OALD10")
     if _src != "OALD10":
-        st.info(f"📝 义项来源：**{_src}**（OALD10 未收录，据 Levin brief 与语料人工撰写）",
+        st.info(f"义项来源：**{_src}**（OALD10 未收录，据 Levin brief 与语料人工撰写）",
                 icon="📝")
     st.markdown(
         f"<div style='{get_card_style()}'>"
@@ -3498,7 +3510,7 @@ def _render_annotation_admin_view() -> None:
     # ---- LLM 初筛草稿（候选参考，非最终判定）----
     if sense.get("llm_tag"):
         _draft = (
-            f"🤖 **LLM 初筛草稿（候选参考，须人工确认）**：准入 **{sense['llm_tag']}**"
+            f"**LLM 初筛草稿（候选参考，须人工确认）**：准入 **{sense['llm_tag']}**"
             f" · 图式 **{sense.get('llm_schema') or '—'}**"
             f" · 对齐 **{sense.get('llm_align') or '—'}**"
         )
@@ -3513,7 +3525,7 @@ def _render_annotation_admin_view() -> None:
                         + "</div>", unsafe_allow_html=True)
 
     # ---- 五维标注表单 ----
-    st.markdown(f"<h3 style='{HEADER_H3}'>图式五维标注</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🖐️ 图式五维标注</h3>", unsafe_allow_html=True)
     with st.form(f"ann_form_{sid}"):
         f1, f2 = st.columns(2)
         # 默认值优先级：人工已保存的标注 > LLM 初筛草稿 > 空
@@ -3825,7 +3837,7 @@ def render_submission_flow() -> None:
     # ---- LLM 初筛草稿（验收 V7：全员看同样草稿，必须可见）----
     if sense.get("llm_tag"):
         st.info(
-            f"🤖 **LLM 初筛草稿（候选参考，须人工确认）**：准入 **{sense['llm_tag']}**"
+            f"**LLM 初筛草稿（候选参考，须人工确认）**：准入 **{sense['llm_tag']}**"
             f" · 图式 **{sense.get('llm_schema') or '—'}**"
             f" · 对齐 **{sense.get('llm_align') or '—'}**",
             icon="🤖",
@@ -3874,7 +3886,7 @@ def render_submission_flow() -> None:
 
     # ---- 标注表单（预填优先级：暂存 > 本人上次提交 > LLM 初筛草稿 > 空；
     #      FX-45 任务 1：暂存是用户显式保存，最高优先）----
-    st.markdown(f"<h3 style='{HEADER_H3}'>标注表单（motion · admission 任务）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>📝 标注表单（motion · admission 任务）</h3>",
                 unsafe_allow_html=True)
     my_prev = {
         s["sense_id"]: (s.get("payload") or {})
@@ -4201,6 +4213,11 @@ def main():
     # 捕获值判定，模块页分派分支全部经过此闸；search∈U 锁定不可停不拦）
     if not render_module_gate(_page):
         return
+    # 页内快捷导航条（批次 35）：顶部悬浮胶囊，段标题/tab 由前端扫 DOM 得出，
+    # 零 Python 页面改动、不写会话不参与路由。置于模块闸之后——停用模块的
+    # 页面已被 gate 拦下，导航条自然也不出。放在页面分派之前：桥脚本自己
+    # 轮询 DOM 直到可见段稳定，与页面本体渲染顺序无关。
+    render_section_dock()
     if _page == "graph":
         render_interactive_graph_page()
     elif _page == "corpus":
@@ -4283,7 +4300,7 @@ def render_template_entry() -> None:
 
 
 def render_semantic_entry() -> None:
-    """🧠 以句搜义入口：使用说明 + 以句搜义页（需登录，全角色可看）。"""
+    """💬 以句搜义入口：使用说明 + 以句搜义页（需登录，全角色可看）。"""
     render_page_usage_guide("semantic")
     render_semantic_search_page()
 
