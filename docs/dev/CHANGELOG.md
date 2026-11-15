@@ -1,5 +1,13 @@
 # 更新日志
 
+## 2026-11-15 · 批次 36：代码与数据库双归一——容器动态映射＋业务库统一容器 MySQL＋测试双轨
+
+- **代码动态映射**（607430f）：容器 bind mount src/config/configs/scripts——8501 跑宿主工作树代码（MD5 一致验证），改码重启即生效不再依赖镜像重建；不挂项目根防遮盖 /app/seed，/app/data 保持 named volume
+- **数据库归一**（用户指令「数据库必须走 docker」）：宿主 28 张业务表＋users/user_roles/usage_logs/style_check_runs 数据迁入容器 MySQL（对账 32/34 表一致，zh_dict_* 以容器全量为准）；容器库 61 表成唯一业务库；3306 归容器（override 撤 reset），8501（service name）与 8502（.env 127.0.0.1）连同一完整库
+- **迁移安全网**：宿主全库 dump 存 data/backups/db/manual-20261115-1237-pre-unify.sql.gz（1.3M）
+- **测试双轨**：pytest 连宿主 mysqld **3307**（conftest setdefault；CI 显式 3306 不受影响）——容器环境下跨文件连跑出现失败集漂移（141 failed×容器 / 单跑全绿，且失败集不稳定），测试基建回退已验证环境；grant 脚本补 30 测试库无转义字面授权（容器 1044 修复——skip 187→0）
+- 全量 **3037 passed / 0 failed / 0 skipped**（双轨后确认；撤销工作树未完成侧边栏修复——stash 保留待配套测试适配）
+
 ## 2026-11-13 · 批次 33：侧边栏改密段去重复标题＋守卫文案顺化
 
 - 用户 review 截图反馈：「🔑 修改密码」双标题叠显（expander 头＋表单内 markdown 各一遍）——删表单内重复标题，expander 头即为唯一标题

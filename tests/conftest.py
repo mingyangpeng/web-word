@@ -3,8 +3,19 @@
 本地裸跑 `pytest`（无 Docker）时的连接约定：config.yaml 的 host 是
 Docker 服务名 "mysql"，这里在**任何测试模块 import src.* 之前**设置
 环境变量（环境变量优先级高于 config.yaml），让页面/集成测试直接连
-本机 MySQL。已在 Docker 环境或显式设置了 MYSQL_HOST 时不覆盖。
+本机 MySQL。已在 Docker 环境或显式设置了 MYSQL_HOST/MYSQL_PORT 时
+不覆盖。
+
+批次 36 数据库归一后的双轨口径：业务库统一容器 MySQL（127.0.0.1:3306，
+8501/8502 都连它）；测试库走宿主机 mysqld **3307**（datadir 与历史测试
+环境完全一致——容器环境下跨文件连跑出现大面失败集漂移，测试基建回退
+到已验证的宿主实例；业务数据不受影响）。宿主 mysqld 启动：
+    nohup /opt/homebrew/bin/mysqld --defaults-file=/opt/homebrew/etc/my.cnf \\
+        --port=3307 --bind-address=127.0.0.1 >/tmp/mysqld_dev.log 2>&1 &
 """
 import os
 
 os.environ.setdefault("MYSQL_HOST", "127.0.0.1")
+# 测试专用端口（宿主 mysqld 3307；容器业务库占 3306）。CI 里 services:
+# mysql:8 容器映射的是 3306，显式设置了 MYSQL_PORT 时不覆盖。
+os.environ.setdefault("MYSQL_PORT", "3307")
