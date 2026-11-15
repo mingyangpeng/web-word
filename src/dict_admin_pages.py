@@ -4055,6 +4055,27 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
     words = _vocab_read_words()
     st.metric("当前词条数", len(words))
 
+    # 🔄 从语料重建初版（批次 51：语料变化后词表刷新——构建函数单一事实源
+    # 在 src/style_check.py，页面直调；重建覆盖编者增删——按钮级二次确认）
+    with st.expander("🔄 从语料重建初版（高级）"):
+        st.caption(
+            "以当前释义语料（996 条英文释义）重新提取高频词表（覆盖本页编者"
+            "增删——重建后需重新核定）。语料变化（重新灌库/增删释义）后使用。"
+        )
+        if st.button("🔄 重建词表初版", key="vocab_rebuild_btn"):
+            from src.style_check import (
+                build_corpus_vocab, count_corpus_words, fetch_corpus_definitions,
+                write_corpus_vocab_file,
+            )
+            texts = fetch_corpus_definitions()
+            if not texts:
+                st.warning("释义语料为空——重建跳过（./start status 查库）")
+            else:
+                pairs = build_corpus_vocab(count_corpus_words(texts), 2)
+                path = write_corpus_vocab_file(pairs)
+                st.success(f"已重建 {len(pairs)} 词 → {path.name}（记得 git 提交固化）")
+                st.rerun()
+
     left, right = st.columns([3, 2])
     with left:
         st.markdown("**➕ 增词**（每行一词或逗号分隔；只收字母词，重复自动跳过）")

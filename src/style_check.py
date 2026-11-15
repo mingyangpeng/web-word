@@ -58,6 +58,7 @@ substitution_test / sense_ordering / microstructure / multimedia），不发明
      独立触达，不拖累 collab_metrics 等轻依赖消费方的导入链。
 """
 
+import re
 import json
 import logging
 from pathlib import Path
@@ -729,3 +730,70 @@ def pass_rate_trend(
         })
     trend.reverse()  # 内核 id 降序（新在前）→ 升序返回（x 轴时间序）
     return trend
+
+# ============================================
+# 📝 词表核定（批次 50/51）：语料高频候选词构建（确定性统计）
+# ============================================
+_VOCAB_WORD_RE = re.compile(r"[a-z']+")
+
+
+def fetch_corpus_definitions() -> List[str]:
+    """取释义语料英文正文（definitions.en_ndef ＋ oald_senses.definition）。
+
+    env → yaml → 默认 的连接口径与 mysql_db 同源（get_db_cursor）；
+    单表缺失/断库按空处理（fail-open），调用方给空态指引。"""
+    texts: List[str] = []
+    queries = (
+        "SELECT en_ndef FROM definitions WHERE en_ndef IS NOT NULL AND en_ndef <> ''",
+        "SELECT definition FROM oald_senses WHERE definition IS NOT NULL AND definition <> ''",
+    )
+    try:
+        with get_db_cursor() as cursor:
+            for q in queries:
+                try:
+                    cursor.execute(q)
+                    for row in cursor.fetchall():
+                        val = next(iter(row.values())) if isinstance(row, dict) else row[0]
+                        texts.append(str(val))
+                except Exception as e:  # noqa: BLE001 —— 单表缺失按空（迁移前旧库）
+                    logger.debug(f"语料取数失败（{q[:40]}…）: {e}")
+    except Exception as e:  # noqa: BLE001 —— 断库 fail-open
+        logger.warning(f"语料取数连接失败: {e}")
+    return texts
+
+
+def count_corpus_words(texts: List[str]) -> Dict[str, int]:
+    """分词计频：[a-z']+ 提取、casefold 归一（与 DEFINING_VOCAB 计重同口径）。"""
+    import collections
+
+    counter: Dict[str, int] = collections.Counter()
+    for text in texts:
+        for tok in _VOCAB_WORD_RE.findall(text.lower()):
+            counter[tok] += 1
+    return counter
+
+
+def build_corpus_vocab(counter: Dict[str, int], min_freq: int = 2) -> List[Tuple[str, int]]:
+    """候选词表：频次 ≥ min_freq 按（频次降序，字典序升序）排列。"""
+    pairs = [(w, c) for w, c in counter.items() if c >= min_freq]
+    pairs.sort(key=lambda x: (-x[1], x[0]))
+    return pairs
+
+def write_corpus_vocab_file(pairs: List[Tuple[str, int]]) -> Path:
+    """写受控定义词表 txt（重建初版形态——一行一词＋语料来源头注）。
+
+    与页面层「编者增删写回」（dict_admin_pages._vocab_write_words，按字母序
+    ＋核定人注记）区分：本函数是**语料重建**写法（build_corpus_vocab 的产物
+    落盘）。路径 configs/defining_vocab.txt。"""
+    vocab_file = Path(__file__).resolve().parent.parent / "configs" / "defining_vocab.txt"
+    total = sum(c for _, c in pairs)
+    header = (
+        "# 定义词表（defining vocabulary）—— 初版由语料高频词自动提取\n"
+        f"# 生成：scripts/build_defining_vocab.py（语料 = definitions.en_ndef +\n"
+        f"# oald_senses.definition；词条 {len(pairs)}，总出现 {total} 次）\n"
+        "# 编者核定：在词典管理区「📝 词表核定」页增删词（写回本文件，git 留痕）；\n"
+        "# 受控定义词表的语言学充分性始终由编者判断——本文件只是体力活机械化。\n"
+    )
+    vocab_file.write_text(header + "\n".join(w for w, _ in pairs) + "\n",
+                          encoding="utf-8")
+    return vocab_file

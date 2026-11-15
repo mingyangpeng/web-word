@@ -33,6 +33,21 @@ fi
 say_info "数据卷占用"
 docker system df 2>/dev/null | head -5 || say_warn "docker system df 不可用"
 
+# 部署快照龄期（批次 51：manifest 无消费者的缺口——陈旧化可见性）
+say_info "部署快照（data/deploy-snapshot/）"
+snap="$OPS_ROOT/data/deploy-snapshot/web_word_db.sql.gz"
+if [ -f "$snap" ]; then
+    gen="$(grep -E '^generated=' "$OPS_ROOT/data/deploy-snapshot/manifest.txt" 2>/dev/null | cut -d= -f2-)"
+    days=$(( ( $(date +%s) - $(stat -f %m "$snap" 2>/dev/null || stat -c %Y "$snap" 2>/dev/null || echo 0) ) / 86400 ))
+    if [ "$days" -ge 14 ]; then
+        say_warn "部署快照已 ${days} 天未更新（generated=${gen:-?}）——业务数据变化后请 ./start snapshot 刷新"
+    else
+        say_ok "部署快照龄期 ${days} 天（generated=${gen:-?}）"
+    fi
+else
+    say_info "无部署快照（新机部署走 entrypoint 种子链）——./start snapshot 可固化当前库"
+fi
+
 # 批次 36 数据库归一后的拓扑自检（防再犯：谁占 3306/谁的库里有多少表）
 # 口径：3306=容器 MySQL 业务库（61 表）；3307=宿主 mysqld 仅 pytest 用。
 say_info "数据库拓扑自检（批次 36 归一口径）"

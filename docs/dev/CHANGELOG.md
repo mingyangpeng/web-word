@@ -15,6 +15,14 @@
 - en 态覆盖面：侧边栏 17 label＋七区头＋页 H1＋登录区——**框架层全部英文化**；页面研究正文按渐进式保持中文（按需扩字典）
 - 全量 **3074 passed / 0 failed**（+27 i18n）
 
+## 2026-11-15 · 批次 51：词表核定页增强＋快照龄期＋构建函数归位质检模块
+
+- **构建函数单一事实源归位**：fetch_corpus_definitions/count_corpus_words/build_corpus_vocab/write_corpus_vocab_file 收口 src/style_check.py（词表逻辑与质检引擎同模块）；scripts/build_defining_vocab.py 薄壳化（CLI 编排）——端到端复跑 809 词＋质检 pass ✓
+- **📝 词表核定页 🔄 从语料重建初版**（expander 高级位）：语料变化（重灌库/增删释义）后一键重建（覆盖编者增删——按钮级二次确认文案）；写函数与页面「编者写回」分形态（重建=语料头注 vs 编者=核定人注记）
+- **start status 快照龄期**（批次 45 review P3 缺口——manifest 陈旧化可见性）：>14 天 warn 提示 ./start snapshot 刷新；OPS_ROOT 变量修正（status.sh 无 ROOT）
+- **dict_admin 混句第三轮勘察结论**：移交清单 5 处实为「表未建或断库」同级别异常态（合句合理）——非混句，如实跳过
+- 全量 **3080 passed / 0 failed**
+
 ## 2026-11-15 · 批次 50：词表核定辅助落地——质检唯一 fail 清零（DEFINING_VOCAB fail→pass）
 
 - **语料高频词自动提取**（scripts/build_defining_vocab.py——确定性统计非学术判断）：996 条英文释义（definitions.en_ndef＋oald_senses.definition）→ 分词计频（casefold）→ min_freq≥2 → **809 词受控定义词表初版** → configs/defining_vocab.txt（一行一词＋编者核定头注）→ style.yaml vocab_file 占位「待编者核定」→ configs/defining_vocab.txt（仓库根相对路径）
