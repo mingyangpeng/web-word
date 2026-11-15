@@ -29,8 +29,13 @@ say_info() { printf "${C_INFO}▸${C_OFF} %s\n" "$*"; }
 # daemon 自愈：docker CLI 在场但 daemon 不响应 → 按平台拉起后等待
 ensure_docker_daemon() {
     if ! command -v docker >/dev/null 2>&1; then
-        say_err "未找到 docker CLI —— 请先安装 Docker Desktop（macOS）或 Docker Engine（Linux）"
-        say_info "安装指引：https://docs.docker.com/get-docker/"
+        say_err "未找到 docker CLI —— 请先安装 Docker（一次性前置，装完重跑 ./start）"
+        case "$(uname -s)" in
+            Darwin)  say_info "macOS：brew install --cask docker（或从 https://docs.docker.com/get-docker/ 下载）" ;;
+            Linux)   say_info "Linux：curl -fsSL https://get.docker.com | sh（官方一键脚本）" ;;
+            *)       say_info "安装指引：https://docs.docker.com/get-docker/" ;;
+        esac
+        exit 1
         exit 1
     fi
     if docker info >/dev/null 2>&1; then

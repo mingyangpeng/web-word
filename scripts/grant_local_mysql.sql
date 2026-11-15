@@ -72,6 +72,10 @@ CREATE DATABASE IF NOT EXISTS web_word_wordforms_test
 -- 另外 MySQL 默认会把 127.0.0.1 反解成 localhost，所以 @'localhost' 的授权
 -- 对 TCP 连接同样生效 —— 这正是漏授权 / 多授权都容易踩坑的地方，
 -- 也是上面那条「下划线必须转义」更需要注意的原因。
+-- ⚠️ 占位密码说明：正常链路下 web_word_user 由容器首启用 .env 的
+-- MYSQL_PASSWORD 创建（密码自洽）；本文件的 CREATE USER 仅在「用户不存在
+-- 且手动跑本脚本」的兜底场景生效——执行前请把 <your-mysql-password>
+-- 手动替换为 .env 里的真实口令，否则建出的用户连不上应用。
 CREATE USER IF NOT EXISTS 'web_word_user'@'localhost' IDENTIFIED BY '<your-mysql-password>';
 CREATE USER IF NOT EXISTS 'web_word_user'@'127.0.0.1' IDENTIFIED BY '<your-mysql-password>';
 CREATE USER IF NOT EXISTS 'web_word_user'@'%'         IDENTIFIED BY '<your-mysql-password>';
