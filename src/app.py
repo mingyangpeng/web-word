@@ -27,6 +27,7 @@ from src.mysql_db import (
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
 from src.page_guides import PAGE_KEYS, page_label, render_page_usage_guide
+from src.i18n import t as _t  # 批次 47：双语切换（渐进式——未收录回落中文）
 from src.help_center import render_help_center_page
 from src.dict_admin_pages import render_dict_admin_page
 from src.writing_pages import render_writing_page
@@ -1998,7 +1999,7 @@ def _render_login_section() -> None:
             f"{_html_escape(ROLE_LABELS.get(role, role))}</span></p>",
             unsafe_allow_html=True,
         )
-        st.sidebar.button("🚪 退出登录", key="logout_button",
+        st.sidebar.button(_t("🚪 退出登录"), key="logout_button",
                           use_container_width=True, on_click=_logout)
         # 强制改密（R1-P2c 默认口令表单 / 批次 3 初始口令横幅 / 批次 4-N 自助
         # 改密 expander）：仅对真实登录会话（_user_db_backed）渲染
@@ -2012,10 +2013,10 @@ def _render_login_section() -> None:
         return
 
     with st.sidebar.form("login_form", clear_on_submit=True):
-        st.markdown("**🔐 登录**")
-        username = st.text_input("用户名", key="login_username", max_chars=50)
-        password = st.text_input("密码", type="password", key="login_password", max_chars=128)
-        submitted = st.form_submit_button("登录", use_container_width=True)
+        st.markdown("**" + _t("🔐 登录") + "**")
+        username = st.text_input(_t("用户名"), key="login_username", max_chars=50)
+        password = st.text_input(_t("密码"), type="password", key="login_password", max_chars=128)
+        submitted = st.form_submit_button(_t("登录"), use_container_width=True)
     if submitted:
         info = verify_login_full(username or "", password or "")
         if info:
@@ -2208,6 +2209,17 @@ def render_sidebar():
         return
 
     # 展开分支：完整内容（D-01）
+    from src.i18n import get_lang
+    _lang_choice = st.sidebar.radio(
+        "🌐 Language / 语言", options=("zh", "en"), horizontal=True,
+        format_func=lambda v: {"zh": "中文", "en": "English"}[v],
+        index=("zh", "en").index(get_lang()),
+    )
+    if _lang_choice != get_lang():
+        from src.i18n import set_lang
+        set_lang(_lang_choice)
+        st.rerun()
+
     st.sidebar.button("◀", key="collapse_sidebar", help="折叠侧边栏",
                       on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", True))
 
@@ -2255,13 +2267,13 @@ def render_sidebar():
             # 分区标签，图标才像有意为之的分组条而非乱入灰字）
             st.markdown(
                 # zone 源自内置 _SIDEBAR_ZONES 常量（非用户数据），无需转义
-                f"<div class='ls-nav-header'>{zone}</div>",
+                f"<div class='ls-nav-header'>{_t(zone)}</div>",
                 unsafe_allow_html=True,
             )
             for key in zone_visible:
                 selected = st.session_state.get("page") == key
                 st.sidebar.button(
-                    page_label(key),
+                    _t(page_label(key)),
                     key=f"nav_{key}",
                     type="primary" if selected else "secondary",
                     use_container_width=True,
