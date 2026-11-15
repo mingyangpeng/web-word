@@ -102,7 +102,7 @@ def test_every_guide_has_required_fields():
     for key, guide in PAGE_GUIDES.items():
         assert set(guide) >= {"label", "purpose", "steps", "notes"}, key
         assert guide["label"].startswith(("🔍", "🕸️", "📊", "🧭", "🏷️", "🏃‍♀️",
-                                          "📥", "👥", "📐", "📈", "🧩", "🧠", "📖", "🤖", "✍️", "❓")), key
+                                          "📥", "👥", "📐", "📈", "🧩", "🧠", "💬", "📖", "🤖", "✍️", "❓")), key
         assert len(guide["steps"]) >= 3, f"{key} 步骤过少"
         assert any(kw in guide["purpose"] or kw in " ".join(guide["steps"])
                    for kw in (_ANCHORS[key],)), f"{key} 缺专属锚点 {_ANCHORS[key]}"

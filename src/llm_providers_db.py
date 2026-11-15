@@ -44,20 +44,7 @@ logger = logging.getLogger(__name__)
 # ============================================
 # 建表 SQL（交付契约 DDL 原样）
 # ============================================
-PROVIDERS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS llm_providers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(120) NOT NULL,
-  base_url VARCHAR(500) NOT NULL,
-  api_format ENUM('openai','anthropic') NOT NULL DEFAULT 'openai',
-  api_key TEXT NOT NULL,
-  models JSON NULL,                             -- ["model-a","model-b"]
-  enabled TINYINT(1) NOT NULL DEFAULT 1,
-  is_default TINYINT(1) NOT NULL DEFAULT 0,
-  sort_order INT NOT NULL DEFAULT 0,
-  created_by INT NULL,                          -- 建档人 users.id（软引用，无外键）
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_llm_providers_name (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
+from src.db_utils import PROVIDERS_TABLE_SQL  # DDL 单一事实源（批次 46 下沉）
 
 # api_format 应用层先拒（不依赖 MySQL ENUM 报错），非法值不进数据库
 API_FORMATS = ("openai", "anthropic")

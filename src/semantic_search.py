@@ -536,13 +536,13 @@ def _render_vector_chips(vector: Dict[str, Any],
 
 
 def render_semantic_search_page() -> None:
-    """🧠 以句搜义页：一句话 → 特征向量 chips → Gower 最近邻表（可展开释义）。
+    """💬 以句搜义页：一句话 → 特征向量 chips → Gower 最近邻表（可展开释义）。
 
     范畴选择器列出范畴包目录（configs/<category>/，CATEGORIES()）；
     「AI 增强」开关默认关（MVP 不依赖 LLM 也能跑，LLM 仅增强）。
     无查询 / 无命中 / 无库 / 范畴包失败均优雅降级，不抛错。
     """
-    st.markdown(f"<h1 style='{HEADER_H1}'>🧠 以句搜义（一句话找意思）</h1>",
+    st.markdown(f"<h1 style='{HEADER_H1}'>💬 以句搜义（一句话找意思）</h1>",
                 unsafe_allow_html=True)
     st.caption(
         "论文 §7.1 第二模式：自然语言描述 → 语义特征向量 → 库内 Gower 最近邻。"

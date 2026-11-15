@@ -211,6 +211,8 @@ PROJECT_BROADCASTS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS project_broadcasts 
         INDEX idx_pb_project_id (project_id, id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
 
+from src.db_utils import PROVIDERS_TABLE_SQL  # noqa: E402 —— 零依赖公共件（llm_providers 表 DDL 单一事实源）
+
 CREATE_TABLES_SQL = [
     # --- 迁移记录 ---
     """CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -547,6 +549,9 @@ CREATE_TABLES_SQL = [
     # --- 项目广播（FX-30；DDL 单一事实源 PROJECT_BROADCASTS_TABLE_SQL，
     #     注释与口径说明见其定义处）---
     PROJECT_BROADCASTS_TABLE_SQL,
+
+    # --- LLM 供应商（批次 46：新机 init_database 闭合建表——快照排除该表后由本链重建）---
+    PROVIDERS_TABLE_SQL,
 ]
 
 # 只读视图：用「簇成员两两配对」推导完全图，作为 word_relations 物化表的对照实现。

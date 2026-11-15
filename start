@@ -34,7 +34,7 @@ cd "$ROOT"
 # ══════════════════════════════════════════════
 case "${1:-}" in
     -h|--help|help)
-        sed -n '3,23p' "${BASH_SOURCE[0]}"
+        sed -n '3,20p' "${BASH_SOURCE[0]}"
         exit 0 ;;
     stop)    exec bash "$OPS/stop.sh" ;;
     down)    exec bash "$OPS/down.sh" ;;
@@ -65,19 +65,21 @@ require_compose
 # ② .env——缺失自动补模板；必填三键前置校验（compose 弱口令已强制化，
 # 缺键会在 ⑤ 报英文错——违背「每步中文指引」目标，故前置中文拦截）
 say_info "② 环境配置"
-if require_env_file; then
-    for key in MYSQL_ROOT_PASSWORD MYSQL_PASSWORD MYSQL_DATABASE; do
-        if ! grep -qE "^${key}=..*" "$ROOT/.env"; then
-            say_err ".env 缺必填键 ${key}——补齐后重试（模板见 .env.example）"
-            exit 1
-        fi
-    done
-    say_ok ".env 必填三键（MySQL 口令/库名）在位"
-    if grep -qE '^(ZHIPUAI_API_KEY|OPENAI_API_KEY|DEEPSEEK_API_KEY)=..*' "$ROOT/.env"; then
-        say_ok ".env AI key 非空"
-    else
-        say_warn ".env 无 AI key——AI 可走应用「🤖 模型供应商」页的 DB 供应商配置，或后补 .env"
+if ! require_env_file; then
+    say_err ".env 刚从模板复制——请填写三键（MYSQL_ROOT_PASSWORD/MYSQL_PASSWORD/MYSQL_DATABASE）后重跑 ./start"
+    exit 1
+fi
+for key in MYSQL_ROOT_PASSWORD MYSQL_PASSWORD MYSQL_DATABASE; do
+    if ! grep -qE "^${key}=..*" "$ROOT/.env"; then
+        say_err ".env 缺必填键 ${key}——补齐后重试（模板见 .env.example）"
+        exit 1
     fi
+done
+say_ok ".env 必填三键（MySQL 口令/库名）在位"
+if grep -qE '^(ZHIPUAI_API_KEY|OPENAI_API_KEY|DEEPSEEK_API_KEY)=..*' "$ROOT/.env"; then
+    say_ok ".env AI key 非空"
+else
+    say_warn ".env 无 AI key——AI 可走应用「🤖 模型供应商」页的 DB 供应商配置，或后补 .env"
 fi
 
 # ③ 数据库端口预检——宿主进程若占 3306，容器映射起不来（my.cnf 已固化 3307）
@@ -100,8 +102,13 @@ else
             pname="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
             case "$pname" in *mysqld*|*mysql*) kill "$pid" 2>/dev/null || true ;; *) say_warn "  跳过非 MySQL 进程 pid=$pid ($pname)——请人工处置" ;; esac
         done
-        sleep 3
-        if lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1; then
+        # 复检改短轮询（3 次×2s——mysqld 优雅关闭 InnoDB flush 常 >3s）
+        still_alive=1
+        for _ in 1 2 3; do
+            sleep 2
+            lsof -nP -iTCP:3306 -sTCP:LISTEN >/dev/null 2>&1 || { still_alive=0; break; }
+        done
+        if [ "$still_alive" = "1" ]; then
             say_err "3306 仍被占用且无法安全释放——请人工处置（lsof -nP -iTCP:3306 -sTCP:LISTEN）"
             exit 1
         fi
@@ -117,14 +124,31 @@ else
     say_ok "镜像在位"
 fi
 
-# ⑤ 容器——compose up -d（幂等：在跑的容器不重建）
-say_info "⑤ 启动容器（mysql＋web）"
-docker compose up -d || { say_err "容器启动失败——日志：./start logs"; exit 1; }
-sleep 3  # mysql 就绪窗口（healthcheck 未过时下步 exec 可能失败——靠重试兜底）
+# ⑤ 两段式启动（批次 46 review P1 修正）：先 mysql（等健康）→ ⑤b 快照恢复
+# （与 entrypoint 种子链竞态消除——web 未起时恢复）→ 再 web
+say_info "⑤ 启动容器（两段式：mysql → 快照/数据 → web）"
+docker compose up -d mysql || { say_err "mysql 容器启动失败——日志：./start logs mysql"; exit 1; }
+
+# ⑤a mysql 健康轮询（≤180s——首启 initdb 灌种子需数分钟，compose
+# healthcheck interval 5s 覆盖不了 initdb 全程，这里自轮询）
+say_info "⑤a 等待 mysql 健康（首启 initdb 需数分钟）"
+mysql_ok=0
+i=0
+while [ $i -lt 180 ]; do
+    st="$(docker inspect -f '{{.State.Health.Status}}' web-word-mysql 2>/dev/null || echo "?")"
+    if [ "$st" = "healthy" ]; then mysql_ok=1; break; fi
+    sleep 3; i=$((i + 3))
+done
+if [ "$mysql_ok" != "1" ]; then
+    say_err "mysql 180s 未健康——日志：./start logs mysql"
+    exit 1
+fi
+say_ok "mysql 健康（等待 $i 秒）"
 
 # ⑤b 部署快照自动恢复（新机带数据：clone 含 data/deploy-snapshot/）——
 # 仅当「快照存在＋业务库空/无表」时恢复（旧机/已有数据完全跳过，永不覆盖）；
-# llm_providers 不在快照（api_key 脱敏）——新机在「🤖 模型供应商」页重配
+# mysql 已健康（⑤a）——时序竞态消除；web 未启动——种子链并发竞态消除；
+# llm_providers 不在快照（api_key 脱敏）——init_database 已补其 DDL（批次 46）
 SNAPSHOT_FILE="$ROOT/data/deploy-snapshot/web_word_db.sql.gz"
 say_info "⑤b 部署快照检测"
 if [ -f "$SNAPSHOT_FILE" ]; then
@@ -135,15 +159,20 @@ if [ -f "$SNAPSHOT_FILE" ]; then
         say_ok "业务库已有 $n_snap_tables 表——快照跳过（永不覆盖既有数据）"
     else
         say_warn "业务库空表＋检测到部署快照——自动恢复（新机带数据部署）"
-        if bash "$ROOT/scripts/restore_db.sh" --force "$SNAPSHOT_FILE"; then
+        if bash "$ROOT/scripts/restore_db.sh" --force --database web_word_db "$SNAPSHOT_FILE"; then
             say_ok "快照恢复完成（业务数据随仓库分发到位）"
         else
-            say_err "快照恢复失败——可 ./start logs 排查后手动 ./start restore $SNAPSHOT_FILE --force"
+            say_err "快照恢复失败——排查后手动：./start restore $SNAPSHOT_FILE --force --database web_word_db"
+            exit 1
         fi
     fi
 else
     say_info "无部署快照（data/deploy-snapshot/ 不存在）——业务数据走 entrypoint 种子链"
 fi
+
+# ⑤c web 容器（快照/种子链就绪后再起——页面数据即完整）
+say_info "⑤c 启动 web"
+docker compose up -d web || { say_err "web 容器启动失败——日志：./start logs web"; exit 1; }
 
 # ⑥ 健康等待——web 端点轮询 ≤120s（失败置标记：⑧ 不打「已就绪」假卡）
 HEALTH_OK=1
@@ -154,7 +183,7 @@ say_info "⑦ 数据库完整性"
 # 口令经 MYSQL_PWD 环境变量传给容器内 mysql（与 compose healthcheck 同款形态，
 # compose YAML 里的 $$ 转义在 direct sh -c 中即单个 $）：不上命令行——
 # ps 不可见、无「Using a password on the command line」insecure 告警
-n_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
+n_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema="web_word_db""' 2>/dev/null || echo "?")"
 if [ "$n_tables" = "61" ]; then
     say_ok "业务库 web_word_db = 61 表（归一锚点，完整）"
 else

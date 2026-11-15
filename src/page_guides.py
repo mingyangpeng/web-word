@@ -440,7 +440,7 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         ]
     },
     "semantic": {
-        "label": "🧠 以句搜义",
+        "label": "💬 以句搜义",
         "purpose": "用自然语言描述一个运动场景（如「一个士兵整齐地走」），平台把查询"
                    "解析为语义特征向量，按 Gower 距离返回库内最近的义位——"
                    "词形检索之外的语义描述检索入口。",
@@ -530,7 +530,7 @@ def render_page_usage_guide(page_key: str) -> None:
         st.markdown(f"**这一页做什么：** {guide['purpose']}")
 
         if guide.get("principle"):
-            st.markdown("**🧠 原理：**")
+            st.markdown("**💬 原理：**")
             for item in guide["principle"]:
                 st.markdown(f"- {item}")
 

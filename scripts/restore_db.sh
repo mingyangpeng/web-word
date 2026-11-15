@@ -197,6 +197,15 @@ say_ok "导入完成（耗时 ${SECONDS}s）"
 
 # ---------- 5) 61 表锚点校验 ----------
 say_info "⑥ 锚点校验：${TARGET_DB} 表数量（预期 ${EXPECTED_TABLES}）"
+# manifest 一致性比对（快照侧 sha256——dump/manifest 非原子生成的错位检出）
+SNAP_MANIFEST="${DUMP_FILE%/*}/manifest.txt"
+if [ -f "$SNAP_MANIFEST" ]; then
+    expect_sha="$(grep -E "^sha256=" "$SNAP_MANIFEST" | cut -d= -f2-)"
+    actual_sha="$(shasum -a 256 "$DUMP_FILE" | awk '{print $1}')"
+    if [ -n "$expect_sha" ] && [ "$expect_sha" != "$actual_sha" ]; then
+        say_warn "快照 sha256 与 manifest 不一致——dump 与 manifest 可能错位（部分恢复风险）；建议重新 ./start snapshot"
+    fi
+fi
 # 计数查询本身也可能失败（连接闪断/容器恰在重启）——不能放任空/非数字的
 # n_tables 混进下面的 -eq 算术比较（那会把「校验失败」伪装成 test 语法报错
 # 崩溃）。显式 if ! 接管：按头部退出码契约判导入失败（1），给人工核对指引。

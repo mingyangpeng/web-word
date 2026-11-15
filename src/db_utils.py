@@ -155,3 +155,22 @@ def _escape_like(value: Any) -> str:
         .replace("%", LIKE_ESCAPE + "%")
         .replace("_", LIKE_ESCAPE + "_")
     )
+
+
+# ─── LLM 供应商表 DDL（批次 46：单一事实源自 llm_providers_db 下沉至此——
+# mysql_db 的 CREATE_TABLES_SQL 建表链与本模块同挂零依赖公共件，避免数据层
+# 互 import；llm_providers_db 经本处引用保持契约不变）
+PROVIDERS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS llm_providers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  base_url VARCHAR(500) NOT NULL,
+  api_format ENUM('openai','anthropic') NOT NULL DEFAULT 'openai',
+  api_key TEXT NOT NULL,
+  models JSON NULL,                             -- ["model-a","model-b"]
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_by INT NULL,                          -- 建档人 users.id（软引用，无外键）
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_llm_providers_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
