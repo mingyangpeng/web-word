@@ -99,3 +99,4 @@ data/logs/
 
 # compose 本地覆写（不入库）
 docker-compose.override.yml
+docs/research/
