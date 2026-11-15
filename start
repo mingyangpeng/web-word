@@ -16,6 +16,7 @@
 #   ./start update          # 代码更新滚动部署（git pull → 重建 → 平滑替换）
 #   ./start backup          # 灾备备份（mysqldump＋媒体归档，保留 14 份）
 #   ./start restore <备份文件.sql.gz>   # 灾备恢复（容器内导入；覆盖非空库需确认/--force）
+#   ./start snapshot        # 固化当前业务库为部署快照（入库，新机 clone 即带业务数据）
 #   ./start doctor          # 全量体检（环境七类＋数据库拓扑），只诊断不启动
 #
 # 实现：核心启动流内置（本文件）；各子命令薄分发到 scripts/ops/ 脚本库
@@ -41,6 +42,7 @@ case "${1:-}" in
     logs)    shift; exec bash "$OPS/logs.sh" "$@" ;;
     update)  exec bash "$OPS/update.sh" ;;
     backup)  shift; exec bash "$ROOT/scripts/backup_db.sh" "$@" ;;
+    snapshot) shift; exec bash "$ROOT/scripts/snapshot_db.sh" "$@" ;;
     restore) shift; exec bash "$ROOT/scripts/restore_db.sh" "$@" ;;
     doctor)
         shift
@@ -118,6 +120,30 @@ fi
 # ⑤ 容器——compose up -d（幂等：在跑的容器不重建）
 say_info "⑤ 启动容器（mysql＋web）"
 docker compose up -d || { say_err "容器启动失败——日志：./start logs"; exit 1; }
+sleep 3  # mysql 就绪窗口（healthcheck 未过时下步 exec 可能失败——靠重试兜底）
+
+# ⑤b 部署快照自动恢复（新机带数据：clone 含 data/deploy-snapshot/）——
+# 仅当「快照存在＋业务库空/无表」时恢复（旧机/已有数据完全跳过，永不覆盖）；
+# llm_providers 不在快照（api_key 脱敏）——新机在「🤖 模型供应商」页重配
+SNAPSHOT_FILE="$ROOT/data/deploy-snapshot/web_word_db.sql.gz"
+say_info "⑤b 部署快照检测"
+if [ -f "$SNAPSHOT_FILE" ]; then
+    n_snap_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema="web_word_db""' 2>/dev/null || echo "?")"
+    if [ "$n_snap_tables" = "?" ]; then
+        say_warn "mysql 尚未就绪——快照恢复跳过（下次 ./start 再试；或手动 ./start restore）"
+    elif [ "$n_snap_tables" -gt 0 ] 2>/dev/null; then
+        say_ok "业务库已有 $n_snap_tables 表——快照跳过（永不覆盖既有数据）"
+    else
+        say_warn "业务库空表＋检测到部署快照——自动恢复（新机带数据部署）"
+        if bash "$ROOT/scripts/restore_db.sh" --force "$SNAPSHOT_FILE"; then
+            say_ok "快照恢复完成（业务数据随仓库分发到位）"
+        else
+            say_err "快照恢复失败——可 ./start logs 排查后手动 ./start restore $SNAPSHOT_FILE --force"
+        fi
+    fi
+else
+    say_info "无部署快照（data/deploy-snapshot/ 不存在）——业务数据走 entrypoint 种子链"
+fi
 
 # ⑥ 健康等待——web 端点轮询 ≤120s（失败置标记：⑧ 不打「已就绪」假卡）
 HEALTH_OK=1
@@ -151,5 +177,5 @@ if [ "$HEALTH_OK" = "1" ]; then
 else
     say_err "web 健康等待超时——容器可能仍在预热/启动失败：./start logs web 排查"
 fi
-say_info "日常命令：./start status（巡检）｜./start logs web｜./start stop｜./start backup｜./start restore <file>｜./start update｜./start doctor"
+say_info "日常命令：./start status（巡检）｜./start logs web｜./start stop｜./start backup｜./start restore <file>｜./start snapshot（固化部署快照）｜./start update｜./start doctor"
 echo "════════════════════════════════════════════"

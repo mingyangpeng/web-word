@@ -38,6 +38,7 @@ data/*
 !data/d1/
 # 《现汉7》词典原始资源（mdx 源 + images + 结构化 JSON 均入库，用户要求全量上传）
 !data/ModernChineseDict/
+!data/deploy-snapshot/
 data/ModernChineseDict/.git/
 # 结构化 JSON 是派生数据（43MB）：由 mdx 源 2.5s 重生成（./start 3.7 步自动做），不入库
 data/zh_dict_senses.json
