@@ -32,3 +32,25 @@ fi
 
 say_info "数据卷占用"
 docker system df 2>/dev/null | head -5 || say_warn "docker system df 不可用"
+
+# 批次 36 数据库归一后的拓扑自检（防再犯：谁占 3306/谁的库里有多少表）
+# 口径：3306=容器 MySQL 业务库（61 表）；3307=宿主 mysqld 仅 pytest 用。
+say_info "数据库拓扑自检（批次 36 归一口径）"
+p3306="$(lsof -nP -iTCP:3306 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
+if echo "$p3306" | grep -qi "dock"; then
+    say_ok "3306 = 容器 MySQL（业务库，正确）"
+else
+    say_err "3306 被 '$p3306' 占用（应为容器！）—— 宿主 mysqld 抢了业务端口，先停它再 docker compose up -d mysql"
+fi
+n3306="$(docker exec web-word-mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
+if [ "$n3306" = "61" ]; then
+    say_ok "容器 web_word_db = 61 表（归一后完整库）"
+else
+    say_warn "容器 web_word_db = ${n3306} 表（预期 61——若显著偏少请对账 data/backups/db/ 的归一前备份）"
+fi
+p3307="$(lsof -nP -iTCP:3307 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
+if [ -n "$p3307" ]; then
+    say_ok "3307 = ${p3307}（宿主 mysqld，仅 pytest 用——测试库双轨口径）"
+else
+    say_info "3307 无监听（宿主 mysqld 未起——跑 pytest 前需拉起，命令见 tests/conftest.py docstring）"
+fi

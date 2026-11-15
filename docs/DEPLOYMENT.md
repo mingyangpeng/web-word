@@ -104,6 +104,19 @@ MYSQL_HOST=127.0.0.1 pytest                        # 真库集成段即真跑
 | 6 | 日志审计 | 服务端日志无 PermissionError/traceback 外泄 |
 | 7 | 环境体检 | `./start doctor` 七类 23 项——本开发机基线 21/23（2 红为真缺口如实上报：zh_dict 部分灌入＋.env 未配 AI key，AI 走「模型供应商」页 DB 路由）；新部署应核对至全过或如实记录 |
 
+## 三·五、数据库拓扑（批次 36 归一定版）
+
+| 端口 | 实例 | 职责 | 谁在连 |
+|---|---|---|---|
+| **3306** | 容器 MySQL（web-word-mysql，数据卷 mysql_data） | **唯一业务库** `web_word_db`（61 表：词典全量 zh_dict_* ＋ users ＋ 全部业务表） | 8501（服务名 `mysql`）＋ 8502（.env `MYSQL_HOST=127.0.0.1`）＋ pytest（CI） |
+| **3307** | 宿主机 mysqld（Homebrew，datadir=`data/mysql`） | **仅 pytest 测试库**（30 个 `web_word_*_test` 动态建删） | 本地 pytest（tests/conftest.py 固定 3307；CI 显式 3306 不受影响） |
+
+防再犯机制（2026-11-15 归一时焊死）：
+1. `/opt/homebrew/etc/my.cnf` **port=3307 固化**——宿主 mysqld 以任何方式启动（brew services/裸命令）都不再抢业务端口 3306；
+2. brew 默认 datadir 的旧废库已归档改名 `web_word_db.ARCHIVED-pre-batch36`（不删除）——连到它立即从表数暴露；
+3. `scripts/ops/status.sh` 尾部**数据库拓扑自检**：3306 占用者非容器即报错、容器库表数≠61 即告警、3307 状态提示；
+4. 归一前宿主全库备份：`data/backups/db/manual-20261115-1237-pre-unify.sql.gz`（回滚锚点）。
+
 ## 四、架构速览（部署视角）
 
 ```
