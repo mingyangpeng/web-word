@@ -31,6 +31,9 @@ cd "$ROOT"
 # 子命令分发（start 是唯一入口，实现全在 ops 库）
 # ══════════════════════════════════════════════
 case "${1:-}" in
+    -h|--help|help)
+        sed -n '3,25p' "${BASH_SOURCE[0]}"
+        exit 0 ;;
     stop)    exec bash "$OPS/stop.sh" ;;
     down)    exec bash "$OPS/down.sh" ;;
     status)  exec bash "$OPS/status.sh" ;;

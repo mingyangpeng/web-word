@@ -14,9 +14,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 常用命令
 
+> **运维/启动一律 `./start`（万能入口）**；忘了拓扑/坑位/挂账先读 `docs/dev/OPS.md`
+> （运维速查备忘——数据库拓扑、坑位清单、挂账清单都在那里）。
+
 ```bash
-# 运行 Streamlit 应用（详见 README.md 的两条快速开始路径）
-streamlit run src/app.py
+# 万能启动/巡检/停止（缺啥补啥的八步幂等流，详见 scripts/ops/）
+./start            # 启动；./start status 巡检；./start stop 停止
+./start doctor     # 全量体检
+
+# 运行 Streamlit 应用（开发热载 8502——连容器业务库）
+streamlit run src/app.py --server.port 8502
 
 # 本地连本机 MySQL（覆盖 config.yaml 里的 Docker 主机名）
 MYSQL_HOST=127.0.0.1 streamlit run src/app.py

@@ -44,104 +44,37 @@
 
 ## 🚀 快速开始
 
-前置：**Python 3.11+**。数据库为 **MySQL 8.0**（应用不使用 SQLite）。
-
-两条路径任选其一；两条路径都用同一份 `requirements.txt`。
-
-### 路径 A：Docker Compose 一键启动
+> **运维人员只需要记住一条命令：`./start`** —— 自动判断系统当前状态，缺啥补啥
+> （Docker 没跑拉 Docker、`.env` 缺失补模板、镜像缺失自动构建、容器没起自动起、
+> 端口被占自动处置），全程中文指引。
 
 ```bash
 git clone <repo-url> && cd web-word
-
-# `.env` 已入库（含 MySQL 密码与智谱 API key），clone 即带完整配置；
-# 如需覆盖配置再自建 `.env`（模板见 `.env.example`），不建则用仓库自带配置。
-
-docker compose up -d
-docker compose logs -f web      # 查看启动日志
+./start                  # 一键启动 → http://localhost:8501（幂等，重复运行无害）
 ```
 
-打开 <http://localhost:8501>。
-
-MySQL 由 Compose 自动起（`mysql:8.0`，服务名 `mysql`），数据写入命名卷
-`web-word-mysql-data`，首次启动执行 `scripts/init_db.sql` 建表。`docker-compose.yml`
-会给 web 容器注入 `MYSQL_HOST=mysql` 等环境变量，**不需要改 `config/config.yaml`**。
-
-**词库无需手工导入**：容器首启时 `entrypoint.sh` 会按与 `./develop.sh` 相同的八步幂等灌入
-全量数据（词库/人工补充义位/语料/跑范畴/域系/LLM 初筛/《现汉7》，`--if-empty`
-已有数据则跳过）。起来就能直接搜索，例如输入 `dash` 或 `climb`。
-
-**与本机裸跑（路径 B）并存时**：两者默认都占 3306 与 8501 —— 先 `./start.sh stop`
-再 `docker compose up -d`；或写 override 文件改宿主机映射端口（容器内部不受影响）。
-
-停止与清理：
+**日常维护**（也是 `./start` 的子命令，实现见 `scripts/ops/` 脚本库）：
 
 ```bash
-docker compose down            # 停止容器，保留数据卷
-docker compose down -v         # 连数据卷一起删除（会清空数据库）
+./start status           # 巡检：容器＋健康端点＋数据库拓扑自检
+./start logs web         # 日志（web/mysql/all，--tail N）
+./start update           # 代码更新滚动部署（git pull → 重建 → 平滑替换）
+./start backup           # 灾备备份（mysqldump＋媒体归档，保留 14 份）
+./start stop             # 停止（数据卷永不删）；./start doctor 全量体检
 ```
 
-### 路径 B：本地 Python + 本地 MySQL（推荐，一条命令）
+**数据库拓扑（批次 36 归一定版）**：
 
-**新机器部署（git clone 之后只需一步）：**
+| 端口 | 实例 | 职责 |
+|---|---|---|
+| 3306 | 容器 MySQL（卷 `web-word-mysql-data`） | **唯一业务库** `web_word_db`（61 表：词典全量＋users＋全部业务表）——8501 与 8502 连同一个库 |
+| 3307 | 宿主 mysqld（仅开发机） | **仅 pytest 测试库**（30 个 `web_word_*_test` 动态建删）；业务数据与它无关 |
 
-```bash
-./start                 # 一键 = develop.sh（部署环境+数据）→ start.sh（启动网页）
-./start doctor          # 部署前/后体检：七类 23 项环境检查（Python 与依赖/MySQL/.env/
-                        # AI 接入/种子数据/数据库基线/端口磁盘），每项带修复指引
-```
-
-**启动体系拆为三个脚本**（`scripts/lib_deploy.sh` 是共享函数库，各入口不重复逻辑）：
-
-| 脚本 | 职责 | 何时用 |
-|------|------|--------|
-| `./develop.sh` | **部署**：依赖自检+自动安装 → MySQL 安装/启动/授权 → dictionary.db 重组 → 八步灌库 → 体检。不动网页 | 新机器首次 clone 后；数据/代码更新后重跑 |
-| `./start.sh` | **启动网页**：拉起 MySQL（已部署目录）→ 启动 Streamlit。数据目录为空会指回 develop.sh | 日常开机使用；支持 `stop` / `status` / `doctor` 子命令 |
-| `./repair.sh` | **检测修复**：全量体检报告；`--fix` 自动修复（起 MySQL/重新授权/分卷重组/重灌低于基线的表）+ 复检 | 页面数据异常、换机器后抽查 |
-
-（`./start` 保留为一键入口：等价于 `develop.sh && start.sh`。）
-
-`.env` 已随仓库分发，无需再 `cp .env.example .env`；若某台机器没有智谱 key，
-AI 释义自动走离线兜底，不影响启动。AI 接入支持三家提供商，`llm_api.py` 按
-优先级自动选择：**智谱**（`ZHIPUAI_API_KEY`，可加 `ZHIPUAI_BASE_URL` 指向
-OpenAI 兼容网关）→ **OpenAI**（`OPENAI_API_KEY`）→ **DeepSeek**
-（`DEEPSEEK_API_KEY`），也可用 `LLM_PROVIDER=zhipu|openai|deepseek` 强制指定。
-`./start` 幂等，重复执行安全，首次运行会依次：
-
-1. **加载 `.env`**（MySQL 账号 / AI key 与模型，Streamlit 子进程自动继承）
-2. **Python 依赖自检 + 自动安装**（streamlit/pandas/plotly/openpyxl 等逐一探测，缺了按 requirements.txt 补装）
-3. **MySQL 自动安装与启动**（本机无 MySQL 时经 Homebrew 装 `mysql@8.0`；数据目录 `data/mysql/`，与系统 MySQL 互不干扰）
-4. **自动探测 root 密码并建库授权**（免密 → `.env` 的 `MYSQL_ROOT_PASSWORD` → 常见密码清单；探测不到会给出明确指引）
-5. **重组 dictionary.db**（197MB 全库词典以 90MB×3 分卷随仓库分发，首启自动拼接 + sha256 校验）
-6. **灌入全部数据**（幂等 `--if-empty` 八步）：171 词词库 + OALD10 义项（研究词表 996 义位 = 992 OALD + 4 人工补充）→ enTenTen21 语料（词频/搭配/图式得分）→ 跑范畴英汉义位（甄别/编码/聚类/对齐）→ 域系初判（含例句全量增强与 LLM 初筛草稿）→ 《现汉7》中文词典（首次自动解析 mdx，约 2.5s）
-7. **启动 Streamlit** → <http://localhost:8501>
-
-**手动分步（需要精细控制时）：**
-
-```bash
-# 1. 准备 MySQL 8.0 的库与账号（或直接用 ./start 的自动探测）
-mysql -u root -p < scripts/grant_local_mysql.sql   # 幂等：建库+建账号+授权
-
-# 2. 安装依赖
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# 3. 逐项灌库（每步幂等，可加 --if-empty；顺序与 ./start 内部一致）
-MYSQL_HOST=127.0.0.1 python3 scripts/load_word_library.py      # 词库+义项+图谱
-MYSQL_HOST=127.0.0.1 python3 scripts/load_supplemented_senses.py  # 人工补充义位 4 条
-MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py    # 语料数据集
-MYSQL_HOST=127.0.0.1 python3 scripts/load_category_study.py    # 跑范畴深挖
-MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py     # 域系初判
-MYSQL_HOST=127.0.0.1 python3 scripts/update_domain_family_data.py  # 域系增强（例句全量+语料证据）
-MYSQL_HOST=127.0.0.1 python3 scripts/load_llm_screening.py     # LLM 初筛草稿列
-MYSQL_HOST=127.0.0.1 python3 scripts/parse_modern_chinese_dict.py  # 现汉7 mdx 解析
-MYSQL_HOST=127.0.0.1 python3 scripts/load_zh_dict.py           # 现汉7 词典入库
-
-# 4. 体检（确认 22 张核心内容表达到验收基线）
-./start doctor
-
-# 5. 启动应用（.env 已由 ./start 场景导出；手动场景先 set -a; source .env; set +a）
-streamlit run src/app.py
-```
+- **代码同步**：容器 bind mount 宿主 `src/` 等代码目录——容器跑的就是当前代码，
+  改码后 `docker compose restart web`（约 3 秒）即生效，无需重建镜像。
+- **忘记用法**：`./start help`；忘了拓扑/坑位看 `docs/dev/OPS.md`（运维速查备忘）。
+- **开发热载（8502 直跑）**：`python -m streamlit run src/app.py --server.port 8502`
+  （连的是同一个容器业务库）——仅开发调试用。
 
 ## 📁 目录结构
 
