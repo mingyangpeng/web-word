@@ -46,6 +46,14 @@ docker compose restart web   # 改码后让 8501 生效（bind mount 动态映�
 4. **pytest 容器环境漂移**：pytest 直连容器 3306 时跨文件连跑失败集漂移（141 failed vs 单跑全绿）——所以测试走 3307 双轨。别轻易改 conftest 回 3306。
 5. **st.sidebar.\* 容器陷阱**：`st.sidebar.form/button` 显式绑定 sidebar 根容器，会脱离 `with st.sidebar.expander/container(...)` 上下文（批次 34/35 两次踩坑）——侧栏内嵌套一律用 `st.form`/`st.button`。
 6. **`.tmp-shots/`、`.tmp/` 中间产物**：截图/探针残留，不入库可随时删。
+7. **8502 直跑「数据库离线」（批次 58 实证）**：应用不自动读 .env（只有 compose `environment` 注入）——宿主直跑时 shell 无 `MYSQL_HOST`，`mysql_db._setting` fallback 到 `config/config.yaml` 的 `database.mysql.host='mysql'`（容器服务名，宿主解析不了）→ 连接失败假离线。**8502 必须带宿主口径环境启动**：
+   ```bash
+   set -a; source .env; set +a
+   export MYSQL_HOST=127.0.0.1 MYSQL_PORT=3306
+   python3 -m streamlit run src/app.py --server.port 8502 --server.headless true
+   ```
+   另：改码后旧进程不自动换码——`streamlit` 直跑进程必须重启（旧进程跑旧代码的幽灵现象，批次 58 repr bug 同根因）。
+8. **stHelp = st.help() 专属 DOM（批次 58）**：页面出现 `DeltaGenerator(...)` repr 文本＝有代码调用了 `st.help()`（元素 testid 为 `stHelp`/`stHelpName`/`stHelpType`，DOM 追溯可直判）——本仓无此调用即旧进程残留，重启进程即清。
 
 ## 五、挂账（接手者优先看）
 
