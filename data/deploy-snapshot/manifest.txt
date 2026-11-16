@@ -1,4 +1,4 @@
-tables=61
-generated=2026-11-15 22:11
+tables=63
+generated=2026-11-17 02:11
 source=container-mysql-3306
-sha256=636b6d594b19df8c7c3184ec5588fee079f34d757906f52a9b4ba5992553a8e3
+sha256=daaf83569e5d35a6d52b4b9691cfda373e4a714fadfd6e7626e7e498f8ce625f
