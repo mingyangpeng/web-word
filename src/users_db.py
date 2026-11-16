@@ -1201,3 +1201,30 @@ def change_password(user_id: int, new_plain: str, *, actor: Any = None) -> bool:
     except Exception as e:
         logger.error(f"修改用户 {user_id} 口令意外错误: {e}")
         return False
+
+
+def list_login_audit(limit: int = 50) -> list:
+    """最近登录审计行（批次 62 商业化：管理视图数据源；fail-open 空表）。
+
+    Args:
+        limit: 返回条数上限（默认 50——管理视图单屏量）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS login_audit ("
+                "id INT AUTO_INCREMENT PRIMARY KEY, "
+                "username VARCHAR(64) NOT NULL, "
+                "success TINYINT(1) NOT NULL, "
+                "detail VARCHAR(160) NULL, "
+                "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                "INDEX idx_login_audit_username (username(32)), "
+                "INDEX idx_login_audit_time (created_at)"
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+            cursor.execute(
+                "SELECT username, success, detail, created_at FROM login_audit "
+                "ORDER BY id DESC LIMIT %s", (int(limit),))
+            return cursor.fetchall() or []
+    except Exception as e:
+        logger.warning(f"登录审计读取失败: {e}")
+        return []

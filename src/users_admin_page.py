@@ -1089,6 +1089,25 @@ def _render_page_feature_switches(me: Dict[str, Any]) -> None:
 
     st.markdown("")
 
+    # —— 登录审计（最近 50 条）——
+    st.markdown("")
+    st.markdown(f"**{_t('🔐 登录审计（最近 50 条）', '🔐 Login Audit (latest 50)')}**")
+    from src.users_db import list_login_audit
+    audit_rows = list_login_audit(50)
+    if audit_rows:
+        import pandas as _pd
+        _audit_df = _pd.DataFrame(audit_rows).rename(columns={
+            "username": _t("用户名", "Username"),
+            "success": _t("结果", "Result"),
+            "detail": _t("详情", "Detail"),
+            "created_at": _t("时间", "Time"),
+        })
+        _audit_df[_t("结果", "Result")] = _audit_df[_t("结果", "Result")].map(
+            lambda v: _t("✅ 成功", "✅ success") if int(v or 0) == 1 else _t("⛔ 失败", "⛔ failed"))
+        st.dataframe(_audit_df, use_container_width=True, hide_index=True)
+    else:
+        st.caption(_t("暂无审计记录。", "No audit records yet."))
+
     # —— 功能开关 ——
     st.markdown(f"**{_t('功能开关（页内区块）', 'Feature switches (in-page blocks)')}**")
     feats = list_feature_settings()
