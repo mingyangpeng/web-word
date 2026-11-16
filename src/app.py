@@ -2737,7 +2737,8 @@ def render_interactive_graph_page() -> None:
     c2.metric(_t("近义关系", "Synonym Edges"), stats["edge_count"])
     c3.metric(_t("词簇", "Clusters"), stats["cluster_count"])
 
-    url = ensure_graph_html(graph)
+    from src.i18n import get_lang  # 惰性导入（i18n 零重依赖纪律）
+    url = ensure_graph_html(graph, lang=get_lang())
     if not url:
         st.warning(_t("图谱文件生成失败，请检查 `src/static/` 是否可写。",
                       "Failed to generate the graph file — check that `src/static/` is writable."))
@@ -3159,7 +3160,8 @@ def render_word_relation_section(verb: str) -> None:
     )
     st.markdown(f"<p style='{BODY_BASE}'>{intro}</p>", unsafe_allow_html=True)
 
-    url = ensure_cluster_html(graph)
+    from src.i18n import get_lang  # 惰性导入
+    url = ensure_cluster_html(graph, lang=get_lang())
     if url:
         st.iframe(url, height=520)
     else:

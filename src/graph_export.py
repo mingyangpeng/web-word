@@ -73,10 +73,397 @@ def _esc_js(text: Any) -> str:
 # 但数据没变」时 URL 不变 —— 浏览器和 Streamlit 都认为文件没换，页面继续跑旧渲染
 # 逻辑，改了前端却看不到任何变化，而且重启进程也不一定有用（磁盘上还是旧文件）。
 # 把版本号并进指纹后，改模板即产生新 URL，旧文件被自动清理。
-TEMPLATE_VERSION = 23  # RV5-5 定名：语义簇→词簇（文案改动必须 bump 版本换指纹，见 data_fingerprint）
+TEMPLATE_VERSION = 25  # 批次 61 双语化（legend 图例双语映射）（文案改动必须 bump 版本换指纹，见 data_fingerprint）
 
 
-def data_fingerprint(graph: Dict[str, Any]) -> str:
+# ============================================
+# 图谱模板 UI 文案（批次 61 双语化）
+# ============================================
+# 键 = __T_xxx__ / __CT_xxx__ 占位符名；lang 进指纹（data_fingerprint）——
+# 语言切换即生成对应语言的静态产物，iframe 直接切换不串缓存。
+_UI = {
+    "zh": {
+        "PARTICLES": "<span class=\"dot\"></span>节点粒子",
+        "FULLSCREEN": "⛶ 全屏",
+        "FS_UNAVAIL": "'⛶ 全屏不可用'",
+        "SEARCH_PH": "placeholder=\"搜索动词…\"",
+        "NODE_INFO": "<h3>节点信息</h3>",
+        "CLICK_NODE": "<span class=\"empty\">点击任意节点查看详情</span>",
+        "LEGEND_H": "<h3>词簇（可勾选过滤）</h3>",
+        "SELECT_ALL": "checked/> 全选</label>",
+        "HIGHLIGHT": "checked/> 高亮邻居</label>",
+        "HINT1": "滚轮缩放 · 拖拽平移 · 悬停看节点 · 点击看邻居",
+        "HINT2": "节点即粒子：相互引力斥力 · 带阻尼",
+        "WORD_CARD": ">词条详情</span>",
+        "FAV_WORD": "title=\"收藏该词条\"",
+        "CLOSE": "title=\"关闭\"",
+        "EDGE_CARD": ">关系详情</span>",
+        "FAV_EDGE": "title=\"收藏该关系\"",
+        "STATS1": "'节点 ' + sn + ' / ' + TOTAL_NODES + ' · 关系 ' + se + ' / ' + TOTAL_EDGES",
+        "STATS2": "'<br/>词簇 ' + enabled.size + ' / ' + TOTAL_CLUSTERS",
+        "NO_MATCH": ">无匹配</div>",
+        "SEMA1": "[['manner', '方式'], ['path', '路径'], ['direction', '方向'],",
+        "SEMA2": "['aspect', '体相'], ['scope', '范围']];",
+        "IDX_SENSE": "<span class=\"idx\">义位 '",
+        "NO_ZH_DEF": "'（无中文释义）'",
+        "CONSTRUCTION": "<div class=\"fc-ex\">句式：'",
+        "SYNONYMS": "<div class=\"fc-ex\">近义：'",
+        "ANTONYMS": "<div class=\"fc-ex\">反义：'",
+        "IDX_OALD": "<span class=\"idx\">义项 '",
+        "IDIOM": "' · 习语'",
+        "NO_DEF": "'（无释义）'",
+        "GRAMMAR": "<div class=\"fc-ex\">语法：'",
+        "PHONETIC": "plainRow('音标'",
+        "PHONETIC_K": "<span class=\"k\">音标</span>",
+        "NOT_RECORDED": "<span class=\"v fc-miss\">未收录</span>",
+        "POS": "plainRow('词性', d.pos === 'v' ? 'v. 动词' : (d.pos || ''))",
+        "CLUSTER_ROW": "plainRow('词簇', n._clusterLabel + '（次范畴：' + n._subCat + '）')",
+        "MAINCAT_ROW": "plainRow('主范畴', n._mainCat)",
+        "SEC_DEF": "sec('释义')",
+        "BRIEF": "plainRow('原型义要点', d.sense_brief)",
+        "SEC_SCHEMA": "sec('意象与标注')",
+        "SCHEMA_ROW": "plainRow('意象图式', d.image_schema)",
+        "Y_PROTO": "'Y（原型义）'",
+        "ALIGN_ROW": "plainRow('英汉对齐', d.alignment)",
+        "CNSYN_ROW": "plainRow('汉语句法', d.cn_syntax)",
+        "TRANS_ROW": "plainRow('译义策略', d.translation_strategy)",
+        "SEC_FIVE": "sec('五元语义分解')",
+        "FIVE_MISS": "'：库中 136 词全部为空，暂无数据'",
+        "SEC_BILINGUAL": "sec('中英对照义位（'",
+        "BIL_MISS1": "'该词没有中英对照义位（dictionary.db 只有 333 个动词词条，'",
+        "BIL_MISS2": "'与这 136 词重合 9 个）'",
+        "SEC_OALD": "sec('OALD10 义项（'",
+        "OALD_MISS1": "'OALD 导出表里查不到该词的动词义项（136 词中有 4 个这样：'",
+        "SEC_RELATED": "sec('关联节点（'",
+        "SEC_SOURCE": "sec('来源与复核')",
+        "DEF_SOURCE": "plainRow('释义来源', d.definition_source",
+        "RANK_P": "'（来源优先级 '",
+        "LEVIN_ROW": "plainRow('Levin 出处', d.levin_source)",
+        "CROSS_ROW": "plainRow('跨类情况', d.cross_subclass)",
+        "NEEDS_REVIEW1": "'标注待人工复核 —— 图式/对齐/原型层级都是规则推导的候选标签'",
+        "NEEDS_REVIEW2": "'（《义项判定标准》第 45 段）'",
+        "JUDGE_ROW": "plainRow('判定理由', d.judge_reason)",
+        "DEGREE_K": "<span class=\"k\">近义边数</span>",
+        "VIEW_DETAIL": ">查看详情</button>'",
+        "SEC_NOTES": "sec('备注 / 收藏')",
+        "NOTE_PH": "placeholder=\"写下你的备注…\"",
+        "LOCAL_NOTE": "收藏与备注保存在本机浏览器",
+        "SEC_REL": "sec('关系')",
+        "REL_NAME": "plainRow('关系名称', e.relation || '近义')",
+        "SRC_K": "<span class=\"k\">源词条</span>",
+        "DST_K": "<span class=\"k\">目标词条</span>",
+        "REL_TYPE": "plainRow('关系类型', '同一次类内的近义关系（簇内完全图边）')",
+        "REL_DIR": "plainRow('关系方向', '无向 —— 近义是对称关系，库里按 verb_a_id < verb_b_id 只存一份')",
+        "REL_NOTE_K": "<span class=\"k\">关系说明</span>",
+        "REL_NOTE1": "esc(a.label + ' 与 ' + b.label + ' 同属「' + a._subCat + '」次类（'",
+        "REL_NOTE_TAIL": "+ '），在该次类内两两互为近义。')",
+        "SEC_WEIGHT": "sec('权重 / 强度')",
+        "COMMON_NB": "plainRow('共同邻居', common + ' 个')",
+        "TWO_DEGREE": "plainRow('两端近义边数', a._degree + ' / ' + b._degree)",
+        "WEIGHT_MISS1": "missRow('本图没有边权重字段：次类内是完全图，每条边结构等价，共同邻居数恒等于'",
+        "WEIGHT_MISS2": "'（次类词数 − 2）。这里只给可验证的结构指标，不编一个相似度分数出来。')",
+        "SEC_EX": "sec('例句')",
+        "EX_A": "esc(a.label) + '：' + esc(exA)",
+        "EX_B": "esc(b.label) + '：' + esc(exB)",
+        "EX_MISS": "missRow('两端词条都没有例句（词目级例句只覆盖 136 词里的 22 个）')",
+        "SEC_SRC2": "sec('来源')",
+        "REL_SRC": "plainRow('关系来源', 'docs/research/tables/Levin移动动词候选词筛选表.xlsx 的次类归并，脚本据此生成完全图')",
+        "SUBCAT_ROW": "plainRow('所属次类', a._subCat)",
+        "MAINCAT_ROW2": "plainRow('所属主范畴', a._mainCat)",
+        "EDGE_NOTE_PH": "placeholder=\"写下你对这条关系的备注…\"",
+        "N_PARTICLES": "+ ' 个节点粒子'",
+        # —— 词簇图（__CT_xxx__）——
+        "C_SUMMARY": "__SIZE__ 词 · 中心连线 __CENTER_EDGES__ 条 · 簇内两两 __PAIR_EDGES__ 条",
+        "C_SHOW_PAIR": ">显示簇内两两连线</button>",
+        "C_TOGGLE": "'隐藏簇内两两连线' : '显示簇内两两连线'",
+        "C_CENTER": "'（中心词）'",
+        "C_SEC_DEF": "'<div class=\"sec\">释义</div>'",
+        "C_SEC_EX": "'<div class=\"sec\">例句</div>'",
+        "C_ZH": "row('中文', d.chinese_ndef)",
+        "C_EN": "row('英文', d.en_ndef)",
+        "C_BRIEF": "row('主导义', d.sense_brief)",
+        "C_SCHEMA": "row('意象图式', d.image_schema)",
+        "C_SUBCAT": "row('次类', d.subCat)",
+        "C_TIP1": "row('操作', '点击簇内其他节点或连线继续查看')",
+        "C_TIP2": "'点击节点可查看词条详情'",
+        "C_SEC_REL": "var h = '<div class=\"sec\">关系</div>';",
+        "C_REL_NAME": "row('关系名称', '近义')",
+        "C_REL_TYPE": "row('关系类型', '同一次类内的近义关系（簇内完全图边）')",
+        "C_REL_DIR": "row('关系方向', '无向（对称关系）')",
+        "C_SUBCAT2": "row('所属次类', (a._d && a._d.subCat) || '')",
+        "C_REL_NOTE": "row('关系说明', a.label + ' 与 ' + b.label + ' 同簇，在该次类内两两互为近义')",
+        "C_HIDE_PAIR": "'隐藏簇内两两连线'",
+        "C_SHOW_PAIR2": "'显示簇内两两连线'",
+        # —— 通用小词 ——
+        "TIP": "提示",
+        "ACTION": "操作",
+        "REL_NOTE": "关系说明",
+        "REL_DIR2": "关系方向",
+        "REL_TYPE2": "关系类型",
+        "SYNONYMY": "近义",
+        "RELATION": "关系",
+        "ZHLABEL": "中文",
+        "ENLABEL": "英文",
+        "SUBCLASS": "次类",
+    },
+    "en": {
+        "PARTICLES": "<span class=\"dot\"></span>Node particles",
+        "FULLSCREEN": "⛶ Fullscreen",
+        "FS_UNAVAIL": "'⛶ Fullscreen unavailable'",
+        "SEARCH_PH": "placeholder=\"Search verbs…\"",
+        "NODE_INFO": "<h3>Node Info</h3>",
+        "CLICK_NODE": "<span class=\"empty\">Click any node for details</span>",
+        "LEGEND_H": "<h3>Clusters (check to filter)</h3>",
+        "SELECT_ALL": "checked/> Select all</label>",
+        "HIGHLIGHT": "checked/> Highlight neighbours</label>",
+        "HINT1": "Scroll to zoom · drag to pan · hover for the node · click for neighbours",
+        "HINT2": "Nodes are particles: mutual attraction/repulsion, damped",
+        "WORD_CARD": ">Entry Details</span>",
+        "FAV_WORD": "title=\"Favourite this entry\"",
+        "CLOSE": "title=\"Close\"",
+        "EDGE_CARD": ">Relation Details</span>",
+        "FAV_EDGE": "title=\"Favourite this relation\"",
+        "STATS1": "'Words ' + sn + ' / ' + TOTAL_NODES + ' · Relations ' + se + ' / ' + TOTAL_EDGES",
+        "STATS2": "'<br/>Clusters ' + enabled.size + ' / ' + TOTAL_CLUSTERS",
+        "NO_MATCH": ">No matches</div>",
+        "SEMA1": "[['manner', 'Manner'], ['path', 'Path'], ['direction', 'Direction'],",
+        "SEMA2": "['aspect', 'Aspect'], ['scope', 'Scope']];",
+        "IDX_SENSE": "<span class=\"idx\">Sense '",
+        "NO_ZH_DEF": "'(no Chinese definition)'",
+        "CONSTRUCTION": "<div class=\"fc-ex\">Construction: '",
+        "SYNONYMS": "<div class=\"fc-ex\">Synonyms: '",
+        "ANTONYMS": "<div class=\"fc-ex\">Antonyms: '",
+        "IDX_OALD": "<span class=\"idx\">OALD Sense '",
+        "IDIOM": "' · idiom'",
+        "NO_DEF": "'(no definition)'",
+        "GRAMMAR": "<div class=\"fc-ex\">Grammar: '",
+        "PHONETIC": "plainRow(T.phonetic",
+        "PHONETIC_K": "<span class=\"k\">Phonetics</span>",
+        "NOT_RECORDED": "<span class=\"v fc-miss\">Not recorded</span>",
+        "POS": "plainRow(T.pos, d.pos === 'v' ? 'v. verb' : (d.pos || ''))",
+        "CLUSTER_ROW": "plainRow(T.cluster, n._clusterLabel + ' (subclass: ' + n._subCat + ')')",
+        "MAINCAT_ROW": "plainRow(T.macrocat, n._mainCat)",
+        "SEC_DEF": "sec(T.definition)",
+        "BRIEF": "plainRow(T.prototype_brief, d.sense_brief)",
+        "SEC_SCHEMA": "sec(T.schema_anno)",
+        "SCHEMA_ROW": "plainRow(T.image_schema, d.image_schema)",
+        "Y_PROTO": "'Y (prototype)'",
+        "ALIGN_ROW": "plainRow(T.alignment, d.alignment)",
+        "CNSYN_ROW": "plainRow(T.cn_syntax, d.cn_syntax)",
+        "TRANS_ROW": "plainRow(T.trans_strategy, d.translation_strategy)",
+        "SEC_FIVE": "sec(T.five_elements)",
+        "FIVE_MISS": "': all 136 words are empty in the library — no data yet'",
+        "SEC_BILINGUAL": "sec(T.bilingual_senses + ' (')",
+        "BIL_MISS1": "'No bilingual senses for this word (dictionary.db has only 333 verb entries, '",
+        "BIL_MISS2": "'9 of which overlap these 136 words)'",
+        "SEC_OALD": "sec(T.oald_senses + ' (')",
+        "OALD_MISS1": "'No verb sense for this word in the OALD export (4 of the 136 words are like this)'",
+        "SEC_RELATED": "sec(T.related_nodes + ' (')",
+        "SEC_SOURCE": "sec(T.source_review)",
+        "DEF_SOURCE": "plainRow(T.def_source, d.definition_source",
+        "RANK_P": "' (source rank '",
+        "LEVIN_ROW": "plainRow(T.levin_source, d.levin_source)",
+        "CROSS_ROW": "plainRow(T.cross_subclass, d.cross_subclass)",
+        "NEEDS_REVIEW1": "'Annotation pending manual review — schema/alignment/prototype tier are rule-derived candidate labels '",
+        "NEEDS_REVIEW2": "'(Sense Criteria §45)'",
+        "JUDGE_ROW": "plainRow(T.judge_reason, d.judge_reason)",
+        "DEGREE_K": "<span class=\"k\">Synonym Edges</span>",
+        "VIEW_DETAIL": ">View Details</button>'",
+        "SEC_NOTES": "sec(T.notes_fav)",
+        "NOTE_PH": "placeholder=\"Write your note…\"",
+        "LOCAL_NOTE": "Favourites and notes are stored in this browser",
+        "SEC_REL": "sec(T.relation)",
+        "REL_NAME": "plainRow(T.rel_name, e.relation || T.synonymy)",
+        "SRC_K": "<span class=\"k\">Source entry</span>",
+        "DST_K": "<span class=\"k\">Target entry</span>",
+        "REL_TYPE": "plainRow(T.rel_type, T.rel_type_v)",
+        "REL_DIR": "plainRow(T.rel_dir, T.rel_dir_v)",
+        "REL_NOTE_K": "<span class=\"k\">Relation note</span>",
+        "REL_NOTE1": "esc(a.label + T.rel_note1 + b.label + T.rel_note2 + a._subCat + T.rel_note3 + a._clusterLabel + T.rel_note4)",
+        "REL_NOTE_TAIL": "+ ')'",
+        "SEC_WEIGHT": "sec(T.weight)",
+        "COMMON_NB": "plainRow(T.common_nb, String(common))",
+        "TWO_DEGREE": "plainRow(T.two_degree, a._degree + ' / ' + b._degree)",
+        "WEIGHT_MISS1": "missRow(T.weight_miss1",
+        "WEIGHT_MISS2": "')'",
+        "SEC_EX": "sec(T.examples)",
+        "EX_A": "esc(a.label) + T.colon + esc(exA)",
+        "EX_B": "esc(b.label) + T.colon + esc(exB)",
+        "EX_MISS": "missRow(T.ex_miss)",
+        "SEC_SRC2": "sec(T.source)",
+        "REL_SRC": "plainRow(T.rel_source, T.rel_source_v)",
+        "SUBCAT_ROW": "plainRow(T.subclass, a._subCat)",
+        "MAINCAT_ROW2": "plainRow(T.macrocat, a._mainCat)",
+        "EDGE_NOTE_PH": "placeholder=\"Write your note on this relation…\"",
+        "N_PARTICLES": "T.n_particles",
+        "C_SUMMARY": "__SIZE__ words · __CENTER_EDGES__ centre edges · __PAIR_EDGES__ pairwise edges",
+        "C_SHOW_PAIR": ">Show pairwise edges</button>",
+        "C_TOGGLE": "T.c_hide_pair : T.c_show_pair",
+        "C_CENTER": "' (headword)'",
+        "C_SEC_DEF": "'<div class=\"sec\">' + T.definition + '</div>'",
+        "C_SEC_EX": "'<div class=\"sec\">' + T.examples + '</div>'",
+        "C_ZH": "row(T.zh, d.chinese_ndef)",
+        "C_EN": "row(T.en, d.en_ndef)",
+        "C_BRIEF": "row(T.prototype_brief, d.sense_brief)",
+        "C_SCHEMA": "row(T.image_schema, d.image_schema)",
+        "C_SUBCAT": "row(T.subclass, d.subCat)",
+        "C_TIP1": "row(T.action, T.c_tip1)",
+        "C_TIP2": "Click another node or an edge in this cluster to keep exploring",
+        "C_SEC_REL": "var h = '<div class=\"sec\">' + T.relation + '</div>';",
+        "C_REL_NAME": "row(T.rel_name, T.synonymy)",
+        "C_REL_TYPE": "row(T.rel_type, T.rel_type_v)",
+        "C_REL_DIR": "row(T.rel_dir, T.rel_dir_v)",
+        "C_SUBCAT2": "row(T.subclass, (a._d && a._d.subCat) || '')",
+        "C_REL_NOTE": "row(T.rel_note, a.label + T.c_rel_note1 + b.label + T.c_rel_note2)",
+        "C_HIDE_PAIR": "'Hide pairwise edges'",
+        "C_SHOW_PAIR2": "'Show pairwise edges'",
+        "TIP": "Tip",
+        "ACTION": "Action",
+        "REL_NOTE": "Relation note",
+        "REL_DIR2": "Relation direction",
+        "REL_TYPE2": "Relation type",
+        "SYNONYMY": "synonymy",
+        "RELATION": "Relation",
+        "ZHLABEL": "Chinese",
+        "ENLABEL": "English",
+        "SUBCLASS": "Subclass",
+        # —— 供 plainRow/sec 用的标签（zh 态也定义，键值同中文）——
+        "phonetic": "Phonetics",
+        "pos": "POS",
+        "cluster": "Cluster",
+        "macrocat": "Macro-category",
+        "definition": "Definition",
+        "prototype_brief": "Prototype brief",
+        "schema_anno": "Schema & Annotation",
+        "image_schema": "Image Schema",
+        "alignment": "EN-ZH Alignment",
+        "cn_syntax": "CN Syntax",
+        "trans_strategy": "Translation Strategy",
+        "five_elements": "Five-element Decomposition",
+        "bilingual_senses": "Bilingual Senses",
+        "oald_senses": "OALD10 Senses",
+        "related_nodes": "Related Nodes",
+        "source_review": "Source & Review",
+        "def_source": "Definition Source",
+        "levin_source": "Levin Source",
+        "cross_subclass": "Cross-subclass",
+        "judge_reason": "Judgement Basis",
+        "notes_fav": "Notes / Favourites",
+        "rel_name": "Relation name",
+        "rel_type": "Relation type",
+        "rel_type_v": "Synonymy within the same subclass (complete-graph edge)",
+        "rel_dir": "Relation direction",
+        "rel_dir_v": "Undirected — synonymy is symmetric; stored once per pair with verb_a_id < verb_b_id",
+        "rel_note1": " and ",
+        "rel_note2": " belong to the same subclass \"",
+        "rel_note3": "\" (",
+        "rel_note4": "), pairwise synonyms within it.",
+        "weight": "Weight / Strength",
+        "common_nb": "Common neighbours",
+        "two_degree": "Synonym edges (both ends)",
+        "weight_miss1": "This graph has no edge-weight field: within a subclass the graph is complete — every edge is structurally equivalent and the common-neighbour count always equals (subclass size − 2). Only verifiable structural indicators are shown; no invented similarity score.",
+        "examples": "Examples",
+        "colon": ": ",
+        "ex_miss": "Neither entry has examples (lemma-level examples cover only 22 of the 136 words)",
+        "source": "Source",
+        "rel_source": "Relation source",
+        "rel_source_v": "Subclass grouping from docs/research/tables/Levin移动动词候选词筛选表.xlsx — the loader builds the complete graph from it",
+        "n_particles": "+ ' node particles'",
+        "c_tip1": "Click another node or an edge in this cluster to keep exploring",
+        "c_rel_note1": " and ",
+        "c_rel_note2": " are in the same cluster — pairwise synonyms within that subclass.",
+        "zh": "Chinese",
+        "en": "English",
+        "zh_dict_note": "",
+        "_degree_suffix": "条近义边",
+        "_ungrouped": "未分组",
+    },
+}
+# zh 态的标签键（plainRow/sec 用）与 en 对齐——zh 侧补充
+_UI["zh"].update({
+    "_degree_suffix": "条近义边",
+    "_ungrouped": "未分组",
+    "phonetic": "音标",
+    "pos": "词性",
+    "cluster": "词簇",
+    "macrocat": "主范畴",
+    "definition": "释义",
+    "prototype_brief": "原型义要点",
+    "schema_anno": "意象与标注",
+    "image_schema": "意象图式",
+    "alignment": "英汉对齐",
+    "cn_syntax": "汉语句法",
+    "trans_strategy": "译义策略",
+    "five_elements": "五元语义分解",
+    "bilingual_senses": "中英对照义位",
+    "oald_senses": "OALD10 义项",
+    "related_nodes": "关联节点",
+    "source_review": "来源与复核",
+    "def_source": "释义来源",
+    "levin_source": "Levin 出处",
+    "cross_subclass": "跨类情况",
+    "judge_reason": "判定理由",
+    "notes_fav": "备注 / 收藏",
+    "rel_name": "关系名称",
+    "rel_type": "关系类型",
+    "rel_type_v": "同一次类内的近义关系（簇内完全图边）",
+    "rel_dir": "关系方向",
+    "rel_dir_v": "无向 —— 近义是对称关系，库里按 verb_a_id < verb_b_id 只存一份",
+    "rel_note1": " 与 ",
+    "rel_note2": " 同属「",
+    "rel_note3": "」次类（",
+    "rel_note4": "），在该次类内两两互为近义。",
+    "weight": "权重 / 强度",
+    "common_nb": "共同邻居",
+    "two_degree": "两端近义边数",
+    "weight_miss1": "本图没有边权重字段：次类内是完全图，每条边结构等价，共同邻居数恒等于（次类词数 − 2）。这里只给可验证的结构指标，不编一个相似度分数出来。",
+    "examples": "例句",
+    "colon": "：",
+    "ex_miss": "两端词条都没有例句（词目级例句只覆盖 136 词里的 22 个）",
+    "source": "来源",
+    "rel_source": "关系来源",
+    "rel_source_v": "docs/research/tables/Levin移动动词候选词筛选表.xlsx 的次类归并，脚本据此生成完全图",
+    "n_particles": "+ ' 个节点粒子'",
+    "c_tip1": "点击簇内其他节点或连线继续查看",
+    "c_rel_note1": " 与 ",
+    "c_rel_note2": " 同簇，在该次类内两两互为近义",
+})
+
+# en 态补齐 zh 相同形态的键（rel_note2/3 的引号形态等）
+_UI["en"].update({
+    "zh_dict_note": "",
+    "_degree_suffix": "synonym edges",
+    "_ungrouped": "Unclustered",
+})
+
+# 数据值映射（DB 值 → 展示译名；zh 态恒等）
+_DATA_EN = {
+    "方式聚焦型": "Manner-focused",
+    "路径聚焦型": "Path-focused",
+    "互动聚焦型": "Interaction-focused",
+    "陆地行进类": "Land-travel", "奔跑行进类": "Running", "腾空跳跃类": "Leaping",
+    "匍匐爬行类": "Crawling", "滚动滑行类": "Rolling", "长途行进类": "Long-distance",
+    "飞行游动类": "Flying & Swimming", "运载工具类": "Vehicle", "来源类": "Source",
+    "终点类": "Endpoint", "目的类": "Purposive", "参与者类": "Participant",
+    "未分组": "Unclustered",
+}
+
+
+def _dv(text: str, lang: str) -> str:
+    """数据值展示映射：en 态查 _DATA_EN，zh 态原样。
+
+    复合 label（"主范畴 / 次类"）按 " / " 分段映射——两段都是固定常量词表值。"""
+    if lang != "en":
+        return text
+    if text in _DATA_EN:
+        return _DATA_EN[text]
+    if " / " in text:
+        return " / ".join(_DATA_EN.get(p, p) for p in text.split(" / ", 1))
+    return text
+
+
+
+def data_fingerprint(graph: Dict[str, Any], lang: str = "zh") -> str:
     """
     图谱产物指纹 = 数据（节点/边集合） + 模板版本。
 
@@ -87,6 +474,7 @@ def data_fingerprint(graph: Dict[str, Any]) -> str:
     payload = json.dumps(
         {
             "v": TEMPLATE_VERSION,
+            "lang": lang,
             "nodes": sorted(n["id"] for n in graph.get("nodes", [])),
             "edges": sorted(
                 f"{l['source']}-{l['target']}" for l in graph.get("links", [])
@@ -115,7 +503,7 @@ def _assign_colors(clusters: List[Dict[str, Any]]) -> Dict[str, str]:
     return colors
 
 
-def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图谱") -> str:
+def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图谱", lang: str = "zh") -> str:
     """
     把 `get_full_word_graph()` 的输出渲染成一个**独立可打开的 HTML 文件**。
 
@@ -148,12 +536,13 @@ def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图�
             "label": n["label"],
             "color": {"background": color, "border": "#ffffff"},
             "size": round(size, 1),
-            "title": f"{_esc(n['label'])} · {_esc(n.get('cluster_label', ''))}"
-                     f" · {n.get('degree', 0)} 条近义边",
+            # 数据值（簇名/主范畴）按 lang 映射展示译名（批次 61 双语化）
+            "title": f"{_esc(n['label'])} · {_esc(_dv(n.get('cluster_label', '') or '', lang))}"
+                     f" · {n.get('degree', 0)} {_UI[lang]['_degree_suffix']}",
             "_clusterId": cid,
-            "_clusterLabel": n.get("cluster_label") or "未分组",
-            "_subCat": n.get("sub_cat") or "未分组",
-            "_mainCat": n.get("main_cat") or "",
+            "_clusterLabel": _dv(n.get("cluster_label") or "", lang) or _UI[lang]["_ungrouped"],
+            "_subCat": _dv(n.get("sub_cat") or "", lang) or _UI[lang]["_ungrouped"],
+            "_mainCat": _dv(n.get("main_cat") or "", lang),
             "_degree": n.get("degree", 0),
             # 明细：只给右侧信息面板与浮层卡片用，vis 不读这些键。
             # 缺的字段一律给空值而不是省略 —— 前端靠「有没有这个键」区分
@@ -201,14 +590,26 @@ def build_graph_html(graph: Dict[str, Any], title: str = "词间关系知识图�
     legend = []
     for c in clusters:
         cid = str(c["id"])
+        # 图例标签 = 主范畴 / 次类（数据值）——按 lang 映射展示译名
+        raw_label = str(c.get("label") or "")
+        if lang == "en" and " / " in raw_label:
+            parts = [_dv(p, lang) for p in raw_label.split(" / ", 1)]
+            raw_label = " / ".join(parts)
+        else:
+            raw_label = _dv(raw_label, lang)
         legend.append({
             "cid": cid,
             "color": colors.get(cid, "#BAB0AC"),
-            "label": c["label"],
+            "label": raw_label,
             "size": c["size"],
         })
 
-    return _render_template({
+    # T 占位符注入：_UI[lang] 全量平铺（__T_KEY__ / __CT_KEY__ 双前缀共用同值）
+    t_flat = {}
+    for k, v in _UI[lang].items():
+        t_flat[f"T_{k}"] = v
+        t_flat[f"CT_{k}"] = v
+    return _render_template({**t_flat,
         "TITLE": _esc(title),
         "VIS_LIB": _esc(VIS_LIB),
         # "</" 必须转义成 "<\/"：json.dumps 不转义斜杠，节点字段里若含
@@ -237,7 +638,7 @@ def _render_template(values: Dict[str, str]) -> str:
     return out
 
 
-def ensure_graph_html(graph: Dict[str, Any], force: bool = False) -> str:
+def ensure_graph_html(graph: Dict[str, Any], force: bool = False, lang: str = "zh") -> str:
     """
     确保静态图谱文件存在，返回可供 iframe 使用的 URL 路径。
 
@@ -253,7 +654,7 @@ def ensure_graph_html(graph: Dict[str, Any], force: bool = False) -> str:
     if not graph.get("nodes"):
         return ""
 
-    fp = data_fingerprint(graph)
+    fp = data_fingerprint(graph, lang=lang)
     filename = f"word_graph_{fp}.html"
     path = os.path.join(STATIC_DIR, filename)
 
@@ -264,7 +665,7 @@ def ensure_graph_html(graph: Dict[str, Any], force: bool = False) -> str:
             # 残缺 HTML，而存在性检查会让它被永久复用
             tmp_path = path + ".tmp"
             with open(tmp_path, "w", encoding="utf-8") as f:
-                f.write(build_graph_html(graph))
+                f.write(build_graph_html(graph, lang=lang))
             os.replace(tmp_path, path)
             logger.info(f"交互式图谱已生成: {filename}")
             _prune_old_graphs(keep=filename)
@@ -423,50 +824,50 @@ _TEMPLATE = """<!DOCTYPE html>
   <canvas id="particles"></canvas>
   <div class="float-card hidden" id="word-card" style="left:24px; top:64px;">
     <div class="fc-head" id="word-card-head">
-      <span class="fc-title" id="word-card-title">词条详情</span>
-      <button class="fc-btn" id="word-card-star" title="收藏该词条">★</button>
-      <button class="fc-btn" id="word-card-close" title="关闭">✕</button>
+      <span class="fc-title" id="word-card-title"__T_WORD_CARD__
+      <button class="fc-btn" id="word-card-star" __T_FAV_WORD__>★</button>
+      <button class="fc-btn" id="word-card-close" __T_CLOSE__>✕</button>
     </div>
     <div class="fc-body" id="word-card-body"></div>
   </div>
 
   <div class="float-card hidden" id="edge-card" style="left:432px; top:96px;">
     <div class="fc-head" id="edge-card-head">
-      <span class="fc-title" id="edge-card-title">关系详情</span>
-      <button class="fc-btn" id="edge-card-star" title="收藏该关系">★</button>
-      <button class="fc-btn" id="edge-card-close" title="关闭">✕</button>
+      <span class="fc-title" id="edge-card-title"__T_EDGE_CARD__
+      <button class="fc-btn" id="edge-card-star" __T_FAV_EDGE__>★</button>
+      <button class="fc-btn" id="edge-card-close" __T_CLOSE__>✕</button>
     </div>
     <div class="fc-body" id="edge-card-body"></div>
   </div>
 
   <div id="toolbar">
-    <button class="tool-btn on" id="btn-particles"><span class="dot"></span>节点粒子</button>
+    <button class="tool-btn on" id="btn-particles">__T_PARTICLES__</button>
     <span id="particle-info">—</span>
-    <button class="tool-btn" id="btn-fullscreen">⛶ 全屏</button>
+    <button class="tool-btn" id="btn-fullscreen">__T_FULLSCREEN__</button>
   </div>
 </div>
 <div id="sidebar">
   <div id="search-wrap">
-    <input id="search" type="text" placeholder="搜索动词…" autocomplete="off"/>
+    <input id="search" type="text" __T_SEARCH_PH__ autocomplete="off"/>
   </div>
   <div id="search-results"></div>
 
   <div id="info-panel">
-    <h3>节点信息</h3>
-    <div id="info-content"><span class="empty">点击任意节点查看详情</span></div>
+    __T_NODE_INFO__
+    <div id="info-content">__T_CLICK_NODE__</div>
   </div>
 
   <div id="legend-wrap">
-    <h3>词簇（可勾选过滤）</h3>
+    __T_LEGEND_H__
     <div id="legend-controls">
-      <label><input type="checkbox" id="select-all-cb" checked/> 全选</label>
-      <label><input type="checkbox" id="focus-cb" checked/> 高亮邻居</label>
+      <label><input type="checkbox" id="select-all-cb" __T_SELECT_ALL__
+      <label><input type="checkbox" id="focus-cb" __T_HIGHLIGHT__
     </div>
     <div id="legend"></div>
   </div>
 
   <div id="stats"></div>
-  <div id="hint">滚轮缩放 · 拖拽平移 · 悬停看节点 · 点击看邻居<br/>节点即粒子：相互引力斥力 · 带阻尼</div>
+  <div id="hint">__T_HINT1__<br/>__T_HINT2__</div>
 </div>
 
 <script>
@@ -558,8 +959,8 @@ function updateStats() {
   RAW_NODES.forEach(n => { if (enabled.has(n._clusterId)) { sn++; shownIds.add(n.id); } });
   RAW_EDGES.forEach(e => { if (shownIds.has(e.from) && shownIds.has(e.to)) se++; });
   document.getElementById('stats').innerHTML =
-    '节点 ' + sn + ' / ' + TOTAL_NODES + ' · 关系 ' + se + ' / ' + TOTAL_EDGES
-    + '<br/>词簇 ' + enabled.size + ' / ' + TOTAL_CLUSTERS;
+    __T_STATS1__
+    + __T_STATS2__;
 }
 
 document.addEventListener('click', e => {
@@ -598,7 +999,7 @@ searchEl.addEventListener('input', () => {
   resultsEl.innerHTML = hits.length
     ? hits.map(n => '<div class="search-item" data-nid="' + esc(n.id) + '">'
         + esc(n.label) + '</div>').join('')
-    : '<div class="search-item" style="color:#666">无匹配</div>';
+    : '<div class="search-item" style="color:#666"__T_NO_MATCH__';
   resultsEl.style.display = 'block';
 });
 
@@ -672,8 +1073,8 @@ function neighborChips(ids) {
 
 // 五元语义分解的键与中文名。aspect / scope 在库中 136 词全为空，所以下面会把
 // 「空的那几项」显式列出来并说明原因 —— 静默省略会让人以为这个词没有体相/范围。
-const SEMA_KEYS = [['manner', '方式'], ['path', '路径'], ['direction', '方向'],
-                   ['aspect', '体相'], ['scope', '范围']];
+const SEMA_KEYS = __T_SEMA1__
+                   __T_SEMA2__
 
 const ADJ = new Map();
 RAW_EDGES.forEach(e => {
@@ -684,17 +1085,17 @@ RAW_EDGES.forEach(e => {
 });
 
 function senseHTML(s) {
-  let h = '<div class="fc-sense"><span class="idx">义位 ' + s.sense_index + '</span><br/>'
-        + esc(s.ch_ndef || '（无中文释义）');
+  let h = '<div class="fc-sense">__T_IDX_SENSE__ + s.sense_index + '</span><br/>'
+        + esc(s.ch_ndef || __T_NO_ZH_DEF__);
   if (s.en_ndef) h += '<div class="fc-ex">' + esc(s.en_ndef) + '</div>';
-  if (s.construction) h += '<div class="fc-ex">句式：' + esc(s.construction) + '</div>';
+  if (s.construction) h += '__T_CONSTRUCTION__ + esc(s.construction) + '</div>';
   const exs = s.examples || [], chs = s.ch_examples || [];
   for (let i = 0; i < exs.length; i++) {
     h += '<div class="fc-ex">· ' + esc(exs[i])
        + (chs[i] ? '<br/>&nbsp;&nbsp;' + esc(chs[i]) : '') + '</div>';
   }
-  if (s.synonyms && s.synonyms.length) h += '<div class="fc-ex">近义：' + esc(s.synonyms.join('、')) + '</div>';
-  if (s.antonyms && s.antonyms.length) h += '<div class="fc-ex">反义：' + esc(s.antonyms.join('、')) + '</div>';
+  if (s.synonyms && s.synonyms.length) h += '__T_SYNONYMS__ + esc(s.synonyms.join('、')) + '</div>';
+  if (s.antonyms && s.antonyms.length) h += '__T_ANTONYMS__ + esc(s.antonyms.join('、')) + '</div>';
   return h + '</div>';
 }
 
@@ -708,11 +1109,11 @@ function senseHTML(s) {
  */
 function oaldSenseHTML(s) {
   let h = '<div class="fc-sense' + (s.is_idiom ? ' fc-idiom' : '') + '">'
-        + '<span class="idx">义项 ' + s.sense_index
+        + '__T_IDX_OALD__ + s.sense_index
         + (s.sense_group ? ' · ' + esc(s.sense_group) : '')
-        + (s.is_idiom ? ' · 习语' : '') + '</span><br/>'
-        + esc(s.definition || '（无释义）');
-  if (s.grammar) h += '<div class="fc-ex">语法：' + esc(s.grammar) + '</div>';
+        + (s.is_idiom ? __T_IDIOM__ : '') + '</span><br/>'
+        + esc(s.definition || __T_NO_DEF__);
+  if (s.grammar) h += '__T_GRAMMAR__ + esc(s.grammar) + '</div>';
   const exs = s.examples || [], pats = s.example_patterns || [];
   for (let i = 0; i < exs.length; i++) {
     h += '<div class="fc-ex">· ' + (pats[i] ? '<' + esc(pats[i]) + '> ' : '') + esc(exs[i]) + '</div>';
@@ -730,71 +1131,71 @@ function nodeDetailHTML(n, compact) {
   let h = '<div class="fc-row"><span class="v" style="font-size:16px;color:#fff;font-weight:600">'
         + esc(n.label) + '</span></div>';
   if (d.phonetic) {
-    h += plainRow('音标', '/' + d.phonetic + '/');
+    h += __T_PHONETIC__, '/' + d.phonetic + '/');
   } else {
-    h += '<div class="fc-row"><span class="k">音标</span>'
-       + '<span class="v fc-miss">未收录</span></div>';
+    h += '<div class="fc-row">__T_PHONETIC_K__'
+       + '__T_NOT_RECORDED__</div>';
   }
-  h += plainRow('词性', d.pos === 'v' ? 'v. 动词' : (d.pos || ''));
-  h += plainRow('词簇', n._clusterLabel + '（次范畴：' + n._subCat + '）');
-  h += plainRow('主范畴', n._mainCat);
+  h += __T_POS__;
+  h += __T_CLUSTER_ROW__;
+  h += __T_MAINCAT_ROW__;
 
-  h += sec('释义');
+  h += __T_SEC_DEF__;
   h += '<div class="fc-row"><span class="v">' + esc(d.chinese_ndef || '—') + '</span></div>';
   if (d.en_ndef) h += '<div class="fc-ex">' + esc(d.en_ndef) + '</div>';
-  if (d.sense_brief) h += plainRow('原型义要点', d.sense_brief);
+  if (d.sense_brief) h += __T_BRIEF__;
 
-  h += sec('意象与标注');
-  h += plainRow('意象图式', d.image_schema);
-  h += plainRow('原型层级', d.prototype_level === 'Y' ? 'Y（原型义）' : d.prototype_level);
-  h += plainRow('英汉对齐', d.alignment);
-  h += plainRow('汉语句法', d.cn_syntax);
-  h += plainRow('译义策略', d.translation_strategy);
+  h += __T_SEC_SCHEMA__;
+  h += __T_SCHEMA_ROW__;
+  h += plainRow('原型层级', d.prototype_level === 'Y' ? __T_Y_PROTO__ : d.prototype_level);
+  h += __T_ALIGN_ROW__;
+  h += __T_CNSYN_ROW__;
+  h += __T_TRANS_ROW__;
 
   if (!compact) {
     const st = d.semantic_table || {};
     const filled = SEMA_KEYS.filter(kv => String(st[kv[0]] || '').trim());
     if (filled.length) {
-      h += sec('五元语义分解');
+      h += __T_SEC_FIVE__;
       filled.forEach(kv => { h += plainRow(kv[1], st[kv[0]]); });
       const empty = SEMA_KEYS.filter(kv => !String(st[kv[0]] || '').trim()).map(kv => kv[1]);
       if (empty.length) {
-        h += missRow(empty.join('、') + '：库中 136 词全部为空，暂无数据');
+        h += missRow(empty.join('、') + __T_FIVE_MISS__);
       }
     }
     // 两个来源的义项**分节展示**，不合并成一个列表：它们的切分体系不同，
     // 合并后会让人以为「第 1 条」和「第 1 条」是同一个义项。
     const senses = d.senses || [];
     const oald = d.oald_senses || [];
-    h += sec('中英对照义位（' + senses.length + '）');
+    h += __T_SEC_BILINGUAL__ + senses.length + '）');
     if (senses.length) {
       senses.forEach(x => { h += senseHTML(x); });
     } else {
-      h += missRow('该词没有中英对照义位（dictionary.db 只有 333 个动词词条，'
-        + '与这 136 词重合 9 个）');
+      h += missRow(__T_BIL_MISS1__
+        + __T_BIL_MISS2__);
       if (d.example_sentence) h += '<div class="fc-ex">· ' + esc(d.example_sentence) + '</div>';
     }
-    h += sec('OALD10 义项（' + oald.length + '）');
+    h += __T_SEC_OALD__ + oald.length + '）');
     if (oald.length) {
       oald.forEach(x => { h += oaldSenseHTML(x); });
     } else {
-      h += missRow('OALD 导出表里查不到该词的动词义项（136 词中有 4 个这样：'
+      h += missRow(__T_OALD_MISS1__
         + 'dodder / scutter / kayak / oar）');
     }
-    h += sec('关联节点（' + nb.length + '）');
+    h += __T_SEC_RELATED__ + nb.length + '）');
     h += '<div>' + neighborChips(nb) + '</div>';
-    h += sec('来源与复核');
-    h += plainRow('释义来源', d.definition_source
-      + (d.source_rank ? '（来源优先级 ' + d.source_rank + '）' : ''));
-    h += plainRow('Levin 出处', d.levin_source);
-    h += plainRow('跨类情况', d.cross_subclass);
+    h += __T_SEC_SOURCE__;
+    h += __T_DEF_SOURCE__
+      + (d.source_rank ? __T_RANK_P__ + d.source_rank + '）' : ''));
+    h += __T_LEVIN_ROW__;
+    h += __T_CROSS_ROW__;
     if (d.needs_review) {
-      h += missRow('标注待人工复核 —— 图式/对齐/原型层级都是规则推导的候选标签'
-        + '（《义项判定标准》第 45 段）');
+      h += missRow(__T_NEEDS_REVIEW1__
+        + __T_NEEDS_REVIEW2__);
     }
-    if (d.judge_reason) h += plainRow('判定理由', d.judge_reason);
+    if (d.judge_reason) h += __T_JUDGE_ROW__;
   } else {
-    h += sec('关联节点（' + nb.length + '）');
+    h += __T_SEC_RELATED__ + nb.length + '）');
     h += '<div id="neighbors-list">' + neighborChips(nb) + '</div>';
   }
   return h;
@@ -808,10 +1209,10 @@ function renderPanel(nodeId) {
   // 与浮层卡片**共用同一个渲染器**（compact 分支）。不另写一套：两套 HTML 靠人工
   // 对齐，迟早漂移，而漂移的症状是「面板和卡片说的不一样」，最难被发现的那种 bug。
   let html = nodeDetailHTML(n, true)
-    + '<div class="fc-row"><span class="k">近义边数</span>'
+    + '<div class="fc-row">__T_DEGREE_K__'
     + '<span class="v">' + n._degree + '</span></div>'
     + '<button class="tool-btn" id="btn-word-detail" '
-    + 'style="margin:7px 0 2px;width:100%;justify-content:center">查看详情</button>';
+    + 'style="margin:7px 0 2px;width:100%;justify-content:center">__T_VIEW_DETAIL__</button>';
   document.getElementById('info-content').innerHTML = html;
 }
 
@@ -838,10 +1239,10 @@ function renderWordCard() {
   document.getElementById('word-card-title').textContent = n.label;
   document.getElementById('word-card-star').classList.toggle('on', !!ann.star);
   document.getElementById('word-card-body').innerHTML = nodeDetailHTML(n, false)
-    + sec('备注 / 收藏')
-    + '<textarea class="fc-note" id="word-note" placeholder="写下你的备注…">'
+    + __T_SEC_NOTES__
+    + '<textarea class="fc-note" id="word-note" __T_NOTE_PH__>'
     + esc(ann.note || '') + '</textarea>'
-    + '<div style="margin-top:5px" class="fc-miss">收藏与备注保存在本机浏览器</div>';
+    + '<div style="margin-top:5px" class="fc-miss">__T_LOCAL_NOTE__</div>';
   const ta = document.getElementById('word-note');
   ta.addEventListener('input', () => { annSet('word', currentNodeId, { note: ta.value }); });
 }
@@ -877,45 +1278,45 @@ function renderEdgeCard() {
   let common = 0;
   na.forEach(x => { if (nb2.has(x)) common++; });
 
-  let h = sec('关系');
-  h += plainRow('关系名称', e.relation || '近义');
-  h += '<div class="fc-row"><span class="k">源词条</span><span class="v">'
+  let h = __T_SEC_REL__;
+  h += __T_REL_NAME__;
+  h += '<div class="fc-row">__T_SRC_K__<span class="v">'
      + '<span class="fc-link" data-open-word="' + esc(a.id) + '">' + esc(a.label)
      + '</span></span></div>';
-  h += '<div class="fc-row"><span class="k">目标词条</span><span class="v">'
+  h += '<div class="fc-row">__T_DST_K__<span class="v">'
      + '<span class="fc-link" data-open-word="' + esc(b.id) + '">' + esc(b.label)
      + '</span></span></div>';
-  h += plainRow('关系类型', '同一次类内的近义关系（簇内完全图边）');
-  h += plainRow('关系方向', '无向 —— 近义是对称关系，库里按 verb_a_id < verb_b_id 只存一份');
-  h += '<div class="fc-row"><span class="k">关系说明</span><span class="v">'
-     + esc(a.label + ' 与 ' + b.label + ' 同属「' + a._subCat + '」次类（'
-           + a._clusterLabel + '），在该次类内两两互为近义。') + '</span></div>';
+  h += __T_REL_TYPE__;
+  h += __T_REL_DIR__;
+  h += '<div class="fc-row">__T_REL_NOTE_K__<span class="v">'
+     + __T_REL_NOTE1__
+           + a._clusterLabel + __T_REL_NOTE_TAIL__ + '</span></div>';
 
-  h += sec('权重 / 强度');
-  h += plainRow('共同邻居', common + ' 个');
-  h += plainRow('两端近义边数', a._degree + ' / ' + b._degree);
-  h += missRow('本图没有边权重字段：次类内是完全图，每条边结构等价，共同邻居数恒等于'
-    + '（次类词数 − 2）。这里只给可验证的结构指标，不编一个相似度分数出来。');
+  h += __T_SEC_WEIGHT__;
+  h += __T_COMMON_NB__;
+  h += __T_TWO_DEGREE__;
+  h += __T_WEIGHT_MISS1__
+    + __T_WEIGHT_MISS2__;
 
-  h += sec('例句');
+  h += __T_SEC_EX__;
   const exA = (a._d && a._d.example_sentence) || '';
   const exB = (b._d && b._d.example_sentence) || '';
   if (exA || exB) {
-    if (exA) h += '<div class="fc-ex">' + esc(a.label) + '：' + esc(exA) + '</div>';
-    if (exB) h += '<div class="fc-ex">' + esc(b.label) + '：' + esc(exB) + '</div>';
+    if (exA) h += '<div class="fc-ex">' + __T_EX_A__ + '</div>';
+    if (exB) h += '<div class="fc-ex">' + __T_EX_B__ + '</div>';
   } else {
-    h += missRow('两端词条都没有例句（词目级例句只覆盖 136 词里的 22 个）');
+    h += __T_EX_MISS__;
   }
 
-  h += sec('来源');
-  h += plainRow('关系来源', 'docs/research/tables/Levin移动动词候选词筛选表.xlsx 的次类归并，脚本据此生成完全图');
-  h += plainRow('所属次类', a._subCat);
-  h += plainRow('所属主范畴', a._mainCat);
+  h += __T_SEC_SRC2__;
+  h += __T_REL_SRC__;
+  h += __T_SUBCAT_ROW__;
+  h += __T_MAINCAT_ROW2__;
 
-  h += sec('备注 / 收藏');
-  h += '<textarea class="fc-note" id="edge-note" placeholder="写下你对这条关系的备注…">'
+  h += __T_SEC_NOTES__;
+  h += '<textarea class="fc-note" id="edge-note" __T_EDGE_NOTE_PH__>'
      + esc(ann.note || '') + '</textarea>'
-     + '<div style="margin-top:5px" class="fc-miss">收藏与备注保存在本机浏览器</div>';
+     + '<div style="margin-top:5px" class="fc-miss">__T_LOCAL_NOTE__</div>';
 
   document.getElementById('edge-card-body').innerHTML = h;
   const ta = document.getElementById('edge-note');
@@ -1017,7 +1418,7 @@ network.on('click', p => {
   if (hoveredNodeId === null) {
     currentNodeId = null;
     document.getElementById('info-content').innerHTML =
-      '<span class="empty">点击任意节点查看详情</span>';
+      '__T_CLICK_NODE__';
     const card = document.getElementById('word-card');
     if (!card.classList.contains('hidden')) { card.classList.add('hidden'); renderedWordId = null; }
   }
@@ -1322,7 +1723,7 @@ function writeBackPositions() {
 }
 
 function updateParticleInfo(shown) {
-  document.getElementById('particle-info').textContent = shown + ' 个节点粒子';
+  document.getElementById('particle-info').textContent = shown __T_N_PARTICLES__;
 }
 
 /**
@@ -1479,14 +1880,14 @@ document.getElementById('btn-fullscreen').addEventListener('click', async e => {
       await document.body.requestFullscreen();
     }
   } catch (err) {
-    btn.textContent = '⛶ 全屏不可用';
+    btn.textContent = __T_FS_UNAVAIL__;
   }
 });
 
 document.addEventListener('fullscreenchange', () => {
   const btn = document.getElementById('btn-fullscreen');
   btn.classList.toggle('on', !!document.fullscreenElement);
-  btn.textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏';
+  btn.textContent = document.fullscreenElement ? '⛶ 退出全屏' : '__T_FULLSCREEN__';
   // canvas 尺寸变了：重算覆盖层，并把图谱视野适配回新尺寸
   resizeParticles();
   network.setSize('100%', '100%');
@@ -1572,7 +1973,7 @@ window.__particleDebug = {
 #   * 本模板 —— 单簇轻量视图：中心词高亮，默认只画"中心词↔成员"连线
 #     （避免完全图在静态 SVG 时代挤成毛球的问题），簇内两两连线由
 #     页内按钮按需展开 —— 纯前端切换，不触发 Streamlit 重跑。
-CLUSTER_TEMPLATE_VERSION = 3
+CLUSTER_TEMPLATE_VERSION = 4  # 批次 61 双语化
 
 _CLUSTER_TEMPLATE = """<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1618,13 +2019,13 @@ _CLUSTER_TEMPLATE = """<!DOCTYPE html>
 <body>
 <div id="bar">
   <span class="t">__CLUSTER_LABEL__</span>
-  <span class="s">__SIZE__ 词 · 中心连线 __CENTER_EDGES__ 条 · 簇内两两 __PAIR_EDGES__ 条</span>
-  <button id="toggle" type="button">显示簇内两两连线</button>
+  <span class="s">__CT_C_SUMMARY__</span>
+  <button id="toggle" type="button"__CT_C_SHOW_PAIR__
 </div>
 <div id="net"></div>
 <div id="card">
   <div id="card-head"><span class="t" id="card-title"></span>
-    <button id="card-close" type="button" title="关闭">×</button></div>
+    <button id="card-close" type="button" __T_CLOSE__>×</button></div>
   <div id="card-body"></div>
 </div>
 <script src="__VIS_LIB__"></script>
@@ -1681,20 +2082,20 @@ _CLUSTER_TEMPLATE = """<!DOCTYPE html>
     var n = nodes.get(nodeId);
     if (!n) return;
     var d = n._d || {};
-    cardTitle.textContent = n.label + (n.isCenter ? '（中心词）' : '');
+    cardTitle.textContent = n.label + (n.isCenter ? __CT_C_CENTER__ : '');
     var h = '';
     if (d.chinese_ndef || d.en_ndef) {
-      h += '<div class="sec">释义</div>';
-      if (d.chinese_ndef) h += row('中文', d.chinese_ndef);
-      if (d.en_ndef) h += row('英文', d.en_ndef);
+      h += __CT_C_SEC_DEF__;
+      if (d.chinese_ndef) h += __CT_C_ZH__;
+      if (d.en_ndef) h += __CT_C_EN__;
     }
-    if (d.sense_brief) h += row('主导义', d.sense_brief);
-    if (d.image_schema) h += row('意象图式', d.image_schema);
-    if (d.subCat) h += row('次类', d.subCat);
+    if (d.sense_brief) h += __CT_C_BRIEF__;
+    if (d.image_schema) h += __CT_C_SCHEMA__;
+    if (d.subCat) h += __CT_C_SUBCAT__;
     if (d.example_sentence) {
-      h += '<div class="sec">例句</div><div class="ex">' + esc(d.example_sentence) + '</div>';
+      h += __CT_C_SEC_EX__ + '<div class="ex">' + esc(d.example_sentence) + '</div>';
     }
-    h += '<div class="sec">提示</div>' + row('操作', '点击簇内其他节点或连线继续查看');
+    h += '<div class="sec">提示</div>' + __CT_C_TIP1__;
     cardBody.innerHTML = h;
     showCard(x, y);
   }
@@ -1704,13 +2105,13 @@ _CLUSTER_TEMPLATE = """<!DOCTYPE html>
     var a = nodes.get(e.from), b = nodes.get(e.to);
     if (!a || !b) return;
     cardTitle.textContent = a.label + ' ↔ ' + b.label;
-    var h = '<div class="sec">关系</div>';
-    h += row('关系名称', '近义');
-    h += row('关系类型', '同一次类内的近义关系（簇内完全图边）');
-    h += row('关系方向', '无向（对称关系）');
-    h += row('所属次类', (a._d && a._d.subCat) || '');
-    h += row('关系说明', a.label + ' 与 ' + b.label + ' 同簇，在该次类内两两互为近义');
-    h += '<div class="sec">提示</div>' + row('操作', '点击节点可查看词条详情');
+    __CT_C_SEC_REL__
+    h += __CT_C_REL_NAME__;
+    h += __CT_C_REL_TYPE__;
+    h += __CT_C_REL_DIR__;
+    h += __CT_C_SUBCAT2__;
+    h += __CT_C_REL_NOTE__;
+    h += __CT_C_TIP2__;
     cardBody.innerHTML = h;
     showCard(x, y);
   }
@@ -1754,7 +2155,7 @@ _CLUSTER_TEMPLATE = """<!DOCTYPE html>
   btn.addEventListener('click', function () {
     showPair = !showPair;
     btn.classList.toggle('on', showPair);
-    btn.textContent = showPair ? '隐藏簇内两两连线' : '显示簇内两两连线';
+    btn.textContent = showPair ? __CT_C_TOGGLE__;
     EDGES_JSON.forEach(function (e) {
       if (e.pair) edges.update({ id: e.id, hidden: !showPair });
     });
@@ -1769,7 +2170,7 @@ def _esc_js_json(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
 
 
-def build_cluster_html(graph: Dict[str, Any]) -> str:
+def build_cluster_html(graph: Dict[str, Any], lang: str = "zh") -> str:
     """渲染词簇交互图 HTML（中心词高亮；簇内两两连线默认隐藏、页内可展开）。"""
     center = graph.get("center") or ""
     cluster = graph.get("cluster") or {}
@@ -1824,9 +2225,14 @@ def build_cluster_html(graph: Dict[str, Any]) -> str:
             "width": 1.4 if is_center_edge else 0.8,
         })
 
+    t_flat = {}
+    for k, v in _UI[lang].items():
+        t_flat[f"T_{k}"] = v
+        t_flat[f"CT_{k}"] = v
     values = {
-        "TITLE": _esc(f"词簇图谱：{center}"),
-        "CLUSTER_LABEL": _esc(f"词簇 {cluster.get('label', '未分组')}（中心词 {center}）"),
+        "TITLE": _esc(f"词簇图谱：{center}" if lang == "zh" else f"Cluster graph: {center}"),
+        "CLUSTER_LABEL": _esc(f"词簇 {cluster.get('label', '未分组')}（中心词 {center}）" if lang == "zh"
+                              else f"Cluster {_dv(cluster.get('label', '') or '', lang)} (headword {center})"),
         "SIZE": _esc(str(len(nodes))),
         "CENTER_EDGES": _esc(str(center_edges)),
         "PAIR_EDGES": _esc(str(pair_edges)),
@@ -1834,17 +2240,22 @@ def build_cluster_html(graph: Dict[str, Any]) -> str:
         "NODES_JSON": _esc_js_json(vis_nodes),
         "EDGES_JSON": _esc_js_json(vis_edges),
     }
+    values.update(t_flat)  # CT/T 双前缀 UI 文案平铺（批次 61 双语化）
     html = _CLUSTER_TEMPLATE
-    for k, v in values.items():
-        html = html.replace(f"__{k}__", v)
+    # 两遍替换：C_SUMMARY 的译文里嵌着 __SIZE__ 等数据占位符——首遍注入译文，
+    # 第二遍补填数据值（单遍会漏）
+    for _ in range(2):
+        for k, v in values.items():
+            html = html.replace(f"__{k}__", v)
     return html
 
 
-def cluster_fingerprint(graph: Dict[str, Any]) -> str:
-    """词簇图指纹：中心词 + 簇成员集合变化即重绘（行序无关）。"""
+def cluster_fingerprint(graph: Dict[str, Any], lang: str = "zh") -> str:
+    """词簇图指纹：中心词 + 簇成员集合变化即重绘（行序无关）；lang 入指纹（批次 61 双语化）。"""
     payload = json.dumps(
         {
             "v": CLUSTER_TEMPLATE_VERSION,
+            "lang": lang,
             "center": graph.get("center") or "",
             "nodes": sorted(n["id"] for n in graph.get("nodes", [])),
         },
@@ -1854,12 +2265,12 @@ def cluster_fingerprint(graph: Dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
 
-def ensure_cluster_html(graph: Dict[str, Any]) -> str:
+def ensure_cluster_html(graph: Dict[str, Any], lang: str = "zh") -> str:
     """生成（或复用）当前词的词簇图静态文件，返回 /app/static/ 相对 URL。"""
     if not graph or not graph.get("nodes"):
         return ""
 
-    fp = cluster_fingerprint(graph)
+    fp = cluster_fingerprint(graph, lang=lang)
     filename = f"cluster_graph_{fp}.html"
     path = os.path.join(STATIC_DIR, filename)
 
@@ -1868,7 +2279,7 @@ def ensure_cluster_html(graph: Dict[str, Any]) -> str:
         if not os.path.exists(path):
             tmp_path = path + ".tmp"
             with open(tmp_path, "w", encoding="utf-8") as f:
-                f.write(build_cluster_html(graph))
+                f.write(build_cluster_html(graph, lang=lang))
             os.replace(tmp_path, path)
             logger.info(f"词簇图已生成: {filename}")
             _prune_cluster_graphs(keep=filename)
