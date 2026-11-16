@@ -429,6 +429,34 @@ def _clear_login_failures(username: str) -> None:
     _login_failures.pop(username, None)
 
 
+def _audit_login(username: str, success: bool, detail: str = "") -> None:
+    """登录尝试持久审计（批次 62 商业化：COMMERCIAL_READINESS 挂账转完成）。
+
+    login_audit 表：username / success / detail（失败原因或空）/ created_at。
+    写失败只记日志（审计故障不拦登录——fail-open 与限速器同口径）；表由
+    首次写入时幂等创建（self-ensure，与 module_plugins 同款）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS login_audit ("
+                "id INT AUTO_INCREMENT PRIMARY KEY, "
+                "username VARCHAR(64) NOT NULL, "
+                "success TINYINT(1) NOT NULL, "
+                "detail VARCHAR(160) NULL, "
+                "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                "INDEX idx_login_audit_username (username(32)), "
+                "INDEX idx_login_audit_time (created_at)"
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+            cursor.execute(
+                "INSERT INTO login_audit (username, success, detail) "
+                "VALUES (%s, %s, %s)",
+                (str(username)[:64], 1 if success else 0, str(detail or "")[:160]),
+            )
+    except Exception as e:
+        logger.warning(f"登录审计写入失败（不影响登录）: {e}")
+
+
 def _verify_login_record(username: str, password: str) -> Optional[Dict[str, Any]]:
     """
     登录校验核心（供 verify_login / verify_login_full 共用）——限速包装器。
@@ -437,15 +465,18 @@ def _verify_login_record(username: str, password: str) -> Optional[Dict[str, Any
     直接返回 None（与密码错同口径，防账号枚举；锁定态不额外区分提示）。
     密码错/无此用户记失败一次；成功清零。
     """
-    # 限速前置闸（锁定中 → 哑元哈希同成本返回 None）
+    # 限速前置闸（锁定中 → 哑元哈希同成本返回 None；审计记锁定拒绝）
     if _login_locked(username):
         verify_password(password, _TIMING_DUMMY_HASH)
+        _audit_login(username, False, "locked")
         return None
     record = _verify_login_record_inner(username, password)
     if record is None:
         _record_login_failure(username)
+        _audit_login(username, False, "bad_credentials_or_inactive")
         return None
     _clear_login_failures(username)
+    _audit_login(username, True)
     return record
 
 

@@ -169,3 +169,19 @@ class TestRegistry:
         for spec in FEATURE_SPECS:
             assert spec.get("zh") and spec.get("en")
             assert spec["zh"] != spec["en"]
+
+
+class TestReadCache:
+    def test_set_invalidates_cache(self, pageplug_env):
+        """写路径主动失效：set 后同进程立即读到新值（不留 30s 旧缓存）。"""
+        assert set_page_enabled("graph", False, ACTOR) is True
+        assert is_page_enabled("graph") is False
+        set_page_enabled("graph", True, ACTOR)
+        assert is_page_enabled("graph") is True
+
+    def test_feature_set_invalidates_cache(self, pageplug_env):
+        key = FEATURE_SPECS[0]["key"]
+        set_feature_enabled(key, False, ACTOR)
+        assert is_feature_enabled(key) is False
+        set_feature_enabled(key, True, ACTOR)
+        assert is_feature_enabled(key) is True

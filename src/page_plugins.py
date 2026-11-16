@@ -91,6 +91,37 @@ FEATURE_SPECS: List[Dict[str, str]] = [
 ]
 
 
+
+# ============================================
+# 读缓存（批次 62 review-2：每 rerun 5-10 个开关小查询收敛为 30s 一次）
+# ============================================
+# 进程级 TTL 缓存：{cache_key: (取数时刻, 值)}。set_* 写路径主动失效本表
+# 缓存键——管理界面切换即时可见（rerun 后读新值）；其他进程（8501 容器
+# 独立进程）有 ≤30s 延迟——开关是非关键配置，容忍。
+_CACHE_TTL = 30
+_read_cache: dict = {}
+
+
+def _cache_get(key: str):
+    import time
+
+    hit = _read_cache.get(key)
+    if hit and time.time() - hit[0] < _CACHE_TTL:
+        return hit[1]
+    return None
+
+
+def _cache_put(key: str, value) -> None:
+    import time
+
+    _read_cache[key] = (time.time(), value)
+
+
+def _cache_invalidate() -> None:
+    """写路径主动失效（同进程内切换即时生效）。"""
+    _read_cache.clear()
+
+
 def _actor_id(actor: Any) -> Any:
     """actor（登录用户 dict）→ users.id（脏值清洗为 None）。"""
     return as_int((actor or {}).get("id")) if isinstance(actor, dict) else None
@@ -119,6 +150,10 @@ def is_page_enabled(page_key: str) -> bool:
     """页面闸（fail-open）：表缺/读失败/豁免键/未知键 → True。"""
     if page_key in LOCKED_PAGES:
         return True
+    cache_key = f"page:{page_key}"
+    hit = _cache_get(cache_key)
+    if hit is not None:
+        return hit
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -128,12 +163,18 @@ def is_page_enabled(page_key: str) -> bool:
         logger.warning(f"页面开关读取失败（按启用降级）: {e}")
         return True
     if row is None:
-        return True  # 未登记页默认启用
-    return bool(as_int(row.get("enabled")))
+        result = True  # 未登记页默认启用
+    else:
+        result = bool(as_int(row.get("enabled")))
+    _cache_put(cache_key, result)
+    return result
 
 
 def disabled_pages() -> set:
-    """停用页集合（侧边栏批量过滤用；fail-open 空集）。"""
+    """停用页集合（侧边栏批量过滤用；fail-open 空集；30s 缓存）。"""
+    hit = _cache_get("disabled_pages")
+    if hit is not None:
+        return hit
     try:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT page_key FROM page_plugins WHERE enabled = 0")
@@ -141,7 +182,9 @@ def disabled_pages() -> set:
     except Exception as e:
         logger.warning(f"停用页集合读取失败（按全启用降级）: {e}")
         return set()
-    return {str(r.get("page_key")) for r in rows if r.get("page_key")}
+    result = {str(r.get("page_key")) for r in rows if r.get("page_key")}
+    _cache_put("disabled_pages", result)
+    return result
 
 
 def set_page_enabled(page_key: str, enabled: bool, actor: Any) -> bool:
@@ -162,6 +205,7 @@ def set_page_enabled(page_key: str, enabled: bool, actor: Any) -> bool:
                 "enabled_by = VALUES(enabled_by), enabled_at = VALUES(enabled_at)",
                 (page_key, 1 if enabled else 0, _actor_id(actor)),
             )
+        _cache_invalidate()
         return True
     except Exception as e:
         logger.error(f"页面开关写入失败 {page_key}: {e}")
@@ -183,6 +227,10 @@ def list_page_settings() -> List[Dict[str, Any]]:
 
 def is_feature_enabled(feature_key: str) -> bool:
     """功能闸（fail-open）：表缺/读失败/键未知 → True（渐进式，新增功能零配置可渲染）。"""
+    cache_key = f"feat:{feature_key}"
+    hit = _cache_get(cache_key)
+    if hit is not None:
+        return hit
     try:
         with get_db_cursor() as cursor:
             cursor.execute(
@@ -193,8 +241,11 @@ def is_feature_enabled(feature_key: str) -> bool:
         logger.warning(f"功能开关读取失败（按启用降级）: {e}")
         return True
     if row is None:
-        return True
-    return bool(as_int(row.get("enabled")))
+        result = True
+    else:
+        result = bool(as_int(row.get("enabled")))
+    _cache_put(cache_key, result)
+    return result
 
 
 def set_feature_enabled(feature_key: str, enabled: bool, actor: Any) -> bool:
@@ -209,6 +260,7 @@ def set_feature_enabled(feature_key: str, enabled: bool, actor: Any) -> bool:
                 "enabled_at = NOW() WHERE feature_key = %s",
                 (1 if enabled else 0, _actor_id(actor), feature_key),
             )
+        _cache_invalidate()
         return True
     except Exception as e:
         logger.error(f"功能开关写入失败 {feature_key}: {e}")

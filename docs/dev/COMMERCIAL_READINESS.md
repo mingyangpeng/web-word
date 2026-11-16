@@ -25,7 +25,7 @@
 | 匿名查询日配额 | 【本轮完成】 | 未登录用户 100 次/天（`ANON_DAILY_QUOTA` env 可调）——`search_verb` 入口拦截，60s 计数缓存；登录态不限 |
 | 查询审计 | 【已就绪】 | usage_logs 逐笔落库（user_id 归因 FX-27）；匿名= NULL 不冒充 |
 | 上传限制 | 【已就绪】 | 媒体上传白名单＋魔数嗅探＋50MB 上限（批次 8）；导入 20MB 解析上限 |
-| 操作审计 | 【部分】 | settings_audit（工具运行层）/revert_log（导入）/module_plugins.enabled_by 有留痕；页面/功能开关（page_plugins）留痕已带 enabled_by/enabled_at；**缺口**：登录成功/失败无审计表（进程内存限速不计入持久审计）【挂账】 |
+| 操作审计 | 【部分】 | settings_audit（工具运行层）/revert_log（导入）/module_plugins.enabled_by 有留痕；页面/功能开关（page_plugins）留痕已带 enabled_by/enabled_at；**已闭环（批次 62 夜班）**：login_audit 表持久化每次登录尝试（用户名/成败/原因）——限速器同层写入，审计故障 fail-open 不拦登录 |
 
 ## 三、部署与运维
 
