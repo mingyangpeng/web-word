@@ -323,7 +323,9 @@ def test_sidebar_resume_caption_shown_when_flag_set():
     at.run()
     assert not at.exception, _exceptions(at)
     captions = [str(c.value) for c in at.sidebar.caption]
-    assert any(c.startswith("↩︎ 续接上次：") and "语义分析" in c
+    # 批次 61 双语化：caption 形态改为 f"↩︎ {_t('续接上次')}: {_t(页名)}"——
+    # zh 态 t() 恒等返回原串，分隔符由全角冒号改半角冒号+空格
+    assert any(c.startswith("↩︎ 续接上次") and "语义分析" in c
                for c in captions), captions
 
 

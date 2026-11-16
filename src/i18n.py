@@ -570,4 +570,16 @@ ZH_EN: Dict[str, str] = {
     "源点脱离图式": "Source-off Schema",
     "终点抵达图式": "Endpoint-arrival Schema",
     "互动位移图式": "Interactive-motion Schema",
+    # —— 批次 61 补：角色标签（ROLE_LABELS 消费点过 _t）＋改密提示＋续接上次 ——
+    "管理员": "Admin",
+    "审核员": "Reviewer",
+    "标注员": "Annotator",
+    "只读": "Read-only",
+    "词典管理员": "Dictionary Admin",
+    "平台管理员": "Platform Admin",
+    "撰写员": "Editor",
+    "内置管理员": "Built-in Admin",
+    "⚠️ 默认密码未修改——请在下方「🔑 修改密码」中更换（改后此提示自动消失）。": "⚠️ Default password unchanged — change it under “🔑 Change password” below (this notice disappears once changed).",
+    "🔐 初始口令未修改——请在「🔑 修改密码」中更换。": "🔐 Initial password unchanged — change it under “🔑 Change password”.",
+    "续接上次": "Resume last",
 }

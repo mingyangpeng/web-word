@@ -1784,9 +1784,13 @@ def _render_must_change_password_banner(user: Dict[str, Any]) -> None:
         return
     if not needs_password_change(uid):
         return
-    st.sidebar.caption(
-        "🔐 初始口令未修改——请在「🔑 修改密码」中更换。"
-    )
+    # 批次 61：会话内只提示一次（用户「不要总是提示」反馈——st.caption 每
+    # rerun 都渲染，改 session 旗标只弹首跑；改密成功标志清零自然不再触达）
+    if st.session_state.get("_initial_pwd_hint_shown"):
+        return
+    st.session_state["_initial_pwd_hint_shown"] = True
+    st.sidebar.caption(_t("🔐 初始口令未修改——请在「🔑 修改密码」中更换。",
+                          "🔐 Initial password unchanged — change it under “🔑 Change password”."))
 
 
 def _render_default_password_guard(user: Dict[str, Any]) -> None:
@@ -1802,8 +1806,14 @@ def _render_default_password_guard(user: Dict[str, Any]) -> None:
         return
     if not is_using_default_password(uid):
         return
+    # 批次 61：会话内只提示一次（用户「不要总是提示」反馈）——改密成功后
+    # is_using_default_password 翻 False 提示消失；未改也不再每 rerun 骚扰
+    if st.session_state.get("_default_pwd_hint_shown"):
+        return
+    st.session_state["_default_pwd_hint_shown"] = True
     st.sidebar.caption(
-        "⚠️ 默认密码未修改——请在下方「🔑 修改密码」中更换（改后此提示自动消失）。"
+        _t("⚠️ 默认密码未修改——请在下方「🔑 修改密码」中更换（改后此提示自动消失）。",
+           "⚠️ Default password unchanged — change it under “🔑 Change password” below (this notice disappears once changed).")
     )  # R8-1（批次 12）：内嵌表单删除——改密 UI 三处合一，唯一入口=自助面板
     # 批次 31：长卡压一行（用户「侧边栏一堆文字」反馈——细节收进 expander 内）
 
@@ -2016,12 +2026,15 @@ def _render_login_section() -> None:
     user = _current_user()
     if user:
         role = str(user.get("role") or "")
-        name = _html_escape(str(user.get("display_name") or user.get("username") or ""))
+        # 显示名/角色标签过 _t（批次 61 双语）：内置管理员是 bootstrap 固定显示名
+        # （en 态查表 Built-in Admin）；用户自起的显示名查表不中回落原样。角色
+        # 标签 ROLE_LABELS 值为固定枚举文案，已收进 ZH_EN。
+        name = _t(_html_escape(str(user.get("display_name") or user.get("username") or "")))
         st.sidebar.markdown(
             f"<p style='margin:0 0 6px 0;font-weight:600;'>👤 {name} "
             f"<span style='background:{ROLE_BADGE_COLORS.get(role, '#718096')};"
             f"color:#fff;padding:1px 10px;border-radius:10px;font-size:0.78em;'>"
-            f"{_html_escape(ROLE_LABELS.get(role, role))}</span></p>",
+            f"{_t(_html_escape(ROLE_LABELS.get(role, str(role))))}</span></p>",
             unsafe_allow_html=True,
         )
         st.sidebar.button(_t("🚪 退出登录"), key="logout_button",
@@ -2274,7 +2287,7 @@ def render_sidebar():
     # （会话中途角色收窄则随 radio 回退一起隐藏），登出全清自然回收。
     _resume_hint = st.session_state.get(_RESUME_HINT_KEY)
     if _resume_hint in visible_keys:
-        st.sidebar.caption(f"↩︎ 续接上次：{page_label(_resume_hint)}")
+        st.sidebar.caption(f"↩︎ {_t('续接上次', 'Resume last')}: {_t(page_label(_resume_hint))}")
     # 七区菜单导航（批次 22 升级：macOS 式真侧边栏）—— 每区一个小节头
     # （灰阶小型大写风）＋区页逐页整宽按钮；当前页 type="primary"（accent
     # 药丸），其余透明底（CSS .st-key-ls_nav 定制）。路由契约不变：按钮
