@@ -383,10 +383,64 @@ def _migrate_builtin_admin_roles(cursor) -> None:
 # 登录与用户 CRUD
 # ============================================
 
+# ============================================
+# 登录失败限速（批次 62 商业化：暴力破解防护）
+# ============================================
+# 进程级内存字典：{username: [最近失败时间戳 epoch 秒]}。单机 Streamlit 部署
+# 形态下够用（多 worker 各有一份——防护强度按 worker 数稀释，可接受）；
+# 重启清零（fail-open：重启后窗口重置）。
+_LOGIN_FAIL_WINDOW = 900        # 15 分钟滑动窗口
+_LOGIN_FAIL_MAX = 5             # 窗口内最大失败次数
+_login_failures: dict = {}
+
+
+def _login_locked(username: str) -> bool:
+    """窗口内失败次数达上限 → 锁定中（检查时顺带清理过期记录）。"""
+    import time
+
+    now = time.time()
+    fails = [t for t in _login_failures.get(username, [])
+             if now - t < _LOGIN_FAIL_WINDOW]
+    _login_failures[username] = fails
+    return len(fails) >= _LOGIN_FAIL_MAX
+
+
+def _record_login_failure(username: str) -> None:
+    """记录一次登录失败（成功登录时清零）。"""
+    import time
+
+    _login_failures.setdefault(username, []).append(time.time())
+
+
+def _clear_login_failures(username: str) -> None:
+    """登录成功清零该用户的失败计数。"""
+    _login_failures.pop(username, None)
+
+
 def _verify_login_record(username: str, password: str) -> Optional[Dict[str, Any]]:
     """
-    登录校验核心（供 verify_login / verify_login_full 共用）。
+    登录校验核心（供 verify_login / verify_login_full 共用）——限速包装器。
 
+    批次 62 商业化：进入校验前先查限速——同用户名 15 分钟窗口内失败 ≥5 次
+    直接返回 None（与密码错同口径，防账号枚举；锁定态不额外区分提示）。
+    密码错/无此用户记失败一次；成功清零。
+    """
+    # 限速前置闸（锁定中 → 哑元哈希同成本返回 None）
+    if _login_locked(username):
+        verify_password(password, _TIMING_DUMMY_HASH)
+        return None
+    record = _verify_login_record_inner(username, password)
+    if record is None:
+        _record_login_failure(username)
+        return None
+    _clear_login_failures(username)
+    return record
+
+
+def _verify_login_record_inner(username: str, password: str) -> Optional[Dict[str, Any]]:
+    """
+    原校验逻辑本体（限速包装器 _verify_login_record 的委托目标）。
+    
     通过校验返回 {"row": users 行（不含 password_hash）, "roles": [六角色按
     优先级降序]}；任一失败路径统一返回 None（防账号枚举）。roles 读自
     user_roles 表；表缺失/查询失败时按旧 role 列映射兜底（登录不能因为

@@ -2700,6 +2700,24 @@ def get_hot_verbs(cache_scope: Optional[str] = None,
         return []
 
 
+def anonymous_query_count_today() -> int:
+    """当日匿名（user_id IS NULL）查询数（批次 62 商业化：匿名日配额计数基础）。
+
+    只数 user_id IS NULL 且 query_time 在今日 00:00 之后的行——匿名配额的
+    唯一事实口径。读失败返回 0（fail-open：统计故障不拦查询）。
+    """
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM usage_logs "
+                "WHERE user_id IS NULL AND query_time >= CURDATE()")
+            row = cursor.fetchone()
+            return int((row or {}).get("n") or 0)
+    except Exception as e:
+        logger.warning(f"匿名当日查询数读取失败（按 0 降级）: {e}")
+        return 0
+
+
 def log_usage(verb: str, device_info: Optional[str] = None,
               user_id: Optional[int] = None) -> bool:
     """

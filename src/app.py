@@ -726,7 +726,34 @@ def _record_query(verb: str) -> None:
 
 
 def search_verb() -> None:
-    """on_change 回调：当搜索框值变化时触发搜索。"""
+    """on_change 回调：当搜索框值变化时触发搜索。
+
+    批次 62 商业化：匿名（未登录）查询受日配额限制（ANON_DAILY_QUOTA，
+    默认 100 次/天）——超限当日不再受理，提示登录后不限。登录态不限。
+    计数带 60s 内存缓存（防每 rerun 全表 COUNT；query_time 有索引）。
+    """
+    # 匿名日配额闸（登录态直接放行）
+    user = _current_user()
+    if not user:
+        import time as _time
+        from src.mysql_db import anonymous_query_count_today
+
+        quota = int(os.getenv("ANON_DAILY_QUOTA", "100") or 100)
+        now = _time.time()
+        cached = st.session_state.get("_anon_quota_cache")
+        # 缓存：{"ts": 取数时刻, "n": 当日计数}——60s 内复用，超限态立即刷新
+        if cached and now - cached.get("ts", 0) < 60 and cached.get("n", 0) < quota:
+            n = cached["n"]
+        else:
+            n = anonymous_query_count_today()
+            st.session_state["_anon_quota_cache"] = {"ts": now, "n": n}
+        if n >= quota:
+            st.warning(_t(
+                "⚠️ 今日匿名查询次数已达上限（{q} 次）——登录后不受限制。",
+                "⚠️ Daily anonymous query limit reached ({q}) — sign in for unlimited queries.",
+            ).format(q=quota))
+            st.session_state["搜索动词"] = ""
+            return
     value = st.session_state.get("搜索动词", "")
     if value and 1 <= len(value) <= 50:
         st.session_state.verb_result = value
