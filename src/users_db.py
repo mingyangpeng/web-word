@@ -395,20 +395,32 @@ _login_failures: dict = {}
 
 
 def _login_locked(username: str) -> bool:
-    """窗口内失败次数达上限 → 锁定中（检查时顺带清理过期记录）。"""
+    """窗口内失败次数达上限 → 锁定中（检查时顺带清理过期记录；列表清空即删键）。"""
     import time
 
     now = time.time()
     fails = [t for t in _login_failures.get(username, [])
              if now - t < _LOGIN_FAIL_WINDOW]
-    _login_failures[username] = fails
+    if fails:
+        _login_failures[username] = fails
+    else:
+        _login_failures.pop(username, None)  # 全过期 → 键一并移除（防 dict 滞留空壳）
     return len(fails) >= _LOGIN_FAIL_MAX
 
 
 def _record_login_failure(username: str) -> None:
-    """记录一次登录失败（成功登录时清零）。"""
+    """记录一次登录失败（成功登录时清零）。
+
+    GC（批次 62 review）：攻击者用随机用户名打登录会让 dict 无限膨胀——
+    键数超过 10000 时全表清一遍过期记录（窗口外的键整体删除）。
+    """
     import time
 
+    now = time.time()
+    if len(_login_failures) > 10000:
+        for k in [k for k, ts in _login_failures.items()
+                  if all(now - t >= _LOGIN_FAIL_WINDOW for t in ts)]:
+            _login_failures.pop(k, None)
     _login_failures.setdefault(username, []).append(time.time())
 
 

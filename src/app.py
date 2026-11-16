@@ -725,6 +725,31 @@ def _record_query(verb: str) -> None:
         logger.error(f"查询日志写入失败 for '{verb}': {e}")
 
 
+def _anon_quota_exceeded() -> bool:
+    """匿名日配额闸（批次 62 商业化，search_verb/select_example_verb/
+    _pick_cluster_verb 三路共用）：未登录且当日匿名查询数达到上限 → True。
+
+    60s 计数缓存防 rerun 全表 COUNT；登录态恒 False。计数读失败 fail-open 0
+    （配额统计故障不拦正常使用）。
+    """
+    import time as _time
+
+    if _current_user():
+        return False
+    from src.mysql_db import anonymous_query_count_today
+
+    quota = int(os.getenv("ANON_DAILY_QUOTA", "100") or 100)
+    now = _time.time()
+    cached = st.session_state.get("_anon_quota_cache")
+    # 缓存：{"ts": 取数时刻, "n": 当日计数}——未超限态 60s 内复用；已达/超限
+    # 立即刷新（不缓存超限态，登录后可即时恢复）
+    if cached and now - cached.get("ts", 0) < 60 and cached.get("n", 0) < quota:
+        return False
+    n = anonymous_query_count_today()
+    st.session_state["_anon_quota_cache"] = {"ts": now, "n": n}
+    return n >= quota
+
+
 def search_verb() -> None:
     """on_change 回调：当搜索框值变化时触发搜索。
 
@@ -732,28 +757,12 @@ def search_verb() -> None:
     默认 100 次/天）——超限当日不再受理，提示登录后不限。登录态不限。
     计数带 60s 内存缓存（防每 rerun 全表 COUNT；query_time 有索引）。
     """
-    # 匿名日配额闸（登录态直接放行）
-    user = _current_user()
-    if not user:
-        import time as _time
-        from src.mysql_db import anonymous_query_count_today
-
-        quota = int(os.getenv("ANON_DAILY_QUOTA", "100") or 100)
-        now = _time.time()
-        cached = st.session_state.get("_anon_quota_cache")
-        # 缓存：{"ts": 取数时刻, "n": 当日计数}——60s 内复用，超限态立即刷新
-        if cached and now - cached.get("ts", 0) < 60 and cached.get("n", 0) < quota:
-            n = cached["n"]
-        else:
-            n = anonymous_query_count_today()
-            st.session_state["_anon_quota_cache"] = {"ts": now, "n": n}
-        if n >= quota:
-            st.warning(_t(
-                "⚠️ 今日匿名查询次数已达上限（{q} 次）——登录后不受限制。",
-                "⚠️ Daily anonymous query limit reached ({q}) — sign in for unlimited queries.",
-            ).format(q=quota))
-            st.session_state["搜索动词"] = ""
-            return
+    # 匿名日配额闸（三路公共闸 _anon_quota_exceeded；回调内只写会话旗标，
+    # 提示由下一轮渲染统一弹出——on_click 回调里渲染组件不可靠）
+    if _anon_quota_exceeded():
+        st.session_state["_anon_quota_hit"] = True
+        st.session_state["搜索动词"] = ""
+        return
     value = st.session_state.get("搜索动词", "")
     if value and 1 <= len(value) <= 50:
         st.session_state.verb_result = value
@@ -764,7 +773,10 @@ def search_verb() -> None:
 
 
 def select_example_verb(verb: str) -> None:
-    """点击示例库 / 热门动词时触发搜索。"""
+    """点击示例库 / 热门动词时触发搜索（匿名日配额闸同 search_verb）。"""
+    if _anon_quota_exceeded():
+        st.session_state["_anon_quota_hit"] = True
+        return
     st.session_state.verb_result = verb
     st.session_state.show_result = True
     st.session_state["搜索动词"] = verb
@@ -4405,6 +4417,13 @@ def main():
     # 丢弃提示的问题 —— 上一轮 ui_kit.flash 落的提示在这里消费转渲染，
     # 置于页面分派之前，位于正文顶部；队列消费即清空不跨轮重复）。
     ui_kit.pop_and_render_flash()
+    # 批次 62 匿名日配额：回调（search_verb/select_example_verb）超限时置旗标，
+    # 本轮渲染统一弹提示（on_click 回调内不渲染组件——与 flash 队列同模式）
+    if st.session_state.pop("_anon_quota_hit", None):
+        st.warning(_t(
+            "⚠️ 今日匿名查询次数已达上限（{q} 次）——登录后不受限制。",
+            "⚠️ Daily anonymous query limit reached ({q}) — sign in for unlimited queries.",
+        ).format(q=int(os.getenv("ANON_DAILY_QUOTA", "100") or 100)))
     # 批次 30 五构件插件化：停用模块直访拦截（FX-54 实测修正——按 _page
     # 捕获值判定，模块页分派分支全部经过此闸；search∈U 锁定不可停不拦）
     if not render_module_gate(_page):
