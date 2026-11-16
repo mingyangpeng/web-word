@@ -107,8 +107,6 @@ from src.design_system import (
 )
 # 页内快捷导航条（顶部悬浮胶囊，段/tab 由前端扫 DOM 得出，零页面改动）
 from src.section_dock import render_section_dock
-# 页内快捷导航条（批次 35）：顶部悬浮胶囊，段/tab 由前端扫 DOM 得出
-from src.section_dock import render_section_dock
 
 # ============================================
 # 页面配置
