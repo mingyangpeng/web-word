@@ -145,9 +145,13 @@ def disabled_pages() -> set:
 
 
 def set_page_enabled(page_key: str, enabled: bool, actor: Any) -> bool:
-    """置页面开关（底线三键拒绝；未知键拒绝——开关面只对 PAGE_KEYS 开放）。"""
+    """置页面开关（底线三键拒绝；未知页键拒绝——开关面只对 PAGE_KEYS 开放）。"""
     if page_key in LOCKED_PAGES:
         logger.warning(f"拒绝停用底线页 {page_key}（LOCKED_PAGES）")
+        return False
+    from src.page_guides import PAGE_KEYS  # 惰性导入（page_guides 零重依赖纪律）
+    if page_key not in PAGE_KEYS:
+        logger.warning(f"拒绝设置未知页面开关 {page_key}（不在 PAGE_KEYS）")
         return False
     try:
         with get_db_cursor() as cursor:

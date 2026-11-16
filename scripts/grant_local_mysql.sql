@@ -261,3 +261,8 @@ GRANT ALL PRIVILEGES ON `web\_word\_sec\_test`.* TO 'web_word_user'@'%';
 GRANT ALL PRIVILEGES ON `web\_word\_r1\_test`.* TO 'web_word_user'@'localhost';
 GRANT ALL PRIVILEGES ON `web\_word\_r1\_test`.* TO 'web_word_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON `web\_word\_r1\_test`.* TO 'web_word_user'@'%';
+
+-- 批次 62：页面与功能开关测试库（tests/test_page_plugins.py）
+GRANT ALL PRIVILEGES ON `web\_word\_pageplug\_test`.* TO 'web_word_user'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON `web\_word\_pageplug\_test`.* TO 'web_word_user'@'localhost';
+GRANT ALL PRIVILEGES ON `web\_word\_pageplug\_test`.* TO 'web_word_user'@'%';

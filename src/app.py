@@ -2238,10 +2238,14 @@ def render_sidebar():
         # 折叠分支：窄图标栏（D-01），点击任意图标即展开回完整宽度
         st.sidebar.button("☰", key="expand_sidebar", help="展开侧边栏",
                           on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
-        st.sidebar.button("📊", key="rail_stats", help="统计",
-                          on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
-        st.sidebar.button("🔥", key="rail_hot", help="热门查询动词",
-                          on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
+        # 批次 62 功能开关联动：stats/hot 关掉后折叠态 rail 不再显示对应快捷钮
+        from src.page_plugins import is_feature_enabled as _feat_rail
+        if _feat_rail("search.stats"):
+            st.sidebar.button("📊", key="rail_stats", help="统计",
+                              on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
+        if _feat_rail("search.hot_verbs"):
+            st.sidebar.button("🔥", key="rail_hot", help="热门查询动词",
+                              on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
         st.sidebar.button("📥", key="rail_export", help="数据导出",
                           on_click=lambda: st.session_state.__setitem__("sidebar_collapsed", False))
         return
@@ -2387,7 +2391,9 @@ def render_sidebar():
         st.sidebar.metric(_t("平均评分", "Avg Rating"), _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
         st.sidebar.metric(_t("总反馈数", "Feedbacks"), _dash if _off else stats["total_feedbacks"])
 
-    st.sidebar.divider()
+    # 分隔线仅在 stats/hot 任一开启时显示（批次 62 review：关 stats 后不再有孤立分隔线）
+    if _feat_sidebar("search.stats") or _feat_sidebar("search.hot_verbs"):
+        st.sidebar.divider()
 
     if _feat_sidebar("search.hot_verbs"):
         st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 Hot Verbs</h2>", unsafe_allow_html=True)
