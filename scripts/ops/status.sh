@@ -64,10 +64,15 @@ fi
 # 口令经 MYSQL_PWD 环境变量传入而非 -p 命令行形态——容器内 ps 不可见、
 # 口令含特殊字符也不经 shell 二次解析。
 n3306="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
-if [ "$n3306" = "61" ]; then
-    say_ok "容器 web_word_db = 61 表（归一后完整库）"
+# 锚点口径：61 = 批次 36 归一快照的核心表数；63 = 61 + page_plugins/feature_plugins
+# （批次 62 页面与功能开关两张动态自持表）。区间判定——低于 61 才告警（缺表），
+# 高于 63 提示有新增动态表（信息性，非错误）。
+if [ "$n3306" = "61" ] || [ "$n3306" = "63" ]; then
+    say_ok "容器 web_word_db = ${n3306} 表（61 核心锚点 + 动态开关表，完整）"
+elif [ "$n3306" -ge 61 ] 2>/dev/null; then
+    say_ok "容器 web_word_db = ${n3306} 表（≥61 核心锚点——含动态自持表）"
 else
-    say_warn "容器 web_word_db = ${n3306} 表（预期 61——若显著偏少请对账 data/backups/db/ 的归一前备份）"
+    say_warn "容器 web_word_db = ${n3306} 表（低于 61 核心锚点——请对账 data/backups/db/ 的归一前备份）"
 fi
 p3307="$(lsof -nP -iTCP:3307 -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')"
 if [ -n "$p3307" ]; then

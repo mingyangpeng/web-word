@@ -24,7 +24,7 @@
 #      表缺失）；
 #   5. 建库：CREATE DATABASE IF NOT EXISTS（utf8mb4 / utf8mb4_unicode_ci，
 #      与 compose 服务端字符集口径一致）→ gunzip 管道导入；
-#   6. 61 表锚点校验：information_schema 计数，≠61 告警（0 表判失败；
+#   6. 表锚点校验：information_schema 计数，<61 告警（0 表判失败；
 #      计数查询本身失败也判失败，退出码 1）；
 #   7. 打印恢复摘要。
 #
@@ -46,7 +46,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_ROOT/.env"
 ENV_LOCAL="$REPO_ROOT/.env.local"
 
-EXPECTED_TABLES=61   # 业务库归一锚点（与 ./start 第⑦步同口径）
+EXPECTED_TABLES=61   # 核心锚点（批次 36 归一快照；63 = 61 + page_plugins/feature_plugins 动态开关表，批次 62）
 
 usage() {
   # 打印文件头注释块（第 2 行起连续 # 行）——头部增删行无需同步行号

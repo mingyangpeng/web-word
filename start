@@ -184,10 +184,14 @@ say_info "⑦ 数据库完整性"
 # compose YAML 里的 $$ 转义在 direct sh -c 中即单个 $）：不上命令行——
 # ps 不可见、无「Using a password on the command line」insecure 告警
 n_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema="web_word_db""' 2>/dev/null || echo "?")"
-if [ "$n_tables" = "61" ]; then
-    say_ok "业务库 web_word_db = 61 表（归一锚点，完整）"
+# 锚点口径：61 = 批次 36 归一快照核心表数；63 = 61 + page_plugins/feature_plugins
+# （批次 62 动态开关表）。低于 61 才告警。
+if [ "$n_tables" = "61" ] || [ "$n_tables" = "63" ]; then
+    say_ok "业务库 web_word_db = $n_tables 表（61 核心锚点 + 动态开关表，完整）"
+elif [ "$n_tables" -ge 61 ] 2>/dev/null; then
+    say_ok "业务库 web_word_db = $n_tables 表（≥61 核心锚点——含动态自持表）"
 else
-    say_warn "业务库 $n_tables 表（预期 61）——数据可能未灌/异常；回滚锚点见 data/backups/db/"
+    say_warn "业务库 $n_tables 表（低于 61 核心锚点）——数据可能未灌/异常；回滚锚点见 data/backups/db/"
 fi
 
 # wordforms 拼音词形计数（P2 实证：业务库曾出现 61 表齐全但 wordforms

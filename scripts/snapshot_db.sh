@@ -57,7 +57,9 @@ say_info "④ manifest（表数锚点）"
 n_tables="$(docker exec web-word-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"web_word_db\""' 2>/dev/null || echo "?")"
 printf 'tables=%s\ngenerated=%s\nsource=container-mysql-3306\nsha256=%s\n' "$n_tables" "$(date '+%Y-%m-%d %H:%M')" "$(shasum -a 256 "$OUT_FILE" | awk '{print $1}')" > "$OUT_DIR/manifest.txt"
 say_ok "快照完成：${OUT_FILE}（$(du -h "$OUT_FILE" | cut -f1)），manifest tables=$n_tables"
-if [ "$n_tables" != "61" ]; then
-    say_warn "表数 $n_tables ≠ 61——源库状态异常，快照仍已生成，恢复端会按 manifest 告警"
+# 锚点口径：61 核心（批次 36）+ 2 动态开关表（批次 62）= 63 为正常态；
+# <61 才是缺表异常（>63 表示又有新增动态表——信息性）
+if [ "$n_tables" -lt 61 ] 2>/dev/null; then
+    say_warn "表数 $n_tables < 61——源库缺表，快照仍已生成，恢复端会按 manifest 告警"
 fi
 say_info "新机部署：git clone（含快照）→ cp .env.example .env 填三键 → ./start（自动检测快照＋空库恢复）"
