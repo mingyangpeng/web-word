@@ -948,7 +948,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
     oald_id = _resolve_oald_sense_id(sense.get("lemma"), sense.get("sense_no"))
     ref = _build_sense_ref(str(sense.get("category_code") or ""), cs_id, oald_id)
     if ref is None:
-        st.error("义位锚拼装失败（数据异常）：请换一个义位，或联系管理员核查 cs_senses 行。")
+        st.error(_t("义位锚拼装失败（数据异常）：请换一个义位，或联系管理员核查 cs_senses 行。"))
         return
 
     # G3 锁定状态读面消费（FX-28）：打开该义位草稿时，locked 词簇在页面顶部
@@ -1049,7 +1049,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                         "Save Draft (version auto-increments)"),
                      key="writing_save_draft"):
             if not content.strip():
-                st.warning("释义成文为空：请先撰写内容再保存。")
+                st.warning(_t("释义成文为空：请先撰写内容再保存。"))
             elif target["mode"] == "update":
                 ok = writing_db.update_draft(
                     int(target["target_id"]), int(target["expect_version"]),
@@ -1084,7 +1084,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                         "草稿已保存（版本号自动递增）：可在「📚 版本历史」查看链路。"
                     )
                 else:
-                    st.error("保存失败：参数或数据库异常，详见服务端日志。")
+                    st.error(_t("保存失败：参数或数据库异常，详见服务端日志。"))
     with col_submit:
         st.markdown(_t("**📨 提交初审**", "**📨 Submit for Initial Review**"))
         reviewers = _reviewer_options(me)
@@ -1107,13 +1107,13 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                         "Submit for Initial Review (draft → in_review)"),
                      key="writing_submit_review"):
             if not content.strip():
-                st.warning("释义成文为空，无法提交。")
+                st.warning(_t("释义成文为空，无法提交。"))
             elif target["mode"] != "update":
-                st.warning("当前没有可提交的在途草稿：请先「保存草稿」，再提交初审。")
+                st.warning(_t("当前没有可提交的在途草稿：请先「保存草稿」，再提交初审。"))
             elif latest is not None and content != str(latest.get("content") or ""):
-                st.warning("成文有未保存的修改：请先「保存草稿」，再提交初审。")
+                st.warning(_t("成文有未保存的修改：请先「保存草稿」，再提交初审。"))
             elif reviewer is None:
-                st.warning("请先选择审校人（回避制：不能选自己）。")
+                st.warning(_t("请先选择审校人（回避制：不能选自己）。"))
             else:
                 ok = writing_db.submit_for_review(
                     int(target["target_id"]), int(reviewer["id"])
@@ -1139,7 +1139,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                         "💾 Stash Draft (without submitting for review)"),
                      key="writing_stash_draft"):
             if not content.strip():
-                st.warning("释义成文为空：暂存前请先撰写内容。")
+                st.warning(_t("释义成文为空：暂存前请先撰写内容。"))
             elif user_context_db.upsert_draft(stash_form_key, {
                 "content": content,
                 "style_version": style_version or None,
@@ -1230,7 +1230,7 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                 if payload:
                     st.json(payload)
                 else:
-                    st.caption("本版无 AI/模板草稿快照（纯人工撰写）。")
+                    st.caption(_t("本版无 AI/模板草稿快照（纯人工撰写）。"))
             comments = comments_by_version.get(int(row["version_id"]))
             if comments is None:
                 comments = writing_db.list_comments(int(row["version_id"]))
@@ -1247,7 +1247,7 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                         f"{c.get('body')}"
                     )
             else:
-                st.caption("暂无意见。")
+                st.caption(_t("暂无意见。"))
             new_comment = st.text_area(
                 _t("挂意见（逐条留痕）", "Add comment (one entry at a time)"),
                 key=f"writing_comment_{row['task_id']}", height=80,
@@ -1255,7 +1255,7 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
             if st.button(_t("💬 挂意见", "💬 Add Comment"),
                          key=f"writing_add_comment_{row['task_id']}"):
                 if not new_comment.strip():
-                    st.warning("意见内容为空。")
+                    st.warning(_t("意见内容为空。"))
                 else:
                     cid = writing_db.add_comment(
                         int(row["version_id"]), me.get("id"), new_comment
@@ -1278,9 +1278,9 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                                 "⛔ Request Revision (send back)"),
                              key=f"writing_revise_{row['task_id']}"):
                     if not assigned:
-                        st.error("你不是该任务的受派审校人，无法裁决。")
+                        st.error(_t("你不是该任务的受派审校人，无法裁决。"))
                     elif not note.strip():
-                        st.warning("打回须给理由：请在裁决意见里写明修订要求。")
+                        st.warning(_t("打回须给理由：请在裁决意见里写明修订要求。"))
                     elif writing_db.request_revision(
                         int(row["version_id"]), me.get("id"), note
                     ):
@@ -1289,13 +1289,13 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                             "version+1（自动挂 based_on_version，版本链不断）。"
                         )
                     else:
-                        st.error("打回失败：任务已被处理或状态已变化，请刷新。")
+                        st.error(_t("打回失败：任务已被处理或状态已变化，请刷新。"))
             with col_approve:
                 if st.button(_t("✅ 通过（终审即 final）",
                                 "✅ Approve (final review → final)"),
                              key=f"writing_approve_{row['task_id']}"):
                     if not assigned:
-                        st.error("你不是该任务的受派审校人，无法裁决。")
+                        st.error(_t("你不是该任务的受派审校人，无法裁决。"))
                     elif writing_db.approve(
                         int(row["version_id"]), me.get("id"), note or None
                     ):
@@ -1304,7 +1304,7 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                             "定稿；争议词条走下方「👑 词典管理员终裁」子视图。"
                         )
                     else:
-                        st.error("通过失败：任务已被处理或状态已变化，请刷新。")
+                        st.error(_t("通过失败：任务已被处理或状态已变化，请刷新。"))
 
 
 def _render_adjudication_view(me: Dict[str, Any]) -> None:
@@ -1453,7 +1453,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     )
     senses = _list_candidate_senses(cat_code, language)
     if not senses:
-        st.info("该范畴/语言暂无义位（与撰写台同源，merged 禁选）。")
+        st.info(_t("该范畴/语言暂无义位（与撰写台同源，merged 禁选）。"))
         return
     sense = st.selectbox(
         _t("选择义位", "Select sense"), options=senses, format_func=_sense_option_label,
@@ -1463,12 +1463,12 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
     oald_id = _resolve_oald_sense_id(sense.get("lemma"), sense.get("sense_no"))
     ref = _build_sense_ref(str(sense.get("category_code") or ""), cs_id, oald_id)
     if ref is None:
-        st.error("义位锚拼装失败（数据异常）。")
+        st.error(_t("义位锚拼装失败（数据异常）。"))
         return
     st.caption(f"版本锚 sense_ref = {ref}")
     versions = writing_db.list_versions(ref)
     if not versions:
-        st.info("该义位还没有任何释义版本：去「✍️ 撰写台」开第一版。")
+        st.info(_t("该义位还没有任何释义版本：去「✍️ 撰写台」开第一版。"))
         return
 
     realname = _history_realname(me)
@@ -1557,7 +1557,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
                         )
                         st.success(f"已标记 {done} 条意见为已处理（收口只标记，不删行）。")
             else:
-                st.caption("暂无意见。")
+                st.caption(_t("暂无意见。"))
     if not realname:
         st.caption("🔒 视角提示：你的角色（viewer/annotator）对作者/意见人做匿名化"
                    "折算（编纂员 A/B），草稿内容不外露 —— 实名链仅编纂与审校侧可见。")
@@ -1576,7 +1576,7 @@ def render_writing_page() -> None:
     """
     me = _current_user()
     if not me:
-        st.warning("请先登录后再访问释义撰写与审校工作台。")
+        st.warning(_t("请先登录后再访问释义撰写与审校工作台。"))
         return
 
     # 页面自举：编纂成文域三表幂等就位（CREATE TABLE IF NOT EXISTS，

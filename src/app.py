@@ -152,12 +152,12 @@ else:
         if init_database():
             DB_AVAILABLE = True   # 连接成功保持静默：健康是默认态，状态看侧边栏底部圆点
         else:
-            st.warning("⚠️ MySQL 数据库不可用，使用离线模式")
+            st.warning(_t("⚠️ MySQL 数据库不可用，使用离线模式"))
     except Exception as e:
         # RV4-6：异常细节（可能含 MySQL 主机/账号/库名等 DB 信息）只进服务端
         # 日志，页面向用户展示不含插值细节的通用文案。
         logger.error(f"数据库初始化失败，转入离线模式: {e}")
-        st.warning("⚠️ 数据库初始化失败，已转入离线模式（详情见服务端日志）")
+        st.warning(_t("⚠️ 数据库初始化失败，已转入离线模式（详情见服务端日志）"))
     st.session_state["_init_db_done"] = True
     st.session_state["_db_available"] = DB_AVAILABLE
 
@@ -312,7 +312,7 @@ def _refresh_session_user() -> Optional[Dict[str, Any]]:
         # 避免误导用户排查账号问题（登出动作 fail-closed 不变）。
         _logout()
         if _users_table_reachable():
-            st.warning("⛔ 账号已被停用或删除，会话已失效，请重新登录。")
+            st.warning(_t("⛔ 账号已被停用或删除，会话已失效，请重新登录。"))
         else:
             st.warning("⚠️ 账号状态暂无法核实（服务暂不可用），已登出；"
                        "服务恢复后请重新登录。")
@@ -1156,7 +1156,7 @@ def render_example_library():
     使用 Streamlit tabs 和 buttons 创建交互式示例库。
     点击动词按钮会调用 search_verb 函数触发搜索。
     """
-    st.markdown("<h3 style='color: #2d3748; font-weight: 600; margin: 0 0 16px 0;'>📚 示例库</h3>", unsafe_allow_html=True)
+    st.markdown(_t("<h3 style='color: #2d3748; font-weight: 600; margin: 0 0 16px 0;'>📚 示例库</h3>"), unsafe_allow_html=True)
 
     # 创建标签页
     tab1, tab2, tab3 = st.tabs([
@@ -1358,7 +1358,7 @@ def _resolve_display_definition(verb: str) -> Dict[str, Any]:
     except Exception as e:
         # (4) LLM failure / exception (D-06): log, warn once, fall through.
         logger.error(f"实时 LLM 生成失败 for '{verb}': {e}")
-        st.warning("实时生成暂不可用，已显示离线释义")
+        st.warning(_t("实时生成暂不可用，已显示离线释义"))
 
     if result and result.get("semantic_table"):
         normalized = {
@@ -1816,28 +1816,28 @@ def _render_self_change_password_form(user: Dict[str, Any]) -> None:
                                      key="self_pw_new", max_chars=128)
         confirm_password = st.text_input("确认新密码", type="password",
                                          key="self_pw_again", max_chars=128)
-        submitted = st.form_submit_button("修改密码", use_container_width=True)
+        submitted = st.form_submit_button(_t("修改密码"), use_container_width=True)
     if not submitted:
         return
     username = str(user.get("username") or "")
     try:
         uid = int(user.get("id"))
     except (TypeError, ValueError):
-        st.sidebar.error("会话用户信息不完整，请重新登录后再试。")
+        st.sidebar.error(_t("会话用户信息不完整，请重新登录后再试。"))
         return
     if not old_password or not new_password or new_password != confirm_password:
-        st.sidebar.error("请填写当前密码与新密码，且两次新密码一致。")
+        st.sidebar.error(_t("请填写当前密码与新密码，且两次新密码一致。"))
         return
     if len(new_password) < MIN_PASSWORD_LENGTH:
         st.sidebar.error(f"新密码长度至少 {MIN_PASSWORD_LENGTH} 位。")
         return
     if not verify_login(username, old_password):
-        st.sidebar.error("当前密码不正确。")
+        st.sidebar.error(_t("当前密码不正确。"))
         return
     if change_password(uid, new_password, actor=user):
-        st.sidebar.success("✅ 密码已修改，下次登录请使用新密码。")
+        st.sidebar.success(_t("✅ 密码已修改，下次登录请使用新密码。"))
     else:
-        st.sidebar.error("修改失败（数据库未写入），请重试。")
+        st.sidebar.error(_t("修改失败（数据库未写入），请重试。"))
 
 
 # ============================================
@@ -1988,7 +1988,7 @@ def _render_login_section() -> None:
     强制改密路径并存、互不影响。
     """
     if not DB_AVAILABLE:
-        st.sidebar.info("登录不可用（数据库离线）")
+        st.sidebar.info(_t("登录不可用（数据库离线）"))
         return
     user = _current_user()
     if user:
@@ -2010,7 +2010,7 @@ def _render_login_section() -> None:
             _render_must_change_password_banner(user)
             # 批次 31：expander 默认折叠（用户「侧边栏太堆」反馈——一行
             # ⚠️ caption 已提示改密；想改再展开，入口始终可见不消失）
-            with st.sidebar.expander("🔑 修改密码", expanded=False):
+            with st.sidebar.expander(_t("🔑 修改密码"), expanded=False):
                 _render_self_change_password_form(user)
         return
 
@@ -2034,7 +2034,7 @@ def _render_login_section() -> None:
             st.session_state["page"] = _landing_page_for(info)
             st.rerun()
         else:
-            st.sidebar.error("用户名或密码错误，或账号已停用。")
+            st.sidebar.error(_t("用户名或密码错误，或账号已停用。"))
 
 
 # ============================================
@@ -2138,7 +2138,7 @@ def _render_sidebar_bookmarks() -> None:
             "<div class='ls-nav-header'>📌 我的书签</div>",
             unsafe_allow_html=True,
         )
-        st.sidebar.caption("🗄️ 数据库离线，书签暂不可读。")
+        st.sidebar.caption(_t("🗄️ 数据库离线，书签暂不可读。"))
         return
     try:
         rows = user_context_db.list_bookmarks(limit=_SIDEBAR_BOOKMARK_ROWS)
@@ -2148,7 +2148,7 @@ def _render_sidebar_bookmarks() -> None:
             "<div class='ls-nav-header'>📌 我的书签</div>",
             unsafe_allow_html=True,
         )
-        st.sidebar.caption("🗄️ 书签读取失败（数据库异常），暂不可用。")
+        st.sidebar.caption(_t("🗄️ 书签读取失败（数据库异常），暂不可用。"))
         return
     if not rows:
         return
@@ -2181,7 +2181,7 @@ def _render_sidebar_bookmarks() -> None:
                 anchor_type, anchor_id, display_title),
         )
     if entry_pending:
-        st.sidebar.caption("📄 词条锚暂不支持跳转（依赖词条浏览器上下文），挂账中。")
+        st.sidebar.caption(_t("📄 词条锚暂不支持跳转（依赖词条浏览器上下文），挂账中。"))
     st.sidebar.button(
         "全部书签 →",
         key="sidebar_bookmarks_all",
@@ -2385,7 +2385,7 @@ def render_sidebar():
         if _fb_count is None:
             st.sidebar.caption(_t("反馈行数读取失败（数据库异常），导出暂不可用。", "Failed to read feedback count — export unavailable."))
         else:
-            st.sidebar.caption(_t("Feedbacks", f"Current feedbacks: {_fb_count}") if False else (f"Current feedbacks: {_fb_count}." if _t("语言占位", "") == "" else f"当前反馈 {_fb_count} 条。")) if False else st.sidebar.caption(f"Current feedbacks: {_fb_count}." if is_en() else f"当前反馈 {_fb_count} 条。")
+            st.sidebar.caption(f"Current feedbacks: {_fb_count}." if is_en() else f"当前反馈 {_fb_count} 条。")
             _export_allowed = isinstance(st.session_state.get("user"), dict)
             if st.sidebar.button(_t("生成并导出反馈 (CSV)", "Generate & Export Feedback (CSV)"),
                                  key="sidebar_feedback_export",
@@ -2607,7 +2607,7 @@ def render_main_area():
         # 提交按钮
         # 注：get_button_primary_style() 返回的是 CSS 字符串（不是关键字参数字典），
         # 展开传入 st.button 会在渲染结果区时抛 TypeError。
-        submit_button = st.button("📤 提交反馈", type="primary")
+        submit_button = st.button(_t("📤 提交反馈"), type="primary")
 
         if submit_button:
             if rating > 0 and feedback_text.strip():
@@ -2618,11 +2618,11 @@ def render_main_area():
                         logger.error(f"反馈插入异常: {e}")
                         ok = False
                     if ok:
-                        st.success("✅ 反馈已成功提交！感谢您的参与！")
+                        st.success(_t("✅ 反馈已成功提交！感谢您的参与！"))
                     else:
-                        st.error("反馈提交失败（数据库写入未成功），请稍后重试")
+                        st.error(_t("反馈提交失败（数据库写入未成功），请稍后重试"))
                 else:
-                    st.success("✅ 反馈已记录（离线模式，未持久化）！")
+                    st.success(_t("✅ 反馈已记录（离线模式，未持久化）！"))
                     ok = True
 
                 # 只有真正写入成功才标记"已提交"，避免假成功卡片
@@ -2635,7 +2635,7 @@ def render_main_area():
                         "timestamp": datetime.datetime.now().isoformat()
                     }
             else:
-                st.warning("⚠️ 请先评分并填写反馈内容")
+                st.warning(_t("⚠️ 请先评分并填写反馈内容"))
 
         # 显示提交历史
         if hasattr(st.session_state, 'feedback_submitted') and st.session_state.feedback_submitted:
@@ -3102,7 +3102,7 @@ def render_word_relation_section(verb: str) -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>🕸️ 词与词关系</h3>", unsafe_allow_html=True)
 
     if not DB_AVAILABLE:
-        st.info("数据库不可用，无法展示词簇图谱（离线模式下仅提供释义）。")
+        st.info(_t("数据库不可用，无法展示词簇图谱（离线模式下仅提供释义）。"))
         return
 
     try:
@@ -3138,7 +3138,7 @@ def render_word_relation_section(verb: str) -> None:
     if url:
         st.iframe(url, height=520)
     else:
-        st.warning("词簇图生成失败，请检查 `src/static/` 是否可写。")
+        st.warning(_t("词簇图生成失败，请检查 `src/static/` 是否可写。"))
 
     # 簇内成员快跳（点击即切换查询词，图谱随之前进到该词为中心的视图）
     members = [n["id"] for n in graph["nodes"]]
@@ -3453,7 +3453,7 @@ def _render_annotation_admin_view() -> None:
                "完整标准见 docs/research/protocols/义项判定标准修改稿.docx。")
 
     if not DB_AVAILABLE:
-        st.info("数据库不可用，标注平台不可用。")
+        st.info(_t("数据库不可用，标注平台不可用。"))
         return
 
     progress = get_annotation_progress()
@@ -3465,7 +3465,7 @@ def _render_annotation_admin_view() -> None:
         )
         return
     if not progress:
-        st.info("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。")
+        st.info(_t("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。"))
         return
 
     total = sum(int(r["total"]) for r in progress)
@@ -3539,7 +3539,7 @@ def _render_annotation_admin_view() -> None:
         )
 
     # ---- 义位选择 ----
-    only_open = st.checkbox("只看待标注/存疑义位", value=False)
+    only_open = st.checkbox(_t("只看待标注/存疑义位"), value=False)
     def _status(s):
         """义位条目的审定状态徽标文案：存疑优先，其余按层级标签折算（RV5-1）。"""
         if s.get("needs_review"):
@@ -3559,9 +3559,9 @@ def _render_annotation_admin_view() -> None:
     else:
         pairs = list(zip(sense_opts, senses))
     if not pairs:
-        st.success("该筛选条件下没有待处理义位 🎉")
+        st.success(_t("该筛选条件下没有待处理义位 🎉"))
         return
-    chosen = st.selectbox("选择义位（SenseID）", options=[p[0] for p in pairs])
+    chosen = st.selectbox(_t("选择义位（SenseID）"), options=[p[0] for p in pairs])
     sense = dict(pairs[[p[0] for p in pairs].index(chosen)][1])
 
     sid = sense["id"]
@@ -3570,7 +3570,7 @@ def _render_annotation_admin_view() -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>🎯 义位 {sense_id_label}</h3>", unsafe_allow_html=True)
     idiom = bool(sense.get("is_idiom"))
     if idiom:
-        st.warning("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或 EXT")
+        st.warning(_t("习语义项（IDIOMS 组）—— 按标注手册一般归入 N 或 EXT"))
     # 义项来源徽章：研究词表 996 = 992 OALD10 + 4 人工补充 —— 来源在 UI 可见，
     # 人工撰写条（无词典原文背书）复核时应加倍留意
     _src = str(sense.get("source") or "OALD10")
@@ -3638,7 +3638,7 @@ def _render_annotation_admin_view() -> None:
                                  placeholder="如：保留原图式 / 增补方式要素 / 舍弃方式语义")
         review = st.checkbox("❓ 复核后仍存疑（边界案例，进仲裁清单）",
                              value=bool(sense.get("needs_review")))
-        saved = st.form_submit_button("💾 保存本义位标注", type="primary")
+        saved = st.form_submit_button(_t("💾 保存本义位标注"), type="primary")
         if saved:
             ok = update_sense_annotation(
                 sid,
@@ -3649,7 +3649,7 @@ def _render_annotation_admin_view() -> None:
                 st.success(f"✅ {sense_id_label} 标注已保存")
                 st.session_state.pop("_display_def_cache", None)
             else:
-                st.error("保存失败（数据库写入未成功），请重试")
+                st.error(_t("保存失败（数据库写入未成功），请重试"))
 
     # ---- 导出 ----
     st.markdown(f"<h3 style='{HEADER_H3}'>📤 导出标注资源</h3>", unsafe_allow_html=True)
@@ -3853,7 +3853,7 @@ def render_submission_flow() -> None:
         st.warning(_t("请先登录", "Please sign in first"))
         return
     if not DB_AVAILABLE:
-        st.info("数据库不可用，提交流不可用（离线模式）。")
+        st.info(_t("数据库不可用，提交流不可用（离线模式）。"))
         return
     _ensure_flow_tables_once()
 
@@ -3870,7 +3870,7 @@ def render_submission_flow() -> None:
         )
         return
     if not progress:
-        st.info("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。")
+        st.info(_t("词库为空：先运行 `python scripts/load_word_library.py` 灌入义位。"))
         return
     verbs = [r["verb"] for r in progress]
     picked_verb = st.selectbox(
@@ -3895,14 +3895,14 @@ def render_submission_flow() -> None:
         f"{(s.get('en_ndef') or '')[:40]}"
         for s in senses
     ]
-    chosen = st.selectbox("选择义位（SenseID）", options=sense_opts, key="submission_sense")
+    chosen = st.selectbox(_t("选择义位（SenseID）"), options=sense_opts, key="submission_sense")
     sense = dict(senses[sense_opts.index(chosen)])
     sid = sense["id"]
     sense_id_label = f"{picked_verb}-S{sense['sense_index']}"
 
     idiom = bool(sense.get("is_idiom"))
     if idiom:
-        st.warning("习语义项（IDIOMS 组）—— 按范畴包准入标准一般归入 N 或 EXT")
+        st.warning(_t("习语义项（IDIOMS 组）—— 按范畴包准入标准一般归入 N 或 EXT"))
     st.markdown(
         f"<div style='{get_card_style()}'>"
         f"<p style='{BODY_BASE}'><strong>英文释义：</strong>"
@@ -3938,7 +3938,7 @@ def render_submission_flow() -> None:
                 unsafe_allow_html=True,
             )
     else:
-        st.caption("该义位暂无 LLM 初筛草稿（可直接人工判定）。")
+        st.caption(_t("该义位暂无 LLM 初筛草稿（可直接人工判定）。"))
 
     # ---- 范畴包判定标准（R-2 收口：按当前标注义位所属范畴取包，只读展示）----
     # 范畴来源 = 标注页当前选中范畴（session/参数）：本提交流未提供范畴选择
@@ -4041,7 +4041,7 @@ def render_submission_flow() -> None:
         review = st.checkbox(
             "❓ 存疑（边界案例，建议进仲裁清单）",
             value=_defaults["needs_review"])
-        saved = st.form_submit_button("📤 提交本义位标注", type="primary")
+        saved = st.form_submit_button(_t("📤 提交本义位标注"), type="primary")
         # FX-45 任务 1：💾 暂存标注（与「提交本义位标注」并列的第二提交钮；
         # 落 draft_states 用户上下文域，**不写 annotation_submissions、不触发
         # 审校流转**）。upsert 全部可编辑字段（六控件当前值原样快照，允许
@@ -4067,7 +4067,7 @@ def render_submission_flow() -> None:
                     "请稍后重试。")
         elif saved:
             if not admission:
-                st.error("请先选择准入标签（Y / EXT / N）。")
+                st.error(_t("请先选择准入标签（Y / EXT / N）。"))
             else:
                 # 留空的可选字段不入 payload（缺失 ≠ 空串，避免污染分歧比对）
                 payload: Dict[str, Any] = {"admission": admission, "needs_review": bool(review)}
@@ -4111,7 +4111,7 @@ def render_submission_flow() -> None:
                     st.success(f"✅ {sense_id_label} 提交成功"
                                f"（同一义位重复提交=覆盖更新，覆盖后需重新审核）")
                 else:
-                    st.error("提交失败（数据库写入未成功或校验未通过），请重试")
+                    st.error(_t("提交失败（数据库写入未成功或校验未通过），请重试"))
 
     # ---- 我的提交记录（独立性：仅本人；form 处理后查询，本轮提交已入库）----
     st.markdown(f"<h3 style='{HEADER_H3}'>📄 我的提交记录</h3>", unsafe_allow_html=True)
@@ -4135,7 +4135,7 @@ def render_submission_flow() -> None:
         st.caption(f"共 {len(my_subs)} 条 · 独立性：仅本人提交可见"
                    f"（annotator 之间互相不可见，规范 §0）。")
     else:
-        st.info("暂无提交记录。")
+        st.info(_t("暂无提交记录。"))
 
 
 def render_reviewer_panel() -> None:
@@ -4152,10 +4152,10 @@ def render_reviewer_panel() -> None:
         st.warning(_t("请先登录", "Please sign in first"))
         return
     if not (effective_six_roles(user) & {"dict_admin", "sys_admin", "reviewer"}):
-        st.error("⛔ 仲裁面板仅 reviewer / admin 可用（annotator 之间互相不可见，规范 §0）。")
+        st.error(_t("⛔ 仲裁面板仅 reviewer / admin 可用（annotator 之间互相不可见，规范 §0）。"))
         return
     if not DB_AVAILABLE:
-        st.info("数据库不可用，仲裁面板不可用（离线模式）。")
+        st.info(_t("数据库不可用，仲裁面板不可用（离线模式）。"))
         return
     _ensure_flow_tables_once()
 
@@ -4171,7 +4171,7 @@ def render_reviewer_panel() -> None:
 
     disagreements = detect_disagreements("motion", "admission")
     if not disagreements:
-        st.success("当前没有分歧条目（各编码人取值一致、不足两人，或已全部定稿）。")
+        st.success(_t("当前没有分歧条目（各编码人取值一致、不足两人，或已全部定稿）。"))
     else:
         # coder_id → 展示名（reviewer/admin 可见全部用户，规范 §1）
         id2name: Dict[str, str] = {}
@@ -4215,13 +4215,13 @@ def render_reviewer_panel() -> None:
                         horizontal=True,
                     )
                     g_schema = g2.selectbox("金标意象图式", options=SCHEMA_OPTIONS, index=0)
-                    g_align = st.selectbox("金标英汉对齐", options=ALIGNMENT_OPTIONS, index=0)
-                    g_doubt = st.checkbox("定稿后仍存疑（保留在复核清单）", value=False)
-                    g_note = st.text_input("仲裁说明（note）", placeholder="定稿理由 / 依据条款")
-                    ok_btn = st.form_submit_button("💾 保存仲裁定稿（金标）", type="primary")
+                    g_align = st.selectbox(_t("金标英汉对齐"), options=ALIGNMENT_OPTIONS, index=0)
+                    g_doubt = st.checkbox(_t("定稿后仍存疑（保留在复核清单）"), value=False)
+                    g_note = st.text_input(_t("仲裁说明（note）"), placeholder=_t("定稿理由 / 依据条款"))
+                    ok_btn = st.form_submit_button(_t("💾 保存仲裁定稿（金标）"), type="primary")
                 if ok_btn:
                     if not g_adm:
-                        st.error("请先选择金标准入标签（Y / EXT / N）。")
+                        st.error(_t("请先选择金标准入标签（Y / EXT / N）。"))
                     else:
                         gold: Dict[str, Any] = {"admission": g_adm, "needs_review": bool(g_doubt)}
                         if g_schema:
@@ -4238,10 +4238,10 @@ def render_reviewer_panel() -> None:
                                 f"（{len(sub_ids)} 条参与提交置为 adjudicated）。")
                             st.rerun()
                         else:
-                            st.error("仲裁保存失败（数据库写入未成功），请重试。")
+                            st.error(_t("仲裁保存失败（数据库写入未成功），请重试。"))
 
     # ---- 任务分配进度概览（reviewer/admin 概览用）----
-    with st.expander("📊 任务分配进度（get_assignment_stats）", expanded=False):
+    with st.expander(_t("📊 任务分配进度（get_assignment_stats）"), expanded=False):
         stats = get_assignment_stats()
         if stats:
             st.dataframe(
@@ -4256,7 +4256,7 @@ def render_reviewer_panel() -> None:
                 use_container_width=True, hide_index=True,
             )
         else:
-            st.info("暂无任务分配/提交数据。")
+            st.info(_t("暂无任务分配/提交数据。"))
 
 
 # ============================================
@@ -4288,7 +4288,7 @@ def main():
     # 全清后不再有「残留受保护页」供登录门拦截提示，退出即显式提示会话
     # 已清空须重新登录（与旧版「请先登录」提示同一用户可见语义）。
     if st.session_state.pop(_LOGOUT_FLASH_KEY, None):
-        st.warning("已退出登录：会话数据已清空，请先登录后再访问受保护页面。")
+        st.warning(_t("已退出登录：会话数据已清空，请先登录后再访问受保护页面。"))
     # RV12-2：每轮渲染弹出一次性提示队列（各页写操作 success 后 st.rerun
     # 丢弃提示的问题 —— 上一轮 ui_kit.flash 落的提示在这里消费转渲染，
     # 置于页面分派之前，位于正文顶部；队列消费即清空不跨轮重复）。

@@ -332,9 +332,13 @@ class TestDictionary:
                 f"区名译文丢了 emoji: {zone} → {translated}"
 
     def test_dict_size_within_framework_budget(self):
-        """字典规模哨兵：框架层 60-80 条（任务口径），超预算即提醒收编。"""
-        assert 60 <= len(i18n.ZH_EN) <= 80, \
-            f"ZH_EN 条目数越出 60-80 框架层预算: {len(i18n.ZH_EN)}"
+        """字典规模哨兵：批次 61 起转正为全量文案字典（框架层 + 批量包裹沉淀）。
+
+        旧口径 60-80 是「框架层专用、页面文案就地传 en 参数」时代的预算；
+        批次 61 全仓可见面批量 _t 包裹后，en 态查表成为主要译径，字典转为
+        全量文案单一事实源——预算改为下限守门（≥200，防误删）＋上不封顶。"""
+        assert len(i18n.ZH_EN) >= 200, \
+            f"ZH_EN 条目数异常缩水（批次 61 后应 ≥200）: {len(i18n.ZH_EN)}"
 
     def test_dict_values_are_translated_strings(self):
         """全字典键值卫生：键值均非空 str、值与键不同（无「假翻译」条目）。"""

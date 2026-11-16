@@ -47,6 +47,7 @@ from src.annotation_flow import parse_payload  # payload JSON 列解析的唯一
 from src.mysql_db import get_db_cursor
 from src.security import sanitize_csv_cell  # CSV 公式注入防护（R1-P2a）的唯一实现
 from src.users_db import effective_six_roles  # R1-2：信度页角色门六角色口径
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -845,7 +846,7 @@ def render_reliability_page() -> None:
     user = st.session_state.get("user")
     user = user if isinstance(user, dict) else {}
     if not (effective_six_roles(user or None) & {"dict_admin", "sys_admin", "reviewer"}):
-        st.warning("信度报告仅对 reviewer / admin 开放。")
+        st.warning(_t("信度报告仅对 reviewer / admin 开放。"))
         return
 
     st.markdown(
@@ -865,7 +866,7 @@ def render_reliability_page() -> None:
     categories = _list_categories()
     col_cat, col_task, _ = st.columns([2, 2, 3])
     with col_cat:
-        category = st.selectbox("范畴", list(categories), index=0)
+        category = st.selectbox(_t("范畴"), list(categories), index=0)
     with col_task:
         task_type = st.selectbox(
             "任务类型",
@@ -900,7 +901,7 @@ def render_reliability_page() -> None:
         st.error(f"数据库不可用：{result['db_error']}")
         return
     if result.get("n_coders", 0) == 0:
-        st.info("该 (范畴, 任务类型) 下还没有已提交的标注。")
+        st.info(_t("该 (范畴, 任务类型) 下还没有已提交的标注。"))
         return
 
     per_feature: dict = result.get("per_feature") or {}
@@ -939,7 +940,7 @@ def render_reliability_page() -> None:
     # --- 每特征 α 条形图 ---
     if per_feature:
         st.markdown(
-            f"<h3 style='{HEADER_H3}'>按指标/特征的 α</h3>",
+            f"<h3 style='{HEADER_H3}'>📐 按指标/特征的 α</h3>",
             unsafe_allow_html=True,
         )
         _per_feature_chart(per_feature)
@@ -958,7 +959,7 @@ def render_reliability_page() -> None:
                 + "、".join(html.escape(str(n)) for n in uncomputable)
             )
         if not low and not uncomputable:
-            st.success("全部指标 α ≥ 0.7，信度达标。")
+            st.success(_t("全部指标 α ≥ 0.7，信度达标。"))
 
         # 明细表
         st.dataframe(
@@ -977,14 +978,14 @@ def render_reliability_page() -> None:
     # --- 分歧条目表 + CSV 导出 ---
     disagreements = result.get("disagreements") or []
     st.markdown(
-        f"<h3 style='{HEADER_H3}'>分歧条目（{len(disagreements)}）</h3>",
+        f"<h3 style='{HEADER_H3}'>⚡ 分歧条目（{len(disagreements)}）</h3>",
         unsafe_allow_html=True,
     )
     if disagreements:
         rows = _build_disagreement_rows(disagreements)
         st.dataframe(rows, use_container_width=True, hide_index=True)
     else:
-        st.caption("没有检测到分歧（各编码人对所有共同标注单元的取值一致，或重叠样本不足）。")
+        st.caption(_t("没有检测到分歧（各编码人对所有共同标注单元的取值一致，或重叠样本不足）。"))
 
     csv_bytes = _export_csv(result)
     _export_disabled = not (per_feature or disagreements)

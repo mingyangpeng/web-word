@@ -87,6 +87,7 @@ from src.category_study import get_cluster_runs, get_clusters_with_members
 from src.mysql_db import get_db_cursor
 from src.oald_senses import split_definition
 from src.security import sanitize_csv_value
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -1200,7 +1201,7 @@ def _render_revision_panel(category: Any, language: Any, sense_id: int,
     from src.ui_kit import flash
     from src.users_db import effective_six_roles
 
-    st.markdown("##### 人工修订（编者定稿层）")
+    st.markdown(_t("##### 人工修订（编者定稿层）"))
     st.caption("在引擎基线上增删槽位、调整措辞、补充句法说明；按版本留痕，"
                "引擎输出并存，可逐版对照。")
     try:
@@ -1224,7 +1225,7 @@ def _render_revision_panel(category: Any, language: Any, sense_id: int,
         st.caption("✍️ 修订权限：编纂职能（editor / reviewer / dict_admin）。"
                    "当前账号无修订权限，可查看引擎基线与既有修订。")
         if isinstance(latest, dict) and latest:
-            st.markdown("**人工修订版（现行）**")
+            st.markdown(_t("**人工修订版（现行）**"))
             st.markdown(latest.get("revision_text") or "")
         return
 
@@ -1234,7 +1235,7 @@ def _render_revision_panel(category: Any, language: Any, sense_id: int,
     default_note = ((latest or {}).get("note")
                     if isinstance(latest, dict) and latest else "") or ""
     with st.form("template_revision_form", clear_on_submit=False):
-        st.markdown("**修订文本**（预填现行文本：引擎基线或最新修订）")
+        st.markdown(_t("**修订文本**（预填现行文本：引擎基线或最新修订）"))
         # key 按义位隔离（FX-38 review 修复）：Streamlit widget 会话值优先于
         # value= 预填——若跨义位共用 key，切换义位后面板残留上一义位文本，
         # 编者会把 A 义位的修订串写进 B 义位。
@@ -1244,10 +1245,10 @@ def _render_revision_panel(category: Any, language: Any, sense_id: int,
         note_val = st.text_input(
             "优化要点（≤500 字；随修订留痕，随 CSV「优化要点」列导出）",
             value=default_note, key=f"template_rev_note_{sense_id}")
-        submitted = st.form_submit_button("保存修订（生成新版本）")
+        submitted = st.form_submit_button(_t("保存修订（生成新版本）"))
     if not submitted:
         if isinstance(latest, dict) and latest:
-            with st.expander("修订历史"):
+            with st.expander(_t("修订历史")):
                 hist = list_revisions(str(category), str(language), sense_id)
                 if hist:
                     st.dataframe([{
@@ -1257,7 +1258,7 @@ def _render_revision_panel(category: Any, language: Any, sense_id: int,
                         "优化要点": h.get("note") or "",
                     } for h in hist], hide_index=True)
                 else:
-                    st.caption("（暂无历史）")
+                    st.caption(_t("（暂无历史）"))
         return
     try:
         require_role_interactive(
@@ -1294,7 +1295,7 @@ def render_template_page() -> None:
     from src.category_study import category_study_ready, get_categories
 
     _ensure_revision_tables_once()
-    st.subheader("释义模板引擎 · 母图式提炼与槽位实例化")
+    st.subheader(_t("释义模板引擎 · 母图式提炼与槽位实例化"))
     st.caption(
         "聚类子簇 → 共享事件母图式（核心要素）+ 可变参数槽位 → 单义位四维模板 "
         "（图式 / 语义参数 / 句法 / 对齐预留）→ 与 OALD10 原文并排对照 → 同簇并排"
@@ -1365,17 +1366,17 @@ def render_template_page() -> None:
         f"{schema.get('definition') or '（schemas.yaml 未给出定义）'}")
     col_core, col_slot = st.columns(2)
     with col_core:
-        st.markdown("##### 核心要素（簇共享，均值 ≥ 0.5）")
+        st.markdown(_t("##### 核心要素（簇共享，均值 ≥ 0.5）"))
         if cl.get("core_features"):
             for f in cl["core_features"]:
                 st.markdown(f"- **{f['label']}**（均值 {f['mean']}，"
                             f"典型取值「{f['value_label']}」）")
         else:
-            st.caption("本簇没有达到阈值的共享二元要素。")
-        with st.expander("schema_core 原始均值"):
+            st.caption(_t("本簇没有达到阈值的共享二元要素。"))
+        with st.expander(_t("schema_core 原始均值")):
             st.json(cl.get("schema_core") or {})
     with col_slot:
-        st.markdown("##### 可变槽位（簇内分歧 / 低频要素）")
+        st.markdown(_t("##### 可变槽位（簇内分歧 / 低频要素）"))
         if cl.get("variable_slots"):
             for s in cl["variable_slots"]:
                 dist = " · ".join(
@@ -1383,7 +1384,7 @@ def render_template_page() -> None:
                     for d in s["distribution"])
                 st.markdown(f"- **{s['label']}**（{s['value_type']}）：{dist}")
         else:
-            st.caption("本簇全部要素共享，无可变槽位。")
+            st.caption(_t("本簇全部要素共享，无可变槽位。"))
     if cl.get("members"):
         with st.expander(f"簇成员（{len(cl['members'])} 条）"):
             st.dataframe(cl["members"], hide_index=True)
@@ -1399,7 +1400,7 @@ def render_template_page() -> None:
             [overview_tpls[i] for i in overview_ids
              if isinstance(overview_tpls, dict) and overview_tpls.get(i)],
             overview_revs)
-        st.markdown("##### 同簇并排总览（范畴化释义对照）")
+        st.markdown(_t("##### 同簇并排总览（范畴化释义对照）"))
         st.caption(
             "整簇一屏对照：左列词典原文各自成条、模式不一；右列同一母图式下按参数"
             "分档——同族共享什么、成员差异在哪一目了然（论文 §6.4 弧线的平台落点；"
@@ -1418,7 +1419,7 @@ def render_template_page() -> None:
     # ---- 槽位实例化 + OALD 对照 ----
     members = cl.get("members") or []
     if not members:
-        st.info("本簇没有成员义位，无法实例化。")
+        st.info(_t("本簇没有成员义位，无法实例化。"))
         return
     member_labels = [
         f"{m.get('lemma')}{m.get('sense_no') or ''}（{m.get('sense_label') or ''}）"
@@ -1429,7 +1430,7 @@ def render_template_page() -> None:
     sense_id = int(members[member_idx]["sense_id"])
     tpl = instantiate_template(cat_code, language, sense_id, engine_schema=schemas)
     if not tpl:
-        st.error("模板实例化失败，请查看日志。")
+        st.error(_t("模板实例化失败，请查看日志。"))
         return
 
     # G3 锁定状态读面消费（FX-28）：locked 词簇的模板实例化结果加
@@ -1445,34 +1446,34 @@ def render_template_page() -> None:
         isinstance(lock_state, dict) and lock_state.get("locked"))
     lock_note = template_lock_note(lock_state)
 
-    st.markdown("##### 实例化模板（四维结构）")
+    st.markdown(_t("##### 实例化模板（四维结构）"))
     if lock_note:
         st.markdown(lock_note)
     st.markdown(f"**{tpl['template_text']}**")
     d1, d2 = st.columns(2)
     with d1:
-        st.markdown("**① 图式维度**")
+        st.markdown(_t("**① 图式维度**"))
         sd = tpl["图式维度"]
         st.markdown(
             f"- 图式：{sd.get('name') or '—'}（{sd.get('code') or '—'}）\n"
             f"- 重心定义：{sd.get('definition') or '—'}\n"
             f"- 所属簇：簇{sd.get('cluster_no')} {sd.get('cluster_name') or ''}")
-        st.markdown("**③ 句法维度**")
+        st.markdown(_t("**③ 句法维度**"))
         sy = tpl["句法维度"]
         st.markdown(
             f"- 及物性：{sy['transitivity']}\n" + "\n".join(
                 f"- {f['label']} = {f['value_label']}" for f in sy["features"]))
     with d2:
-        st.markdown("**② 语义参数维度**")
+        st.markdown(_t("**② 语义参数维度**"))
         for p in tpl["语义参数维度"]:
             role = {"core": "核心", "variable": "槽位", "off": "未启用"}[p["role"]]
             st.markdown(f"- {p['label']} = **{p['value_label'] or '（未编）'}**"
                         f"　`{p['code']}`·{role}")
-        st.markdown("**④ 对齐预留维度**")
+        st.markdown(_t("**④ 对齐预留维度**"))
         al = tpl["对齐预留维度"]
         st.markdown(f"- {'已回填' if al['filled'] else '空槽待填'}：{al['note']}")
 
-    st.markdown("##### 与词典原文并排对照（§6.4）")
+    st.markdown(_t("##### 与词典原文并排对照（§6.4）"))
     oald = tpl.get("oald") or {}
     left, right = st.columns(2)
     with left:
@@ -1481,7 +1482,7 @@ def render_template_page() -> None:
             st.caption(f"语法码：[{oald['grammar']}]")
         st.markdown(oald.get("definition") or "（无释义原文）")
     with right:
-        st.markdown("**LexiSchema 模板化释义**")
+        st.markdown(_t("**LexiSchema 模板化释义**"))
         st.markdown(tpl["template_text"])
 
     # ---- 人工修订面板（FX-38：编者在线修订，版本留痕；引擎输出并存为基线）----
@@ -1490,8 +1491,8 @@ def render_template_page() -> None:
     st.divider()
 
     # ---- 批量导出（当前簇全部义位）----
-    st.markdown("##### 批量导出（当前簇全部义位）")
-    if st.button("生成当前簇全部模板", key="template_collect"):
+    st.markdown(_t("##### 批量导出（当前簇全部义位）"))
+    if st.button(_t("生成当前簇全部模板"), key="template_collect"):
         try:
             guards.require_dict_admin()  # §15：内容性导出仅词典管理员
         except PermissionError as e:
@@ -1551,4 +1552,4 @@ def render_template_page() -> None:
                           f"cluster{payload['cluster'].get('cluster_no')}.json",
                 mime="application/json", key="template_dl_json")
     elif payload is not None:
-        st.warning("当前簇没有可导出的模板。")
+        st.warning(_t("当前簇没有可导出的模板。"))

@@ -539,7 +539,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
     if examples:
         _render_examples_table(examples)
     else:
-        st.caption("该义位暂无例证，先在下方新增（新例证以「候选」态起步）。")
+        st.caption(_t("该义位暂无例证，先在下方新增（新例证以「候选」态起步）。"))
 
     with st.expander(_t("➕ 新增例证", "➕ Add Example"), expanded=False):
         with st.form("lex_ex_add_form", clear_on_submit=True):
@@ -585,7 +585,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                         "✏️ Edit / Review Flow / Delete"), expanded=False):
         ex_options = _example_options(examples)
         if not ex_options:
-            st.caption("该义位暂无例证，先在上方新增。")
+            st.caption(_t("该义位暂无例证，先在上方新增。"))
         else:
             edit_pick = st.selectbox(
                 _t("选择例证", "Select example"), list(ex_options.keys()),
@@ -596,7 +596,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 (e for e in examples if _as_int(e.get("id")) == eid), None,
             )
             if row is None or eid is None:
-                st.warning("所选例证已被删除或列表已刷新，请重选。")
+                st.warning(_t("所选例证已被删除或列表已刷新，请重选。"))
             else:
                 with st.form("lex_ex_edit_form", clear_on_submit=False):
                     new_content = st.text_area(
@@ -653,7 +653,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                             st.error("流转失败：状态已被他人先行流转/行不存在/"
                                      "数据库不可用（乐观守卫拒绝）。")
                 else:
-                    st.caption("该例证已「发布」（终态，不可再流转）。")
+                    st.caption(_t("该例证已「发布」（终态，不可再流转）。"))
                 if st.button(
                     _t("物理删除该例证（不可恢复）",
                        "Hard-delete this example (irreversible)"),
@@ -665,7 +665,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                         ui_kit.flash(f"例证 #{eid} 已删除。")
                         st.rerun()
                     else:
-                        st.error("删除失败：行不存在/数据库不可用。")
+                        st.error(_t("删除失败：行不存在/数据库不可用。"))
 
     with st.expander(_t("🖼️ 媒体例证绑定（入口）",
                         "🖼️ Media Example Binding (entry point)"), expanded=False):
@@ -674,7 +674,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                    "用途 example_media，UNIQUE 幂等，重复绑定保留首次值）。")
         media_options = _example_options(examples)
         if not media_options:
-            st.caption("该义位暂无例证，先新增文字例证再绑媒体。")
+            st.caption(_t("该义位暂无例证，先新增文字例证再绑媒体。"))
         else:
             media_pick = st.selectbox(
                 _t("选择例证", "Select example"), list(media_options.keys()),
@@ -683,7 +683,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
             eid = media_options.get(media_pick)
             row = next((e for e in examples if _as_int(e.get("id")) == eid), None)
             if row is None or eid is None:
-                st.warning("所选例证已被删除或列表已刷新，请重选。")
+                st.warning(_t("所选例证已被删除或列表已刷新，请重选。"))
             else:
                 current = _as_int(row.get("media_asset_id"))
                 st.caption(f"当前 media_asset_id：#{current}" if current
@@ -708,7 +708,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                                    for b in bindings
                                ) + "。")
                 else:
-                    st.caption("该例证尚无媒体绑定。")
+                    st.caption(_t("该例证尚无媒体绑定。"))
                 asset_id = st.number_input(
                     _t("资产 id（media_assets.id）", "Asset id (media_assets.id)"),
                     min_value=1, step=1,
@@ -739,7 +739,7 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
 def _render_translation_state(tr: Optional[Dict[str, Any]]) -> None:
     """已有定稿展示（含辨析栏草稿 note；未定稿灰提示）。"""
     if not tr:
-        st.info("该义位尚未定稿对译——三态单选后填表定稿。")
+        st.info(_t("该义位尚未定稿对译——三态单选后填表定稿。"))
         return
     state = str(tr.get("state") or "")
     finalizer = f"#{tr.get('finalized_by')}" if tr.get("finalized_by") else "—"
@@ -765,7 +765,7 @@ def _render_translations_tab(me: Dict[str, Any]) -> None:
     options, excluded = _sense_options(senses)
     _render_merged_excluded(excluded)
     if not options:
-        st.info("暂无可选义位（cs_senses 未建表/无数据/数据库不可用）。")
+        st.info(_t("暂无可选义位（cs_senses 未建表/无数据/数据库不可用）。"))
         return
     pick = st.selectbox(_t("选择义位", "Select sense"),
                         list(options.keys()), key="lex_tr_sense_pick")
@@ -838,7 +838,7 @@ def _render_translations_tab(me: Dict[str, Any]) -> None:
         ui_kit.flash(f"义位 #{sense_id} 对译已定稿（{STATE_LABELS.get(state, state)}）。")
         st.rerun()
     else:
-        st.error("定稿失败：参数非法/数据库不可用（lexical_db 已记日志）。")
+        st.error(_t("定稿失败：参数非法/数据库不可用（lexical_db 已记日志）。"))
 
 
 # ============================================
@@ -854,7 +854,7 @@ def render_lexical_page() -> None:
     """
     me = _current_user()
     if not me:
-        st.warning("请先登录后再访问编纂成文区（例证与对译）。")
+        st.warning(_t("请先登录后再访问编纂成文区（例证与对译）。"))
         return
     if not _can_edit(me):
         st.warning("⛔ 仅编纂职能（editor/reviewer/dict_admin；过渡期 admin "

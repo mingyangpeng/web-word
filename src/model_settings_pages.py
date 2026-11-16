@@ -612,7 +612,7 @@ def _render_provider_list(providers: List[Dict[str, Any]]) -> int:
         st.caption(f"共 {len(options)} 家供应商；·默认 / ·停用为状态后缀。")
     else:
         st.session_state[_SELECTED_KEY] = 0
-        st.info("尚无供应商：点下方「＋ 添加供应商」录入第一家。")
+        st.info(_t("尚无供应商：点下方「＋ 添加供应商」录入第一家。"))
 
     if st.button(_t("＋ 添加供应商", "＋ Add Provider"), key="llm_add_provider",
                  use_container_width=True, type="primary"):
@@ -695,7 +695,7 @@ def _render_models_block() -> None:
     if current:
         st.caption("当前模型清单：" + _esc("、".join(current)))
     else:
-        st.caption("清单为空：连通测试与业务调用将无模型可选。")
+        st.caption(_t("清单为空：连通测试与业务调用将无模型可选。"))
 
 
 def _on_add_model() -> None:
@@ -773,7 +773,7 @@ def _handle_save(selected_pid: int, creating: bool,
 def _handle_delete(selected_pid: int, providers: List[Dict[str, Any]]) -> None:
     """「删除」：两步确认（勾选框）→ guards → 物理 DELETE → 落到剩余首项。"""
     if not st.session_state.get("llm_confirm_delete"):
-        st.warning("删除是物理 DELETE 且不可恢复：请先勾选「我确认物理删除」。")
+        st.warning(_t("删除是物理 DELETE 且不可恢复：请先勾选「我确认物理删除」。"))
         return
     try:
         require_dict_admin()
@@ -781,7 +781,7 @@ def _handle_delete(selected_pid: int, providers: List[Dict[str, Any]]) -> None:
         st.error(f"⛔ {e}")
         return
     if not _delete_provider(selected_pid):
-        st.error("删除未生效：供应商可能已不存在或数据库不可用（详见服务端日志）。")
+        st.error(_t("删除未生效：供应商可能已不存在或数据库不可用（详见服务端日志）。"))
         return
     remaining = [int(p.get("id") or 0) for p in providers
                  if int(p.get("id") or 0) != selected_pid]
@@ -797,10 +797,10 @@ def _handle_delete(selected_pid: int, providers: List[Dict[str, Any]]) -> None:
 def _handle_test(selected_pid: int, creating: bool) -> None:
     """「测试连通」：新建未保存先提示；已保存则调数据层并转述结果。"""
     if creating:
-        st.info("新供应商尚未保存：请先「保存」，再测试连通。")
+        st.info(_t("新供应商尚未保存：请先「保存」，再测试连通。"))
         return
     if selected_pid <= 0:
-        st.info("尚无供应商可测试：请先「＋ 添加供应商」并保存。")
+        st.info(_t("尚无供应商可测试：请先「＋ 添加供应商」并保存。"))
         return
     with st.spinner("正在探测供应商连通性……"):
         ok, detail = _test_provider(selected_pid)
@@ -821,7 +821,7 @@ def _render_edit_panel(selected_pid: int, providers: List[Dict[str, Any]],
         if provider is None:
             # 无供应商 / 选中项已被删除 / 尚未点选：不渲染空壳表单
             if providers:
-                st.info("左侧选择一家供应商，或点「＋ 添加供应商」新建。")
+                st.info(_t("左侧选择一家供应商，或点「＋ 添加供应商」新建。"))
             return
 
     _sync_edit_buffer(_EDIT_TARGET_NEW if creating else selected_pid, provider)
@@ -896,10 +896,10 @@ def render_model_settings_page() -> None:
     """
     me = _current_user()
     if not me:
-        st.warning("请先登录。")
+        st.warning(_t("请先登录。"))
         return
     if not _is_model_admin(me) and not _db_confirms_model_admin(me):
-        st.error("⛔ 模型供应商管理仅词典管理员可用。")
+        st.error(_t("⛔ 模型供应商管理仅词典管理员可用。"))
         return
 
     # RV 第二轮（P2 页头统一）：st.title 的字号/边距与设计系统页头不同源，
@@ -908,7 +908,7 @@ def render_model_settings_page() -> None:
     # 页 H1 双语：原文即 key（「🤖 模型供应商」ZH_EN 已收录，en 态 "🤖 Model
     # Providers"，与 AI 协作区的 "🤖 AI Hub" 刻意区分不撞名）。
     st.markdown(f"<h1 style='{HEADER_H1}'>{_t('🤖 模型供应商', '🤖 Model Providers')}</h1>", unsafe_allow_html=True)
-    st.caption("管理 LLM 模型供应商，配置后在释义生成等 AI 功能中使用。")
+    st.caption(_t("管理 LLM 模型供应商，配置后在释义生成等 AI 功能中使用。"))
 
     if llm_providers_db is None:
         st.warning(

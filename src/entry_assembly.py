@@ -104,6 +104,7 @@ from src.template_engine import (
     instantiate_template,
     instantiate_templates,
 )
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -1095,7 +1096,7 @@ def render_entry_assembly(verb: Any, category: str = "motion",
         sections = _assembly_sections(verb, category, language)
     except Exception as e:  # noqa: BLE001 — 编排层意外异常的最后防线
         logger.error(f"entry_assembly: 装配编排意外失败（verb={verb!r}）: {e}")
-        st.warning("词条装配预览暂时不可用（编排异常，详见服务端日志）。")
+        st.warning(_t("词条装配预览暂时不可用（编排异常，详见服务端日志）。"))
         return
     for section in sections:
         try:

@@ -145,6 +145,7 @@ from src.category_study_page import (
 )
 from src.design_system import HEADER_H1, HEADER_H3, get_badge_html
 from src.mysql_db import cache_scope_key, get_db_cursor
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -1970,9 +1971,9 @@ def _render_recut_save(dendro: Dict[str, Any], recut: Dict[str, Any]) -> None:
         key="ca_save_confirm")
     custom = st.text_input("版本号（留空自动生成「交互-时间戳」）",
                            key="ca_save_version")
-    if st.button("💾 保存为新运行版本", key="ca_save_btn"):
+    if st.button(_t("💾 保存为新运行版本"), key="ca_save_btn"):
         if not confirm:
-            st.warning("请先勾选上方确认框（保存为探索性运行版本）。")
+            st.warning(_t("请先勾选上方确认框（保存为探索性运行版本）。"))
             return
         result = save_interactive_cluster_run(
             dendro, recut, version=custom.strip() or None)
@@ -1996,7 +1997,7 @@ def _render_dendrogram(dendro: Dict[str, Any]) -> None:
     降级三层（R4-7/R4-5）：plotly 缺失 → 入口 warning＋return（与 scipy 同款
     双层降级）；取数失败（dendro.load_error）→ 「数据不可用：<原因>」；
     树真为空（成员少于 2 个 / 运行缺 linkage）→ 数据不足提示。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>谱系树（Gower + average 层次聚类）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🌳 谱系树（Gower + average 层次聚类）</h3>",
                 unsafe_allow_html=True)
     if not HAS_PLOTLY:
         st.warning("plotly 未安装，谱系树 tab 不可用（pip install plotly）；"
@@ -2009,7 +2010,7 @@ def _render_dendrogram(dendro: Dict[str, Any]) -> None:
         )
         return
     if not dendro or not dendro.get("linkage"):
-        st.warning("谱系树数据不足（簇成员少于 2 个）。")
+        st.warning(_t("谱系树数据不足（簇成员少于 2 个）。"))
         return
     from plotly.figure_factory import create_dendrogram
 
@@ -2059,7 +2060,7 @@ def _render_dendrogram(dendro: Dict[str, Any]) -> None:
     )
 
     # —— 交互式谱系切割（论文 §5.1「可交互切割」；对照清单 F2）——
-    st.markdown(f"<h3 style='{HEADER_H3}'>交互式谱系切割</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>✂️ 交互式谱系切割</h3>",
                 unsafe_allow_html=True)
     n = int(dendro.get("n_senses") or len(dendro["linkage"]) + 1)
     k_max = max(2, min(RECUT_K_MAX, n))
@@ -2089,7 +2090,7 @@ def _render_dendrogram(dendro: Dict[str, Any]) -> None:
 def _render_tier_bars(cluster: Dict[str, Any]) -> None:
     """单簇成员距离条形图（plotly 横条，tier 分色，最近成员在顶部）。"""
     if not HAS_PLOTLY:
-        st.caption("（plotly 未安装，条形图不可用 —— 成员排序表不受影响。）")
+        st.caption(_t("（plotly 未安装，条形图不可用 —— 成员排序表不受影响。）"))
         return
     import plotly.express as px
 
@@ -2167,7 +2168,7 @@ def _render_division_form(category: str, language: str, dendro: Dict[str, Any],
     —— 人工建议无综合信号，不编数），adopted 才由裁决流程落地 cs_senses。
     """
     if not evidence:
-        st.warning("无簇证据可引用（运行簇清单为空），暂不能发起建议。")
+        st.warning(_t("无簇证据可引用（运行簇清单为空），暂不能发起建议。"))
         return
     action = st.selectbox(
         "动作", options=list(SENSE_DIVISION_ACTIONS),
@@ -2196,11 +2197,11 @@ def _render_division_form(category: str, language: str, dendro: Dict[str, Any],
                 key="ca_div_target")
             target = option_of[target_label]["sense_id"]
         else:
-            st.caption("先在上方选择 ≥2 个 sense，再指定保留目标。")
+            st.caption(_t("先在上方选择 ≥2 个 sense，再指定保留目标。"))
     reason = st.text_area(
         "理由（必填）", key="ca_div_reason", height=72,
         placeholder="写明证据：簇内距离/词频/释义分歧/词典学依据…")
-    if st.button("📤 提交分立建议", key="ca_div_submit", type="primary"):
+    if st.button(_t("📤 提交分立建议"), key="ca_div_submit", type="primary"):
         picked_rows = [option_of[label] for label in picked_labels]
         proposal, err = build_sense_division_proposal(
             action, cluster["cluster_no"], picked_rows, reason,
@@ -2219,7 +2220,7 @@ def _render_division_form(category: str, language: str, dendro: Dict[str, Any],
                            "待词典管理员/审校裁决（G3 闸门：分立→释义）。")
             st.rerun()
         else:
-            st.error("登记失败（AI 台账不可用或载荷被拒），请稍后重试。")
+            st.error(_t("登记失败（AI 台账不可用或载荷被拒），请稍后重试。"))
 
 
 def _render_division_adjudication(p: Dict[str, Any], user: Dict[str, Any]) -> None:
@@ -2285,7 +2286,7 @@ def _render_cluster_lock_section(evidence: List[Dict[str, Any]],
     set_cluster_locked（参数化 UPDATE cs_clusters），成功后该函数已清
     _load_cluster_locks 缓存，flash ＋ st.rerun 即时刷新徽章。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>簇锁定（G3 闸门：复核定稿）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🔒 簇锁定（G3 闸门：复核定稿）</h3>",
                 unsafe_allow_html=True)
     if not (isinstance(user, dict) and _is_division_adjudicator(user)):
         st.caption("锁定/解锁由词典管理员/审校执行（effective 六角色需 "
@@ -2293,7 +2294,7 @@ def _render_cluster_lock_section(evidence: List[Dict[str, Any]],
                    "locked 簇的义项清单视为复核定稿，阶段 2 才允许流入释义撰写。")
         return
     if not evidence:
-        st.caption("无簇可锁定（当前运行簇清单为空）。")
+        st.caption(_t("无簇可锁定（当前运行簇清单为空）。"))
         return
     st.caption(
         "锁定＝该簇义项清单复核定稿（G3 闸门「分立→释义」：locked 簇才允许"
@@ -2365,7 +2366,7 @@ def _render_sense_division_tab(category: str, language: str,
         )
         return
     if not dendro or not dendro.get("linkage"):
-        st.warning("谱系树数据不足（簇成员少于 2 个），分立复核不可用。")
+        st.warning(_t("谱系树数据不足（簇成员少于 2 个），分立复核不可用。"))
         return
     ranking = (data or {}).get("ranking") or []
     cache_scope = cache_scope_key()
@@ -2382,7 +2383,7 @@ def _render_sense_division_tab(category: str, language: str,
                                              sense_rows=sense_rows, locks=locks)
     _pop_flash_division()
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>簇证据视图（最近运行簇清单）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🧾 簇证据视图（最近运行簇清单）</h3>",
                 unsafe_allow_html=True)
     st.caption(
         "闸门 G3（分立→释义）：该簇分立复核定稿（义项清单锁定）后才进入释义撰写。"
@@ -2391,7 +2392,7 @@ def _render_sense_division_tab(category: str, language: str,
         "（分立复核定稿，模板/图谱不再消费））。"
     )
     if not freqs:
-        st.caption("（corpus_word_stats 词频暂无数据或不可用 —— 词频列留空，不编数。）")
+        st.caption(_t("（corpus_word_stats 词频暂无数据或不可用 —— 词频列留空，不编数。）"))
     for cluster in evidence:
         title = str(cluster["name"]).split("（")[0]
         avg = cluster["avg_pairwise"]
@@ -2418,14 +2419,14 @@ def _render_sense_division_tab(category: str, language: str,
     user = _session_user()
     _render_cluster_lock_section(evidence, user)
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>发起分立建议</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>💡 发起分立建议</h3>", unsafe_allow_html=True)
     if not isinstance(user, dict):
         st.info("登录后即可发起分立建议（全部角色可提议）；"
                 "裁决由词典管理员/审校执行（G3 闸门）。")
     else:
         _render_division_form(category, language, dendro, evidence, user)
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>裁决区（词典管理员/审校）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>⚖️ 裁决区（词典管理员/审校）</h3>",
                 unsafe_allow_html=True)
     counts = sense_division_landing_counts(sense_rows)
     merged_note = (f"（其中 {counts['merged']} 条已并入不计入模板/图谱，"
@@ -2441,7 +2442,7 @@ def _render_sense_division_tab(category: str, language: str,
     pending = list_pending(kind=KIND_DRAFT, stage=SENSE_DIVISION_STAGE,
                            limit=DIV_PENDING_LIMIT)
     if not pending:
-        st.info("sense_division 工序暂无待裁决提议（台账为空或 AI 台账不可用）。")
+        st.info(_t("sense_division 工序暂无待裁决提议（台账为空或 AI 台账不可用）。"))
         return
     st.caption(
         f"共 {len(pending)} 条待裁决（按不确定度降序；含全部范畴/语言的 "
@@ -2468,7 +2469,7 @@ def _render_sense_graph_tab(dendro: Dict[str, Any]) -> None:
     的 plotly import 直接炸 tab）；取数失败（dendro.load_error）→ 「数据不可用：
     <原因>」；树真为空 → 数据不足提示。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>义位图谱（原型居中 · 边=Gower 距离）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🕸️ 义位图谱（原型居中 · 边=Gower 距离）</h3>",
                 unsafe_allow_html=True)
     if not HAS_PLOTLY:
         st.warning("plotly 未安装，义位图谱 tab 不可用（pip install plotly）；"
@@ -2484,7 +2485,7 @@ def _render_sense_graph_tab(dendro: Dict[str, Any]) -> None:
         )
         return
     if not dendro or not dendro.get("linkage"):
-        st.warning("谱系树数据不足（簇成员少于 2 个），义位图谱不可用。")
+        st.warning(_t("谱系树数据不足（簇成员少于 2 个），义位图谱不可用。"))
         return
     n_senses = int(dendro.get("n_senses") or len(dendro["linkage"]) + 1)
     k_max = max(2, min(RECUT_K_MAX, n_senses))
@@ -2511,7 +2512,7 @@ def _render_sense_graph_tab(dendro: Dict[str, Any]) -> None:
         if str((row or {}).get("status") or "").strip().lower() == MERGED_STATUS)
     graph = build_sense_graph_data(dendro, recut, merged_ids=merged_ids or None)
     if not graph or not graph.get("nodes"):
-        st.warning("图谱数据组装失败（预计算距离矩阵缺失，或成员已全部并入）。")
+        st.warning(_t("图谱数据组装失败（预计算距离矩阵缺失，或成员已全部并入）。"))
         return
     df = pd.DataFrame([{
         "MDS-1": node["x"],
@@ -2562,7 +2563,7 @@ def _render_sense_graph_tab(dendro: Dict[str, Any]) -> None:
             "分立复核定稿 —— 图谱与模板不再为其生成内容，消费流向其并入目标；"
             "坐标对保留成员重投影）。"
         )
-    if st.checkbox("显示簇内边表（两两 Gower 距离，按距离降序）", key="ca_graph_edges"):
+    if st.checkbox(_t("显示簇内边表（两两 Gower 距离，按距离降序）"), key="ca_graph_edges"):
         edges = graph.get("edges") or []
         st.dataframe(pd.DataFrame(edges), hide_index=True)
         st.caption(f"边表上限 {GRAPH_EDGES_MAX} 条（按距离降序截断）。")
@@ -2578,7 +2579,7 @@ def _render_typicality_tab(data: Dict[str, Any]) -> None:
     批次 8 从原 render_cluster_analysis_page 的典型性块原样抽出（渲染逻辑
     逐字不变），供旧四 tab 页与合并页共用。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>各簇典型性排序"
+    st.markdown(f"<h3 style='{HEADER_H3}'>🏆 各簇典型性排序"
                 f"（medoid = 簇内到其他成员平均距离最小者）</h3>",
                 unsafe_allow_html=True)
     st.caption(
@@ -2763,7 +2764,7 @@ def render_semantic_analysis_page() -> None:
             if cs_data is not None:
                 render_view(cs_data)
             else:
-                st.caption("（语义分析数据未就绪 —— 见页面顶部提示。）")
+                st.caption(_t("（语义分析数据未就绪 —— 见页面顶部提示。）"))
 
     # 🌐 图式谱系（批次 32：图式范畴化——工作流缺失环节平台化，P 构件插件）
     with tab_family:
@@ -2793,7 +2794,7 @@ def _render_schema_family_tab(category: str, language: str) -> None:
     from src import schema_family as _sf
     from src.template_engine import derive_cluster_schemas
 
-    st.markdown("### 🌐 图式谱系（图式范畴化·事件类型层级）")
+    st.markdown(_t("### 🌐 图式谱系（图式范畴化·事件类型层级）"))
     st.caption(
         "理论：对各子簇提炼的事件图式本身进行归纳——梳理图式之间的亲缘关系与"
         "家族相似性，建立更高层级的事件类型谱系（图式范畴化）。方法：把义位"
@@ -2809,11 +2810,11 @@ def _render_schema_family_tab(category: str, language: str) -> None:
         )
         return
     _sf_key = f"schema_family_result_{category}_{language}"
-    if st.button("⚙️ 计算图式家族谱系", key=f"schema_family_calc_{category}_{language}"):
+    if st.button(_t("⚙️ 计算图式家族谱系"), key=f"schema_family_calc_{category}_{language}"):
         st.session_state[_sf_key] = _sf.build_schema_families(schemas)
     result = st.session_state.get(_sf_key)
     if not result:
-        st.caption("点上方「⚙️ 计算图式家族谱系」生成。")
+        st.caption(_t("点上方「⚙️ 计算图式家族谱系」生成。"))
         return
     st.dataframe(_sf.families_summary(result), use_container_width=True,
                  hide_index=True)

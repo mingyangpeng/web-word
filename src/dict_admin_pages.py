@@ -1087,7 +1087,7 @@ def _render_cockpit_tab() -> None:
     st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🩺 项目自检（≥1 名在用 chief 等约束）', '🩺 Project Self-Check (Constraints like ≥1 Active Chief)')}</h3>",
                 unsafe_allow_html=True)
     if not projects and not projects_degraded:
-        st.info("尚无词典项目：在下方「🏗️ 创建项目（建壳）」建壳并指定首位词典管理员。")
+        st.info(_t("尚无词典项目：在下方「🏗️ 创建项目（建壳）」建壳并指定首位词典管理员。"))
 
     # —— 建壳表单（批次 12 修复：创建项目此前无 UI 入口，词典管理链整体空转）——
     # 口径（架构 §8）：项目壳由平台管理员建壳并指定首位 chief；词典管理员亦可为
@@ -1105,7 +1105,7 @@ def _render_cockpit_tab() -> None:
     # 这里直接用原文 —— 展示转义是控件职责，不是调用方职责。
     chief_opts = {f"{u['display_name']}（{u['username']}）": int(u["id"])
                   for u in candidates}
-    with st.expander("🏗️ 创建项目（建壳并指定首位词典管理员）"):
+    with st.expander(_t("🏗️ 创建项目（建壳并指定首位词典管理员）")):
         if not chief_opts:
             st.warning("当前没有可任 chief 的账号（有效角色含 dict_admin）——"
                        "请先在「👥 账号管理」为用户授予 dict_admin。")
@@ -1122,7 +1122,7 @@ def _render_cockpit_tab() -> None:
                 if st.form_submit_button(_t("创建项目", "Create Project")):
                     name = pname.strip()
                     if not name:
-                        st.error("项目名称必填。")
+                        st.error(_t("项目名称必填。"))
                     else:
                         cats = [c.strip() for c in pcats.split(",") if c.strip()]
                         pid = org_db.create_project(
@@ -1134,7 +1134,7 @@ def _render_cockpit_tab() -> None:
                                          "「🏷️ 定制属性」继续配置。")
                             st.rerun()
                         else:
-                            st.error("建壳失败（名称重复或数据库异常），详见服务端日志。")
+                            st.error(_t("建壳失败（名称重复或数据库异常），详见服务端日志。"))
     for p in projects:
         pid = int(p.get("id") or 0)
         name = str(p.get("name") or f"项目#{pid}")
@@ -1684,7 +1684,7 @@ def _render_style_check_trend(category: str) -> None:
             "表未建）—— 上方逐项结果与历史小表不受影响（R4 归因口径）。")
         return
     if len(trend) < 2:
-        st.caption("≥2 次质检后显示趋势")
+        st.caption(_t("≥2 次质检后显示趋势"))
         return
     import pandas as pd  # 函数内 import：趋势图才需要，保持模块导入链轻
 
@@ -1897,7 +1897,7 @@ def _render_style_check_section() -> None:
 def _render_members_table(members: List[Dict[str, Any]]) -> None:
     """成员册只读表（chief 置顶由数据层排序保证）。"""
     if not members:
-        st.info("该项目还没有成员（除建壳时的首位 chief 外）。")
+        st.info(_t("该项目还没有成员（除建壳时的首位 chief 外）。"))
         return
     rows: List[List[str]] = []
     for m in members:
@@ -1934,7 +1934,7 @@ def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('➕ 添加成员 / 改授职能', '➕ Add Member / Change Role')}</h4>", unsafe_allow_html=True)
     users = users_db.list_users()
     if not users:
-        st.info("暂无用户可入册（账号由平台管理员在系统管理区创建）。")
+        st.info(_t("暂无用户可入册（账号由平台管理员在系统管理区创建）。"))
         return
     user_options: Dict[str, int] = {}
     for u in users:
@@ -1966,7 +1966,7 @@ def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
         ok = org_db.add_member(project_id, uid, role, granted_by=int(me.get("id") or 0))
     except Exception as e:  # org_db 理论上不抛，防御性转译（规范 §5 通用约定）
         logger.warning(f"add_member 意外失败（project={project_id}, user={uid}）: {e}")
-        st.warning("入册未生效：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.warning(_t("入册未生效：数据层返回异常（详见服务端日志），请稍后重试。"))
         return
     if ok:
         ui_kit.flash(f"已入册用户 id={uid} 为「{PROJECT_ROLE_LABELS.get(role, role)}」；"
@@ -1984,7 +1984,7 @@ def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
     """移出项目表单：chief / 在途任务被拒时把 org_db 的返回转成 st.warning。"""
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('➖ 移出项目', '➖ Remove Member')}</h4>", unsafe_allow_html=True)
     if not members:
-        st.info("无成员可移除。")
+        st.info(_t("无成员可移除。"))
         return
     member_options: Dict[str, int] = {}
     for m in members:
@@ -2011,7 +2011,7 @@ def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
         ok = org_db.remove_member(project_id, uid)
     except Exception as e:  # 防御性转译：org_db 拒绝/异常都进 warning，不静默
         logger.warning(f"remove_member 意外失败（project={project_id}, user={uid}）: {e}")
-        st.warning("移除未生效：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.warning(_t("移除未生效：数据层返回异常（详见服务端日志），请稍后重试。"))
         return
     if ok:
         ui_kit.flash(f"已把用户 id={uid} 移出项目。")
@@ -2049,7 +2049,7 @@ def _render_members_tab(me: Dict[str, Any]) -> None:
     st.markdown("")
     ok, problems = org_db.project_selfcheck(project_id)
     if ok:
-        st.success("✓ 项目自检通过：chief 齐备且账号在用。")
+        st.success(_t("✓ 项目自检通过：chief 齐备且账号在用。"))
     else:
         st.error("项目自检发现问题：" + "；".join(_esc(x) for x in problems))
 
@@ -2105,7 +2105,7 @@ def _render_broadcast_history(project_id: int) -> None:
     if not items:
         # list_broadcasts 降级与「真 0 条」同形（都返回 []）：表格缺席即
         # 空/降级态，引导文案如实注明两种可能，不编历史行（宁缺毋假）。
-        st.caption("📢 该项目暂无广播记录（或数据库暂不可用，稍后重试）。")
+        st.caption(_t("📢 该项目暂无广播记录（或数据库暂不可用，稍后重试）。"))
         return
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🗂️ 该项目广播历史', '🗂️ Broadcast History (This Project)')}</h4>",
                 unsafe_allow_html=True)
@@ -2165,7 +2165,7 @@ def _render_broadcast_section(project_id: int, me: Dict[str, Any],
         return
     except Exception as e:  # 防御性转译：数据层理论不抛，异常不崩页
         logger.warning(f"publish_broadcast 意外失败（project={project_id}）: {e}")
-        st.warning("广播未发布：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.warning(_t("广播未发布：数据层返回异常（详见服务端日志），请稍后重试。"))
         _render_broadcast_history(project_id)
         return
     # RV14-5：结果体 {"id": int|None, "reason": str|None} —— 页面按 reason
@@ -2220,11 +2220,11 @@ def _render_define_field_form(project_id: int, me: Dict[str, Any]) -> None:
     clean_code = code.strip()
     clean_name = name.strip()
     if not clean_code or not clean_name:
-        st.error("字段代码与展示名不能为空。")
+        st.error(_t("字段代码与展示名不能为空。"))
         return
     enum_values = _parse_enum_csv(enum_raw)
     if value_type == "enum" and not enum_values:
-        st.error("enum 字段需要至少 1 个枚举值（逗号分隔白名单）。")
+        st.error(_t("enum 字段需要至少 1 个枚举值（逗号分隔白名单）。"))
         return
     payload_enum: Optional[List[str]] = enum_values if value_type == "enum" else None
     # R1-8：定义字段是定制属性写路径 —— 中央闸门兜底（同页媒体/快照口径）
@@ -2240,7 +2240,7 @@ def _render_define_field_form(project_id: int, me: Dict[str, Any]) -> None:
         )
     except Exception as e:  # dict_admin_db 理论上不抛，防御性转 st.error
         logger.warning(f"define_field 意外失败（project={project_id}, code={clean_code}）: {e}")
-        st.error("定义字段失败：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.error(_t("定义字段失败：数据层返回异常（详见服务端日志），请稍后重试。"))
         return
     if new_id > 0:
         ui_kit.flash(f"已定义字段「{clean_code}」（id={new_id}）。")
@@ -2255,7 +2255,7 @@ def _render_define_field_form(project_id: int, me: Dict[str, Any]) -> None:
 def _render_fields_table(fields: List[Dict[str, Any]]) -> None:
     """字段定义清单（含已弃用，弃用字段灰徽章）。"""
     if not fields:
-        st.info("本项目还没有定制字段：先在上方「定义字段」。")
+        st.info(_t("本项目还没有定制字段：先在上方「定义字段」。"))
         return
     rows: List[List[str]] = []
     for f in fields:
@@ -2283,7 +2283,7 @@ def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🚫 弃用字段（停写不删）', '🚫 Deprecate Field (Stop Writing, Keep Data)')}</h4>", unsafe_allow_html=True)
     active_fields = [f for f in fields if str(f.get("status") or "") == "active"]
     if not active_fields:
-        st.info("没有可弃用的在用字段。")
+        st.info(_t("没有可弃用的在用字段。"))
         return
     field_options = {
         f"{f.get('code')}（{f.get('name')}）": int(f.get("id") or 0) for f in active_fields
@@ -2306,13 +2306,13 @@ def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
         ok = dict_admin_db.deprecate_field(fid)
     except Exception as e:  # 防御性转 st.error
         logger.warning(f"deprecate_field 意外失败（field={fid}）: {e}")
-        st.error("弃用失败：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.error(_t("弃用失败：数据层返回异常（详见服务端日志），请稍后重试。"))
         return
     if ok:
         ui_kit.flash(f"已弃用字段 id={fid}：拒新写值，存量值保留只读。")
         st.rerun()
     else:
-        st.error("弃用失败：字段不存在或已弃用（未变更不重复计）。")
+        st.error(_t("弃用失败：字段不存在或已弃用（未变更不重复计）。"))
 
 
 def _coerce_value(value_type: str, raw: Any) -> Optional[Any]:
@@ -2355,7 +2355,7 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('✍️ 为锚写值', '✍️ Write Value for Anchor')}</h4>", unsafe_allow_html=True)
     active_fields = [f for f in fields if str(f.get("status") or "") == "active"]
     if not active_fields:
-        st.info("没有在用字段可写值：先「定义字段」。")
+        st.info(_t("没有在用字段可写值：先「定义字段」。"))
         return
     field_options = {
         (f"{f.get('code')}（{f.get('name')}）"
@@ -2372,7 +2372,7 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
             # 字段清单在两次渲染间变化（他人弃用等）：不让 KeyError 打崩页面
             submitted = st.form_submit_button(_t("写入值", "Write Value"), use_container_width=True)
             if submitted:
-                st.error("字段清单已变化，请重试。")
+                st.error(_t("字段清单已变化，请重试。"))
             return
         value_type = str(field.get("value_type") or "text")
         anchor_choices = list(dict_admin_db.APPLIES_TO)
@@ -2428,7 +2428,7 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
         if field.get("required"):
             st.error(f"字段「{_esc(field_name)}」声明为必填，不能写空值。")
             return
-        st.error("值不能为空。")
+        st.error(_t("值不能为空。"))
         return
     value = _coerce_value(value_type, raw_value)
     if value is None or (isinstance(value, str) and value == ""):
@@ -2438,16 +2438,16 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
                 st.error("日期不存在：年月日组合不是真实日历日期"
                          "（如 2024-02-30），请核对后重填。")
             else:
-                st.error("日期格式须为 YYYY-MM-DD。")
+                st.error(_t("日期格式须为 YYYY-MM-DD。"))
         elif value_type == "number":
-            st.error("数值字段的值必须是有限数字。")
+            st.error(_t("数值字段的值必须是有限数字。"))
         elif value_type == "text":
             # R2-3 专用报错：text 在空值拦截之后只可能因超长失败
             # （上限与 dict_admin_db.MAX_VALUE_TEXT_LEN 同源，数据层再兜一道）
             st.error(f"文本超长（≤{dict_admin_db.MAX_VALUE_TEXT_LEN} 字符），"
                      "请精简后重试。")
         else:
-            st.error("值不能为空。")
+            st.error(_t("值不能为空。"))
         return
     try:
         # R1-8：为锚写值是定制属性写路径 —— 中央闸门兜底（同页媒体/快照口径）
@@ -2462,7 +2462,7 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
         )
     except Exception as e:  # 防御性转 st.error
         logger.warning(f"set_value 意外失败（field={field.get('id')}）: {e}")
-        st.error("写入失败：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.error(_t("写入失败：数据层返回异常（详见服务端日志），请稍后重试。"))
         return
     if ok:
         ui_kit.flash(f"已为锚 {anchor_type}:{int(anchor_id)} 写入字段"
@@ -2618,7 +2618,7 @@ def _render_media_register_form(me: Dict[str, Any]) -> None:
                     f"（kind={kind}, path={file_path}）")
         st.rerun()
     else:
-        st.error("登记失败：文件不存在/参数非法/数据库不可用（media_db 已记日志）。")
+        st.error(_t("登记失败：文件不存在/参数非法/数据库不可用（media_db 已记日志）。"))
 
 
 def _render_media_bind_candidate() -> None:
@@ -2691,7 +2691,7 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
     ext = name.strip().lower().rsplit(".", 1)[-1]
     kind = MEDIA_UPLOAD_EXT_KINDS.get(ext)
     if kind is None:  # 理论不可达（_validate_upload 已挡白名单），防御一层
-        st.error("文件类型不在上传白名单内（png/jpeg/jpg/mp3/mp4）。")
+        st.error(_t("文件类型不在上传白名单内（png/jpeg/jpg/mp3/mp4）。"))
         return
     data = bytes(payload or b"")
     sha = hashlib.sha256(data).hexdigest()
@@ -2711,7 +2711,7 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
         return
     target_abs = _upload_target_path(kind, data, _MEDIA_UPLOAD_BASE)
     if not target_abs:
-        st.error("落盘路径计算失败（资产形态非法或内容不可读），上传已取消。")
+        st.error(_t("落盘路径计算失败（资产形态非法或内容不可读），上传已取消。"))
         return
     try:
         os.makedirs(os.path.dirname(target_abs), exist_ok=True)
@@ -2719,7 +2719,7 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
             fh.write(data)
     except OSError as e:
         logger.error(f"媒体上传落盘失败（{target_abs}）: {e}")
-        st.error("落盘失败：无法写入 data/media（磁盘/权限问题，详见服务端日志）。")
+        st.error(_t("落盘失败：无法写入 data/media（磁盘/权限问题，详见服务端日志）。"))
         return
     rel_path = os.path.relpath(target_abs, _MEDIA_UPLOAD_BASE)
     # 入库路径：仓库相对路径优先（可移植，与加载脚本同口径）；
@@ -2744,7 +2744,7 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
 def _render_media_assets_table(assets: List[Dict[str, Any]]) -> None:
     """资产档案表（含许可列 —— 许可纪律可视）。"""
     if not assets:
-        st.info("暂无资产记录（media_assets 为空、按状态筛选无命中，或数据库不可用）。")
+        st.info(_t("暂无资产记录（media_assets 为空、按状态筛选无命中，或数据库不可用）。"))
         return
     rows: List[List[str]] = []
     for a in assets:
@@ -2777,7 +2777,7 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🔗 绑定资产（四锚 × 用途）', '🔗 Bind Asset (4 Anchors × Purposes)')}</h4>",
                 unsafe_allow_html=True)
     if not assets:
-        st.info("暂无资产可绑定：先在上方「登记资产」。")
+        st.info(_t("暂无资产可绑定：先在上方「登记资产」。"))
         return
     asset_options = {
         (f"#{int(a.get('id') or 0)} "
@@ -2823,7 +2823,7 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
         )
     except Exception as e:  # media_db 理论上不抛，防御性转译
         logger.warning(f"bind_asset 意外失败（asset={asset_id}）: {e}")
-        st.error("绑定失败：数据层返回异常（详见服务端日志），请稍后重试。")
+        st.error(_t("绑定失败：数据层返回异常（详见服务端日志），请稍后重试。"))
         return
     if ok:
         ui_kit.flash(f"已把资产 #{asset_id} 绑到 {anchor_type}:{int(anchor_id)}"
@@ -2839,7 +2839,7 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
     st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🧾 绑定列表与审定流转', '🧾 Binding List & Review Flow')}</h4>",
                 unsafe_allow_html=True)
     if not bindings:
-        st.info("暂无绑定记录（media_bindings 为空或数据库不可用）。")
+        st.info(_t("暂无绑定记录（media_bindings 为空或数据库不可用）。"))
         return
     rows: List[List[str]] = []
     for b in bindings:
@@ -2862,7 +2862,7 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
 
     flowable = [b for b in bindings if media_db.next_binding_status(b.get("binding_status"))]
     if not flowable:
-        st.caption("没有可流转的绑定（全部已发布或状态未知）。")
+        st.caption(_t("没有可流转的绑定（全部已发布或状态未知）。"))
         return
     flow_options = {
         (f"#{int(b.get('id') or 0)} "
@@ -2888,7 +2888,7 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
         help="逐级单步（不可跳级、不可回退）；乐观并发守卫 —— 两人同时流转只有一人生效。",
     ):
         if binding is None or next_status is None:
-            st.error("绑定选择已变化，请重试。")
+            st.error(_t("绑定选择已变化，请重试。"))
             return
         try:
             actor = guards.require_dict_admin()
@@ -2905,7 +2905,7 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
                          "词条装配多模态区只取「发布」态绑定。")
             st.rerun()
         else:
-            st.warning("流转未生效：绑定状态已被他人变更（乐观并发守卫）或数据库不可用。")
+            st.warning(_t("流转未生效：绑定状态已被他人变更（乐观并发守卫）或数据库不可用。"))
 
 
 def _render_media_tab(me: Dict[str, Any]) -> None:
@@ -3428,7 +3428,7 @@ def _render_exports_flow(
     """快照状态流转区：ready→published（G6 全过才可用）／ready→revoked（单向撤销）。"""
     ready = [e for e in exports if str(e.get("status") or "") == "ready"]
     if not ready:
-        st.caption("无 ready 态快照可流转（published/revoked 为终态，清单见上）。")
+        st.caption(_t("无 ready 态快照可流转（published/revoked 为终态，清单见上）。"))
         return
     options: Dict[str, Dict[str, Any]] = {}
     for e in ready:
@@ -3742,7 +3742,7 @@ def _render_assignment_ledger() -> None:
 
 def _render_reassign_section(me: Dict[str, Any]) -> None:
     """改派表单（FX-20）：仅 open 分派可改派；目标=所选项目在册在用成员。"""
-    with st.expander("🔁 改派分派（仅未动工 open 的分派可改派）"):
+    with st.expander(_t("🔁 改派分派（仅未动工 open 的分派可改派）")):
         st.caption(
             "规范 §8「改派仅限 draft/rejected」以码为准：assignments 实际枚举为 "
             "open/in_progress/submitted/closed（无 draft/rejected 字面值），"
@@ -3754,7 +3754,7 @@ def _render_reassign_section(me: Dict[str, Any]) -> None:
         )
         projects = org_db.list_projects()
         if not projects:
-            st.info("尚无词典项目：先在「🧭 主编驾驶舱」建壳（改派目标须挂项目在册）。")
+            st.info(_t("尚无词典项目：先在「🧭 主编驾驶舱」建壳（改派目标须挂项目在册）。"))
             return
         project_opts = _project_options(projects)
         project_label = st.selectbox(
@@ -3768,7 +3768,7 @@ def _render_reassign_section(me: Dict[str, Any]) -> None:
             statuses=annotation_flow.REASSIGNABLE_ASSIGNMENT_STATUSES,
         )
         if not reassignable:
-            st.info("没有可改派的分派（status='open' 的分派为空）。")
+            st.info(_t("没有可改派的分派（status='open' 的分派为空）。"))
             return
         assign_opts = {}
         for a in reassignable:
@@ -3841,7 +3841,7 @@ def _render_reassign_section(me: Dict[str, Any]) -> None:
 
 def _render_training_assign_section(me: Dict[str, Any]) -> None:
     """试标轮分派表单（FX-20）：round/training 可选留痕，默认留空=正式轮。"""
-    with st.expander("🎯 试标轮分派（轮次/试标位留痕，默认留空=正式轮）"):
+    with st.expander(_t("🎯 试标轮分派（轮次/试标位留痕，默认留空=正式轮）")):
         st.caption(
             "round=第几轮标注（INT，留空=NULL 不留痕，不用 0 冒充）；"
             "training=试标轮位（试标轮勾选后留 1）。规范 §8：抽样 15–20% 试标轮"
@@ -3899,10 +3899,10 @@ def _render_training_assign_section(me: Dict[str, Any]) -> None:
             try:
                 round_val = int(round_text.strip())
             except ValueError:
-                st.error("轮次须为 ≥1 的整数，或留空表示正式轮（不留痕）。")
+                st.error(_t("轮次须为 ≥1 的整数，或留空表示正式轮（不留痕）。"))
                 return
             if round_val < 1:
-                st.error("轮次须为 ≥1 的整数（第几轮标注），不能是 0 或负数。")
+                st.error(_t("轮次须为 ≥1 的整数（第几轮标注），不能是 0 或负数。"))
                 return
         assignee_id = candidates[assignee_label]
         # 与主分派表单同一三重校验口径（collab_pages 单一实现，不在本页复刻）
@@ -3957,7 +3957,7 @@ def _render_training_assign_section(me: Dict[str, Any]) -> None:
 
 def _render_reannotation_section(me: Dict[str, Any]) -> None:
     """发起重标（FX-20，G2 修订→重标闭环）：仅已裁决 merged/split 义位可发。"""
-    with st.expander("♻️ 发起重标（G2 修订→重标闭环，仅已裁决 merged/split 可发）"):
+    with st.expander(_t("♻️ 发起重标（G2 修订→重标闭环，仅已裁决 merged/split 可发）")):
         st.caption(
             "分立复核裁决（merge/split）落地后，受影响义位的旧轮标注按轮次语义"
             "失效：本入口创建「被失效轮次+1」的重标任务（派给历史标注人），"
@@ -4035,7 +4035,7 @@ def _render_reannotation_section(me: Dict[str, Any]) -> None:
             if value not in sense_ids:
                 sense_ids.append(value)
         if not sense_ids:
-            st.error("请填写至少一个受影响义位 id（逗号分隔的正整数）。")
+            st.error(_t("请填写至少一个受影响义位 id（逗号分隔的正整数）。"))
             return
         try:
             actor = guards.require_dict_admin()
@@ -4242,7 +4242,7 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
 
     # 🔄 从语料重建初版（批次 51：语料变化后词表刷新——构建函数单一事实源
     # 在 src/style_check.py，页面直调；重建覆盖编者增删——按钮级二次确认）
-    with st.expander("🔄 从语料重建初版（高级）"):
+    with st.expander(_t("🔄 从语料重建初版（高级）")):
         st.caption(
             "以当前释义语料（996 条英文释义）重新提取高频词表（覆盖本页编者"
             "增删——重建后需重新核定）。语料变化（重新灌库/增删释义）后使用。"
@@ -4262,7 +4262,7 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
             )
             texts = fetch_corpus_definitions()
             if not texts:
-                st.warning("释义语料为空——重建跳过（./start status 查库）")
+                st.warning(_t("释义语料为空——重建跳过（./start status 查库）"))
             else:
                 pairs = build_corpus_vocab(count_corpus_words(texts), 2)
                 path = write_corpus_vocab_file(pairs)
@@ -4384,7 +4384,7 @@ def render_dict_admin_page() -> None:
     """
     me = _current_user()
     if not me:
-        st.warning("请先登录后再访问词典管理区。")
+        st.warning(_t("请先登录后再访问词典管理区。"))
         return
     if not _is_dict_admin(me) and not _db_confirms_dict_admin(me):
         st.warning("⛔ 仅词典管理员可访问词典管理区（dict_admin 角色；过渡期 admin "

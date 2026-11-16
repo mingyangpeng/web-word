@@ -335,7 +335,7 @@ def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
     st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🔁 修改角色', '🔁 Change Role')}</h3>", unsafe_allow_html=True)
     options = _user_options(users, exclude_id=int(me.get("id") or 0))
     if not options:
-        st.info("没有可修改角色的其他用户。")
+        st.info(_t("没有可修改角色的其他用户。"))
         return
     with st.form("users_admin_role_form", clear_on_submit=True):
         label = st.selectbox(_t("选择用户", "Select User"), list(options.keys()))
@@ -371,7 +371,7 @@ def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
         logger.info(f"admin {me.get('username')} 将用户 id={uid} 角色改为 {role}")
         st.rerun()
     else:
-        st.error("修改失败：用户不存在、角色未变化或数据库错误。")
+        st.error(_t("修改失败：用户不存在、角色未变化或数据库错误。"))
 
 
 def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) -> None:
@@ -386,7 +386,7 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
     st.markdown(f"<h3 style='{HEADER_H3}'>{_t('⏸️ 停用 / 启用', '⏸️ Deactivate / Activate')}</h3>", unsafe_allow_html=True)
     options = _user_options(users, exclude_id=int(me.get("id") or 0))
     if not options:
-        st.info("没有可操作的其他用户。")
+        st.info(_t("没有可操作的其他用户。"))
         return
     with st.form("users_admin_active_form", clear_on_submit=True):
         label = st.selectbox(_t("选择用户", "Select User"), list(options.keys()))
@@ -417,7 +417,7 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
         logger.info(f"admin {me.get('username')} 将用户 id={uid} active 设为 {target_active}")
         st.rerun()
     else:
-        st.error("操作失败：用户不存在、状态未变化或数据库错误。")
+        st.error(_t("操作失败：用户不存在、状态未变化或数据库错误。"))
 
 
 def _render_create_user_form(me: Dict[str, Any]) -> None:
@@ -440,7 +440,7 @@ def _render_create_user_form(me: Dict[str, Any]) -> None:
     if not submitted:
         return
     if not username.strip() or not password:
-        st.error("用户名与初始密码不能为空。")
+        st.error(_t("用户名与初始密码不能为空。"))
         return
     # 提权硬闸门（批次 4-N 旁路封堵，批次 6-T 收口到 guards.require_role）：
     # 建号即授 admin 基线 ≙ 授予管理角色
@@ -473,7 +473,7 @@ def _render_create_user_form(me: Dict[str, Any]) -> None:
         logger.info(f"admin 创建用户 '{username.strip()}'（id={new_id}，role={role}）")
         st.rerun()
     else:
-        st.error("创建失败：角色非法、用户名已存在或数据库错误。")
+        st.error(_t("创建失败：角色非法、用户名已存在或数据库错误。"))
 
 
 def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) -> None:
@@ -509,7 +509,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
 
     options = _user_options(users, exclude_id=int(me.get("id") or 0))
     if not options:
-        st.info("没有可授予角色的其他用户。")
+        st.info(_t("没有可授予角色的其他用户。"))
         return
 
     selected_label = st.selectbox(
@@ -528,7 +528,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
         )
         st.markdown(f"当前角色：{badges}", unsafe_allow_html=True)
     else:
-        st.markdown("当前角色：（无六角色记录，按旧角色列兜底显示）")
+        st.markdown(_t("当前角色：（无六角色记录，按旧角色列兜底显示）"))
 
     grant_submitted = False
     grant_role_sel: Optional[str] = None
@@ -551,7 +551,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
             )
             revoke_submitted = st.form_submit_button(_t("撤销角色", "Revoke Role"), use_container_width=True)
     else:
-        st.caption("该用户暂无可撤销的六角色（授予后可撤销）。")
+        st.caption(_t("该用户暂无可撤销的六角色（授予后可撤销）。"))
 
     granter_id = int(me.get("id") or 0)
     granter_name = str(me.get("username") or "")
@@ -582,7 +582,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 )
                 st.rerun()
             else:
-                st.error("授予未生效：该用户已持有该角色、用户不存在或数据库错误。")
+                st.error(_t("授予未生效：该用户已持有该角色、用户不存在或数据库错误。"))
     if revoke_submitted and revoke_role_sel:
         # 提权硬闸门：先判定，被拒则不调数据层（批次 4-N 立，6-T 收口到 guards）
         gate_error = _gate_error(me, revoke_role_sel)
@@ -606,7 +606,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
                 )
                 st.rerun()
             else:
-                st.error("撤销未生效：该用户未持有该角色、用户不存在或数据库错误。")
+                st.error(_t("撤销未生效：该用户未持有该角色、用户不存在或数据库错误。"))
 
 
 def _render_my_preferences() -> None:
@@ -683,13 +683,13 @@ def _render_my_preferences() -> None:
     if add_submitted:
         clean_key = custom_key.strip()
         if not clean_key:
-            st.error("自定义键不能为空。")
+            st.error(_t("自定义键不能为空。"))
         elif user_context_db.upsert_profile(clean_key,
                                             custom_value.strip() or None):
             ui_kit.flash(f"偏好键「{clean_key}」已保存。")
             st.rerun()
         else:
-            st.error("保存失败：键非法、值超长或数据库不可用。")
+            st.error(_t("保存失败：键非法、值超长或数据库不可用。"))
 
     # -- 已存键删除（自定义键可删；预置键删除后重存即可恢复）--
     all_keys = sorted(stored)
@@ -708,9 +708,9 @@ def _render_my_preferences() -> None:
                 ui_kit.flash(f"偏好键「{delete_key}」已删除。")
                 st.rerun()
             else:
-                st.error("删除失败（数据库不可用），请稍后重试。")
+                st.error(_t("删除失败（数据库不可用），请稍后重试。"))
     else:
-        st.caption("暂无已存偏好键（保存上方预设键或新增自定义键后可删）。")
+        st.caption(_t("暂无已存偏好键（保存上方预设键或新增自定义键后可删）。"))
 
 
 def _format_dt(value: Any) -> str:
@@ -865,7 +865,7 @@ def _render_my_bookmarks() -> None:
         logger.error(f"我的书签读取失败（降级为空态）: {e}")
         rows = []
     if not rows:
-        st.caption("尚无书签——在义项脊柱点『📌 收藏本义位』即可收藏。")
+        st.caption(_t("尚无书签——在义项脊柱点『📌 收藏本义位』即可收藏。"))
         return
 
     header_cols = st.columns(_BOOKMARK_COL_RATIOS)
@@ -939,7 +939,7 @@ def _delete_bookmark_row(anchor_type: str, anchor_id: str, display_title: str) -
         ui_kit.flash(f"已取消收藏「{display_title}」。")
         st.rerun()
     else:
-        st.error("取消收藏失败（数据库不可用或收藏已不存在），请稍后重试。")
+        st.error(_t("取消收藏失败（数据库不可用或收藏已不存在），请稍后重试。"))
 
 
 def render_users_admin_page() -> None:
@@ -960,10 +960,10 @@ def render_users_admin_page() -> None:
     """
     me = _current_user()
     if not me:
-        st.warning("请先登录。")
+        st.warning(_t("请先登录。"))
         return
     if not ({"sys_admin", "dict_admin"} & effective_six_roles(me)):
-        st.error("⛔ 用户管理仅管理员可用。")
+        st.error(_t("⛔ 用户管理仅管理员可用。"))
         return
 
     # 页 H1 双语：原文即 key（与侧边栏 label「👥 账号管理」不同串，ZH_EN 已补收条目）
@@ -976,7 +976,7 @@ def render_users_admin_page() -> None:
     users = list_users()
     if not users:
         # 空列表通常是数据库未初始化（ensure_user_tables 会在登录前建表+建 admin）
-        st.info("暂无用户。请确认数据库已初始化（users 表由 ensure_user_tables 创建）。")
+        st.info(_t("暂无用户。请确认数据库已初始化（users 表由 ensure_user_tables 创建）。"))
         return
 
     _metrics_row(users)

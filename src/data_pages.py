@@ -725,11 +725,11 @@ def _render_preview(data: bytes, file_name: str) -> Optional[Tuple[int, List[str
     sha = _sha256_bytes(data)
     df = _read_tabular(data, file_name)
     if df is None:
-        st.error("文件解析失败：请确认上传的是 xlsx 或 csv（docx 阶段 2 接入）。")
+        st.error(_t("文件解析失败：请确认上传的是 xlsx 或 csv（docx 阶段 2 接入）。"))
         return None
     rows_total = int(len(df))
     if rows_total <= 0:
-        st.error("文件中没有数据行，无法登记批次。")
+        st.error(_t("文件中没有数据行，无法登记批次。"))
         return None
     columns = [str(c) for c in df.columns]
 
@@ -744,7 +744,7 @@ def _render_preview(data: bytes, file_name: str) -> Optional[Tuple[int, List[str
         (_t("防护命中格数", "Sanitized cells"), n_protected),
     ])
     st.code(sha, language=None)
-    st.caption("↑ 文件 sha256 指纹（写入 import_batches.file_sha256，幂等/对账凭据）")
+    st.caption(_t("↑ 文件 sha256 指纹（写入 import_batches.file_sha256，幂等/对账凭据）"))
 
     column_names = ", ".join(_html_escape(c) for c in columns)
     # 加粗段头双语：先取译串再进 f-string 插值（zh 态逐字不变）
@@ -880,7 +880,7 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
             for err in mapping_errors:
                 st.error(f"映射错误：{err}")
         if not can_register:
-            st.warning("无法确定操作人（会话用户缺少有效 id），不能登记批次。")
+            st.warning(_t("无法确定操作人（会话用户缺少有效 id），不能登记批次。"))
         if st.button(
             _t("📦 登记批次", "📦 Register Batch"),
             type="primary",
@@ -904,7 +904,7 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
                 st.session_state[MAPPING_KEY] = mapping
                 st.rerun()
             else:
-                st.error("登记失败：参数非法或数据库不可用（详见服务端日志）。")
+                st.error(_t("登记失败：参数非法或数据库不可用（详见服务端日志）。"))
         return
 
     # --- 已登记：用冻结映射复核 + 干跑预览 + 执行写入 ---
@@ -1025,7 +1025,7 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
             for key in _WIZARD_SESSION_KEYS:
                 st.session_state.pop(key, None)
         else:
-            st.error("记账失败：批次不存在、已非 running 态或数据库不可用。")
+            st.error(_t("记账失败：批次不存在、已非 running 态或数据库不可用。"))
     if st.button(_t("🧹 重置向导", "🧹 Reset Wizard"), key=f"{KEY_IMPORT_PREFIX}reset_btn",
                  help="清空本页会话中的批次登记状态（不影响已登记的台账行；已写入的"
                       "业务数据与 revert_log 留痕不受影响）。"):
@@ -1081,7 +1081,7 @@ def _render_batch_list() -> None:
 
     finished = [b for b in batches if str(b.get("status")) == "finished"]
     if not finished:
-        st.caption("当前没有 finished 批次（回滚的合法起点）。")
+        st.caption(_t("当前没有 finished 批次（回滚的合法起点）。"))
         return
     options = {
         f"批次 #{b.get('id')} · {b.get('file_name')}": int(b.get("id") or 0)
@@ -1152,10 +1152,10 @@ def render_import_page() -> None:
     仅词典管理员 —— 过渡期 role == "admin"，升级后 roles 含 dict_admin。"""
     user = _current_user()
     if not user:
-        st.warning("请先登录。")
+        st.warning(_t("请先登录。"))
         return
     if not _is_dict_admin(user):
-        st.error("⛔ 数据导入仅词典管理员可用（导入同权，规范 §15）。")
+        st.error(_t("⛔ 数据导入仅词典管理员可用（导入同权，规范 §15）。"))
         return
 
     # 页 H1 双语：原文即 key（与侧边栏 label 不同串，ZH_EN 已补收条目）
@@ -1246,7 +1246,7 @@ def _render_sense_lines(verb: str, senses: List[Dict[str, Any]]) -> None:
     """
     total = len(senses)
     if total <= 0:
-        st.caption("该词目暂无 oald_senses 义项记录（如实标注，不编造）。")
+        st.caption(_t("该词目暂无 oald_senses 义项记录（如实标注，不编造）。"))
         return
     for s in senses[:SENSES_SHOW_LIMIT]:
         index = str(s.get("sense_index") or "")
@@ -1277,7 +1277,7 @@ def render_browser_page() -> None:
     """词条浏览器（登录即可看，viewer 可读）。**role gate 在函数入口**。"""
     user = _current_user()
     if not user:
-        st.warning("请先登录。")
+        st.warning(_t("请先登录。"))
         return
 
     # 页 H1 双语：原文即 key（与侧边栏 label 不同串，ZH_EN 已补收条目）
@@ -1309,7 +1309,7 @@ def render_browser_page() -> None:
     )
 
     if not str(query or "").strip():
-        st.info("输入词目关键字开始检索（如 run —— 当前匹配 definitions.verb 词目列）。")
+        st.info(_t("输入词目关键字开始检索（如 run —— 当前匹配 definitions.verb 词目列）。"))
         return
 
     rows, total, page = _search_definitions(query, prefix_only, int(page_input))

@@ -52,6 +52,7 @@ from src.tool_settings_db import (
 from src.tools import registry as tool_registry
 from src.tools.pack_check import pack_selfcheck
 from src.users_db import effective_six_roles
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -110,13 +111,13 @@ def render_categories_tools_page() -> None:
     """范畴与工具页入口（系统管理区；两步激活 available/enabled 两区）。"""
     me = _current_user()
     if not me:
-        st.warning("请先登录。")
+        st.warning(_t("请先登录。"))
         return
     roles = effective_six_roles(me)
     is_sys = "sys_admin" in roles
     is_dict = "dict_admin" in roles
     if not (is_sys or is_dict):
-        st.error("⛔ 范畴与工具页仅管理员可用。")
+        st.error(_t("⛔ 范畴与工具页仅管理员可用。"))
         return
 
     # DB loader 缝绑定（函数指针赋值，零启动成本）：注册表 enabled 查询
@@ -138,9 +139,9 @@ def render_categories_tools_page() -> None:
 
     categories = list(CATEGORIES())
     if not categories:
-        st.info("configs/ 下暂无范畴包（含 pack.yaml 的目录）。")
+        st.info(_t("configs/ 下暂无范畴包（含 pack.yaml 的目录）。"))
         return
-    category = st.selectbox("范畴", categories, key="ct_category")
+    category = st.selectbox(_t("范畴"), categories, key="ct_category")
     rows = {r["tool_id"]: r for r in list_settings(category)}
     tools = tool_registry.list_tools()
 
@@ -148,7 +149,7 @@ def render_categories_tools_page() -> None:
     st.markdown(f"<h2 style='{HEADER_H2}'>📦 available 区（平台管理员）</h2>",
                 unsafe_allow_html=True)
     if not is_sys:
-        st.info("available 位仅平台管理员可操作（当前账号无 sys_admin 角色）。")
+        st.info(_t("available 位仅平台管理员可操作（当前账号无 sys_admin 角色）。"))
     else:
         for t in tools:
             row = rows.get(t.id)
@@ -170,7 +171,7 @@ def render_categories_tools_page() -> None:
                 )
             with col_state:
                 if row is None:
-                    st.caption("未配置")
+                    st.caption(_t("未配置"))
                 else:
                     st.caption(
                         f"available={'✅' if row.get('available') else '❌'} · "
@@ -183,7 +184,7 @@ def render_categories_tools_page() -> None:
     st.markdown(f"<h2 style='{HEADER_H2}'>💡 enabled 区（词典管理员）</h2>",
                 unsafe_allow_html=True)
     if not is_dict:
-        st.info("enabled 位仅词典管理员可操作（当前账号无 dict_admin 角色）。")
+        st.info(_t("enabled 位仅词典管理员可操作（当前账号无 dict_admin 角色）。"))
     else:
         for t in tools:
             row = rows.get(t.id)
@@ -213,7 +214,7 @@ def render_categories_tools_page() -> None:
                 unsafe_allow_html=True)
     st.caption("范畴包 pack.yaml 声明的工具引用 ⊆ 注册表 ＋ 启用态校验"
                "（架构 §4 selfcheck 双校验之二；无引用的范畴直接通过）。")
-    if st.button("运行范畴包工具引用自检", key="ct_pack_check"):
+    if st.button(_t("运行范畴包工具引用自检"), key="ct_pack_check"):
         report = pack_selfcheck(category)
         if report["ok"]:
             st.success(f"「{category}」{report['note']}")
@@ -230,7 +231,7 @@ def render_categories_tools_page() -> None:
                 unsafe_allow_html=True)
     audit_rows = list_audit(limit=20, category=category)
     if not audit_rows:
-        st.caption("本范畴暂无运行层操作审计。")
+        st.caption(_t("本范畴暂无运行层操作审计。"))
     else:
         st.dataframe(
             [{

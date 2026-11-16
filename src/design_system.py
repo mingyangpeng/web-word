@@ -1157,7 +1157,12 @@ pre code {{
 .st-key-ls_nav .stButton {{
     margin-bottom: 1px;
 }}
-.st-key-ls_nav > div:first-child .ls-nav-header, .st-key-ls_nav .ls-nav-header:first-of-type {{
+/* 首个区头贴近顶部（其余区头保留 20px 组间留白）。
+   批次 35：原选择器第二条 `.st-key-ls_nav .ls-nav-header:first-of-type` 对
+   **每个**区头都成立——区头各自是父容器里唯一的 div，`:first-of-type` 恒真，
+   三个区头全被压成 margin-top:2px，批次 34 的「组间 20px ≫ 组内 1px」分组
+   节奏实际没生效（侧边栏仍像简单堆叠）。只保留按容器首个元素限定的第一条。 */
+.st-key-ls_nav > div:first-child .ls-nav-header {{
     margin-top: 2px;
 }}
 

@@ -759,7 +759,7 @@ def _render_admin_all_pending(inbox_count: int) -> None:
         f"探针 {len(probes)} 条如下（只读追溯，探针问答不入裁决流）。"
     )
     if not probes:
-        st.info("探针通道暂无待决记录。")
+        st.info(_t("探针通道暂无待决记录。"))
         return
     for p in probes:
         with st.expander(_proposal_summary(p)):
@@ -786,7 +786,7 @@ def _render_my_tasks(me: Dict[str, Any]) -> None:
         return
     rows = list_my_assignments(int(me.get("id") or 0))
     if not rows:
-        st.info("暂无进行中的任务：任务由词典管理员在「任务分配」页分派后出现在这里。")
+        st.info(_t("暂无进行中的任务：任务由词典管理员在「任务分配」页分派后出现在这里。"))
         return
 
     table_rows = []
@@ -875,7 +875,7 @@ def _render_broadcast_banner(me: Optional[Dict[str, Any]]) -> None:
         return                      # 未登录：入口已有登录门，此处兜底不渲染
     latest = broadcast_db.latest_for_user(int(me.get("id") or 0))
     if latest is None:
-        st.caption("📢 项目广播取数暂不可用（数据库未就绪），稍后重试。")
+        st.caption(_t("📢 项目广播取数暂不可用（数据库未就绪），稍后重试。"))
         return
     if not latest:
         return                      # 无广播不渲染段（不占收件箱版面）
@@ -921,7 +921,7 @@ def _render_broadcast_banner(me: Optional[Dict[str, Any]]) -> None:
             ):
                 history = broadcast_db.list_broadcasts(pid, limit=20)
                 if not history:
-                    st.caption("暂无更多广播记录（或数据库暂不可用）。")
+                    st.caption(_t("暂无更多广播记录（或数据库暂不可用）。"))
                 for h in history:
                     hp = ("系统作业" if h.get("published_by") is None
                           else _html_escape(str(h.get("publisher_display_name")
@@ -1051,7 +1051,7 @@ def _render_five_metrics() -> None:
                 f'<span style="{_ESTIMATE_BADGE_STYLE}">{estimate_text}</span>',
                 unsafe_allow_html=True,
             )
-            st.caption("数据源：ai_proposals kind='draft' 的 adopted+modified 计数。")
+            st.caption(_t("数据源：ai_proposals kind='draft' 的 adopted+modified 计数。"))
         else:
             st.caption(f"灰注：{savings.get('note')}")
     with row1[2]:
@@ -1110,7 +1110,7 @@ def _render_metrics_tab() -> None:
         )
         return
     if not stages:
-        st.info("台账暂无提案记录 —— 提案由各业务工序登记后按工序汇总。")
+        st.info(_t("台账暂无提案记录 —— 提案由各业务工序登记后按工序汇总。"))
         return
     drill_rows = []
     for stage in stages:
@@ -1185,7 +1185,7 @@ def _render_verb_picker() -> Optional[List[str]]:
         st.session_state.pop(f"{KEY_PREFIX}assign_verbs", None)
     results = st.session_state.get(results_key) or []
     if not results:
-        st.caption("未搜索或无命中：不选动词则任务不限动词（scope_verbs=NULL，全库）。")
+        st.caption(_t("未搜索或无命中：不选动词则任务不限动词（scope_verbs=NULL，全库）。"))
         return None
     verb_options = {
         f"{r['verb']}（OALD 义项 {r.get('oald_senses') or 0} 条）": str(r["verb"])
@@ -1324,7 +1324,7 @@ def render_collab_page() -> None:
     """
     me = _current_user()
     if not me:
-        st.warning("请先登录。")
+        st.warning(_t("请先登录。"))
         return
 
     # 页 H1 双语（复合形态）：前半段动态取 GUIDE['label']（与侧边栏 label

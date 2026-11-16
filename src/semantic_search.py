@@ -79,6 +79,7 @@ LANGUAGES = ("en", "zh")
 _LLM_SYSTEM_PROMPT = (
     "你是词典学助手。把用户的中文描述句解析为语义特征编码，只输出 JSON。"
 )
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 
 # ============================================
@@ -601,7 +602,7 @@ def render_semantic_search_page() -> None:
     vector = detail["vector"]
     meta = _feature_meta(pack)
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>解析出的特征向量</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>🧩 解析出的特征向量</h3>",
                 unsafe_allow_html=True)
     if not vector:
         st.warning(
@@ -617,7 +618,7 @@ def render_semantic_search_page() -> None:
     }[detail["source"]])
 
     # ---- 库内最近邻 ----
-    st.markdown(f"<h3 style='{HEADER_H3}'>库内最近邻（Gower 距离升序）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>📍 库内最近邻（Gower 距离升序）</h3>",
                 unsafe_allow_html=True)
     index = _load_page_index(cache_scope_key(), category, language)
     if index is None or not index.get("rows"):
@@ -634,7 +635,7 @@ def render_semantic_search_page() -> None:
                search_similar_senses(vector, category, language,
                                      top_k=DEFAULT_TOP_K, index=index))
     if not results:
-        st.warning("没有可与该向量比对的义位（该范畴 / 语言侧没有特征编码数据）。")
+        st.warning(_t("没有可与该向量比对的义位（该范畴 / 语言侧没有特征编码数据）。"))
         return
 
     st.dataframe(pd.DataFrame([
@@ -654,7 +655,7 @@ def render_semantic_search_page() -> None:
     # 平局提示（RV5-11，与帮助文档 1.2 口径一致）：有并列距离时结果区注明供参照
     if any(results[i]["distance"] == results[i + 1]["distance"]
            for i in range(len(results) - 1)):
-        st.caption("⚠️ 以下结果距离相同，供参照（并列距离按义位 id 稳定排序）。")
+        st.caption(_t("⚠️ 以下结果距离相同，供参照（并列距离按义位 id 稳定排序）。"))
 
     for i, r in enumerate(results, start=1):
         title = (f"{i}. {_html_escape(r['verb'])}"

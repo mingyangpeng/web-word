@@ -111,6 +111,7 @@ from src.design_system import HEADER_H4
 from src.mysql_db import get_db_cursor
 from src.template_engine import instantiate_template
 from src.user_context_db import MAX_NOTE_LEN, _resolve_user_id as _context_uid
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -901,20 +902,20 @@ def _render_bookmark_toggle(sense_id: int) -> None:
         logger.error(f"sense_spine: 书签态判定失败（id={sid}），控件不渲染: {e}")
         return
     if bookmarked:
-        if st.button("📍 已收藏·取消", key=_BOOKMARK_KEY_OFF.format(sid=sid)):
+        if st.button(_t("📍 已收藏·取消"), key=_BOOKMARK_KEY_OFF.format(sid=sid)):
             if user_context_db.delete_bookmark("sense", str(sid)):
                 ui_kit.flash("已取消收藏该义位。")
                 st.rerun()
             else:
-                st.error("取消收藏失败（数据库不可用），请稍后重试。")
+                st.error(_t("取消收藏失败（数据库不可用），请稍后重试。"))
     else:
-        if st.button("📌 收藏本义位", key=_BOOKMARK_KEY_ON.format(sid=sid)):
+        if st.button(_t("📌 收藏本义位"), key=_BOOKMARK_KEY_ON.format(sid=sid)):
             if user_context_db.upsert_bookmark("sense", str(sid),
                                                title=_sense_label(sid)):
                 ui_kit.flash("已收藏该义位（个人书签，跨设备续接）。")
                 st.rerun()
             else:
-                st.error("收藏失败（数据库不可用），请稍后重试。")
+                st.error(_t("收藏失败（数据库不可用），请稍后重试。"))
 
 
 def _render_my_notes_section(sense_id: int) -> None:
@@ -936,7 +937,7 @@ def _render_my_notes_section(sense_id: int) -> None:
         note_row = _fetch_my_note(sid)
         existing = str((note_row or {}).get("note") or "")
         if note_row is None:
-            st.caption("该义位还没有私人笔记（仅自己可见；保存后跨设备续接）。")
+            st.caption(_t("该义位还没有私人笔记（仅自己可见；保存后跨设备续接）。"))
         elif existing.strip():
             shown = (existing if len(existing) <= _NOTE_DISPLAY_MAX_LEN
                      else existing[:_NOTE_DISPLAY_MAX_LEN] + "…")
@@ -944,7 +945,7 @@ def _render_my_notes_section(sense_id: int) -> None:
             st.caption(f"最近更新：{note_row.get('updated_at') or '—'}"
                        "（全文见下方编辑框）。")
         else:
-            st.caption("当前笔记为空（''=显式清空但保留行）。")
+            st.caption(_t("当前笔记为空（''=显式清空但保留行）。"))
         with st.form(_NOTE_FORM_KEY.format(sid=sid), clear_on_submit=False):
             text = st.text_area(
                 "笔记内容（'' 提交=显式清空；≤50000 字符）",
@@ -964,19 +965,19 @@ def _render_my_notes_section(sense_id: int) -> None:
                 ui_kit.flash("笔记已保存（私人，跨设备续接）。")
                 st.rerun()
             else:
-                st.error("保存失败：会话失效、正文超长或数据库不可用。")
+                st.error(_t("保存失败：会话失效、正文超长或数据库不可用。"))
         if delete_clicked:
             if note_row is None:
-                st.info("该义位还没有笔记可删。")
+                st.info(_t("该义位还没有笔记可删。"))
             elif user_context_db.delete_note(sid):
                 st.session_state.pop(_NOTE_INPUT_KEY.format(sid=sid), None)
                 ui_kit.flash("已删除该义位的私人笔记。")
                 st.rerun()
             else:
-                st.error("删除失败（数据库不可用），请稍后重试。")
+                st.error(_t("删除失败（数据库不可用），请稍后重试。"))
     except Exception as e:  # noqa: BLE001 — 段渲染失败不拖垮整页（七段同款）
         logger.warning(f"sense_spine: 我的笔记段渲染失败: {e}")
-        st.caption("暂无数据：我的笔记段渲染异常（详见服务端日志）。")
+        st.caption(_t("暂无数据：我的笔记段渲染异常（详见服务端日志）。"))
 
 
 # ============================================
@@ -1057,7 +1058,7 @@ def render_sense_spine(sense_id: int, category: str = "motion",
         sections = _spine_sections(sense_id, category, language)
     except Exception as e:  # noqa: BLE001 — 编排层意外异常的最后防线
         logger.error(f"sense_spine: 脊柱编排意外失败（id={sense_id}）: {e}")
-        st.warning("义项脊柱暂时不可用（编排异常，详见服务端日志）。")
+        st.warning(_t("义项脊柱暂时不可用（编排异常，详见服务端日志）。"))
         return
     ctx_sid = _as_int(sense_id)
     if ctx_sid is not None and ctx_sid > 0:
@@ -1065,7 +1066,7 @@ def render_sense_spine(sense_id: int, category: str = "motion",
             _render_bookmark_toggle(ctx_sid)
         except Exception as e:  # noqa: BLE001 — 控件失败不拖垮七段
             logger.warning(f"sense_spine: 书签控件渲染失败（id={ctx_sid}）: {e}")
-            st.caption("暂无数据：书签控件渲染异常（详见服务端日志）。")
+            st.caption(_t("暂无数据：书签控件渲染异常（详见服务端日志）。"))
     for section in sections:
         try:
             st.markdown(
@@ -1084,4 +1085,4 @@ def render_sense_spine(sense_id: int, category: str = "motion",
             _render_my_notes_section(ctx_sid)
         except Exception as e:  # noqa: BLE001 — 控件失败不拖垮整页
             logger.warning(f"sense_spine: 我的笔记控件渲染失败（id={ctx_sid}）: {e}")
-            st.caption("暂无数据：我的笔记段渲染异常（详见服务端日志）。")
+            st.caption(_t("暂无数据：我的笔记段渲染异常（详见服务端日志）。"))

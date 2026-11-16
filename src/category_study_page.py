@@ -33,6 +33,7 @@ from src.category_study import (
     get_cluster_profiles, get_screening_stats,
 )
 from src.design_system import HEADER_H3, get_badge_html
+from src.i18n import t as _t  # 批量 i18n 包裹（批次 61）
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +217,7 @@ def render_cluster_compare_view(data: Dict[str, Any]) -> None:
             if zh_cl:
                 _render_cluster_card(zh_cl, "zh", a)
             else:
-                st.info("（该英簇无对齐汉簇）")
+                st.info(_t("（该英簇无对齐汉簇）"))
 
 
 def _render_cluster_card(cl: Dict[str, Any], language: str,
@@ -275,7 +276,7 @@ def render_matrix_view(data: Dict[str, Any]) -> None:
     if lang == "zh" and status_filter:
         senses = [s for s in senses if s["status"] in status_filter]
     if not senses:
-        st.info("当前筛选下无义位。")
+        st.info(_t("当前筛选下无义位。"))
         return
 
     # 矩阵：行标签 = 词目·义项号·义位标签；列 = 特征码
@@ -321,7 +322,7 @@ def render_matrix_view(data: Dict[str, Any]) -> None:
     )
 
     # 行按簇着色的辅助表：义位 → 簇号
-    with st.expander("查看义位 → 簇归属对照"):
+    with st.expander(_t("查看义位 → 簇归属对照")):
         rows2 = [{
             "义位": label,
             "簇": _cluster_no_cell(s),
@@ -345,7 +346,7 @@ def render_alignment_view(data: Dict[str, Any]) -> None:
 
     alignments = data["alignments"]
     if not alignments:
-        st.info("无对齐数据。")
+        st.info(_t("无对齐数据。"))
         return
 
     verdict_counts = {}
@@ -456,7 +457,7 @@ def _render_schema_alignment(data: Dict[str, Any]) -> None:
 
     rows = compute_schema_alignment(data["senses"])
     if not rows:
-        st.info("无编码数据，无法推导图式。")
+        st.info(_t("无编码数据，无法推导图式。"))
         return
 
     # ---- 对齐矩阵 ----
@@ -789,10 +790,10 @@ def _render_zh_dict_evidence(data: Dict[str, Any]) -> None:
     if not zh_dict_ready():
         return
 
-    with st.expander("📖 《现汉7》词典原文对照（甄别证据源）", expanded=False):
+    with st.expander(_t("📖 《现汉7》词典原文对照（甄别证据源）"), expanded=False):
         zh_senses = [s for s in data["senses"] if s["language"] == "zh"]
         if not zh_senses:
-            st.caption("无汉语义位。")
+            st.caption(_t("无汉语义位。"))
             return
         lemma = st.selectbox(
             "词条", options=sorted({s["lemma"] for s in zh_senses}),
@@ -849,10 +850,10 @@ def _render_en_dict_evidence(data: Dict[str, Any]) -> None:
     except ImportError:
         return
 
-    with st.expander("📖 OALD10 词典原文对照（英语侧证据源）", expanded=False):
+    with st.expander(_t("📖 OALD10 词典原文对照（英语侧证据源）"), expanded=False):
         en_senses = [s for s in data["senses"] if s["language"] == "en"]
         if not en_senses:
-            st.caption("无英语义位。")
+            st.caption(_t("无英语义位。"))
             return
         lemma = st.selectbox(
             "词目", options=sorted({s["lemma"] for s in en_senses}),
