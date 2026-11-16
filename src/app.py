@@ -669,6 +669,29 @@ THEORY_DESCRIPTION = """
 **【范围】**：运动的范围/程度
 """
 
+THEORY_DESCRIPTION_EN = """
+### 📚 Theory Background
+
+**Motion event typology (Talmy, 1985)**
+Motion events fall into two classes:
+1. **Wave-like**: manner-emphasising
+2. **Vector-like**: path + direction emphasising
+
+**Dictionary definition optimisation**
+Traditional definitions centre on "path + direction", while real usage emphasises the **manner of motion** and **body posture**. By explicitly decomposing the five semantic elements [Manner] [Path] [Direction] [Aspect] [Scope], we can:
+- capture motion semantics more accurately,
+- offer richer layers of expression,
+- support finer-grained semantic search.
+
+---
+
+**[Manner]**: posture/means adopted by the motion
+**[Path]**: spatial trajectory traversed by the motion
+**[Direction]**: endpoint/goal the motion is oriented toward
+**[Aspect]**: bodily posture/state during the motion
+**[Scope]**: range/degree of the motion
+"""
+
 # ============================================
 # 搜索函数：带 300ms 防抖延迟
 # ============================================
@@ -2469,7 +2492,8 @@ def render_main_area():
     # 批次 31：理论长文折叠（用户「搜索页一堆文字」反馈——搜索框置顶，
     # 理论说明收进展开才见的 expander；TEXT_TITLE 常量与折叠标题语义分离）
     with st.expander(_t("📚 理论背景与功能说明（点开查看）", "📚 Theory Background & Features (click to expand)"), expanded=False):
-        st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
+        # 正文双语（批次 61 测底补漏）：en 态渲染英文常量，zh 态中文母本零变化
+        st.markdown(THEORY_DESCRIPTION_EN if is_en() else THEORY_DESCRIPTION, unsafe_allow_html=True)
 
     # ===== 浮动固定搜索栏 =====
     # 用 st.container(key="search_bar") 让输入框真正位于 .st-key-search_bar 容器内，
@@ -2744,7 +2768,8 @@ def render_interactive_graph_page() -> None:
         for col, cluster in zip(cols, row):
             with col:
                 st.button(
-                    f"{cluster['sub_cat']}{_t('（', ' (')}{cluster['size']} {_t('词', 'words')} / {cluster['edge_count']} {_t('边', 'edges')}{_t('）', ')')}",
+                    # 簇名（DB 数据值）过 _t：十二次类为词表固定常量，ZH_EN 已收录译名
+                    f"{_t(cluster['sub_cat'])}{_t('（', ' (')}{cluster['size']} {_t('词', 'words')} / {cluster['edge_count']} {_t('边', 'edges')}{_t('）', ')')}",
                     key=f"graph_cluster_{cluster['id']}",
                     use_container_width=True,
                     on_click=_pick_cluster_verb,
