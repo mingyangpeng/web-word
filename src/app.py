@@ -2278,6 +2278,10 @@ def render_sidebar():
     # 设施抖动而消失）
     visible_keys = [k for k in visible_keys
                     if _PAGE_TO_MODULE.get(k, "") not in disabled_modules()]
+    # 批次 62 页面级开关：page_plugins 停用页从侧边栏隐藏（disabled_pages
+    # 批量取集合——与 disabled_modules 同款 fail-open：读失败空集全启用）
+    from src.page_plugins import disabled_pages as _disabled_pages
+    visible_keys = [k for k in visible_keys if k not in _disabled_pages()]
     if st.session_state.get("page") not in visible_keys:
         st.session_state["page"] = "search"
     # RV15-3（FX-35）：登录落地分支 2（续接点命中）落的灰注旗标 —— 导航按钮上方
@@ -2346,7 +2350,10 @@ def render_sidebar():
             )
             st.sidebar.divider()
 
-    st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 Experiment Stats</h2>", unsafe_allow_html=True)
+    # 批次 62 功能开关：search.stats（整段统计区）
+    from src.page_plugins import is_feature_enabled as _feat_sidebar
+    if _feat_sidebar("search.stats"):
+        st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 Experiment Stats</h2>", unsafe_allow_html=True)
 
     if DB_AVAILABLE:
         try:
@@ -2365,40 +2372,42 @@ def render_sidebar():
     _off = not DB_AVAILABLE
     _dash = "—"
 
-    # 口径说明：total_queries 来自 usage_logs（真实查询次数），
-    # total_definitions 是已收录词目数 —— 两者含义不同，分开展示。
-    st.sidebar.metric(
-        _t("总查询次数", "Total Queries"),
-        _dash if _off else stats["total_queries"],
-        delta=f"+{stats['queries_today']} today" if (not _off and stats.get("queries_today")) else None,
-    )
-    st.sidebar.metric(_t("已收录词目", "Entries"), _dash if _off else stats.get("total_definitions", 0))
-    # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
-    st.sidebar.metric(_t("词簇", "Clusters"), _dash if _off else stats.get("total_clusters", 0))
-    st.sidebar.metric(_t("词间关系", "Relations"), _dash if _off else stats.get("total_relations", 0))
-    st.sidebar.metric(_t("平均评分", "Avg Rating"), _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
-    st.sidebar.metric(_t("总反馈数", "Feedbacks"), _dash if _off else stats["total_feedbacks"])
+    if _feat_sidebar("search.stats"):
+        # 口径说明：total_queries 来自 usage_logs（真实查询次数），
+        # total_definitions 是已收录词目数 —— 两者含义不同，分开展示。
+        st.sidebar.metric(
+            _t("总查询次数", "Total Queries"),
+            _dash if _off else stats["total_queries"],
+            delta=f"+{stats['queries_today']} today" if (not _off and stats.get("queries_today")) else None,
+        )
+        st.sidebar.metric(_t("已收录词目", "Entries"), _dash if _off else stats.get("total_definitions", 0))
+        # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
+        st.sidebar.metric(_t("词簇", "Clusters"), _dash if _off else stats.get("total_clusters", 0))
+        st.sidebar.metric(_t("词间关系", "Relations"), _dash if _off else stats.get("total_relations", 0))
+        st.sidebar.metric(_t("平均评分", "Avg Rating"), _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
+        st.sidebar.metric(_t("总反馈数", "Feedbacks"), _dash if _off else stats["total_feedbacks"])
 
     st.sidebar.divider()
 
-    st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 Hot Verbs</h2>", unsafe_allow_html=True)
+    if _feat_sidebar("search.hot_verbs"):
+        st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 Hot Verbs</h2>", unsafe_allow_html=True)
 
-    if hot_verbs:
-        # 本地前端子串筛选输入框（D-05，无后端往返）
-        st.sidebar.text_input(_t("筛选热门动词", "Filter hot verbs"), key="hot_filter", placeholder="Filter keywords…")
-        filtered = filter_hot_verbs(hot_verbs, st.session_state.get("hot_filter", ""))
-        for v in filtered:
-            # 可点击行：复用 select_example_verb 填充搜索框并触发搜索（D-04）
-            st.sidebar.button(
-                f"{v['verb']} · {v['count']}次 ⭐{v['avg_rating']}",
-                key=f"hot_{v['verb']}",
-                on_click=select_example_verb,
-                args=(v['verb'],),
-            )
-    else:
-        st.sidebar.info(_t("暂无热门查询数据", "No hot query data yet"))
+        if hot_verbs:
+            # 本地前端子串筛选输入框（D-05，无后端往返）
+            st.sidebar.text_input(_t("筛选热门动词", "Filter hot verbs"), key="hot_filter", placeholder="Filter keywords…")
+            filtered = filter_hot_verbs(hot_verbs, st.session_state.get("hot_filter", ""))
+            for v in filtered:
+                # 可点击行：复用 select_example_verb 填充搜索框并触发搜索（D-04）
+                st.sidebar.button(
+                    f"{v['verb']} · {v['count']}次 ⭐{v['avg_rating']}",
+                    key=f"hot_{v['verb']}",
+                    on_click=select_example_verb,
+                    args=(v['verb'],),
+                )
+        else:
+            st.sidebar.info(_t("暂无热门查询数据", "No hot query data yet"))
 
-    st.sidebar.divider()
+        st.sidebar.divider()
 
     # 数据库状态（极简一行：健康绿点/离线红点——代替旧版顶部 success 大横幅）
     st.sidebar.markdown(
@@ -2477,7 +2486,22 @@ def render_module_gate(page: str) -> bool:
     """
     mod = _PAGE_TO_MODULE.get(page)
     if mod is None or is_module_enabled(mod):
-        return True
+        # 批次 62 页面级开关：模块启用再查页面闸（fail-open 同款）
+        from src.page_plugins import is_page_enabled
+        if is_page_enabled(page):
+            return True
+        st.warning(
+            _t("🧩 该页面已被管理员停用 —— 页面暂不可用；如需使用请联系管理员在"
+               "「👥 用户管理」页的「🧩 页面与功能开关」段重新启用。",
+               "🧩 This page has been disabled by an administrator — contact an admin "
+               "to re-enable it under \"🧩 Page & Feature Switches\" in User Management.")
+        )
+        st.button(
+            "← " + _t("返回搜索释义", "Back to Search"),
+            key="page_gate_back",
+            on_click=lambda: st.session_state.update(page="search"),
+        )
+        return False
     from src.module_plugins import MODULE_SPECS
 
     spec = MODULE_SPECS[mod]
@@ -2597,8 +2621,12 @@ def render_main_area():
         # 词间关系：内嵌当前词所在词簇的交互图（vis-network 力导向布局，
         # 中心词高亮、悬停显名、默认只画中心连线，簇内两两连线页内展开 ——
         # 避免旧版 SVG 完全图的连线视觉纠缠）。全库地图仍由「知识图谱」页承担。
+        # 批次 62 功能开关（三处共用一个惰性 import——Python 函数作用域内
+        # import 后移会让前面的使用点 UnboundLocal，必须先于首个使用点）
+        from src.page_plugins import is_feature_enabled as _feat
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
-        render_word_relation_section(verb)
+        if _feat("search.relations"):
+            render_word_relation_section(verb)
 
         # 词条装配预览（批次 9 Agent AS，工序 14 消费侧）：四卡片与词间关系
         # 之后、示例库之前，按《平台架构设计规范》§6 成品词条内容模型装配
@@ -2615,14 +2643,16 @@ def render_main_area():
             if assembly_expander.open:
                 render_entry_assembly(verb)
 
-        # 示例库
-        st.markdown(get_section_spacing(), unsafe_allow_html=True)
-        render_example_library()
+        # 示例库（批次 62 功能开关：search.examples）
+        if _feat("search.examples"):
+            st.markdown(get_section_spacing(), unsafe_allow_html=True)
+            render_example_library()
 
-        # 用户反馈区域
-        st.markdown(get_section_spacing(), unsafe_allow_html=True)
+        # 用户反馈区域（批次 62 功能开关：search.feedback）
+        if _feat("search.feedback"):
+            st.markdown(get_section_spacing(), unsafe_allow_html=True)
 
-        st.markdown(f"<h3 style='{HEADER_H3}'>💬 反馈与评分</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='{HEADER_H3}'>💬 {_t('反馈与评分', 'Feedback & Rating')}</h3>", unsafe_allow_html=True)
 
         # 评分组件
         st.write("请对优化释义进行评分：")
@@ -2771,23 +2801,26 @@ def render_interactive_graph_page() -> None:
     # iframe 的 src 不变，浏览器不会重载，图谱的布局与交互状态得以保留。
     st.iframe(url, height=820)
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ {_t('按词簇浏览', 'Browse by Cluster')}</h3>", unsafe_allow_html=True)
-    st.caption(_t("点击任一词即切换搜索词，并在结果页展示该词所在簇的完全图。",
-                  "Click any cluster to switch to its first verb; the results page shows that cluster's complete graph."))
-    clusters = graph.get("clusters", [])
-    per_row = 4
-    for i in range(0, len(clusters), per_row):
-        row = clusters[i:i + per_row]
-        cols = st.columns(per_row)
-        for col, cluster in zip(cols, row):
-            with col:
-                st.button(
-                    # 簇名（DB 数据值）过 _t：十二次类为词表固定常量，ZH_EN 已收录译名
-                    f"{_t(cluster['sub_cat'])}{_t('（', ' (')}{cluster['size']} {_t('词', 'words')} / {cluster['edge_count']} {_t('边', 'edges')}{_t('）', ')')}",
-                    key=f"graph_cluster_{cluster['id']}",
-                    use_container_width=True,
-                    on_click=_pick_cluster_verb,
-                    args=(cluster["id"],),
+    # 批次 62 功能开关：graph.cluster_browse
+    from src.page_plugins import is_feature_enabled as _feat_gb
+    if _feat_gb("graph.cluster_browse"):
+        st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ {_t('按词簇浏览', 'Browse by Cluster')}</h3>", unsafe_allow_html=True)
+        st.caption(_t("点击任一词即切换搜索词，并在结果页展示该词所在簇的完全图。",
+                      "Click any cluster to switch to its first verb; the results page shows that cluster's complete graph."))
+        clusters = graph.get("clusters", [])
+        per_row = 4
+        for i in range(0, len(clusters), per_row):
+            row = clusters[i:i + per_row]
+            cols = st.columns(per_row)
+            for col, cluster in zip(cols, row):
+                with col:
+                    st.button(
+                        # 簇名（DB 数据值）过 _t：十二次类为词表固定常量，ZH_EN 已收录译名
+                        f"{_t(cluster['sub_cat'])}{_t('（', ' (')}{cluster['size']} {_t('词', 'words')} / {cluster['edge_count']} {_t('边', 'edges')}{_t('）', ')')}",
+                        key=f"graph_cluster_{cluster['id']}",
+                        use_container_width=True,
+                        on_click=_pick_cluster_verb,
+                        args=(cluster["id"],),
                 )
 
 
@@ -2958,93 +2991,96 @@ def render_corpus_dataset_page() -> None:
     else:
         st.info(_t("暂无图式证据数据。", "No schema evidence data yet."))
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>✏️ {_t('搭配明细（按槽位，可编辑）', 'Collocation Detail (by slot, editable)')}</h3>", unsafe_allow_html=True)
-    st.caption(_t("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
-               "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。",
-               "Fill in categorisation under \"Semantic Category\" (e.g. spatial endpoint / abstract result / manner adverb), "
-               "choose Keep/Drop under \"Action\" — saved rows join the PS calculation "
-               "(Mean_logDice × log2(N+1) counts \"Keep\" rows only)."))
-    # FX-29 接线（架构 §4/§9 页面经中央注册表调工具）：搭配明细查询改经
-    # corpus_evidence 工具 run —— 薄包装 merge_params 按 params_schema 合并
-    # 默认值（verb/slot/limit 全在 schema 内）后委托 mysql_db.get_corpus_
-    # collocations；本页两处原直调参数原样进 ctx，返回行列表契约不变，行为
-    # 与直调逐字节一致（run 不查 enabled 位）。原调用点无 st.cache_data，
-    # tool.run 不缓存 —— 缓存纪律无涉；人工标注回写（保存按钮）不经工具，
-    # 仍走 update_collocation_annotations 写路径。
-    _corpus_tool = get_tool("corpus_evidence")
-    slots = sorted({r["slot"] for r in _corpus_tool.run({"verb": picked, "limit": 2000})})
-    if slots:
-        default_slot = "objects of \"%w\"" if "objects of \"%w\"" in slots else slots[0]
-        slot = st.selectbox(_t("选择槽位", "Pick a slot"), options=slots, index=slots.index(default_slot))
-        # FX-38（批次 20）：明细条数消费 ui.rows_per_page 偏好（clamp
-        # [10,200]，无偏好/脏值回退既有默认 100，fx29 等价锁口径不变）；
-        # 上行 limit=2000 是槽位枚举全量扫描（构建槽位下拉选项集），非
-        # 展示行数 —— 不消费行数偏好（clamp 会截断槽位发现），保持原样。
-        colls = _corpus_tool.run(
-            {"verb": picked, "slot": slot, "limit": _rows_per_page_pref()})
-        coll_df = pd.DataFrame(colls).rename(columns={
-            "id": "_id", "slot": _t("槽位", "Slot"), "rank_in_slot": _t("排名", "Rank"),
-            "collocate": _t("搭配词", "Collocate"),
-            "logdice": "logDice", "cooccur_count": _t("搭配频次", "Co-occur Freq"),
-            "typical_combo": _t("典型组合", "Typical Combo"), "combo_freq": _t("组合频次", "Combo Freq"),
-            "semantic_category": _t("语义类别(人工)", "Semantic Category (manual)"),
-            "keep_flag": _t("处理(人工)", "Action (manual)"),
-        })
-        # 列键走中间变量（en 态列名是英文——disabled/column_config/行对齐全部引用同一组键，不漂移）
-        _k_slot = _t("槽位", "Slot")
-        _k_rank = _t("排名", "Rank")
-        _k_coll = _t("搭配词", "Collocate")
-        _k_freq = _t("搭配频次", "Co-occur Freq")
-        _k_combo = _t("典型组合", "Typical Combo")
-        _k_cfreq = _t("组合频次", "Combo Freq")
-        _k_cat = _t("语义类别(人工)", "Semantic Category (manual)")
-        _k_keep = _t("处理(人工)", "Action (manual)")
-        _v_keep = _t("保留", "Keep")
-        _v_drop = _t("剔除", "Drop")
-        edited = st.data_editor(
-            coll_df,
-            use_container_width=True,
-            hide_index=True,
-            key=f"coll_editor_{picked}_{slot}",
-            disabled=[_k_slot, _k_rank, _k_coll, "logDice", _k_freq, _k_combo, _k_cfreq],
-            column_config={
-                _k_cat: st.column_config.TextColumn(width="medium"),
-                _k_keep: st.column_config.SelectboxColumn(
-                    options=["", _v_keep, _v_drop], width="small"),
-            },
-        )
-        if st.button(_t("💾 保存本槽位语义归类", "💾 Save this slot's semantic categories"),
-                     key=f"coll_save_{picked}_{slot}"):
-            changed = []
-            # keep_flag 写库值统一规范为中文（"保留"/"剔除"——与历史数据/注释口径一致；
-            # en 态界面显示 Keep/Drop，保存前映射回规范值，DB 不混语言值）
-            _keep_map = {_v_keep: "保留", _v_drop: "剔除", "保留": "保留", "剔除": "剔除"}
-            for _, row in edited.iterrows():
-                # 用 id 对齐原始行，仅保存真正修改过的行
-                orig_row = next((c for c in colls if c["id"] == row["_id"]), None)
-                if orig_row is None:
-                    continue
-                if ((orig_row.get("semantic_category") or "") != (row[_k_cat] or "")
-                        or (orig_row.get("keep_flag") or "") != (row[_k_keep] or "")):
-                    changed.append({
-                        "id": int(row["_id"]),
-                        "semantic_category": row[_k_cat],
-                        "keep_flag": _keep_map.get(row[_k_keep], row[_k_keep]),
-                    })
-            if changed:
-                n = update_collocation_annotations(changed)
-                st.success(_t("✅ 已保存 {n} 条归类（进入 PS 计算口径）",
-                              "✅ Saved {n} categorisation(s) (now part of the PS calculation)").format(n=n))
-            else:
-                st.info(_t("没有修改需要保存", "No changes to save"))
+    # 批次 62 功能开关：corpus.collocation_edit（人工归类编辑区）
+    from src.page_plugins import is_feature_enabled as _feat_ce
+    if _feat_ce("corpus.collocation_edit"):
+        st.markdown(f"<h3 style='{HEADER_H3}'>✏️ {_t('搭配明细（按槽位，可编辑）', 'Collocation Detail (by slot, editable)')}</h3>", unsafe_allow_html=True)
+        st.caption(_t("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
+                   "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。",
+                   "Fill in categorisation under \"Semantic Category\" (e.g. spatial endpoint / abstract result / manner adverb), "
+                   "choose Keep/Drop under \"Action\" — saved rows join the PS calculation "
+                   "(Mean_logDice × log2(N+1) counts \"Keep\" rows only)."))
+        # FX-29 接线（架构 §4/§9 页面经中央注册表调工具）：搭配明细查询改经
+        # corpus_evidence 工具 run —— 薄包装 merge_params 按 params_schema 合并
+        # 默认值（verb/slot/limit 全在 schema 内）后委托 mysql_db.get_corpus_
+        # collocations；本页两处原直调参数原样进 ctx，返回行列表契约不变，行为
+        # 与直调逐字节一致（run 不查 enabled 位）。原调用点无 st.cache_data，
+        # tool.run 不缓存 —— 缓存纪律无涉；人工标注回写（保存按钮）不经工具，
+        # 仍走 update_collocation_annotations 写路径。
+        _corpus_tool = get_tool("corpus_evidence")
+        slots = sorted({r["slot"] for r in _corpus_tool.run({"verb": picked, "limit": 2000})})
+        if slots:
+            default_slot = "objects of \"%w\"" if "objects of \"%w\"" in slots else slots[0]
+            slot = st.selectbox(_t("选择槽位", "Pick a slot"), options=slots, index=slots.index(default_slot))
+            # FX-38（批次 20）：明细条数消费 ui.rows_per_page 偏好（clamp
+            # [10,200]，无偏好/脏值回退既有默认 100，fx29 等价锁口径不变）；
+            # 上行 limit=2000 是槽位枚举全量扫描（构建槽位下拉选项集），非
+            # 展示行数 —— 不消费行数偏好（clamp 会截断槽位发现），保持原样。
+            colls = _corpus_tool.run(
+                {"verb": picked, "slot": slot, "limit": _rows_per_page_pref()})
+            coll_df = pd.DataFrame(colls).rename(columns={
+                "id": "_id", "slot": _t("槽位", "Slot"), "rank_in_slot": _t("排名", "Rank"),
+                "collocate": _t("搭配词", "Collocate"),
+                "logdice": "logDice", "cooccur_count": _t("搭配频次", "Co-occur Freq"),
+                "typical_combo": _t("典型组合", "Typical Combo"), "combo_freq": _t("组合频次", "Combo Freq"),
+                "semantic_category": _t("语义类别(人工)", "Semantic Category (manual)"),
+                "keep_flag": _t("处理(人工)", "Action (manual)"),
+            })
+            # 列键走中间变量（en 态列名是英文——disabled/column_config/行对齐全部引用同一组键，不漂移）
+            _k_slot = _t("槽位", "Slot")
+            _k_rank = _t("排名", "Rank")
+            _k_coll = _t("搭配词", "Collocate")
+            _k_freq = _t("搭配频次", "Co-occur Freq")
+            _k_combo = _t("典型组合", "Typical Combo")
+            _k_cfreq = _t("组合频次", "Combo Freq")
+            _k_cat = _t("语义类别(人工)", "Semantic Category (manual)")
+            _k_keep = _t("处理(人工)", "Action (manual)")
+            _v_keep = _t("保留", "Keep")
+            _v_drop = _t("剔除", "Drop")
+            edited = st.data_editor(
+                coll_df,
+                use_container_width=True,
+                hide_index=True,
+                key=f"coll_editor_{picked}_{slot}",
+                disabled=[_k_slot, _k_rank, _k_coll, "logDice", _k_freq, _k_combo, _k_cfreq],
+                column_config={
+                    _k_cat: st.column_config.TextColumn(width="medium"),
+                    _k_keep: st.column_config.SelectboxColumn(
+                        options=["", _v_keep, _v_drop], width="small"),
+                },
+            )
+            if st.button(_t("💾 保存本槽位语义归类", "💾 Save this slot's semantic categories"),
+                         key=f"coll_save_{picked}_{slot}"):
+                changed = []
+                # keep_flag 写库值统一规范为中文（"保留"/"剔除"——与历史数据/注释口径一致；
+                # en 态界面显示 Keep/Drop，保存前映射回规范值，DB 不混语言值）
+                _keep_map = {_v_keep: "保留", _v_drop: "剔除", "保留": "保留", "剔除": "剔除"}
+                for _, row in edited.iterrows():
+                    # 用 id 对齐原始行，仅保存真正修改过的行
+                    orig_row = next((c for c in colls if c["id"] == row["_id"]), None)
+                    if orig_row is None:
+                        continue
+                    if ((orig_row.get("semantic_category") or "") != (row[_k_cat] or "")
+                            or (orig_row.get("keep_flag") or "") != (row[_k_keep] or "")):
+                        changed.append({
+                            "id": int(row["_id"]),
+                            "semantic_category": row[_k_cat],
+                            "keep_flag": _keep_map.get(row[_k_keep], row[_k_keep]),
+                        })
+                if changed:
+                    n = update_collocation_annotations(changed)
+                    st.success(_t("✅ 已保存 {n} 条归类（进入 PS 计算口径）",
+                                  "✅ Saved {n} categorisation(s) (now part of the PS calculation)").format(n=n))
+                else:
+                    st.info(_t("没有修改需要保存", "No changes to save"))
 
-        n_keep = int((edited[_k_keep] == _v_keep).sum())
-        st.caption(_t("当前槽位：{rows} 行，标记「保留」{n} 行 —— PS 口径 N={n}，Mean_logDice 按「保留」行的 logDice 均值计。",
-                      "Current slot: {rows} rows, {n} marked \"{keep}\" — for the PS calculation N={n}, "
-                      "Mean_logDice averages logDice over the \"{keep}\" rows.")
-                   .format(rows=len(edited), n=n_keep, keep=_v_keep))
-    else:
-        st.info(_t("暂无搭配明细数据。", "No collocation detail data yet."))
+            n_keep = int((edited[_k_keep] == _v_keep).sum())
+            st.caption(_t("当前槽位：{rows} 行，标记「保留」{n} 行 —— PS 口径 N={n}，Mean_logDice 按「保留」行的 logDice 均值计。",
+                          "Current slot: {rows} rows, {n} marked \"{keep}\" — for the PS calculation N={n}, "
+                          "Mean_logDice averages logDice over the \"{keep}\" rows.")
+                       .format(rows=len(edited), n=n_keep, keep=_v_keep))
+        else:
+            st.info(_t("暂无搭配明细数据。", "No collocation detail data yet."))
 
 
 def render_card_corpus(verb: str) -> str:
@@ -3353,9 +3389,12 @@ def render_domain_family_page() -> None:
         b3.metric(_t("筛选规则", "Rule"), row[_t("规则", "Rule")])
         st.markdown(f"**SenseID**：{row['SenseID']}（word=`{_w}`，{_t('序号', '#')}={_n}）")
         st.markdown(f"**{_t('数据来源', 'Source')}**：{row.get(_c_src) or '—'}　·　**{_t('最后修改', 'Last Modified')}**：{row.get(_c_upd) or '—'}")
-        # 语料证据（wordsketch，enTenTen21）
+        # 语料证据（wordsketch，enTenTen21）——批次 62 功能开关 domain.corpus_evidence
+        from src.page_plugins import is_feature_enabled as _feat_df
         freq_v = row.get(_c_freq)
-        if freq_v is not None and not pd.isna(freq_v):
+        if not _feat_df("domain.corpus_evidence"):
+            pass  # 功能停用——语料证据块整体不渲染（释义/例句不受影响）
+        elif freq_v is not None and not pd.isna(freq_v):
             st.markdown(
                 f"**{_t('语料频次（enTenTen21）', 'Corpus Freq (enTenTen21)')}**：{int(freq_v):,}")
             scores = row.get(_t("四图式重心得分", "Schema Prominence"))

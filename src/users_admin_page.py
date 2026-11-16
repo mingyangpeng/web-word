@@ -70,7 +70,7 @@ from src import ui_kit  # RV12-2：成功提示统一走 ui_kit.flash（rerun �
 from src import user_context_db  # 批次 19：我的偏好读写（own-rows-only）
 from src.db_utils import current_user as _current_user  # R6-4：单一实现点
 from src.i18n import t as _t  # 页 H1 双语：en 态查 ZH_EN（未收录回落中文）
-from src.page_guides import PAGE_KEYS  # FX-39：page 锚跳转合法性闸（路由键单一事实源）
+from src.page_guides import PAGE_KEYS, page_label  # FX-39 page 锚闸（路由键单一事实源）＋批次 62 开关段页名
 from src.users_db import (
     NEW_ROLES,
     ROLES,
@@ -1017,3 +1017,89 @@ def render_users_admin_page() -> None:
     # 三锚渲染 / 删除 / page 锚跳转；登录门与空态见 _render_my_bookmarks）。
     st.markdown("")
     _render_my_bookmarks()
+
+    # 批次 62：页面与功能开关段（page_plugins——用户「所有页面在账号管理中心
+    # 支持开启或关闭；页内功能启用也要有管理开关」需求的管理界面）
+    st.markdown("")
+    _render_page_feature_switches(me)
+
+
+# ============================================
+# 🧩 页面与功能开关（批次 62，page_plugins）
+# ============================================
+def _render_page_feature_switches(me: Dict[str, Any]) -> None:
+    """页面级＋功能级启停管理段（用户「所有页面在账号管理中心开关」需求）。
+
+    结构：页面开关表（17 页逐行 checkbox；底线三键禁停置灰）＋ 功能开关表
+    （FEATURE_SPECS 逐行 checkbox，按页分组展示）。写路径 set_page_enabled /
+    set_feature_enabled 内置底线拒绝与未知键拒绝（fail-closed），本段只转译
+    结果消息。权限：沿用本页 gate（sys_admin/dict_admin）——入口已拦，段内
+    不重复判定。
+    """
+    from src.page_plugins import (
+        FEATURE_SPECS,
+        LOCKED_PAGES,
+        ensure_page_plugins_tables,
+        list_feature_settings,
+        list_page_settings,
+        set_feature_enabled,
+        set_page_enabled,
+    )
+
+    st.markdown(
+        f"<h2 style='{HEADER_H2}'>🧩 {_t('页面与功能开关', 'Page & Feature Switches')}</h2>",
+        unsafe_allow_html=True,
+    )
+    st.caption(_t(
+        "页面开关控制侧边栏入口与页面直访（停用页从导航隐藏，直访给出提示）；"
+        "功能开关控制页内区块是否渲染。底线页（搜索释义/帮助中心/用户管理）不可停用。"
+        "开关立即生效，无需重启。",
+        "Page switches control the sidebar entry and direct access (disabled pages are "
+        "hidden from navigation and direct visits get a notice); feature switches control "
+        "whether in-page blocks render. Locked pages (Search / Help / User Management) "
+        "cannot be disabled. Changes take effect immediately — no restart needed.",
+    ))
+
+    if not ensure_page_plugins_tables():
+        st.error(_t("开关表初始化失败（数据库不可用），管理段暂不可用。",
+                    "Switch tables failed to initialise (database unavailable) — this section is unavailable."))
+        return
+
+    # —— 页面开关 ——
+    st.markdown(f"**{_t('页面开关', 'Page switches')}**")
+    page_states = {str(r.get("page_key")): r for r in list_page_settings()}
+    for key in PAGE_KEYS:
+        st_row = page_states.get(key, {})
+        enabled = bool(st_row.get("enabled", 1)) if st_row else True
+        locked = key in LOCKED_PAGES
+        label = f"{_t(page_label(key))}" + (f"  ·  {_t('底线页（不可停用）', 'locked page')}" if locked else "")
+        new_enabled = st.checkbox(
+            label,
+            value=enabled if not locked else True,
+            key=f"pg_switch_{key}",
+            disabled=locked,
+            help=_t("底线页不可停用", "Locked pages cannot be disabled") if locked else None,
+        )
+        if not locked and new_enabled != enabled:
+            ok = set_page_enabled(key, new_enabled, me)
+            if ok:
+                st.rerun()
+            else:
+                st.error(_t("写入失败（数据库异常），请重试。", "Write failed (database error) — please retry."))
+
+    st.markdown("")
+
+    # —— 功能开关 ——
+    st.markdown(f"**{_t('功能开关（页内区块）', 'Feature switches (in-page blocks)')}**")
+    feats = list_feature_settings()
+    for f in feats:
+        fk = str(f.get("key"))
+        page = str(f.get("page") or "")
+        label = f"{_t(str(f.get('label_zh')), str(f.get('label_en')))}  ·  {_t(page_label(page)) if page else fk}"
+        new_enabled = st.checkbox(label, value=bool(f.get("enabled")), key=f"ft_switch_{fk}")
+        if new_enabled != bool(f.get("enabled")):
+            ok = set_feature_enabled(fk, new_enabled, me)
+            if ok:
+                st.rerun()
+            else:
+                st.error(_t("写入失败（数据库异常），请重试。", "Write failed (database error) — please retry."))
