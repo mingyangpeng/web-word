@@ -197,7 +197,7 @@ def require_login() -> Optional[Dict[str, Any]]:
     """
     user = _current_user()
     if user is None:
-        st.warning("请先登录")
+        st.warning(_t("请先登录", "Please sign in first"))
     return user
 
 
@@ -2404,7 +2404,7 @@ def render_sidebar():
                     csv = sanitize_csv_dataframe(feedback_df).to_csv(
                         index=False).encode('utf-8-sig')
                     st.sidebar.download_button(
-                        label="下载反馈数据 (CSV)",
+                        label=_t("下载反馈数据 (CSV)", "Download Feedback (CSV)"),
                         data=csv,
                         file_name=f"feedback_data_"
                                   f"{datetime.datetime.now().strftime('%Y%m%d')}.csv",
@@ -2415,7 +2415,8 @@ def render_sidebar():
                     )
             if not _export_allowed:
                 st.sidebar.caption(
-                    "🔒 反馈数据导出需登录（内部研究数据）—— 请先在上方登录后使用。"
+                    _t("🔒 反馈数据导出需登录（内部研究数据）—— 请先在上方登录后使用。",
+                       "🔒 Feedback export requires sign-in (internal research data) — sign in above to use it.")
                 )
 
 # ============================================
@@ -2673,11 +2674,12 @@ def render_interactive_graph_page() -> None:
     内联的 iframe 会被整体重写 —— 力导向布局从头收敛，用户拖好的位置、
     选中的节点、缩放视野全丢。静态文件 + 内容指纹 URL 则只在数据变化时重载。
     """
-    st.markdown(f"<h1 style='{HEADER_H1}'>🕸️ 词间关系知识图谱</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='{HEADER_H1}'>🕸️ {_t('词间关系知识图谱', 'Word Relation Knowledge Graph')}</h1>", unsafe_allow_html=True)
     render_page_usage_guide("graph")
 
     if not DB_AVAILABLE:
-        st.info("数据库不可用，无法展示知识图谱（离线模式下仅提供释义）。")
+        st.info(_t("数据库不可用，无法展示知识图谱（离线模式下仅提供释义）。",
+                   "Database unavailable — the knowledge graph cannot be shown (offline mode provides definitions only)."))
         return
 
     try:
@@ -2690,40 +2692,50 @@ def render_interactive_graph_page() -> None:
     # []=表在但词库未灌（给灌库指引）；有数=正常渲染。
     if graph is None:
         st.warning(
-            "数据不可用：全库图谱读取失败（数据库查询出错或连接中断）。"
-            "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。"
+            _t("数据不可用：全库图谱读取失败（数据库查询出错或连接中断）。"
+               "属服务端异常，**勿重跑灌库脚本**；恢复后刷新本页即可。",
+               "Data unavailable: failed to load the full graph (database error or connection lost). "
+               "This is a server-side issue — **do not re-run the loader**; refresh this page once the DB recovers.")
         )
         return
     if not graph.get("nodes"):
         st.info(
-            "暂无词间关系数据。运行 `python scripts/load_word_library.py` "
-            "可载入 155 词词库及其 2143 条词间关系。"
+            _t("暂无词间关系数据。运行 `python scripts/load_word_library.py` "
+               "可载入 155 词词库及其 2143 条词间关系。",
+               "No word-relation data yet. Run `python scripts/load_word_library.py` "
+               "to load the 155-word library and its 2,143 word relations.")
         )
         return
 
     stats = graph["stats"]
     c1, c2, c3 = st.columns(3)
-    c1.metric("动词节点", stats["node_count"])
-    c2.metric("近义关系", stats["edge_count"])
-    c3.metric("词簇", stats["cluster_count"])
+    c1.metric(_t("动词节点", "Verb Nodes"), stats["node_count"])
+    c2.metric(_t("近义关系", "Synonym Edges"), stats["edge_count"])
+    c3.metric(_t("词簇", "Clusters"), stats["cluster_count"])
 
     url = ensure_graph_html(graph)
     if not url:
-        st.warning("图谱文件生成失败，请检查 `src/static/` 是否可写。")
+        st.warning(_t("图谱文件生成失败，请检查 `src/static/` 是否可写。",
+                      "Failed to generate the graph file — check that `src/static/` is writable."))
         return
 
     st.caption(
-        "左侧力导向图可直接缩放拖拽；右侧栏可搜索动词、查看节点邻居、"
-        "按词簇勾选过滤。每个节点的连线数等于它所在词簇的大小减一"
-        "（同一簇内两两互为近义，即完全图）。"
+        _t("左侧力导向图可直接缩放拖拽；右侧栏可搜索动词、查看节点邻居、"
+           "按词簇勾选过滤。每个节点的连线数等于它所在词簇的大小减一"
+           "（同一簇内两两互为近义，即完全图）。",
+           "Drag and zoom the force-directed graph on the left; use the right panel to "
+           "search verbs, view a node's neighbours, and filter by cluster. Each node's "
+           "edge count equals its cluster size minus one (every pair in a cluster is "
+           "mutually synonymous — a complete graph).")
     )
 
     # 直接嵌本地静态文件（不是内联 HTML 字符串）—— 这样 Streamlit 重跑脚本时
     # iframe 的 src 不变，浏览器不会重载，图谱的布局与交互状态得以保留。
     st.iframe(url, height=820)
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ 按词簇浏览</h3>", unsafe_allow_html=True)
-    st.caption("点击任一词即切换搜索词，并在结果页展示该词所在簇的完全图。")
+    st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ {_t('按词簇浏览', 'Browse by Cluster')}</h3>", unsafe_allow_html=True)
+    st.caption(_t("点击任一词即切换搜索词，并在结果页展示该词所在簇的完全图。",
+                  "Click any cluster to switch to its first verb; the results page shows that cluster's complete graph."))
     clusters = graph.get("clusters", [])
     per_row = 4
     for i in range(0, len(clusters), per_row):
@@ -2732,7 +2744,7 @@ def render_interactive_graph_page() -> None:
         for col, cluster in zip(cols, row):
             with col:
                 st.button(
-                    f"{cluster['sub_cat']}（{cluster['size']} 词 / {cluster['edge_count']} 边）",
+                    f"{cluster['sub_cat']}{_t('（', ' (')}{cluster['size']} {_t('词', 'words')} / {cluster['edge_count']} {_t('边', 'edges')}{_t('）', ')')}",
                     key=f"graph_cluster_{cluster['id']}",
                     use_container_width=True,
                     on_click=_pick_cluster_verb,
@@ -2805,26 +2817,33 @@ def render_corpus_dataset_page() -> None:
     数据来自 output/ 语料包灌入的 corpus_* 表（scripts/load_corpus_dataset.py）。
     语义类别/保留标记两列留在库里供人工标注回写，页面原样展示当前值。
     """
-    st.markdown(f"<h1 style='{HEADER_H1}'>📊 语料数据集</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='{HEADER_H1}'>📊 {_t('语料数据集', 'Corpus Dataset')}</h1>", unsafe_allow_html=True)
     render_page_usage_guide("corpus")
 
     if not DB_AVAILABLE:
-        st.info("数据库不可用，无法展示语料数据集（离线模式下仅提供释义）。")
+        st.info(_t("数据库不可用，无法展示语料数据集（离线模式下仅提供释义）。",
+                   "Database unavailable — the corpus dataset cannot be shown (offline mode provides definitions only)."))
         return
     if not corpus_dataset_ready():
         st.info(
-            "语料数据集尚未灌入。运行 "
-            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
-            "从 output/ 语料包加载。"
+            _t("语料数据集尚未灌入。运行 "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
+               "从 output/ 语料包加载。",
+               "Corpus dataset not loaded yet. Run "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
+               "to load it from the output/ corpus package.")
         )
         return
 
     overview = get_corpus_overview()
     if not overview:
         st.warning(
-            "语料概览表（corpus_word_stats）为空：请重跑 "
-            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
-            "灌入语料包后刷新本页；刚灌完仍为空属页面缓存，稍候再刷一次。"
+            _t("语料概览表（corpus_word_stats）为空：请重跑 "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py` "
+               "灌入语料包后刷新本页；刚灌完仍为空属页面缓存，稍候再刷一次。",
+               "The corpus overview table (corpus_word_stats) is empty: re-run "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py`, "
+               "then refresh. If it stays empty right after loading, that's page caching — refresh again later.")
         )
         return
 
@@ -2832,73 +2851,80 @@ def render_corpus_dataset_page() -> None:
 
     total_coll = sum(r["collocate_count"] for r in overview)
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("动词", len(overview))
-    c2.metric("搭配词型总数", f"{total_coll:,}")
-    c3.metric("重心得分行", len(overview) * 4)
-    c4.metric("语料库", "enTenTen21")
+    c1.metric(_t("动词", "Verbs"), len(overview))
+    c2.metric(_t("搭配词型总数", "Total Collocate Types"), f"{total_coll:,}")
+    c3.metric(_t("重心得分行", "Prominence Rows"), len(overview) * 4)
+    c4.metric(_t("语料库", "Corpus"), "enTenTen21")
 
     df = pd.DataFrame(overview)
     df = df.rename(columns={
-        "verb": "动词", "lpos": "词性", "freq": "总频次", "relfreq": "每百万频次",
-        "slot_count": "槽位数", "collocate_count": "搭配词型",
-        "candidate_schema": "候选凸显图式(AI初筛)", "max_score": "最高重心得分",
+        "verb": _t("动词", "Verb"), "lpos": _t("词性", "POS"), "freq": _t("总频次", "Total Freq"),
+        "relfreq": _t("每百万频次", "Freq per Million"),
+        "slot_count": _t("槽位数", "Slots"), "collocate_count": _t("搭配词型", "Collocate Types"),
+        "candidate_schema": _t("候选凸显图式(AI初筛)", "Candidate Schema (AI pre-screen)"),
+        "max_score": _t("最高重心得分", "Max Prominence"),
     })
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>📋 总表（按频次降序）</h3>", unsafe_allow_html=True)
-    kw = st.text_input("筛选动词", key="corpus_filter", placeholder="输入关键字筛选…")
-    view = df[df["动词"].str.contains(kw, case=False, na=False)] if kw else df
+    st.markdown(f"<h3 style='{HEADER_H3}'>📋 {_t('总表（按频次降序）', 'Overview (by frequency desc)')}</h3>", unsafe_allow_html=True)
+    kw = st.text_input(_t("筛选动词", "Filter verbs"), key="corpus_filter", placeholder=_t("输入关键字筛选…", "Type to filter…"))
+    view = df[df[_t("动词", "Verb")].str.contains(kw, case=False, na=False)] if kw else df
     st.dataframe(
         view,
         use_container_width=True,
         hide_index=True,
         column_config={
-            "总频次": st.column_config.NumberColumn(format="%,d"),
-            "每百万频次": st.column_config.NumberColumn(format="%.1f"),
-            "最高重心得分": st.column_config.NumberColumn(format="%.2f"),
+            _t("总频次", "Total Freq"): st.column_config.NumberColumn(format="%,d"),
+            _t("每百万频次", "Freq per Million"): st.column_config.NumberColumn(format="%.1f"),
+            _t("最高重心得分", "Max Prominence"): st.column_config.NumberColumn(format="%.2f"),
         },
     )
-    st.caption("候选凸显图式为 AI 初筛（未语义归类），最终图式标签以义位标注为准。")
+    st.caption(_t("候选凸显图式为 AI 初筛（未语义归类），最终图式标签以义位标注为准。",
+                  "Candidate schemas are AI pre-screened (not semantically categorised); the final schema label follows sense annotation."))
 
     # ---- 逐词下钻 ----
-    st.markdown(f"<h3 style='{HEADER_H3}'>🔎 逐词详情</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🔎 {_t('逐词详情', 'Per-Verb Detail')}</h3>", unsafe_allow_html=True)
     verbs = [r["verb"] for r in overview]
-    picked = st.selectbox("选择动词", options=verbs, index=verbs.index("walk") if "walk" in verbs else 0)
+    picked = st.selectbox(_t("选择动词", "Pick a verb"), options=verbs, index=verbs.index("walk") if "walk" in verbs else 0)
 
     stats = get_corpus_word_stats(picked) or {}
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("总频次", f"{stats.get('freq', 0):,}")
-    m2.metric("每百万频次", f"{(stats.get('relfreq') or 0):.1f}")
-    m3.metric("槽位数", stats.get("slot_count", 0))
-    m4.metric("搭配词型", f"{stats.get('collocate_count', 0):,}")
+    m1.metric(_t("总频次", "Total Freq"), f"{stats.get('freq', 0):,}")
+    m2.metric(_t("每百万频次", "Freq per Million"), f"{(stats.get('relfreq') or 0):.1f}")
+    m3.metric(_t("槽位数", "Slots"), stats.get("slot_count", 0))
+    m4.metric(_t("搭配词型", "Collocate Types"), f"{stats.get('collocate_count', 0):,}")
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>📐 四类意象图式重心（AI初筛）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>📐 {_t('四类意象图式重心（AI初筛）', 'Four Image-Schema Prominence Scores (AI pre-screen)')}</h3>", unsafe_allow_html=True)
     scores = get_corpus_schema_scores(picked)
     if scores:
         sc_df = pd.DataFrame(scores).rename(columns={
-            "schema_name": "意象图式", "slots_present": "覆盖槽位",
-            "slots_defined": "定义槽位", "coverage": "覆盖率",
-            "n_types": "搭配词数N", "mean_logdice": "Mean_logDice",
-            "prominence_score": "重心得分S", "cand_rank": "候选排名",
+            "schema_name": _t("意象图式", "Image Schema"), "slots_present": _t("覆盖槽位", "Slots Covered"),
+            "slots_defined": _t("定义槽位", "Slots Defined"), "coverage": _t("覆盖率", "Coverage"),
+            "n_types": _t("搭配词数N", "Collocate Types N"), "mean_logdice": "Mean_logDice",
+            "prominence_score": _t("重心得分S", "Prominence S"), "cand_rank": _t("候选排名", "Cand. Rank"),
         })
-        st.bar_chart(sc_df.set_index("意象图式")["重心得分S"], height=220)
+        st.bar_chart(sc_df.set_index(_t("意象图式", "Image Schema"))[_t("重心得分S", "Prominence S")], height=220)
         st.dataframe(sc_df, use_container_width=True, hide_index=True)
     else:
-        st.info(f"「{picked}」暂无重心得分数据。")
+        st.info(_t("「{v}」暂无重心得分数据。", "No prominence scores for \"{v}\" yet.").format(v=picked))
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>🧩 图式证据搭配（每图式 Top5）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🧩 {_t('图式证据搭配（每图式 Top5）', 'Schema Evidence Collocations (Top 5 per schema)')}</h3>", unsafe_allow_html=True)
     evidence = get_corpus_schema_evidence(picked, top_n=5)
     if evidence:
         ev_df = pd.DataFrame(evidence).rename(columns={
-            "schema_name": "意象图式", "rank_no": "排名", "word": "证据搭配词",
-            "logdice": "logDice", "slot": "所在槽位",
+            "schema_name": _t("意象图式", "Image Schema"), "rank_no": _t("排名", "Rank"),
+            "word": _t("证据搭配词", "Evidence Collocate"),
+            "logdice": "logDice", "slot": _t("所在槽位", "Slot"),
         })
         st.dataframe(ev_df, use_container_width=True, hide_index=True)
     else:
-        st.info("暂无图式证据数据。")
+        st.info(_t("暂无图式证据数据。", "No schema evidence data yet."))
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>✏️ 搭配明细（按槽位，可编辑）</h3>", unsafe_allow_html=True)
-    st.caption("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
-               "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。")
+    st.markdown(f"<h3 style='{HEADER_H3}'>✏️ {_t('搭配明细（按槽位，可编辑）', 'Collocation Detail (by slot, editable)')}</h3>", unsafe_allow_html=True)
+    st.caption(_t("在「语义类别」填归类（如 空间终点/抽象结果/方式副词），「处理」选 保留/剔除 ——"
+               "保存后即进入 PS 计算口径（Mean_logDice × log2(N+1) 只统计「保留」行）。",
+               "Fill in categorisation under \"Semantic Category\" (e.g. spatial endpoint / abstract result / manner adverb), "
+               "choose Keep/Drop under \"Action\" — saved rows join the PS calculation "
+               "(Mean_logDice × log2(N+1) counts \"Keep\" rows only)."))
     # FX-29 接线（架构 §4/§9 页面经中央注册表调工具）：搭配明细查询改经
     # corpus_evidence 工具 run —— 薄包装 merge_params 按 params_schema 合并
     # 默认值（verb/slot/limit 全在 schema 内）后委托 mysql_db.get_corpus_
@@ -2910,7 +2936,7 @@ def render_corpus_dataset_page() -> None:
     slots = sorted({r["slot"] for r in _corpus_tool.run({"verb": picked, "limit": 2000})})
     if slots:
         default_slot = "objects of \"%w\"" if "objects of \"%w\"" in slots else slots[0]
-        slot = st.selectbox("选择槽位", options=slots, index=slots.index(default_slot))
+        slot = st.selectbox(_t("选择槽位", "Pick a slot"), options=slots, index=slots.index(default_slot))
         # FX-38（批次 20）：明细条数消费 ui.rows_per_page 偏好（clamp
         # [10,200]，无偏好/脏值回退既有默认 100，fx29 等价锁口径不变）；
         # 上行 limit=2000 是槽位枚举全量扫描（构建槽位下拉选项集），非
@@ -2918,48 +2944,68 @@ def render_corpus_dataset_page() -> None:
         colls = _corpus_tool.run(
             {"verb": picked, "slot": slot, "limit": _rows_per_page_pref()})
         coll_df = pd.DataFrame(colls).rename(columns={
-            "id": "_id", "slot": "槽位", "rank_in_slot": "排名", "collocate": "搭配词",
-            "logdice": "logDice", "cooccur_count": "搭配频次",
-            "typical_combo": "典型组合", "combo_freq": "组合频次",
-            "semantic_category": "语义类别(人工)", "keep_flag": "处理(人工)",
+            "id": "_id", "slot": _t("槽位", "Slot"), "rank_in_slot": _t("排名", "Rank"),
+            "collocate": _t("搭配词", "Collocate"),
+            "logdice": "logDice", "cooccur_count": _t("搭配频次", "Co-occur Freq"),
+            "typical_combo": _t("典型组合", "Typical Combo"), "combo_freq": _t("组合频次", "Combo Freq"),
+            "semantic_category": _t("语义类别(人工)", "Semantic Category (manual)"),
+            "keep_flag": _t("处理(人工)", "Action (manual)"),
         })
+        # 列键走中间变量（en 态列名是英文——disabled/column_config/行对齐全部引用同一组键，不漂移）
+        _k_slot = _t("槽位", "Slot")
+        _k_rank = _t("排名", "Rank")
+        _k_coll = _t("搭配词", "Collocate")
+        _k_freq = _t("搭配频次", "Co-occur Freq")
+        _k_combo = _t("典型组合", "Typical Combo")
+        _k_cfreq = _t("组合频次", "Combo Freq")
+        _k_cat = _t("语义类别(人工)", "Semantic Category (manual)")
+        _k_keep = _t("处理(人工)", "Action (manual)")
+        _v_keep = _t("保留", "Keep")
+        _v_drop = _t("剔除", "Drop")
         edited = st.data_editor(
             coll_df,
             use_container_width=True,
             hide_index=True,
             key=f"coll_editor_{picked}_{slot}",
-            disabled=["槽位", "排名", "搭配词", "logDice", "搭配频次", "典型组合", "组合频次"],
+            disabled=[_k_slot, _k_rank, _k_coll, "logDice", _k_freq, _k_combo, _k_cfreq],
             column_config={
-                "语义类别(人工)": st.column_config.TextColumn(width="medium"),
-                "处理(人工)": st.column_config.SelectboxColumn(
-                    options=["", "保留", "剔除"], width="small"),
+                _k_cat: st.column_config.TextColumn(width="medium"),
+                _k_keep: st.column_config.SelectboxColumn(
+                    options=["", _v_keep, _v_drop], width="small"),
             },
         )
-        if st.button("💾 保存本槽位语义归类", key=f"coll_save_{picked}_{slot}"):
+        if st.button(_t("💾 保存本槽位语义归类", "💾 Save this slot's semantic categories"),
+                     key=f"coll_save_{picked}_{slot}"):
             changed = []
+            # keep_flag 写库值统一规范为中文（"保留"/"剔除"——与历史数据/注释口径一致；
+            # en 态界面显示 Keep/Drop，保存前映射回规范值，DB 不混语言值）
+            _keep_map = {_v_keep: "保留", _v_drop: "剔除", "保留": "保留", "剔除": "剔除"}
             for _, row in edited.iterrows():
                 # 用 id 对齐原始行，仅保存真正修改过的行
                 orig_row = next((c for c in colls if c["id"] == row["_id"]), None)
                 if orig_row is None:
                     continue
-                if ((orig_row.get("semantic_category") or "") != (row["语义类别(人工)"] or "")
-                        or (orig_row.get("keep_flag") or "") != (row["处理(人工)"] or "")):
+                if ((orig_row.get("semantic_category") or "") != (row[_k_cat] or "")
+                        or (orig_row.get("keep_flag") or "") != (row[_k_keep] or "")):
                     changed.append({
                         "id": int(row["_id"]),
-                        "semantic_category": row["语义类别(人工)"],
-                        "keep_flag": row["处理(人工)"],
+                        "semantic_category": row[_k_cat],
+                        "keep_flag": _keep_map.get(row[_k_keep], row[_k_keep]),
                     })
             if changed:
                 n = update_collocation_annotations(changed)
-                st.success(f"✅ 已保存 {n} 条归类（进入 PS 计算口径）")
+                st.success(_t("✅ 已保存 {n} 条归类（进入 PS 计算口径）",
+                              "✅ Saved {n} categorisation(s) (now part of the PS calculation)").format(n=n))
             else:
-                st.info("没有修改需要保存")
+                st.info(_t("没有修改需要保存", "No changes to save"))
 
-        n_keep = int((edited["处理(人工)"] == "保留").sum())
-        st.caption(f"当前槽位：{len(edited)} 行，标记「保留」{n_keep} 行 —— "
-                   f"PS 口径 N={n_keep}，Mean_logDice 按「保留」行的 logDice 均值计。")
+        n_keep = int((edited[_k_keep] == _v_keep).sum())
+        st.caption(_t("当前槽位：{rows} 行，标记「保留」{n} 行 —— PS 口径 N={n}，Mean_logDice 按「保留」行的 logDice 均值计。",
+                      "Current slot: {rows} rows, {n} marked \"{keep}\" — for the PS calculation N={n}, "
+                      "Mean_logDice averages logDice over the \"{keep}\" rows.")
+                   .format(rows=len(edited), n=n_keep, keep=_v_keep))
     else:
-        st.info("暂无搭配明细数据。")
+        st.info(_t("暂无搭配明细数据。", "No collocation detail data yet."))
 
 
 def render_card_corpus(verb: str) -> str:
@@ -3096,7 +3142,7 @@ def render_word_relation_section(verb: str) -> None:
 
     # 簇内成员快跳（点击即切换查询词，图谱随之前进到该词为中心的视图）
     members = [n["id"] for n in graph["nodes"]]
-    with st.expander(f"查看簇内全部 {size} 个动词（点击可直接查询）", expanded=False):
+    with st.expander(_t("查看簇内全部 {n} 个动词（点击可直接查询）", "View all {n} verbs in this cluster (click to query)").format(n=size), expanded=False):
         per_row = 6
         for i in range(0, len(members), per_row):
             row = members[i:i + per_row]
@@ -3115,9 +3161,10 @@ def render_word_relation_section(verb: str) -> None:
     # 切页必须在 on_click 回调里改 session_state —— 按钮渲染时机晚于
     # 侧栏 radio(key="page")，在正文里直接赋值会触发 StreamlitAPIException。
     st.button(
-        "🗺️ 打开全库知识图谱",
+        _t("🗺️ 打开全库知识图谱", "🗺️ Open the Full Knowledge Graph"),
         key="goto_graph_page",
-        help="全库 136 词 / 1780 条词间关系的语义地图（可搜索、可按簇过滤）",
+        help=_t("全库 136 词 / 1780 条词间关系的语义地图（可搜索、可按簇过滤）",
+                "The semantic map of all 136 words / 1,780 word relations (searchable, cluster-filterable)"),
         on_click=lambda: st.session_state.update(page="graph"),
     )
 
@@ -3132,17 +3179,21 @@ def render_domain_family_page() -> None:
     口径：词目层初判预览——义位图式暂取词目初判，最终域—系以义位层
     人工标注后重聚类为准；R2/R3 行携带筛选规则理由。
     """
-    st.markdown(f"<h1 style='{HEADER_H1}'>🧭 域系初判</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='{HEADER_H1}'>🧭 {_t('域系初判', 'Domain-Family Screening')}</h1>", unsafe_allow_html=True)
     render_page_usage_guide("domain")
 
     if not DB_AVAILABLE:
-        st.info("数据库不可用，无法展示域系初判（离线模式下仅提供释义）。")
+        st.info(_t("数据库不可用，无法展示域系初判（离线模式下仅提供释义）。",
+                   "Database unavailable — domain-family screening cannot be shown (offline mode provides definitions only)."))
         return
     if not domain_family_ready():
         st.info(
-            "域系初判数据尚未灌入。运行 "
-            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
-            "从 docs/research/tables/域系初判表v0.2.xlsx 加载。"
+            _t("域系初判数据尚未灌入。运行 "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
+               "从 docs/research/tables/域系初判表v0.2.xlsx 加载。",
+               "Domain-family data not loaded yet. Run "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
+               "to load it from docs/research/tables/域系初判表v0.2.xlsx.")
         )
         return
 
@@ -3151,102 +3202,123 @@ def render_domain_family_page() -> None:
     overview = get_domain_family_overview()
     if not overview:
         st.warning(
-            "域系初判表（domain_family_senses）为空：请重跑 "
-            "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
-            "灌入初判表后刷新本页；刚灌完仍为空属页面缓存，稍候再刷一次。"
+            _t("域系初判表（domain_family_senses）为空：请重跑 "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py` "
+               "灌入初判表后刷新本页；刚灌完仍为空属页面缓存，稍候再刷一次。",
+               "The screening table (domain_family_senses) is empty: re-run "
+               "`MYSQL_HOST=127.0.0.1 python3 scripts/load_domain_family.py`, "
+               "then refresh. If it stays empty right after loading, that's page caching — refresh again later.")
         )
         return
 
     total = sum(r["n_senses"] for r in overview)
     _ = len({r["family"] for r in overview})  # R7-22: 词簇数已由 metrics 卡展示
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("保留义位", total)
-    c2.metric("认知域", len({r["domain"] for r in overview}))
-    c3.metric("语义系", len({r["family"] for r in overview}))
-    c4.metric("口径", "词目层初判 v0.2")
+    c1.metric(_t("保留义位", "Kept Senses"), total)
+    c2.metric(_t("认知域", "Cognitive Domains"), len({r["domain"] for r in overview}))
+    c3.metric(_t("语义系", "Semantic Families"), len({r["family"] for r in overview}))
+    c4.metric(_t("口径", "Basis"), _t("词目层初判 v0.2", "Lemma-level v0.2"))
 
     st.caption(
-        "⚠️ 词目层初判预览：义位图式暂取词目初判，非义位层标注结果；"
-        "最终域—系体系以义位层人工标注后重聚类为准（见标注平台）。"
+        _t("⚠️ 词目层初判预览：义位图式暂取词目初判，非义位层标注结果；"
+           "最终域—系体系以义位层人工标注后重聚类为准（见标注平台）。",
+           "⚠️ Lemma-level preview: sense schemas temporarily take the lemma's initial judgement, "
+           "not sense-level annotation; the final domain–family system follows sense-level manual "
+           "annotation and re-clustering (see the Annotation Platform).")
     )
 
     # ---- 总览表（域 → 系 → 数量）----
-    st.markdown(f"<h3 style='{HEADER_H3}'>🗺️ 三域十二系总览</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>🗺️ {_t('三域十二系总览', 'Three Domains × Twelve Families Overview')}</h3>", unsafe_allow_html=True)
     df = pd.DataFrame(overview).rename(columns={
-        "domain": "认知域（初判）", "family": "语义系（初判）",
-        "n_senses": "义位数", "n_verbs": "词数",
+        "domain": _t("认知域（初判）", "Domain (pre-screen)"),
+        "family": _t("语义系（初判）", "Family (pre-screen)"),
+        "n_senses": _t("义位数", "Senses"), "n_verbs": _t("词数", "Words"),
     })
     st.dataframe(df, use_container_width=True, hide_index=True)
-    st.bar_chart(df.set_index("语义系（初判）")["义位数"], height=260)
+    st.bar_chart(df.set_index(_t("语义系（初判）", "Family (pre-screen)"))[_t("义位数", "Senses")], height=260)
 
     # ---- 逐义位明细（域/系/词三级过滤）----
-    st.markdown(f"<h3 style='{HEADER_H3}'>📑 逐义位明细</h3>", unsafe_allow_html=True)
-    domains = ["全部"] + sorted({r["domain"] for r in overview})
+    st.markdown(f"<h3 style='{HEADER_H3}'>📑 {_t('逐义位明细', 'Per-Sense Detail')}</h3>", unsafe_allow_html=True)
+    _all = _t("全部", "All")
+    domains = [_all] + sorted({r["domain"] for r in overview})
     fcol1, fcol2, fcol3 = st.columns(3)
-    sel_domain = fcol1.selectbox("认知域", options=domains, key="df_domain")
-    families = ["全部"]
-    if sel_domain != "全部":
+    sel_domain = fcol1.selectbox(_t("认知域", "Domain"), options=domains, key="df_domain")
+    families = [_all]
+    if sel_domain != _all:
         families += sorted({r["family"] for r in overview if r["domain"] == sel_domain})
     else:
         families += sorted({r["family"] for r in overview})
-    sel_family = fcol2.selectbox("语义系", options=families, key="df_family")
-    kw = fcol3.text_input("词目筛选", key="df_verb", placeholder="输入动词…")
+    sel_family = fcol2.selectbox(_t("语义系", "Family"), options=families, key="df_family")
+    kw = fcol3.text_input(_t("词目筛选", "Filter lemmas"), key="df_verb", placeholder=_t("输入动词…", "Type a verb…"))
 
     senses = get_domain_family_senses(
-        domain=None if sel_domain == "全部" else sel_domain,
-        family=None if sel_family == "全部" else sel_family,
+        domain=None if sel_domain == _all else sel_domain,
+        family=None if sel_family == _all else sel_family,
     )
     sdf = pd.DataFrame(senses).rename(columns={
-        "word": "词目", "sense_num": "义项序号", "sense_id": "SenseID",
-        "definition": "英文释义", "definition_cn": "中文释义",
-        "example": "例句（首条）",
-        "lemma_schema": "词目层初判图式", "domain": "域", "family": "系",
-        "sense_annotation": "义位层标注（待人工）",
-        "rule_tag": "规则", "rule_note": "规则理由",
-        "source": "数据来源", "updated_at": "最后修改",
-        "freq": "语料频次", "schema_scores": "四图式重心得分",
+        "word": _t("词目", "Lemma"), "sense_num": _t("义项序号", "Sense #"),
+        "sense_id": "SenseID",
+        "definition": _t("英文释义", "Definition (EN)"), "definition_cn": _t("中文释义", "Definition (ZH)"),
+        "example": _t("例句（首条）", "Example (first)"),
+        "lemma_schema": _t("词目层初判图式", "Lemma Schema (pre-screen)"),
+        "domain": _t("域", "Domain"), "family": _t("系", "Family"),
+        "sense_annotation": _t("义位层标注（待人工）", "Sense Annotation (pending)"),
+        "rule_tag": _t("规则", "Rule"), "rule_note": _t("规则理由", "Rule Note"),
+        "source": _t("数据来源", "Source"), "updated_at": _t("最后修改", "Last Modified"),
+        "freq": _t("语料频次", "Corpus Freq"), "schema_scores": _t("四图式重心得分", "Schema Prominence"),
     })
     # 展示列序：词目 + 义项序号（组合键）在前，SenseID 生成列随后
-    col_order = ["词目", "义项序号", "SenseID", "英文释义", "中文释义",
-                 "词目层初判图式", "域", "系", "义位层标注（待人工）",
-                 "语料频次", "四图式重心得分", "规则", "规则理由", "数据来源", "最后修改"]
+    _c_word = _t("词目", "Lemma")
+    _c_num = _t("义项序号", "Sense #")
+    _c_def = _t("英文释义", "Definition (EN)")
+    _c_ex = _t("例句（首条）", "Example (first)")
+    _c_rule = _t("规则理由", "Rule Note")
+    _c_src = _t("数据来源", "Source")
+    _c_upd = _t("最后修改", "Last Modified")
+    _c_freq = _t("语料频次", "Corpus Freq")
+    _c_dom = _t("域", "Domain")
+    _c_fam = _t("系", "Family")
+    col_order = [_c_word, _c_num, "SenseID", _c_def, _t("中文释义", "Definition (ZH)"),
+                 _t("词目层初判图式", "Lemma Schema (pre-screen)"), _c_dom, _c_fam,
+                 _t("义位层标注（待人工）", "Sense Annotation (pending)"),
+                 _c_freq, _t("四图式重心得分", "Schema Prominence"), _t("规则", "Rule"), _c_rule, _c_src, _c_upd]
     sdf = sdf[[c for c in col_order if c in sdf.columns]]
-    if "语料频次" in sdf.columns:
-        sdf["语料频次"] = pd.to_numeric(sdf["语料频次"], errors="coerce")
+    if _c_freq in sdf.columns:
+        sdf[_c_freq] = pd.to_numeric(sdf[_c_freq], errors="coerce")
     if kw:
-        sdf = sdf[sdf["词目"].str.contains(kw, case=False, na=False)]
-    st.caption(f"当前筛选 {len(sdf)} 条义位。")
+        sdf = sdf[sdf[_c_word].str.contains(kw, case=False, na=False)]
+    st.caption(_t("当前筛选 {n} 条义位。", "{n} senses match the current filter.").format(n=len(sdf)))
     st.dataframe(
         sdf, use_container_width=True, hide_index=True,
         column_config={
-            "英文释义": st.column_config.TextColumn(width="medium"),
-            "例句（首条）": st.column_config.TextColumn(width="medium"),
-            "规则理由": st.column_config.TextColumn(width="medium"),
+            _c_def: st.column_config.TextColumn(width="medium"),
+            _c_ex: st.column_config.TextColumn(width="medium"),
+            _c_rule: st.column_config.TextColumn(width="medium"),
         },
     )
 
     # ---- 单义位下钻 ----
     if not sdf.empty:
-        st.markdown(f"<h3 style='{HEADER_H3}'>📄 义位详情</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='{HEADER_H3}'>📄 {_t('义位详情', 'Sense Detail')}</h3>", unsafe_allow_html=True)
         sid = st.selectbox(
-            "选择义位（word + 义项序号）",
-            options=[f"{w} · S{n}" for w, n in zip(sdf["词目"], sdf["义项序号"])],
+            _t("选择义位（word + 义项序号）", "Pick a sense (lemma + sense #)"),
+            options=[f"{w} · S{n}" for w, n in zip(sdf[_c_word], sdf[_c_num])],
             key="df_sense",
         )
         _w, _n = sid.rsplit(" · S", 1)
-        row = sdf[(sdf["词目"] == _w) & (sdf["义项序号"] == int(_n))].iloc[0]
+        row = sdf[(sdf[_c_word] == _w) & (sdf[_c_num] == int(_n))].iloc[0]
         b1, b2, b3 = st.columns(3)
-        b1.metric("认知域（初判）", row["域"])
-        b2.metric("语义系（初判）", row["系"])
-        b3.metric("筛选规则", row["规则"])
-        st.markdown(f"**SenseID**：{row['SenseID']}（word=`{_w}`，序号={_n}）")
-        st.markdown(f"**数据来源**：{row.get('数据来源') or '—'}　·　**最后修改**：{row.get('最后修改') or '—'}")
+        b1.metric(_t("认知域（初判）", "Domain (pre-screen)"), row[_c_dom])
+        b2.metric(_t("语义系（初判）", "Family (pre-screen)"), row[_c_fam])
+        b3.metric(_t("筛选规则", "Rule"), row[_t("规则", "Rule")])
+        st.markdown(f"**SenseID**：{row['SenseID']}（word=`{_w}`，{_t('序号', '#')}={_n}）")
+        st.markdown(f"**{_t('数据来源', 'Source')}**：{row.get(_c_src) or '—'}　·　**{_t('最后修改', 'Last Modified')}**：{row.get(_c_upd) or '—'}")
         # 语料证据（wordsketch，enTenTen21）
-        freq_v = row.get("语料频次")
+        freq_v = row.get(_c_freq)
         if freq_v is not None and not pd.isna(freq_v):
             st.markdown(
-                f"**语料频次（enTenTen21）**：{int(freq_v):,}")
-            scores = row.get("四图式重心得分")
+                f"**{_t('语料频次（enTenTen21）', 'Corpus Freq (enTenTen21)')}**：{int(freq_v):,}")
+            scores = row.get(_t("四图式重心得分", "Schema Prominence"))
             if isinstance(scores, str):
                 try:
                     scores = json.loads(scores)
@@ -3256,28 +3328,34 @@ def render_domain_family_page() -> None:
                 best = max(scores, key=scores.get)
                 parts = "　".join(f"{k} {v}" for k, v in
                                  sorted(scores.items(), key=lambda x: -x[1]))
-                st.markdown(f"**四图式重心得分（词目层初筛）**：{parts}")
-                st.caption(f"候选凸显图式：{best}（未语义归类的 AI 初筛，仅作参考）")
+                st.markdown(f"**{_t('四图式重心得分（词目层初筛）', 'Schema Prominence (lemma pre-screen)')}**：{parts}")
+                st.caption(_t("候选凸显图式：{s}（未语义归类的 AI 初筛，仅作参考）",
+                              "Candidate schema: {s} (AI pre-screen, not semantically categorised — reference only)").format(s=best))
         else:
-            st.caption("该词目暂无语料证据（初判表未覆盖该词，或语料包缺该词的检索 JSON）。")
-        st.markdown(f"**英文释义**：{row['英文释义'] or '—'}")
-        if row.get("中文释义"):
-            st.markdown(f"**中文释义**：{row['中文释义']}")
+            st.caption(_t("该词目暂无语料证据（初判表未覆盖该词，或语料包缺该词的检索 JSON）。",
+                          "No corpus evidence for this lemma (not covered by the screening table, or the corpus package lacks its JSON)."))
+        _c_defzh = _t("中文释义", "Definition (ZH)")
+        st.markdown(f"**{_c_def}**：{row[_c_def] or '—'}")
+        if row.get(_c_defzh):
+            st.markdown(f"**{_c_defzh}**：{row[_c_defzh]}")
         # 全部例句（英文 + 中文翻译逐条对齐，来自例句子表）
         exs = get_domain_family_examples(_w, int(_n))
         if exs:
-            st.markdown(f"**例句（{len(exs)} 条）**")
+            st.markdown(f"**{_t('例句（{n} 条）', 'Examples ({n})').format(n=len(exs))}**")
             for ex in exs:
                 st.markdown(f"- {ex['example_en'] or '—'}")
                 if ex.get("example_cn"):
                     st.markdown(f"  - ↳ {ex['example_cn']}")
             src_note = "、".join(sorted({str(e.get("source") or "—") for e in exs}))
-            st.caption(f"例句来源：{src_note}（dictionary.db 例句带已审校中文翻译；OALD10 例句翻译待补）")
-        if row["规则理由"]:
-            st.info(f"筛选规则理由：{row['规则理由']}")
+            st.caption(_t("例句来源：{s}（dictionary.db 例句带已审校中文翻译；OALD10 例句翻译待补）",
+                          "Example sources: {s} (dictionary.db examples carry reviewed Chinese translations; OALD10 example translations pending)").format(s=src_note))
+        if row[_c_rule]:
+            st.info(_t("筛选规则理由：{r}", "Screening rule note: {r}").format(r=row[_c_rule]))
         st.caption(
-            "该义位的最终图式标签请在「🏷️ 标注平台」中人工复核确定；"
-            "此处初判归属仅作对照参考。"
+            _t("该义位的最终图式标签请在「🏷️ 标注平台」中人工复核确定；"
+               "此处初判归属仅作对照参考。",
+               "This sense's final schema label should be confirmed manually on the 🏷️ Annotation Platform; "
+               "the pre-screen categorisation here is for reference only.")
         )
 
 
@@ -3772,7 +3850,7 @@ def render_submission_flow() -> None:
     """
     user = _current_user()
     if user is None:
-        st.warning("请先登录")
+        st.warning(_t("请先登录", "Please sign in first"))
         return
     if not DB_AVAILABLE:
         st.info("数据库不可用，提交流不可用（离线模式）。")
@@ -4071,7 +4149,7 @@ def render_reviewer_panel() -> None:
     """
     user = _current_user()
     if user is None:
-        st.warning("请先登录")
+        st.warning(_t("请先登录", "Please sign in first"))
         return
     if not (effective_six_roles(user) & {"dict_admin", "sys_admin", "reviewer"}):
         st.error("⛔ 仲裁面板仅 reviewer / admin 可用（annotator 之间互相不可见，规范 §0）。")

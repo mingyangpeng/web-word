@@ -167,7 +167,9 @@ class TestRV55ClusterNaming:
     def test_new_cluster_name_in_place(self):
         app_text = _read("app.py")
         assert 'st.sidebar.metric(_t("词簇", "Clusters")' in app_text  # 批次 57 i18n 化后形态
-        assert 'c3.metric("词簇"' in app_text
+        # 批次 58：图谱页 c3.metric 同步 t() 化（双语态），中文键仍是「词簇」
+        assert 'c3.metric(_t("词簇", "Clusters")' in app_text
+        # 「按词簇勾选过滤」随图谱页 caption 一起进了 t() 首参（批次 58）
         assert "按词簇勾选过滤" in app_text
         guide_blob = _read("page_guides.py")
         assert "12 个词簇的交互式力导向图" in guide_blob

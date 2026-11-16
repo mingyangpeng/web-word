@@ -16,6 +16,7 @@ from pathlib import Path
 import streamlit as st
 
 from src.design_system import HEADER_H1, HEADER_H3, WARNING_COLOR
+from src.i18n import t
 
 # 母本路径（仓库根 docs/help/；app 以任意 cwd 启动均可解析）
 HELP_DOC = Path(__file__).resolve().parent.parent / "docs" / "help" / "平台功能使用说明.md"
@@ -46,40 +47,57 @@ def _split_sections(doc: str) -> list[tuple[str, str]]:
 
 
 def render_help_center_page() -> None:
-    """帮助中心：母本章节导航 + 关键词过滤 + 全文模式。"""
-    st.markdown(f"<h1 style='{HEADER_H1}'>❓ 帮助中心</h1>", unsafe_allow_html=True)
+    """帮助中心：母本章节导航 + 关键词过滤 + 全文模式。
+
+    双语口径（批次 58）：页面框架（H1/caption/搜索框/导航/提示语）t() 化；
+    母本正文（docs/help/平台功能使用说明.md）为中文单语事实源——整体翻译
+    属内容工程，挂账渐进补（en 态正文保持中文，帮助可读不阻断）。
+    """
+    st.markdown(f"<h1 style='{HEADER_H1}'>❓ {t('帮助中心', 'Help Center')}</h1>", unsafe_allow_html=True)
     st.caption(
-        "每个功能的「功能说明 / 使用介绍 / 原理说明 / 注意事项」四段式帮助。"
-        "【阶段1】【阶段2】标记为规划中功能，说明即验收标准。"
+        t("每个功能的「功能说明 / 使用介绍 / 原理说明 / 注意事项」四段式帮助。"
+          "【阶段1】【阶段2】标记为规划中功能，说明即验收标准。",
+          "Four-part help for every feature (description / usage / how it works / notes). "
+          "Items tagged [Phase 1] / [Phase 2] are planned features — the description is their acceptance criterion.")
     )
 
     doc = _load_help_doc()
     if doc is None:
         st.markdown(
-            f"<p style='color:{WARNING_COLOR}'>帮助母本缺失（docs/help/平台功能使用说明.md）。"
-            "请确认仓库完整性，或在仓库根目录重新检出该文件。</p>",
+            "<p style='color:{}'>{}</p>".format(
+                WARNING_COLOR,
+                t("帮助母本缺失（docs/help/平台功能使用说明.md）。"
+                  "请确认仓库完整性，或在仓库根目录重新检出该文件。",
+                  "The help master document (docs/help/平台功能使用说明.md) is missing. "
+                  "Check repository integrity, or re-checkout that file at the repo root."),
+            ),
             unsafe_allow_html=True,
         )
         return
 
     sections = _split_sections(doc)
-    query = st.text_input("搜索帮助内容", placeholder="如：信度 / 导入 / 盲标", key="help_query")
+    query = st.text_input(t("搜索帮助内容", "Search help"),
+                          placeholder=t("如：信度 / 导入 / 盲标", "e.g. reliability / import / blind annotation"),
+                          key="help_query")
     if query.strip():
-        hits = [(t, b) for t, b in sections if query.strip().lower() in (t + b).lower()]
-        st.info(f"共 {len(hits)} 个章节命中「{query.strip()}」") if hits else st.warning(
-            f"没有章节命中「{query.strip()}」，试试其他关键词（如 盲标、导入、闸门）。")
-        for t, b in hits:
-            st.markdown(f"<h3 style='{HEADER_H3}'>{t}</h3>", unsafe_allow_html=True)
+        hits = [(t_, b) for t_, b in sections if query.strip().lower() in (t_ + b).lower()]
+        if hits:
+            st.info(t("共 {n} 个章节命中「{q}」", "{n} section(s) match \"{q}\"").format(n=len(hits), q=query.strip()))
+        else:
+            st.warning(t("没有章节命中「{q}」，试试其他关键词（如 盲标、导入、闸门）。",
+                         "No section matches \"{q}\" — try other keywords.").format(q=query.strip()))
+        for t_, b in hits:
+            st.markdown(f"<h3 style='{HEADER_H3}'>{t_}</h3>", unsafe_allow_html=True)
             st.markdown(b)
         return
 
-    options = ["📖 全文阅读"] + [t for t, _ in sections]
-    choice = st.selectbox("章节导航", options=options, key="help_section")
-    if choice == "📖 全文阅读":
+    options = [t("📖 全文阅读", "📖 Read full document")] + [t_ for t_, _ in sections]
+    choice = st.selectbox(t("章节导航", "Section navigation"), options=options, key="help_section")
+    if choice == t("📖 全文阅读", "📖 Read full document"):
         st.markdown(doc)
         return
-    for t, b in sections:
-        if t == choice:
-            st.markdown(f"<h3 style='{HEADER_H3}'>{t}</h3>", unsafe_allow_html=True)
+    for t_, b in sections:
+        if t_ == choice:
+            st.markdown(f"<h3 style='{HEADER_H3}'>{t_}</h3>", unsafe_allow_html=True)
             st.markdown(b)
             return

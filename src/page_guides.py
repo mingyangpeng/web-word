@@ -14,6 +14,8 @@ from typing import Any, Dict, List
 
 import streamlit as st
 
+from src.i18n import t
+
 # 每页一段：label（侧边栏标签）/ purpose（一句话定位）/ steps（操作步骤）/ notes（口径与提示）
 PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
     "search": {
@@ -520,29 +522,35 @@ def render_page_usage_guide(page_key: str) -> None:
     principle / data_source 为详细版新增段（旧结构缺省时跳过该段）。
     键必须在 PAGE_GUIDES 中 —— tests/test_page_guides.py 会逐页验证
     说明真实渲染，新增页面漏配会被测试拦下。
+
+    双语口径（批次 58）：expander 标题与四个段头 t() 化（框架可见面）；
+    段落正文（purpose/principle/steps/notes 各页各一整套）暂为中文母本
+    ——逐页双语化是内容工程量，挂账渐进补（en 态正文保持中文不崩不阻断）。
     """
     guide = PAGE_GUIDES.get(page_key)
     if not guide:
         st.caption(f"⚠️ 页面 {page_key} 未配置使用说明（见 src/page_guides.py）。")
         return
 
-    with st.expander(f"📖 使用说明 —— {guide['label']}", expanded=False):
-        st.markdown(f"**这一页做什么：** {guide['purpose']}")
+    # label 过 t()：PAGE_GUIDES 的 13 个页面实名已收进 i18n.ZH_EN（批次 47），
+    # en 态自动查表显示英文页名；未收录的 label 回落中文原文（渐进式口径）
+    with st.expander(f"📖 {t('使用说明', 'Usage Guide')} —— {t(guide['label'])}", expanded=False):
+        st.markdown(f"**{t('这一页做什么', 'What this page does')}:** {guide['purpose']}")
 
         if guide.get("principle"):
-            st.markdown("**💬 原理：**")
+            st.markdown(f"**💬 {t('原理', 'How it works')}:**")
             for item in guide["principle"]:
                 st.markdown(f"- {item}")
 
         if guide.get("data_source"):
-            st.markdown("**🗂️ 数据来源：**")
+            st.markdown(f"**🗂️ {t('数据来源', 'Data source')}:**")
             for item in guide["data_source"]:
                 st.markdown(f"- {item}")
 
-        st.markdown("**🖱️ 怎么用：**")
+        st.markdown(f"**🖱️ {t('怎么用', 'How to use')}:**")
         for i, step in enumerate(guide["steps"], start=1):
             st.markdown(f"{i}. {step}")
 
-        st.markdown("**⚠️ 注意事项：**")
+        st.markdown(f"**⚠️ {t('注意事项', 'Notes')}:**")
         for note in guide["notes"]:
             st.caption(f"💡 {note}")
