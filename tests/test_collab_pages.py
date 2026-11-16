@@ -75,10 +75,13 @@ class TestGuideContract:
     """GUIDE 四段式契约（施工规范 §5：集成时原样并入 PAGE_GUIDES）。"""
 
     def test_guide_keys(self):
-        """六个键齐全：label/purpose/principle/data_source/steps/notes。"""
-        assert set(GUIDE.keys()) == {
-            "label", "purpose", "principle", "data_source", "steps", "notes",
-        }
+        """六个核心键齐全：label/purpose/principle/data_source/steps/notes。
+
+        批次 60 双语化后 GUIDE 另含 _en 后缀字段（purpose_en 等）——
+        核心键集校验改为「六键 ⊆ 全部键」的子集断言，_en 字段不参与硬契约
+        （en 态取值回落中文母本，缺译不崩）。"""
+        required = {"label", "purpose", "principle", "data_source", "steps", "notes"}
+        assert required <= set(GUIDE.keys())
 
     def test_guide_label(self):
         """区级页面标签口径（与施工规范 §5 表格一致）。"""

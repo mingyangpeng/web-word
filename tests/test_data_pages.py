@@ -25,9 +25,9 @@ class TestGuideStructure:
     """GUIDE 必须是契约要求的四段式 dict（集成时原样并入 PAGE_GUIDES）。"""
 
     def test_required_keys(self):
-        assert set(data_pages.GUIDE.keys()) == {
-            "label", "purpose", "principle", "data_source", "steps", "notes",
-        }
+        # 批次 60 双语化后另含 _en 后缀字段——改为子集断言（核心六键必在）
+        required = {"label", "purpose", "principle", "data_source", "steps", "notes"}
+        assert required <= set(data_pages.GUIDE.keys())
 
     def test_label_fixed(self):
         """label 固定为「🧰 数据工具」（集成侧边栏与 emoji 白名单按此对齐）。"""

@@ -184,6 +184,43 @@ GUIDE: Dict[str, Any] = {
         "所有供应商名/模型名/Base URL 渲染进 HTML（标题、状态卡）前一律转义；"
         "下拉与单选的选项文本由 Streamlit 自带转义。",
     ],
+    "purpose_en": (
+        "The configuration page for LLM providers (name / Base URL / API format / "
+        "API key / model list): once a provider passes the connectivity test it becomes "
+        "usable by AI features such as definition generation; dictionary-admin only, "
+        "API keys stored in plaintext and masked on the page with plaintext toggled "
+        "by the admin alone."
+    ),
+    "principle_en": [
+        "Isomorphic multi-provider configuration: each provider is one record (name, base_url, api_format, api_key, models, enabled, is_default); api_format has only openai / anthropic families — differences beyond the two API shapes (model names, temperature, etc.) stay out of this page; the page makes no provider-specific branches, and business features only see \"enabled providers\".",
+        "Plaintext API-key storage is this batch's management decision: the platform is a single-machine research tool; the key is echoed only through this page's password input (masked by default) and shown in plaintext only via the admin's explicit st.toggle; keys never enter logs, exports or snapshots. If the deployment shape changes (multi-user shared DB, etc.), change the storage policy before relaxing visibility.",
+        "is_default (default provider) and enabled are two independent switches: disabling just takes a provider offline without deletion — configuration retained for re-enabling anytime; is_default marks AI features' default pick, with uniqueness guaranteed by the data layer's set_default transaction (clear all, then set this one) — the default can only be transferred, never directly cancelled; a disabled default provider is skipped automatically by AI features (falling back to the platform's built-in config).",
+        "The model list (models) holds one model name per line: it is the whitelist of models business features may pick under this provider, editable in bulk in the textarea or appended one by one via \"＋ Add model\"; an empty list means \"no usable models configured\" — the connectivity test fires a minimal request with the list's first model, and an empty list honestly reports \"cannot start the connectivity test\".",
+        "Deletion is a physical DELETE with two-step confirmation: provider configs are cheap to rebuild (name/URL/key/model list are all admin-typed data), so no soft-delete trail is kept; the worst case of a mistaken delete is retyping the config — hence no recycle bin.",
+        "Least-privilege permissions: provider config is platform-level AI infrastructure (a misconfiguration affects every AI feature), so it is open only to dictionary admins (session check + a real-time DB query as the second role gate); ordinary users/annotators/viewers can neither see nor write it."
+    ],
+    "data_source_en": [
+        "src/llm_providers_db.py: the llm_providers table — list_providers (sort_order,id asc), create_provider (new rows enabled=1 / is_default=0, name UNIQUE), update_provider whitelist-field updates (name/base_url/api_format/api_key/models/enabled; unchanged returns False), set_enabled / set_default (table-wide unique default, transactional), delete_provider (physical DELETE), test_provider_connectivity (fires a max_tokens=1 minimal request with the first model, returning ok/status_code/latency_ms/model/error) — models stored as a JSON string, read tolerantly via _as_model_list.",
+        "src/users_db.py: users / user_roles (effective_six_roles as the single session-role-gate implementation; has_role(id, 'dict_admin') as the real-time fallback).",
+        "src/guards.py: the require_dict_admin central gate — write paths (save/delete) pass an API-level gate after the page's role gate (the same defence-in-depth as the Dictionary Admin write paths).",
+        "src/db_utils.py: current_user() reads the session user (st.session_state['user'], fail-closed); the creator's users.id is recorded via create_provider's created_by."
+    ],
+    "steps_en": [
+        "Enter \"🤖 Model Providers\" and read the left-column provider list first: each item shows \"#id\" and a status suffix (·default / ·disabled); clicking loads the right-panel editor (name / Base URL / API format / API key / model list / enabled / default).",
+        "\"＋ Add provider\": the right panel switches to blank create mode; fill name and Base URL (must start with http(s)://), pick the API format (openai / anthropic), paste the API key (required), put one model name per line in the model-list textarea (or append via \"＋ Add model\"), then \"Save\" — a successful save enters the list, ready for a connectivity test.",
+        "Editing an existing provider: change fields then \"Save\" (a save identical to the stored values counts as \"unchanged\" at the data layer — the page submits a diff first to avoid a false alarm); the API key is masked in password form by default — open \"👁 Show plaintext\" to verify (visible only on the admin's own page), and switch the masking back on afterwards.",
+        "\"Test connectivity\": fires one real minimal request at the saved provider (an unsaved new provider must be saved first; uses the model list's first model, max_tokens=1); the result is relayed green/red (with HTTP status, latency and model name); 401/403 means an invalid key, 404 asks to check base_url, network errors are relayed as-is.",
+        "\"Delete\": tick \"I confirm physical deletion\" then \"Delete\" — a physical DELETE is unrecoverable, though the provider config can be rebuilt anytime from the same parameters; after deletion the list falls to the first remaining item.",
+        "The enabled / is_default switches submit together with \"Save\": take a provider temporarily offline with enabled=off (config retained); make AI features default to a provider with is_default=on (the default takes effect in AI features only when the target is enabled; the default cannot be cancelled directly — setting another provider as default transfers it automatically)."
+    ],
+    "notes_en": [
+        "Permission scope: dictionary admins only; during the transition the built-in admin account counts as dict_admin (session role=='admin' passes directly, with users_db.has_role as the real-time fallback). A platform admin must first be granted dict_admin to take over.",
+        "Plaintext API-key storage (management decision): no encrypted column in the database; the page masks by default and \"Show plaintext\" only changes the current page's echo; keys never land in server logs. Name / Base URL / API key being required is a data-layer hard constraint (create_provider rejects empty), with the form blocking first and a readable message. To rotate a key: paste the new key in the editor and save — no delete-and-recreate needed.",
+        "Create mode and edit mode share one set of field controls (fixed ll_-prefixed keys): switching providers or entering/exiting create mode rewrites the edit buffer wholesale (_sync_edit_buffer), so one provider's config never leaks into the next one's form.",
+        "Connectivity testing works only on saved providers: on an unsaved new provider the button asks you to save first — the probe needs the full stored config (key and first model) before it can fire.",
+        "Deletion is a physical DELETE (management decision): no soft delete, no recycle bin; the confirmation checkbox is required before deleting — two steps against misclicks. After deleting the default provider, AI features fall back to the platform's built-in config (data-layer scope); no second confirmation dialog here.",
+        "All provider names/model names/Base URLs are HTML-escaped before rendering (titles, status cards); dropdown/radio option text is escaped by Streamlit itself."
+    ],
 }
 
 # ============================================

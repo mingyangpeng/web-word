@@ -178,6 +178,46 @@ GUIDE: Dict[str, Any] = {
         "义位下拉来自 cs_senses 现状（含 merged/split 落地值）；范畴研究域表"
         "未建或库不可用时页面优雅降级（提示暂无可选义位，不编数据）。",
     ],
+    "purpose_en": (
+        "The examples & translation half of the writing domain (steps 11/12): "
+        "example configuration attaches textual examples per sense (corpus-selected / "
+        "adapted / composed) and media examples (image/video with caption and source; "
+        "binding delegates to the media library); translation finalisation closes in "
+        "three states — full (equivalent) / partial (equivalent + gloss) / none "
+        "(paraphrase) — with a differentiation note draft. Output feeds stage-2 entry "
+        "assembly for the examples and translation blocks."
+    ),
+    "principle_en": [
+        "Sense anchor and merged exclusion: the writing domain always anchors on cs_senses.id (sense_ref soft reference); senses finalised as merged into another (status='merged', destination in merged_into) are disabled in the dropdown and marked \"merged → #target\" — merged senses get no independent example/translation configuration; content follows the target sense (G3 semantics).",
+        "Three example sources double as adaptation marks: corpus (assembled side labels it \"corpus example\"), adapted (\"adapted example\"), composed (\"composed example\") — the source is stored per row so the publishing side (G6 licence check) can separate self-produced/adapted from copyrighted originals; example review and media assets share the same chain (candidate → reviewed → published), single-step transitions with no skipping or rollback, optimistic concurrency ensuring only one of two racing transitions wins.",
+        "Examples are rebuildable, not dictionary body: examples are repeatedly add/remove-able configuration; remove_example is a physical DELETE (sense authority data still follows the D-domain \"versioned, never delete rows\" discipline); deletion auto-unbinds all media bindings of that example (media_db.unbind_for_anchor) — no manual orphan cleanup.",
+        "Three-state translation finalisation (step 12): full fills the equivalent only; partial fills equivalent + gloss (the gloss doubles as the differentiation-note draft's starting point); none fills a paraphrase. Finalisation is overwrite-write (one row per sense), finalized_by/finalized_at refresh each time; changing the criteria means re-finalising; history goes to the review ledger (batch 8).",
+        "Media examples are binding-only here: asset registration (licence required) and review live in \"📖 Dictionary Admin · 🖼️ Media Library\"; this page binds registered assets to example anchors (anchor_type='example', purpose='example_media', delegated to media_db.bind_asset, UNIQUE-idempotent); entry assembly takes only published bindings.",
+        "Defence-in-depth role gating: the login gate plus the _can_edit pure function (effective six-role set containing editor/reviewer/dict_admin; transitional admin counts) gate first, and the data layer's parameterised SQL backs up; merged exclusion is judged twice — at data selection and before write (fail-closed)."
+    ],
+    "data_source_en": [
+        "src/lexical_db.py: the sense_examples / sense_translations tables (add_example / list_examples / update_example / remove_example / advance_example_status / bind_example_media / set_translation / get_translation) — illegal params and DB-outage return 0/False/[]/None, which the page turns into st.error/st.info.",
+        "src/lexical_db.py (delegating to media_db.bind_asset): the media-example binding entry — asset registration/review stay in the Dictionary Admin media library; this page only binds the example anchor and writes back media_asset_id for the example list to read directly.",
+        "src/media_db.py (read-only): list_assets_for_anchor('example', id) shows assets bound to an example (with binding state); this page never registers assets.",
+        "cs_senses × cs_lexemes (page-level read-only parameterised query _list_sense_options): sense dropdown options — lemma / sense number / sense label + status/merged_into state; cs_senses belongs to the category-research domain (created by category_study) and is read-only here.",
+        "src/users_db.py: effective_six_roles (the single implementation behind _can_edit; session snapshot, no DB query)."
+    ],
+    "steps_en": [
+        "In \"📖 Examples & Translation\", first pick a sense under \"🗂️ Example Configuration\": the dropdown lists only selectable senses (merged ones appear in the \"merged (excluded)\" list marked \"merged → #target\" and cannot be picked); the list shows all examples of that sense in display order (#id, text, source, note/source, review-state badge, media column).",
+        "\"➕ Add example\": fill the example text (required), pick a source (corpus/adapted/composed — adaptation and composition double as adaptation marks), give a note/source and display order, then submit; a new example starts in \"candidate\" state.",
+        "\"✏️ Edit / review transition / delete\": with an example selected, edit text/source/order and save; \"review transition\" advances the single-step chain (candidate → reviewed → published, published is terminal) — if someone transitioned first or the DB is down, the page relays the failure reason; \"physical delete\" is unrecoverable (examples are rebuildable, not dictionary body) and auto-unbinds all its media bindings.",
+        "\"🖼️ Media example binding\": pick an example + asset id (media_assets.id — register the asset in the media library first) + caption/source, then bind; binding lands in media_bindings via media_db (example anchor, UNIQUE-idempotent) and the example list's media column shows the asset id.",
+        "Switch to \"🌐 Translation finalisation\" and pick a sense (merged excluded likewise): first read the \"existing finalisation\" display (three-state badge, equivalent, gloss/note draft, paraphrase, finaliser/time); then fill the three-state radio branch — full: equivalent; partial: equivalent + gloss (required); none: paraphrase (required); a differentiation-note draft (note) can be started in any state.",
+        "Click \"Finalise\" to persist the three-state choice (missing equivalent/gloss/paraphrase is blocked form-side): one row per sense, overwrite-write, finaliser and time refreshed; changing the criteria means re-finalising; the assembly side renders equivalent/gloss/paraphrase per the three states."
+    ],
+    "notes_en": [
+        "Permission scope: after sign-in, editorial functions pass (editor/reviewer/dict_admin; transitional admin counts); viewer/annotator can only reach the Search & Display and Semantic Analysis zones — entry to this page is blocked.",
+        "Merged-exclusion wording matches the sense spine: with a destination it shows \"merged → #N\", without one \"merged (merged_into destination pending)\" — never guessing the target id.",
+        "The example review state is the editorial quality line (candidate → reviewed → published): assembly renders only published examples, candidate/reviewed are visible as records only; media binding state flows independently per the media library's own rules — this page never reviews media.",
+        "The translation note is \"gloss slot doubling as differentiation-note draft\": required in partial, optional draft in full/none — the assembly-side EN-ZH differentiation block drafts from it.",
+        "All user-generated content (sense labels, example text, captions, equivalents) is HTML-escaped before rendering; dropdown/radio option text is escaped by Streamlit itself.",
+        "The sense dropdown reflects cs_senses state (including merged/split outcomes); if the category-research tables are missing or the DB is down, the page degrades gracefully (no selectable senses — never fabricating data)."
+    ],
 }
 
 # ============================================

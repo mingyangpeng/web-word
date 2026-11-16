@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 import streamlit as st
 
-from src.i18n import t
+from src.i18n import t, is_en
 
 # 每页一段：label（侧边栏标签）/ purpose（一句话定位）/ steps（操作步骤）/ notes（口径与提示）
 PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
@@ -53,6 +53,40 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         "缓存时效：LLM 释义按 CACHE_TTL_HOURS（默认 24 小时）判定新鲜度，会话内另有按词缓存；重新灌库更新数据后，新会话自然刷新。",
         "查询统计口径：只有用户主动提交查询（搜索框回车/点热门词/点示例词）才记 usage_logs，卡片渲染不计数；侧边栏「总查询次数」来自 usage_logs、今日增量取当日区间，「已收录词目」来自 definitions 表，两者是不同口径，不要混读。",
         "反馈必须评分与文字都填才能提交；数据库离线时提交只在本会话内显示成功、不持久化，只有真正写库成功才会标记「已提交」。"
+    ],
+    "purpose_en": "Enter a motion verb and get a Talmy motion-event-based five-element decomposed definition: six collapsible cards explicitly split the traditional all-in-one definition into [Manner] [Path] [Direction] [Aspect] [Scope], backed by a cluster relation graph, corpus evidence and an example library.",
+    "principle_en": [
+        "Theoretical basis: Talmy (1985) motion-event typology — motion events split into \"wave-like\" (manner-emphasising) and \"vector-like\" (path + direction emphasising). Traditional dictionary definitions centre on path + direction, while real usage emphasises manner and body posture; this page therefore decomposes manner explicitly for a more accurate motion-semantic profile.",
+        "Five-element decomposition: [Manner] (posture/means of motion), [Path] (spatial trajectory traversed), [Direction] (endpoint/goal oriented toward), [Aspect] (bodily posture/state during motion), [Scope] (range/degree of motion). This five-element model (manner/path/direction/aspect/scope) is pinned by the PROMPT_TEMPLATE in src/llm_api.py; the semantic decomposition table (render_semantic_table) renders row by row with type colours and emoji, and all DB/LLM text is HTML-escaped before rendering.",
+        "Definition grading (the D-02 priority in _resolve_display_definition): reviewed MySQL definition → real-time LLM generation → built-in MOCK_DEFINITIONS examples → offline fallback (get_fallback_definition, all five elements marked \"pending\"). Generated results are written back to MySQL (merged traditional+optimized JSON into chinese_ndef), so the next query hits the database directly.",
+        "Two cache levels: llm_api.get_definition first checks the DB cache — hits within CACHE_TTL_HOURS (default 24 h, env-tunable); the app also keeps a session-level _display_def_cache so one page rerun does not trigger one model call per card.",
+        "Word-relation mechanism: verbs in the same Levin subclass are pairwise synonymous (a complete graph within the cluster). The results page embeds a vis-network force-directed graph of the current word's cluster (render_word_relation_section) with the headword highlighted, drawing only \"centre ↔ member\" edges by default to avoid a visually tangled complete graph.",
+        "Prototype sense auto-selection (word_source.select_prototype_index): the dictionary sense order is trusted by default (measured: 14 of 17 words with extractable definitions have the prototype sense first); it is overridden only when the first sense contains no motion semantics at all while another sense has motion semantics and overlaps the prototype brief — the classic mis-case is charge whose first sense is \"to ask payment\" while the correct prototype is \"rush forward\"."
+    ],
+    "data_source_en": [
+        "MySQL tables definitions / word_senses / oald_senses: lemma fields and sense details, loaded by scripts/load_word_library.py; upstream sources are docs/research/tables/Levin移动动词候选词筛选表.xlsx (171 verbs, three macro-categories and twelve subclasses) and data/dictionary.db (OALD reviewed Chinese definitions; on total loss it degrades to the subset snapshot data/dictionary_senses_subset.json).",
+        "Definition priority chain (SOURCE_RANK 1-5 in src/word_source.py): Ch-Def from dictionary.db → existing library data/motion_verbs_extracted.json → xlsx prototype brief (levin-brief) → data/oxford_cache.json English definition (Chinese pending) → pending; the \"Sense Annotation\" card shows which level actually hit with a coloured badge.",
+        "Real-time AI definitions: src/llm_api.py picks providers by priority from ZHIPUAI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY (all three via OpenAI-compatible chat.completions, default model glm-4, LLM_PROVIDER forces a choice); PROMPT_TEMPLATE asks for JSON with traditional / optimized / five-element semantic_table / examples / synonyms.",
+        "Corpus-evidence card: MySQL corpus tables from Sketch Engine enTenTen21 (47.5 billion words) Word Sketch exports (data/corpus/), loaded idempotently by scripts/load_corpus_dataset.py — word frequency, four image-schema prominence scores and per-slot collocation detail.",
+        "Statistics & feedback tables: usage_logs records every user-initiated query (get_hot_verbs ranks hot words from it); feedbacks stores ratings and text (the source for the sidebar's average rating, total count and CSV export)."
+    ],
+    "steps_en": [
+        "Switch the sidebar page radio to \"🔍 Search Definitions\"; a \"📖 Usage Guide\" collapsible panel sits at the top of the page.",
+        "Type a verb in the fixed top search bar (e.g. 「跑进来」「冲进来」「滑进来」, 1–50 chars) and press Enter; if undecided, use the sidebar \"🔥 Hot Verbs\" (top 5 by real query count, keyword-filterable) or the \"📚 Example Library\" tabs at the page bottom (manner-focused / path-focused / aspect-focused) to query in one click.",
+        "The \"Results\" area holds six cards top-down, each header a real collapsible button (▼/▶): 🧬 Prototype & Motion-Event Analysis (five-element table) → 🎯 Category Classification → 🏷️ Sense Annotation → 📚 Core Definition & Multi-Dimensional Differentiation → 🖼️ Schema Examples → 🌐 Corpus Evidence (enTenTen21).",
+        "Read the \"🏷️ Sense Annotation\" card: headword prototype sense, Levin subclass, prototype tier (Y=core / EXT=extended / N=excluded), image schema (source-off / endpoint-arrival / manner-accompanying / interactive-motion — pick one), EN-ZH alignment tier, Chinese syntactic features, translation-transformation strategy, judgement basis, and the \"definition source\" badge; the sense detail table below lists all senses by sense_index (the unit of analysis is the sense, not the lemma).",
+        "Compare the two blocks in \"📚 Core Definition & Multi-Dimensional Differentiation\": the grey \"Traditional Definition\" vs the green \"Optimized Definition (Semantic Decomposition)\" to feel the before/after of the five-element split.",
+        "Check the \"🖼️ Schema Examples\" card: real examples + synonym tags from the same semantic category (up to 6, from word_relations clusters); click through examples or type words into the search box to compare one by one.",
+        "Expand the \"🕸️ Word Relations\" block: view the force graph of the current word's cluster (headword highlighted, hover to name), click \"show pairwise edges\" to reveal the complete graph; \"view all N verbs in the cluster\" expands a list where clicking any word switches the query; \"🗺️ Open the Full Knowledge Graph\" jumps to the graph page.",
+        "In the bottom \"💬 Feedback & Rating\" area drag the rating slider (1–5 stars), write your suggestion, then click \"📤 Submit Feedback\" — both are required; success writes to the MySQL feedbacks table and shows a feedback-history card; for offline reconciliation use the sidebar \"📥 Export\" → \"Export Feedback (CSV)\"."
+    ],
+    "notes_en": [
+        "Definition-source integrity: card content may come from reviewed MySQL definitions, real-time LLM or the offline fallback — the source badge on the \"Sense Annotation\" card says so truthfully (dictionary original (OALD, traceable) / existing library (secondary transcription, not dictionary original) / researcher-annotated prototype / EN-only / none); rows flagged needs_review also carry a yellow \"candidate needs manual review\" hint — do not treat candidates as final.",
+        "Be honest about dictionary coverage: dictionary.db has only 333 pos='v' lemmas, a small intersection with the 171-word list (≈97% of words get no dictionary original); the source grading exists precisely to separate originals from assembled second-hand content at a glance.",
+        "With no LLM key configured and the word absent from the DB, all five elements show \"pending\" (offline fallback) — this is not a parse failure; after configuring ZHIPUAI_API_KEY (or OPENAI/DEEPSEEK) the first query generates in real time (seconds of model latency) and is cached once written back.",
+        "Cache freshness: LLM definitions expire per CACHE_TTL_HOURS (default 24 h) plus a per-word session cache; after re-loading the library a new session naturally refreshes.",
+        "Query-statistics scope: only user-initiated queries (Enter in the search box / clicking a hot word / clicking an example) hit usage_logs — card rendering does not count; the sidebar \"Total Queries\" comes from usage_logs with today's delta from the day range, while \"Recorded Words\" comes from the definitions table — different scopes, do not mix.",
+        "Feedback requires both rating and text; when the database is offline a submission only shows success for this session and is not persisted — only a real DB write marks it \"submitted\"."
     ]
 },
     "graph": {
@@ -91,6 +125,41 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         "规模数字随词表版本变化：历史版本曾是 155 词 / 2143 边、136 词 / 1780 边，现行 v2 词表（171 词捞回路径/互动两类）为 171 词 / 1935 边 / 12 簇；以页面顶部指标卡的实时读数为准。",
         "产物落盘依赖 src/static/ 目录可写，写入失败时页面会提示「图谱文件生成失败」；模板版本号改动会强制产生新指纹，前端改动能立即生效、不会出现「改了看不见」。",
         "图例过滤只影响 iframe 内可见的节点与边，页顶三个指标卡始终是全库口径；过滤后的实时规模看图例下方的统计行。"
+    ],
+    "purpose_en": "An interactive force-directed graph of all 171 verbs / 1,935 synonym relations / 12 clusters — the single overview entry for word relations: searchable, clickable for entry details, filterable by cluster.",
+    "principle_en": [
+        "Data model: clusters come from the three macro-categories and twelve subclasses of docs/research/tables/Levin移动动词候选词筛选表.xlsx — manner-focused (136 words) / path-focused (22) / interaction-focused (13) as macro-categories, with source / endpoint / land-travel / running / leaping / crawling / rolling / long-distance / flying-swimming / vehicle / purposive / participant as the twelve subclasses; verbs sharing a macro-category + subclass form one cluster, 12 rows in the MySQL word_clusters table.",
+        "Complete graph within a cluster: word relations are not pairwise-annotated — scripts/load_word_library.py derives \"pairwise synonyms within a subclass\" via build_synonym_pairs and materialises them into word_relations (171 words, 1,935 edges). Hence each node's degree always equals its cluster size − 1 and each cluster's edges = size×(size−1)/2; node size scales with degree — bigger node, bigger cluster.",
+        "Force layout: the frontend uses vis-network's forceAtlas2Based solver (gravity/repulsion, spring length 120, damping 0.4, overlap avoidance 0.8); after 200 stabilisation iterations the physics engine auto-disables so nodes stay where you drag them.",
+        "Static rendering + data-fingerprint cache: get_full_word_graph data is rendered by src/graph_export.py into a static HTML file src/static/word_graph_<fingerprint>.html, where the fingerprint = SHA256(template version + sorted node ids + edge set + full node payload). When neither data nor template changes the URL stays the same and the st.iframe embed does not reload on Streamlit reruns — layout, zoom and selection all persist; after a library reload the fingerprint changes and a new file is generated (old ones cleaned up).",
+        "Zero network dependency: vis-network loads from the vendored src/static/vis-network.min.js (/app/static/ path) — no CDN, renders fine offline or on intranets.",
+        "In-graph extras: the toolbar offers a \"node particles\" layer (nodes as particles with damped mutual attraction/repulsion) and \"⛶ Fullscreen\"; favourites and notes live in browser localStorage (key wordgraph.annotations.v1), degrading to in-memory in incognito/sandbox mode (current session only)."
+    ],
+    "data_source_en": [
+        "MySQL via src/mysql_db.py get_full_word_graph(): definitions LEFT JOIN word_clusters for all word nodes (carrying definition/phonetics/five elements/annotation payloads), word_relations for all edges, word_clusters for the cluster list; current counts — definitions=171, word_relations=1,935, word_clusters=12 (the three metric cards show exactly these stats).",
+        "The 1,935 edges were materialised at load time from subclasses by scripts/load_word_library.py (complete-graph edges); no runtime derivation.",
+        "Node payloads also pack word_senses (sense details) and oald_senses (OALD10 senses, covering 132/136 words) — shown when clicking a node for the entry-detail overlay card.",
+        "Renderer src/graph_export.py build_graph_html / ensure_graph_html: the template version TEMPLATE_VERSION joins the fingerprint, so template edits force a new URL; artefacts land in src/static/word_graph_<hash>.html and the page embeds the local file via st.iframe rather than an inline HTML string.",
+        "The \"Browse by Cluster\" buttons below the graph use the clusters list returned by get_full_word_graph (same source as list_clusters), with edge counts computed as size×(size−1)/2 shown in the button text."
+    ],
+    "steps_en": [
+        "Switch the sidebar radio to \"🕸️ Knowledge Graph\"; if the DB is unavailable the page notes offline mode (definitions only).",
+        "Read the three metric cards first for scale: Verb Nodes, Synonym Edges, Clusters (currently 171 / 1,935 / 12).",
+        "Interact with the 820px force graph: scroll to zoom, drag to pan, drag nodes to rearrange; a bigger node means a bigger cluster.",
+        "Type a verb in the right-panel search box (substring match, up to 30 candidates); selecting one locates and focuses that node.",
+        "Click a node: the right \"Node Info\" panel shows entry details (phonetics, Chinese definition, five-element decomposition, senses and OALD senses, synonym neighbours), and a draggable entry card pops up where you can ★ favourite and annotate; clicking a neighbour or the word in the card switches to that word.",
+        "Use the legend's cluster checklist to filter nodes and edges: \"select all\" restores everything, the \"highlight neighbours\" toggle dims unrelated parts on selection; the stats row under the legend shows selected/total counts for nodes, relations and clusters in real time.",
+        "Toolbar as needed: toggle the \"node particles\" animation, \"⛶ Fullscreen\" for a browser-fullscreen view.",
+        "In the \"Browse by Cluster\" area below the graph (4 buttons per row, text like \"subclass (N words / M edges)\"), click any cluster to jump back to the search page with that cluster's first verb as the query, with its complete graph expanded.",
+        "After re-loading the library the data fingerprint changes and the new graph loads automatically (layout re-converges once); when data is unchanged the layout and viewport stay as you left them."
+    ],
+    "notes_en": [
+        "Layout persistence assumes neither data nor template changed: artefact filenames embed the data fingerprint, so a library reload generates a new file and in-graph state (layout, favourites, filters) does not migrate.",
+        "Read the complete-graph rule correctly: edge count = cluster size − 1; an edge means \"synonymy within the same subclass\" (derived and materialised by rule, not pairwise human-verified); edges per cluster = N×(N−1)/2.",
+        "Favourites and notes live only in browser localStorage (key wordgraph.annotations.v1); in incognito/sandbox they degrade to memory and vanish on close — the graph is a static iframe with no server write-back channel and never enters the database.",
+        "Scale numbers change with wordlist versions: historically 155 words / 2,143 edges, then 136 / 1,780; the current v2 list (171 words, re-including path/interaction) is 171 / 1,935 / 12 clusters — trust the live metric cards.",
+        "Artefacts require a writable src/static/; on write failure the page says \"failed to generate the graph file\"; template-version bumps force a new fingerprint so frontend changes take effect immediately.",
+        "Legend filtering only affects nodes/edges visible inside the iframe; the three metric cards always show full-library scope — see the stats row under the legend for the filtered live counts."
     ]
 },
     "corpus": {
@@ -126,6 +195,38 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         "重灌会丢失人工标注：load_corpus_dataset.py 为全量替换（DELETE 后仅重插语料字段），corpus_collocations 已填的 semantic_category/keep_flag 不随语料包恢复，重灌前请先导出备份。",
         "槽位层级与字段：prepositional phrases 的介词子槽（objects of \"%w\" out 等）已展平为独立搭配条目；每槽位最多前 50 个搭配词型，页面单槽位最多展示 100 行；typical_combo / combo_freq 两列当前导出为空。",
         "本页定位是词目层语料证据浏览 + 两列人工回写；义位层的准入与图式标注在「标注平台」完成，本页不承担义位级判定。"
+    ],
+    "purpose_en": "Browse real usage evidence for the 171 motion verbs in the Sketch Engine enTenTen21 corpus: frequency overview, four image-schema prominence scores and per-slot collocation detail, with an in-page write-back entry for the manual semantic categorisation of collocates.",
+    "principle_en": [
+        "Word Sketch mechanism: Sketch Engine automatically summarises a \"grammatical relation (slot) × collocate\" matrix per lemma, listing up to 50 collocate types per slot ranked by association strength; logDice is a log-scaled association measure — higher means the collocation is more exclusive to this verb. Note this is lemma-level data; Word Sketch does not disambiguate senses.",
+        "Slot → schema mapping: each of the four image schemas binds a set of evidence slots — manner-accompanying reads modifiers / adjectives-after / coordinate manner verbs / subjects; source-off reads away/off/out particles and their objects plus from/out-of PPs; endpoint-arrival reads objects plus into/in/at PPs; interactive-motion reads objects/pronominal arguments; one slot may serve several schemas — the mapping answers \"where to look for evidence\".",
+        "Prominence formula: per-schema score S = Mean_logDice × log2(N+1), where N is the deduped collocate-type count of that schema's evidence slots, coverage = slots covered / slots defined; the schema with max S becomes the candidate_schema and the four ranks are recorded as cand_rank.",
+        "AI pre-screen scope: these scores are the raw, semantically-uncategorised version — abstract nouns and nominalisations are not excluded, and polysemous verbs (e.g. run's computing sense) dilute the schema signal; treat results as candidate-only reference. The final schema label must be judged at sense level per Standard 2 of the sense-criteria revision.",
+        "Human-machine division of labour: the corpus answers \"which element has the strongest signal in this verb's usage profile\", while the dictionary definition answers \"whether the verb lexically encodes it\"; only combining both produces the schema label. The \"Semantic Category / Action\" columns in the collocation detail are exactly the write-back interface for this cleaning (semantic criteria independent of logDice)."
+    ],
+    "data_source_en": [
+        "Corpus: Sketch Engine · English Web 2021 (enTenTen21, ~47.5 billion-word English web corpus), Word Sketch exports, retrieved 2026-09-30.",
+        "Raw data: data/corpus/wsketch_full/<verb>.json (171 words, slot × collocation detail and frequency) and data/corpus/schema_evidence/<verb>.json (four-schema evidence, coverage and prominence); legacy output/05_原始数据 and output/06_图式提取结果 take precedence if present.",
+        "Loader: scripts/load_corpus_dataset.py does full replacement (delete-then-insert in a transaction) into four MySQL tables: corpus_word_stats (frequency overview), corpus_collocations (detail), word_schema_scores (prominence), corpus_schema_evidence (top-10 evidence words per schema).",
+        "Page reads & write-back: get_corpus_overview / get_corpus_word_stats / get_corpus_schema_scores / get_corpus_schema_evidence / get_corpus_collocations serve display; manual annotation writes corpus_collocations.semantic_category and keep_flag by id via update_collocation_annotations."
+    ],
+    "steps_en": [
+        "Check status and scale first: when the DB is unavailable or data is unloaded, the page asks you to run `MYSQL_HOST=127.0.0.1 python3 scripts/load_corpus_dataset.py`; the four metric cards read Verbs (171) / Total Collocate Types / Prominence Rows (verbs × 4) / Corpus (enTenTen21).",
+        "Read the \"Overview (by frequency desc)\" table: filter verbs in the \"Filter verbs\" box (case-insensitive contains on the verb column); columns are Verb / POS / Total Freq / Freq per Million / Slots / Collocate Types / Candidate Schema (AI pre-screen) / Max Prominence; the caption below reminds that candidates are AI pre-screen only, final labels follow sense annotation.",
+        "Per-verb drill-down: pick a verb in \"Pick a verb\" (default walk), then read the four metrics — Total Freq, Freq per Million, Slots (grammatical relations), Collocate Types.",
+        "Read \"Four Image-Schema Prominence Scores (AI pre-screen)\": the bar chart compares the four schemas by score S, the table gives per-schema Slots Covered / Slots Defined / Coverage / Collocate Types N / Mean_logDice / Prominence S / Cand. Rank (sorted by S desc); an empty-data notice appears when the verb has no data.",
+        "Check \"Schema Evidence Collocations (Top 5 per schema)\": each schema lists its top 5 evidence collocates with logDice and slot, tracing where the prominence score came from (DB stores top-10, page shows top-5).",
+        "Open \"Collocation Detail (by slot, editable)\": choose a slot in \"Pick a slot\" (default 'objects of \"%w\"', slots sorted by name); the table shows that slot's collocates ranked in-slot (i.e. by logDice) with logDice, co-occurrence frequency, etc.",
+        "Manual categorisation: type a category in \"Semantic Category (manual)\" (e.g. spatial endpoint / abstract result / manner adverb), choose Keep/Drop in \"Action (manual)\" (clearable); other columns are read-only. Click \"💾 Save this slot's semantic categories\" — rows are aligned by id and only genuinely changed rows are written back, with a saved-count message (or a no-changes notice).",
+        "After saving, read the caption at the bottom of this slot: the slot's total rows and \"Keep\" rows define N for the PS calculation, Mean_logDice averages logDice over \"Keep\" rows — that is the post-cleaning recomputation basis."
+    ],
+    "notes_en": [
+        "AI pre-screen ≠ final label: the \"Candidate Schema\" and four prominence scores are not semantically categorised (N uncleaned) and polysemous collocates dilute each other; the final schema label follows the sense-level manual annotation on the Annotation Platform.",
+        "Write-back path: edit in-page \"Semantic Category (manual) / Action (manual)\" → save only changed rows → UPDATE corpus_collocations.semantic_category / keep_flag; categorisation must use semantic criteria independent of logDice (e.g. keep physically reachable spatial entities like station/summit, drop abstract/metaphorical-projection nouns like conclusion/milestone); dropped records are kept for audit.",
+        "Two scopes coexist: the four prominence scores are the pre-cleaning AI pre-screen; the formal PS = Mean_logDice × log2(N+1) counts \"Keep\" rows only — cite with care.",
+        "Reloading loses manual annotation: load_corpus_dataset.py does full replacement (DELETE then re-insert of corpus fields only); semantic_category/keep_flag already filled in corpus_collocations are NOT restored from the corpus package — export a backup before reloading.",
+        "Slot hierarchy & fields: prepositional sub-slots (objects of \"%w\" out, etc.) are flattened into independent collocation rows; up to 50 collocate types per slot and at most 100 rows shown per slot on the page; typical_combo / combo_freq are currently exported empty.",
+        "This page is lemma-level corpus-evidence browsing + two-column manual write-back; sense-level gating and schema annotation happen on the Annotation Platform — this page does not do sense-level adjudication."
     ]
 },
     "domain": {
@@ -161,6 +262,38 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         "freq / schema_scores 为 NULL 表示该词目的 Sketch Engine 检索结果尚未回写（语料包缺该词 JSON 时灌库脚本跳过），不是频次为零，解读时勿与 0 混淆。",
         "重灌口径：load_domain_family.py 全量替换（同一事务先删 domain_family_examples 与 domain_family_senses 再插入）；update_domain_family_data.py 幂等可重跑（先清该义位旧例句再全量写入，频次/得分直接 UPDATE）。",
         "规则标签只有 R0/R2/R3 三种落表；R1 是 v0.1→v0.2 的剔除规则（剔 6 条抽象义位，如 run/race/rush 的抽象义），被剔义位不在本页数据中。"
+    ],
+    "purpose_en": "Browse the lemma-level pre-screen distribution of 352 kept senses across three domains and twelve families — an overview plus per-item detail with dictionary definitions, bilingual examples and corpus evidence side by side; the working draft before sense-level manual annotation.",
+    "principle_en": [
+        "Three domains × twelve families: 352 kept senses are grouped by lemma into the manner-motion domain (264 senses / 8 families: land-travel, rolling, running, vehicle, leaping, long-distance, crawling, flying-swimming), the path-motion domain (62 / 2: endpoint, source) and the interactive-motion domain (26 / 2: purposive, participant); the overview table orders families as manner → path → interactive.",
+        "Lemma-level pre-screen vs sense-level annotation: this page is a lemma-level (v0.2) preview — sense schemas temporarily take the lemma judgement (lemma_schema column) and corpus scores are lemma-level aggregates; sense-level work must be done per SenseID on the Annotation Platform (gating Y/EXT/N → schema pick-one-of-four → EN-ZH alignment, etc.), and the final domain–family system follows sense-level annotation and re-clustering (upgrading to the v1.0 formal table then).",
+        "Screening-rule tags: the pipeline went from 358 physical-motion sense candidates → R1 removed 6 abstract senses → v0.2 kept 352; in-table R0 = regular physical motion, R2 = clearly-kept metaphorical spatial motion, R3 = boundary cases (kept for double-checking); R2/R3 rows carry the full rule rationale, R1 applies only to screening and kept rows never carry it.",
+        "SenseID structure: the primary key is the (word, sense_num) composite, split from the SenseID \"verb-Sn\" string to locate a lemma's specific sense; sense_id is a STORED generated column (CONCAT(word, '-S', sense_num), e.g. walk-S1) maintained by the database, compatible with old references and never hand-written.",
+        "Corpus evidence linkage: the freq and schema_scores columns attach enTenTen21 lemma frequency and the four prominence scores to each sense as annotation reference; the indices are evidence, not conclusions — the final label must be traceable via definition + examples, and boundary cases go to the dispute list for human arbitration."
+    ],
+    "data_source_en": [
+        "Main table: docs/research/tables/域系初判表v0.2.xlsx (three sheets — 01 overview / 02 per-sense detail / 03 criteria), fully replaced into domain_family_senses by scripts/load_domain_family.py (--if-empty loads only into empty tables).",
+        "Definitions & examples: two sheets of docs/research/tables/词表义项清单.xlsx — the \"bilingual senses\" sheet provides dictionary.db reviewed Chinese definitions and bilingual examples (17 words / 246 senses, examples split on newlines then zip-aligned), the \"sense details\" sheet provides all OALD10 examples.",
+        "Examples sub-table: domain_family_examples (PK word + sense_num + ex_num, FK cascade delete); English examples and Chinese translations align row-by-row by ex_num, with source marked dictionary.db / OALD10; scripts/update_domain_family_data.py adds the full OALD example set (≈1,050 rows for 352 senses — dictionary.db bilingual first, OALD10 supplement after, English deduped) and refreshes the main table's first-example redundancy column.",
+        "Corpus linkage: scripts/update_domain_family_data.py reads wsketch_full / schema_evidence JSON and writes back freq (BIGINT lemma frequency) and schema_scores (JSON, prominence to 2 dp); the screening table covers 162 words (127 initially, 35 path/interaction words added later — now complete); the other 9 words of the 171-word list (manually-added sense words and later recalls) are outside v0.2 and hence have no corpus row here; the corpus package data/corpus/ still holds the retrieval JSON for all 171 words."
+    ],
+    "steps_en": [
+        "Read the four metric cards first: total kept senses (352), domains (3), families (12), basis (lemma-level v0.2); then the criteria warning caption (sense schemas temporarily take lemma judgement, not sense-level annotation) — read it before anything else.",
+        "Read the \"Three Domains × Twelve Families Overview\": the table lists each family's sense count and word count (deduped lemmas), ordered manner → path → interactive and by sense count desc within a domain; the bar chart compares family sizes at a glance.",
+        "Per-sense detail with three-level filtering: level 1 the \"Domain\" dropdown (All / manner / path / interactive); level 2 the \"Family\" dropdown linked to the domain — after picking a domain only its families are listed, \"All\" lists all 12; level 3 the \"Filter lemmas\" box (case-insensitive contains); the caption above the table shows the current match count.",
+        "Read the detail table: column order is Lemma + Sense # (composite key first) → SenseID → Definition (EN) → Definition (ZH) → Lemma Schema (pre-screen) → Domain → Family → Sense Annotation (pending) → Corpus Freq → Schema Prominence → Rule → Rule Note → Source → Last Modified.",
+        "Sense-detail drill-down: pick one in the \"Pick a sense\" dropdown (options come from the current filter, like walk · S1); the three metrics above give the pre-screen domain / family / rule tag, and the body shows the SenseID (word and #), source and last-modified time.",
+        "Corpus evidence area: when the lemma has data it shows enTenTen21 frequency, the four prominence scores (JSON parsed, sorted desc) and the candidate-schema caption (AI pre-screen, reference only); without data it says \"no corpus evidence for this lemma\".",
+        "Definitions & examples area: English definitions shown per item, Chinese definitions when available (dictionary.db reviewed, 17 words); examples listed one by one — the English sentence followed by an indented \"↳\" line with its Chinese translation, with a caption noting example sources (dictionary.db with reviewed translations / OALD10 translations pending).",
+        "Rule info: R2/R3 rows show the full screening rationale in an info box in the detail area; the page tail notes that the final schema label should be confirmed on the Annotation Platform — the pre-screen here is reference only."
+    ],
+    "notes_en": [
+        "This page is read-only: no editing entry; sense-level annotation (gating/schema/alignment) happens on the Annotation Platform, and the main table's sense_annotation column is just a reserved placeholder, currently pending.",
+        "Lemma-level limits: the schema pre-screen and corpus scores are lemma-level aggregates — polysemous verbs dilute each other (e.g. run's computing sense); do not cite this page's pre-screen groupings as the paper's final system.",
+        "Example alignment: dictionary.db bilingual examples come first (with translations), OALD10 supplements after (no translations), English text deduped; Chinese definitions and bilingual examples currently cover 17 words / 246 senses, the rest are EN-only.",
+        "freq / schema_scores being NULL means the Sketch Engine results have not been written back (the loader skips words missing from the corpus package) — not zero frequency; do not conflate with 0.",
+        "Reload semantics: load_domain_family.py fully replaces (deleting domain_family_examples and domain_family_senses then inserting, in one transaction); update_domain_family_data.py is idempotent (clears a sense's old examples then writes all, frequency/scores via UPDATE).",
+        "Only R0/R2/R3 land in the table; R1 was the v0.1→v0.2 removal rule (6 abstract senses such as run/race/rush's abstract senses) — removed senses are not in this page's data."
     ]
 },
     "annotate": {
@@ -208,6 +341,32 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "存疑的边界案例在理由字段打标，进仲裁清单复核；",
             "标注结果可整表导出 CSV（页面底部下载按钮），便于离线核对。",
         ],
+        "purpose_en": "The workbench for sense-level five-dimension annotation: gating label → image schema → EN-ZH alignment → Chinese syntactic features / translation-transformation strategy, advanced word by word and sense by sense.",
+        "principle_en": [
+            "The unit of judgement is the **sense**, not the lemma (as the criteria document states), annotated independently sense by sense; the lemma-level definitions row is only a summary of the dominant prototype sense.",
+            "Five criteria advance as a chain: Criterion 1 gating (Y=core physical-motion sense, EXT=metaphorical extension, N=non-motion excluded — decides whether the sense enters scope) → Criterion 2 image schema (source-off / endpoint-arrival / manner-accompanying / interactive-motion, pick one of four) → Criterion 4 EN-ZH alignment (full / partial / zero — \"misalignment\" is judged at cluster level, not annotated at sense level) → Chinese syntactic features and translation-transformation strategy.",
+            "Judgement basis = OALD10 definitions + examples; the page also shows corpus evidence side by side (AI pre-screen candidate schema + prominence scores) to assist judgement, but AI results are candidate-only reference — the final call is human.",
+            "needs_review and human_reviewed are semantically distinct: the former means \"doubts remain after review, goes to the arbitration list\", the latter records \"this sense has been saved after manual annotation\" — avoiding counting every sense as doubtful.",
+            "The 🤖 badge \"LLM pre-screen draft\" comes from data/corpus/llm_screening/ (Zhipu model pre-annotation per sense for 136 words): gating, schema candidate, alignment candidate, rationale and doubts — you can edit and save directly on top of it."
+        ],
+        "data_source_en": [
+            "OALD10 senses: docs/research/tables/output-oald10en-for-senselist-1020.xlsx → scripts/load_word_library.py → the oald_senses table (996 rows = 992 OALD10 + 4 manual additions, with grammar codes / examples / idiom marks).",
+            "LLM pre-screen drafts: data/corpus/llm_screening/*.json → scripts/load_llm_screening.py → the llm_tag/llm_schema/llm_align/llm_reason/llm_doubt columns of domain_family_senses.",
+            "Corpus evidence: corpus_schema_evidence / word_schema_scores tables (enTenTen21 Word Sketch).",
+            "Criteria document: docs/research/protocols/义项判定标准修改稿.docx (the full criteria chain).",
+            "Annotation write-back: annotation columns of word_senses / oald_senses (idempotent, re-editable)."
+        ],
+        "steps_en": [
+            "Pick a verb → all OALD senses of that word expand in order (with grammar codes, examples, idiom marks);",
+            "Fill each sense in turn: gating (Y/EXT/N) → schema pick-one-of-four → alignment pick-one-of-three → syntactic features and translation strategy;",
+            "The 🤖-badged \"LLM pre-screen draft\" is machine pre-annotation (candidate reference, must be human-confirmed) — edit and save directly on top of it;",
+            "The progress bar at the top shows this word's completion; for all-verb progress see the sidebar \"Recorded Words\" and the export area."
+        ],
+        "notes_en": [
+            "Saving writes straight back to MySQL (annotation columns of word_senses / oald_senses), idempotent and re-editable;",
+            "Doubtful boundary cases are flagged in the rationale field and go to the arbitration list for re-check;",
+            "The whole annotation table can be exported as CSV (download button at the page bottom) for offline reconciliation."
+        ]
     },
     "submission": {
         "label": "📥 标注提交",
@@ -257,6 +416,30 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "数据库离线时本页不可用（表由 ensure_flow_tables 首次访问创建，"
             "需要 MySQL 可用）。",
         ],
+        "purpose_en": "The submission view for multi-annotator work: pick a verb → pick a sense → independently submit gating/schema/alignment/syntax/translation judgements on top of the LLM pre-screen draft, writing into annotation_submissions; re-submitting the same sense = overwrite update.",
+        "principle_en": [
+            "Independence (user decision ④): an annotator sees only their own submissions via \"My Submissions\"; the page offers no entry to anyone else's data; others' submissions and the dispute list live in the arbitration panel (reviewer/admin roles only).",
+            "AI draft visibility (user decision ③ / acceptance V7): everyone sees the same LLM pre-screen draft (llm_tag/llm_schema/llm_align/llm_reason/llm_doubt) and annotates independently — hence the downstream reliability scope is AI-assisted IAA.",
+            "Submit = overwrite (acceptance V2): (sense_id, task_type, coder_id) is unique; a re-submission overwrites the whole row and resets status to submitted — prior arbitration conclusions do not carry over automatically and re-enter review/arbitration.",
+            "Submission content is validated at the application layer before insert: admission must be in {Y, EXT, N}, needs_review must be bool; illegal values never reach the database; empty optional fields are omitted from the submission content (missing ≠ empty string, avoiding polluted disagreement comparison).",
+            "Tables are created idempotently by ensure_flow_tables on first access (annotation_submissions / adjudications / assignments) — no manual migration needed."
+        ],
+        "data_source_en": [
+            "Senses & status: oald_senses (get_oald_senses, joined with the llm_* draft columns of domain_family_senses) + per-verb progress from get_annotation_progress.",
+            "Submission read/write: src/annotation_flow.py submit_annotation / get_my_submissions (the independence entry — self only).",
+            "Criteria: configs/motion category pack admission.yaml (the Y/EXT/N trichotomy and boundary arbitration clauses, shown read-only in-page); design spec docs/spec/多人标注系统设计规范.md §2/§5."
+        ],
+        "steps_en": [
+            "Pick a verb → pick a sense (SenseID; options carry the current authoritative-layer state and an LLM draft summary);",
+            "With the \"🤖 LLM pre-screen draft\", English definition and examples at hand (criteria in the read-only category-pack panel), fill the form: gating (Y/EXT/N) → schema pick-one-of-four → alignment pick-one-of-three → syntactic features / translation strategy, ticking \"doubtful\" for boundary cases;",
+            "Click \"Submit this sense's annotation\" to write annotation_submissions (re-submitting the same sense = overwrite update, requiring re-review);",
+            "Check your own history in \"My Submissions\" (submitted/adjudicated states); the dispute list and finalisation live in the arbitration panel below (reviewer/admin roles)."
+        ],
+        "notes_en": [
+            "Annotators cannot see others' submissions (independence, spec §0/§1); to see the dispute list sign in with a reviewer/admin account.",
+            "The gating trichotomy maps to the authority layers: Y=core physical-motion sense, EXT=metaphorical extension, N=non-motion excluded; submissions enter the review flow and the arbitration gold standard is final.",
+            "This page is unavailable while the database is offline (tables are created by ensure_flow_tables on first access, requiring MySQL)."
+        ]
     },
     "users_admin": {
         "label": "👥 账号管理",
@@ -290,6 +473,26 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "内置默认 admin 的初始密码是公开 bootstrap 凭据，首次登录后必须立即修改。",
             "停用 ≠ 删除：提交记录外键引用用户 id，物理删除会断链，因此只提供停用。",
         ],
+        "purpose_en": "Admin-only: account creation, role assignment (admin/reviewer/annotator/viewer) and deactivation/reactivation — the permission entry of the multi-annotator flow.",
+        "principle_en": [
+            "Role semantics per spec §1: admin does everything, reviewer sees all submissions and arbitrates, annotators submit independently without seeing each other, viewer is read-only; business rules for role change/deactivation (ROLES enum validation, rowcount semantics) live in the data layer — the page only translates them into success/failure messages.",
+            "Self-protection: the signed-in admin cannot deactivate themselves or revoke their own admin role — otherwise the last admin could lock themselves out, leaving the system with no entry.",
+            "Password security: pbkdf2_sha256 + per-user random salt (150,000 iterations); hashes never leave the data layer (list views exclude password_hash); a new user's initial password exists only in form memory and is cleared from the session right after submission."
+        ],
+        "data_source_en": [
+            "src/users_db.py: create_user / list_users / set_role / set_active; the users table is created idempotently by ensure_user_tables (when empty, the built-in admin is auto-created and must change the password on first login)."
+        ],
+        "steps_en": [
+            "Read the metric cards for total / active / admin counts; verify the account list in the read-only table;",
+            "\"Change role\" picks a user and a new role then saves (a deactivated account fails verify_login and cannot sign in);",
+            "\"Deactivate / Activate\" toggles sign-in eligibility (records are kept; foreign-key references from historical submissions are unaffected);",
+            "\"Create user\" fills username / initial password / display name / role to create an account, then notify the person to change the password on first login."
+        ],
+        "notes_en": [
+            "Admin-only: other roles don't see this page in the sidebar, and direct entry gets a no-permission notice.",
+            "The built-in admin's initial password is a public bootstrap credential — it must be changed immediately after first login.",
+            "Deactivation ≠ deletion: submission records reference user ids by foreign key, so physical deletion would break the chain — only deactivation is provided."
+        ]
     },
     "reliability": {
         "label": "📐 信度报告",
@@ -323,6 +526,27 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "已仲裁（adjudicated）的提交不参与计算；覆盖提交会重置回 submitted "
             "并重新进入口径。",
         ],
+        "purpose_en": "The AI-assisted IAA reliability view: for a given (category, task), computes Krippendorff's α over all submitted annotations (overall + per indicator/feature), highlights low-reliability items and exports the disagreement list as CSV.",
+        "principle_en": [
+            "Scope labelling (user decision ③): all coders see the same AI draft and then annotate independently — hence α is named AI-assisted IAA (the everyone-sees-the-AI-draft scope).",
+            "Dual computation paths: the krippendorff library as primary, a pure-Python coincidence-matrix fallback (auto-engaged if the library is missing or errors; RELIABILITY_FORCE_PURE forces it); nominal/ordinal mapped by value_type; missing values tolerated (a few absent senses don't raise).",
+            "Pass line α ≥ 0.7; below-threshold indicators and disagreement items link straight into the arbitration panel (after a reviewer/admin finalises the gold standard, submissions become adjudicated and leave the reliability scope)."
+        ],
+        "data_source_en": [
+            "annotation_submissions (status='submitted' only) → src/reliability.py run_reliability → results persisted into reliability_runs; for the admission task, nominal α is computed separately for admission/schema/alignment.",
+            "Disagreement items export as CSV (utf-8-sig); arbitration happens in the arbitration panel on the \"📥 Annotation Submission\" page."
+        ],
+        "steps_en": [
+            "Pick the category (motion) and task type (admission / feature_coding / alignment);",
+            "Read the big overall α number and pass verdict; locate low-reliability items in the per-indicator/feature bar chart;",
+            "Expand the disagreement table to check coder value conflicts; go to the \"📥 Annotation Submission\" page to arbitrate when needed;",
+            "Click the export button to download the CSV containing the disagreement list for offline records."
+        ],
+        "notes_en": [
+            "Visible to reviewer/admin only; annotator/viewer sidebars don't show this page.",
+            "α shown as — means not computable (insufficient coders/overlapping units), not zero.",
+            "Adjudicated submissions don't participate; an overwritten submission resets to submitted and re-enters the scope."
+        ]
     },
     "cluster": {
         "label": "📊 语义分析",
@@ -404,6 +628,40 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "其余→方式伴随），与全词库四图式体系一致。",
             "k=5 为探索性切分，正式切分以义位层标注后重聚类为准；典型性阈值为三分位"
             "默认值，可在后续版本配置化。",
+        ],
+        "purpose_en": "The all-in-one workbench for the RUN-category semantic analysis (batch 8 merged the former \"category deep-dive\" and \"lineage & typicality\"): dendrogram with interactive cutting, typicality, sense-split re-check and sense map present the clustering lineage (dendrogram + medoid three-tier typicality + G3 gate); five views — bilingual cluster comparison, coding heatmap, cross-language alignment, schema alignment, overview screening — mirror the EN-ZH contrastive pipeline; \"🌐 Schema Genealogy\" (batch 32) does second-level generalisation over cluster schemas to build a higher-level event-type genealogy (schema categorisation).",
+        "principle_en": [
+            "Four research-pipeline stages map to the page's last five views: sense screening (keep/marginal/exclude) → P/M/C+A feature coding → independent EN and ZH clustering → two-layer alignment (cluster layer human-judged + schema layer derived).",
+            "18 coding features: P1-P5 (path: source/goal/bounded-arrival/axial/speed), M1a-d (figure: human/animal/vehicle/inanimate), M2 (modal urgency), M3a-d (medium), C1 (causation: 2 self-agentive / 1 forced / 0 dependent) — 15 columns enter the clustering matrix; A1-A3 are verification-only.",
+            "Clustering: Gower distance + average-linkage hierarchical clustering (k=5 exploratory cut), with cophenetic correlation as fidelity (EN 0.825 / ZH 0.795); cluster alignment in four classes: full / partial / zero / misaligned (per the research proposal). The dendrogram is generated from the precomputed Gower dissimilarity matrix via squareform + average linkage (UPGMA), with a k=5 exploratory cut reference line; features branch by value_type per the category pack's features.yaml.",
+            "Typicality: the medoid is the sense with the smallest mean Gower distance to other members; members are auto-triaged into prototype / typical / periphery by distance tertiles to the medoid, replacing manual reading; the dendrogram tab also offers interactive cutting (fcluster maxclust re-cut, savable as a new run version coexisting with the precomputed one).",
+            "Schema-layer alignment is derived from coding (derive_image_schema): chase-annotated → interactive-motion; P1=1 → source-off; P2/P3=1 → endpoint-arrival; otherwise → manner-accompanying — consistent with the four-schema system of the full wordlist. Schema centre = the 15-dim mean of both sides' members (normalised /2); thresholds d<0.05 full / d<0.15 partial / one side empty = zero alignment.",
+            "Current data is program-pre-coded (cluster_runs.version=预编码); the formal flow requires two independent annotators, IAA checking, then a rerun; schemas coexist per version for comparison.",
+            "Schema categorisation (batch 32): the event schemas distilled per sub-cluster are themselves generalised — the schema feature vector = three-level membership per semantic slot (core=2 / slot=1 / absent=0), clustered into schema families by Gower nominal + UPGMA (max_distance=0.5), with the family's smallest-mean-distance schema as its representative — applying the same machinery of sense clustering to schema objects (methodological consistency)."
+        ],
+        "data_source_en": [
+            "Screening & coding: data/d1/ 跑范畴英汉义位甄别表.xlsx + 编码与独立聚类表.xlsx (EN 23 lemmas / 32 senses; ZH 19 entries / 25 senses).",
+            "Load chain: scripts/load_category_study.py → 8 tables: categories / cs_lexemes / cs_senses / cs_sense_features / cs_cluster_runs / cs_clusters / cs_cluster_members / cs_cluster_alignment; the four lineage tabs read cs_clusters / cs_cluster_members / cs_sense_features (RUN pilot: EN 32 senses, ZH 19 entries); feature metadata from configs/motion/features.yaml.",
+            "Dictionary evidence: 现汉7 mdx (data/ModernChineseDict) → zh_dict_* 3 tables (70,113 entries / 94,876 senses); the \"Schema Alignment\" view shows dictionary-scale figures and the \"Overview Screening\" view links dictionary originals per sense to screening verdicts.",
+            "AI clustering reference: tables are marked \"program pre-coded\"; after formal IAA coding a new run is loaded."
+        ],
+        "steps_en": [
+            "Switch the sidebar to \"📊 Semantic Analysis\"; pick category and language (en/zh) at the top of the lineage side;",
+            "\"🌳 Dendrogram & Interactive Cutting\" tab: view the hierarchical clustering and the k=5 reference line, drag the \"cut k\" slider (2–10) to re-cut subclusters in real time, and \"save as new run version\" after confirming;",
+            "\"🏆 Typicality\" tab expands per cluster: medoid badge + member-distance bar chart + three-tier typicality labels;",
+            "\"🧬 Sense-Split Re-check\" tab (step 8, gate G3): verify members/medoid/frequency/cs_senses status in the evidence view; signed-in users file merge/split/keep suggestions, adjudicated by dict_admin/reviewer and locked (only locked clusters flow into definition writing);",
+            "\"🕸️ Sense Map\" tab: classical MDS scatter on the first two axes (cluster-coloured, medoid starred \"prototype centred\"), optionally showing pairwise Gower distance edge tables;",
+            "\"🫱🫲 Bilingual Comparison\" tab: EN 5 clusters vs ZH 5 clusters paired left-right (aligned by Gower distance), core findings pinned (manner-running schema fully aligned d=0.045); click members for sense detail;",
+            "\"🔥 Coding Heatmap\" tab: sense × 18-feature coloured grid (P path / M figure-manner / C causation enter clustering, A verify-only), EN/ZH switch, ZH side filterable by keep/marginal/exclude;",
+            "\"🔀 Cross-language Alignment\" tab: cluster bipartite graph (edges coloured by distance) + radar overlays for fully-aligned pairs;",
+            "\"⚖️ Schema Alignment\" tab: the two-layer alignment mechanism + a four-schema (manner-accompanying / source-off / endpoint-arrival / interactive-motion) EN-ZH heatmap with member lists + bilingual feature-mean bar comparison + a 现汉7 evidence-chain scale card;",
+            "\"🌐 Schema Genealogy\" tab (batch 32): after clustering and schema extraction (≥2 sub-cluster schemas), click \"⚙️ Compute schema-family genealogy\" to generate the family table and cards — representative schemas annotate core elements; results cache per category×language session, recompute via the button;",
+            "\"📋 Overview Screening\" tab: EN/ZH double lists, the verdict funnel, and 现汉7 dictionary-original comparison (per-sense definition/examples/register/metaphor marks, side by side with screening badges)."
+        ],
+        "notes_en": [
+            "Data chain: the two xlsx files in data/d1/ → scripts/load_category_study.py → the 8 categories/cs_* tables; current data is program-pre-coded — the formal flow requires two-annotator IAA before rerun;",
+            "Schemas are derived from P/M/C coding (chase→interactive-motion, P1→source-off, P2/P3→endpoint-arrival, otherwise manner-accompanying), consistent with the full wordlist's four-schema system.",
+            "k=5 is an exploratory cut; the formal cut follows sense-level annotation and re-clustering; typicality thresholds are tertile defaults, configurable in a later version."
         ]
     },
     "template": {
@@ -439,6 +697,26 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
             "人工修订是叠加在确定性引擎输出之上的人工层：引擎基线始终并存可对照，"
             "修订按版本留痕、不覆盖历史；锁定簇的修订不改变撰写域已采用的基线"
             "（G3 口径：锁定＝放行撰写，不是禁写）。"
+        ],
+        "purpose_en": "Distil a master schema per cluster (shared features + variable slots) automatically, instantiate four-dimension structured definition templates for any sense in the cluster, compare each with the dictionary original; a same-cluster side-by-side overview shows the whole family's unified pattern in one screen, with editor revisions online (version-tracked) and batch export.",
+        "principle_en": [
+            "Master-schema distillation: binary features with in-cluster mean ≥0.5 are shared elements (schema_core), the rest are variable slots; ordinal/nominal features with zero variance record a shared value; Group-A verification features never enter the schema, only the syntax dimension.",
+            "Template's four dimensions: schema (cluster schema name + definition) / semantic parameters (variable slots + this sense's values) / syntax (Group-A constructional arguments) / alignment (reserved). Generation is deterministic slot assembly — no LLM; editors polish from here into finished definitions."
+        ],
+        "data_source_en": [
+            "The cs_* clustering tables + configs/motion/schemas.yaml (schema definitions) + configs/motion/features.yaml (Chinese feature labels and value ranges) + oald_senses (original-definition comparison).",
+            "Manual revisions store into template_revisions (version-tracked, FX-38); when revisions are unavailable (DB offline) the side-by-side overview and revision panel degrade to the read-only engine baseline."
+        ],
+        "steps_en": [
+            "Pick category and language → browse master-schema cards (shared elements in the left column, variable slots in the right);",
+            "Read the \"same-cluster side-by-side overview\" table: the whole cluster's dictionary originals vs templated definitions on one screen, revised rows marked \"revised (vN)\";",
+            "Pick a sense in the cluster → view the instantiated four-dimension template card side by side with the dictionary original;",
+            "Editorial roles (editor/reviewer/dict_admin) edit the template text and fill optimisation notes directly in the \"manual revision\" panel — saving creates a new version (history viewable below the panel);",
+            "Use the page-bottom buttons to export the current cluster's templates as CSV (revised senses auto-fill the \"optimisation notes\" column) or structured JSON."
+        ],
+        "notes_en": [
+            "Templates are the editor's structured semantic foundation, not learner-facing finished definitions (per paper §6.4); exported CSV is formula-injection hardened.",
+            "Manual revision is a human layer on top of the deterministic engine output: the engine baseline always coexists for comparison; revisions are version-tracked and never overwrite history; revisions on a locked cluster do not change the baseline already adopted by the writing domain (G3: lock = writing released, not forbidden)."
         ]
     },
     "semantic": {
@@ -464,6 +742,22 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         ],
         "notes": [
             "规则层完全离线可用；LLM 层输出仅作解析参考，最终范畴归属仍由编者判断（同论文 §7.1 口径）。试点语料之外（如 march 不在 RUN 试点库）会如实提示覆盖范围。"
+        ],
+        "purpose_en": "Describe a motion scene in natural language (e.g. \"a soldier marching in step\") and the platform parses it into a semantic feature vector, returning the nearest in-library senses by Gower distance — the semantic-description retrieval entry beyond word-form search.",
+        "principle_en": [
+            "Two-layer parsing: layer 1 keyword-rule matching (the keywords table in features.yaml, offline and deterministic); layer 2 LLM-enhanced parsing (off by default; effective only when enabled and an API key is configured; silent fallback to rules on failure).",
+            "Nearest neighbours: only features present in both the query vector and a sense vector are compared, normalised by the actual compared count; ascending distance, senses with no shared features skipped."
+        ],
+        "data_source_en": [
+            "cs_sense_features (sense feature vectors) + configs/motion/features.yaml (keywords and value ranges); LLM enhancement via src/llm_api's multi-provider client."
+        ],
+        "steps_en": [
+            "Type a natural-language scene description in the search box (e.g. \"a soldier marching in step\", \"a horse jogging slowly on the grass\");",
+            "Check the parsed feature chips (which dimensions hit) to confirm the parse matches your intent;",
+            "Read the nearest-neighbour results table (ascending distance), expand a row for the OALD definition; enable \"AI Enhanced\" only if you need finer semantic parsing."
+        ],
+        "notes_en": [
+            "The rule layer works fully offline; LLM output is a parsing reference only — the final category assignment remains the editor's call (per paper §7.1). Outside the pilot corpus (e.g. march is not in the RUN pilot library) the page honestly reports coverage."
         ]
     },
     "help": {
@@ -487,6 +781,22 @@ PAGE_GUIDES: Dict[str, Dict[str, Any]] = {
         ],
         "notes": [
             "本页全员可见（含未登录）——帮助不该有门槛；帮助文档与功能同步交付的纪律见 docs/README.md §五。"
+        ],
+        "purpose_en": "The in-app entry to the platform's help documents: four-part help (description / usage / how it works / notes) per feature across the seven-zone menu, with section navigation and keyword search; the master document is docs/help/平台功能使用说明.md and this page renders it. Visible to everyone (including signed-out users).",
+        "principle_en": [
+            "Master-document mechanism: docs/help/平台功能使用说明.md is the single source of truth for all feature help; once a page is built its section migrates verbatim into the in-app \"📖 Usage Guide\" panel (page_guides) — the two never drift.",
+            "Status markers: 【已实现】(implemented) / 【阶段1】(phase 1) / 【阶段2】(phase 2) — a planned feature's description doubles as its acceptance criterion; a feature without a description is not done."
+        ],
+        "data_source_en": [
+            "docs/help/平台功能使用说明.md (shipped with the repo, readable offline); if the document is missing this page degrades with a notice instead of raising."
+        ],
+        "steps_en": [
+            "Pick a section in the \"Section navigation\" dropdown (Search & Display / Semantic Modelling / … / System Administration) or \"📖 Read full document\";",
+            "Type keywords in the search box (e.g. \"reliability\", \"import\", \"blind annotation\") to filter matching sections;",
+            "Watch each feature's 已实现/阶段1/阶段2 status marker — a planned feature's description is its acceptance criterion."
+        ],
+        "notes_en": [
+            "This page is visible to everyone (including signed-out users) — help should have no barrier; the help-ships-with-feature discipline is in docs/README.md §五."
         ]
     },
 }
@@ -523,34 +833,40 @@ def render_page_usage_guide(page_key: str) -> None:
     键必须在 PAGE_GUIDES 中 —— tests/test_page_guides.py 会逐页验证
     说明真实渲染，新增页面漏配会被测试拦下。
 
-    双语口径（批次 58）：expander 标题与四个段头 t() 化（框架可见面）；
-    段落正文（purpose/principle/steps/notes 各页各一整套）暂为中文母本
-    ——逐页双语化是内容工程量，挂账渐进补（en 态正文保持中文不崩不阻断）。
+    双语口径（批次 60）：guide dict 可选 _en 后缀字段（purpose_en/principle_en/
+    data_source_en/steps_en/notes_en）——en 态优先取，未翻译的字段回落中文母本
+    （渐进式：新页只写中文不崩，翻译按页补齐）。zh 态恒用中文字段，零变化。
     """
     guide = PAGE_GUIDES.get(page_key)
     if not guide:
         st.caption(f"⚠️ 页面 {page_key} 未配置使用说明（见 src/page_guides.py）。")
         return
 
+    # en 态取 _en 字段（缺省回落中文）——单点取值函数，17 页共用
+    def _g(field: str) -> Any:
+        if is_en() and guide.get(f"{field}_en") is not None:
+            return guide[f"{field}_en"]
+        return guide[field]
+
     # label 过 t()：PAGE_GUIDES 的 13 个页面实名已收进 i18n.ZH_EN（批次 47），
     # en 态自动查表显示英文页名；未收录的 label 回落中文原文（渐进式口径）
     with st.expander(f"📖 {t('使用说明', 'Usage Guide')} —— {t(guide['label'])}", expanded=False):
-        st.markdown(f"**{t('这一页做什么', 'What this page does')}:** {guide['purpose']}")
+        st.markdown(f"**{t('这一页做什么', 'What this page does')}:** {_g('purpose')}")
 
-        if guide.get("principle"):
+        if _g("principle"):
             st.markdown(f"**💬 {t('原理', 'How it works')}:**")
-            for item in guide["principle"]:
+            for item in _g("principle"):
                 st.markdown(f"- {item}")
 
-        if guide.get("data_source"):
+        if _g("data_source"):
             st.markdown(f"**🗂️ {t('数据来源', 'Data source')}:**")
-            for item in guide["data_source"]:
+            for item in _g("data_source"):
                 st.markdown(f"- {item}")
 
         st.markdown(f"**🖱️ {t('怎么用', 'How to use')}:**")
-        for i, step in enumerate(guide["steps"], start=1):
+        for i, step in enumerate(_g("steps"), start=1):
             st.markdown(f"{i}. {step}")
 
         st.markdown(f"**⚠️ {t('注意事项', 'Notes')}:**")
-        for note in guide["notes"]:
+        for note in _g("notes"):
             st.caption(f"💡 {note}")

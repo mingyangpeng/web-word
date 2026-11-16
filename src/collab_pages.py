@@ -258,6 +258,45 @@ GUIDE = {
         "数据库不可用时收件箱显示为空、度量卡为 0 口径，五指标卡整卡灰注"
         "（值「—」＋降级文案）—— 是降级渲染，不代表没有数据。",
     ],
+    "purpose_en": (
+        "The human-AI collaboration control room: the collaboration inbox gathers "
+        "\"AI proposes → human decides\" todos (sorted by uncertainty, highest first) "
+        "alongside tasks assigned to me on one page, and collaboration metrics turn the "
+        "proposal ledger into paper-citable indicators like adoption rate; task "
+        "assignment lives in Dictionary Admin (the 📋 Task Assignment tab)."
+    ),
+    "principle_en": [
+        "Mixed-initiative interaction (help doc §5.1): the AI may initiate (draft/audit-channel suggestions) and humans decide in bulk; uncertainty = rule-layer unmatched features + historical human-AI disagreement rate + preview disagreement marks — LLM self-reported confidence is banned; the inbox sorts by uncertainty descending so the proposals \"most needing human eyes\" come first.",
+        "The AI never writes the sense authority store directly: each inbox item shows only candidate content and its evidence chain (evidence_ref + prompt version + resource snapshot version, reproducing \"what the AI saw\"); adoption lands via the corresponding business page, with ai_proposals as an immutable record — re-deciding is rejected at the data layer and the first verdict cannot be overwritten.",
+        "Decision-trail discipline: rejection requires a reason (an empty-reason rejection is blocked before submit); adoption/modification also asks for a rationale; the three decision buttons map to adopted/rejected/modified.",
+        "The probe channel stays out of the inbox: in-library controlled Q&A is lightweight-logged; per the data-layer convention the inbox takes only draft/audit channels; the dictionary admin can trace the whole ledger (probes included) in the \"all pending\" view at the page bottom.",
+        "Task assignment's third permission tier (spec §8 — assigning tasks) is executed in Dictionary Admin's \"📋 Task Assignment\" tab (reusing this module's _render_assign_tab) with triple pre-create validation: ① the task × role matrix (annotation tasks need annotator+); ② load cap (≥10 in-flight tasks per person rejected); ③ recusal (review-type tasks land in batch 4, currently a permissive placeholder) — rejection reasons are always shown, never silent, never persisted."
+    ],
+    "data_source_en": [
+        "src/ai_ledger.py (the ai_proposals ledger): list_pending(kind) feeds the inbox (draft/audit, ordered uncertainty DESC, id ASC); get_stats feeds metrics (total/pending/adoption rate = adopted/(adopted+rejected+modified)/mean uncertainty); decide writes the one-shot decision trail (reason + decider + time, immutable).",
+        "src/collab_metrics.py (FX-19's five-indicator data layer, single source of truth): AI-human agreement (ai_proposals kind='draft' decided items, full agreement = adopted ÷ denominator), annotation savings ((adopted + adopted-after-modification) × 3.0 min/item, an engineering estimate not a measurement — the card carries an \"estimate\" badge), rejection rate (writing_db.review_tasks verdicts, per review round) — substitution-test and style-check pass rates have no execution-result source yet, shown as grey placeholders with no invented numbers.",
+        "The assignments table (created by annotation_flow.ensure_flow_tables, DDL in the multi-annotator spec §2): \"My tasks\" queries the current user's status≠closed rows; \"Task Assignment\" (the Dictionary Admin tab reusing this module) INSERTs new rows (assigned_by = signed-in dictionary admin) — both read/write paths converge in src/collab_db.py (P3 layering), all SQL parameterised.",
+        "src/users_db.py: list_users for all accounts (roles/active); list_roles as the six-role source of truth, unioned with the legacy role column to screen \"can take annotation tasks\" (annotator+).",
+        "src/org_db.py: get_projects_for_user fetches the user's registered projects and in-project functions, giving \"My tasks\" its project context hint.",
+        "definitions × oald_senses (mysql_db read-only): verb/sense search for assignment (lemma or OALD sense lemma LIKE, keywords parameterised); matched verbs land in assignments as scope_verbs."
+    ],
+    "steps_en": [
+        "Switch the sidebar to \"🤖 AI Collaboration\": two tabs — 📥 Inbox / 📊 Metrics; task assignment lives in Dictionary Admin's \"📋 Task Assignment\" tab (dictionary admin only).",
+        "Inbox: expand any \"pending AI suggestion\" to inspect the proposal JSON, evidence references, uncertainty, and prompt/resource snapshot versions; fill a decision rationale then click ✅ Adopt / ⛔ Reject / ✏️ Adopt-with-changes — a reasonless rejection is blocked; on success the page refreshes, the item leaves the pending list and is immutable thereafter.",
+        "Dictionary/platform admins additionally get \"📡 All pending\" (full ledger + read-only probe traceability) and \"⚖️ Awaiting my decision\": a per-stage pending-count table; when sense-split re-check has pendings, \"go to split re-check\" jumps straight to the adjudication site.",
+        "The inbox's \"My tasks\" section lists in-flight tasks assigned to you (status ≠ closed): type/category/scope verbs/status at a glance; do annotation and submission on the \"Semantic Modelling → Annotation Tasks\" page (read-only here).",
+        "Metrics: the top three cards show total proposals / pending / adoption rate (when nothing is decided yet the rate shows \"—\", not 0%); below are the five indicator cards (AI-human agreement / annotation savings / rejection rate / substitution-test pass / style-check pass, each with a scope tooltip and data-source note); the bottom per-stage drill-down table shows counts and mean uncertainty per stage.",
+        "Task assignment (dictionary admin, the Dictionary Admin \"📋 Task Assignment\" tab): ① search verbs/senses by keyword and multi-select scope verbs (none selected = all verbs, task covers the library); ② pick annotators; ③ pick the task type (gating / feature coding / EN-ZH alignment); ④ click \"Create assignment\" — after the task×role matrix, load cap and recusal triple-check, the task appears immediately in the annotator's inbox \"My tasks\"."
+    ],
+    "notes_en": [
+        "Adoption-rate scope: the denominator is decided proposals (pending excluded); \"—\" means no decided proposals yet, not 0%; mean uncertainty averages over all proposals (decided included) — it measures signal quality, not the current backlog.",
+        "Five-indicator scopes (FX-19): AI-human agreement = full agreement (adopted as-is) ÷ decided draft proposals, adopted-after-modification counts as partial and stays out of the numerator; annotation savings is an engineering estimate (3.0 min/item assumption, not measured — the card carries an \"estimate\" badge); rejection rate = (revision requests + outright rejections) ÷ concluded review rounds; substitution-test and style-check pass rates have no execution-result source — grey placeholders with no invented numbers mean \"not yet wired\", not 0%.",
+        "The inbox takes only draft/audit channels; probe Q&A never enters the decision flow (data-layer convention) — the dictionary admin can trace the full pending ledger in the page-bottom \"all pending\" view.",
+        "Decisions are immutable records: re-deciding (including two people racing on one item) lets only the first win; a decision failure usually means someone else already handled the proposal — refresh.",
+        "\"My tasks\" is a read-only list; submission happens on the annotation-tasks page — a second entry would split state scopes, so this page deliberately has none.",
+        "Task assignment lives in Dictionary Admin's \"📋 Task Assignment\" tab: creation auto-passes the triple validation (task×role matrix / load cap / recusal — review-type tasks land in batch 4, currently a permissive placeholder); category defaults to the table default motion, cluster-granularity assignment comes later.",
+        "When the DB is down the inbox renders empty, metric cards show the zero scope, and the five indicator cards grey out entirely (value \"—\" + degraded copy) — degraded rendering, not missing data."
+    ],
 }
 
 

@@ -278,6 +278,42 @@ GUIDE = {
         "未点「执行写入」前不写业务表；20MB 是 MVP 解析上限，更大的批量走 CLI "
         "灌库脚本。",
     ],
+    "purpose_en": "The Dictionary Admin zone's data gateway: the import wizard runs \"upload → fingerprint → preview → register batch → column mapping → dry-run preview → execute write (rollbackable)\" as a batch-ledger + business-write flow (import_batches audit line + import_engine mapping engine), and the entry browser provides admin-perspective lemma search, paginated browsing and sense-detail expansion.",
+    "principle_en": [
+        "Two channels with a clear boundary (help doc 6.3): initial bulk loads go through the CLI loader scripts (idempotent eight steps); the wizard handles only editing-phase increments. At batch-2 initial build the wizard completed only \"register batch\" (rows_ok=0) with business writes planned for batch 3 — since batch 5 the mapping engine (src/import_engine.py) is wired: per-verb-key row UPSERT into definitions, writing only whitelist fields (chinese_ndef/phonetic), leaving cluster_id untouched.",
+        "The batch ledger is a one-shot fact: start_batch registers (status=running) → execute writes → finish_batch records real counts (running → finished; only running batches may be accounted, no overwrites) → persist_revert_log persists rollback events into the companion import_revert_log → on trouble rollback_batch rolls back (finished → rolled_back). The engine collects revert_log rows (insert → soft-void / update → restore old values); once persisted, rollback no longer depends on the same session.",
+        "Dry-run by default: after mapping, \"dry-run preview\" first (plan_import validation + run_import dry_run=True change diff, zero writes); only then \"execute write\" (the single explicit dry_run=False path) — zero business-table writes before that click.",
+        "Target-field whitelist same-source constraint: the column→field mapping dropdown offers only verb/chinese_ndef/phonetic (same source as the engine's TARGET_FIELDS); column auto-suggestion pre-fills by containment (e.g. verb_clean → verb) — a hint only, the user's assignment rules; appending to oald_senses is unsupported (sense-gating semantics, batch-6 review).",
+        "The sha256 fingerprint is the batch's idempotency/reconciliation credential: it lands in import_batches.file_sha256, so re-importing the same file is recognisable; the preview reads only the first 20 rows — unconfirmed data is never treated as imported.",
+        "CSV formula-injection defence, same source as export: cells starting with = + - @ tab/CR get a leading single quote in the preview (the single implementation in src/security.py) — malicious text can never leave the platform as a formula anywhere from upload to export.",
+        "The entry browser is a read-only view: data comes from parameterised queries over definitions / oald_senses; the coverage column honestly shows \"pending\" (the coverage ladder is not wired into the browser) and the source-grading column reads definitions' source column (measured via information_schema, missing likewise \"pending\").",
+        "LIKE-wildcard injection defence: % and _ in search terms are escaped to literals (ESCAPE '!'), preventing \"%%\" from turning a prefix query into a full-table fuzzy scan; search terms truncate at 50 chars."
+    ],
+    "data_source_en": [
+        "import_batches + import_revert_log (registered via src/dict_admin_db.py start_batch / finish_batch / persist_revert_log / rollback_batch): batch id, filename, sha256, target_domain, mapping trail (mapping_json with column_field_mapping), three count columns and the state machine (running/finished/rolled_back); the companion table stores per-row rollback events by (batch_id, seq) — the data source for cross-session rollback.",
+        "definitions (written by src/import_engine.py plan_import / run_import): per-verb-key UPSERT of Chinese definition/phonetics; mapping validation, per-row rejection reasons, the change-diff preview and the row-level revert_log all come from the engine's return value; out-of-whitelist fields like cluster_id are never touched.",
+        "definitions / oald_senses (src/mysql_db.py read-only): lemma, sense count (actual oald_senses count), definitions, grammar codes; the source-grading column prefers SHOW COLUMNS measurement (definition_source first, then source).",
+        "The uploaded file itself: xlsx via the openpyxl engine, csv via pandas; the preview reads the first 20 rows while full row counts come from complete parsing (MVP parsing within the 20 MB cap); execution writes use the fully-parsed rows.",
+        "Operation trail: operator is the acting user's users.id (§15 import-parity; only dictionary admins may register and execute writes)."
+    ],
+    "steps_en": [
+        "\"📥 Data Import Wizard\" tab: upload an xlsx / csv file (docx in phase 2) and confirm the target_domain and dictionary project id.",
+        "The preview generates automatically: verify row counts, column names, the sha256 fingerprint and the first 20 rows; cells caught by formula-injection defence already carry a leading quote with a count notice.",
+        "Click \"Register batch\" to write import_batches (getting a batch_id, mapping_json trail), then in the mapping config assign each column to a target field (the verb key column and the chinese_ndef payload column are required, phonetic optional; other columns stay \"do not import\").",
+        "Click \"Dry-run preview\" for two tables: plan_import's valid/invalid row list (invalid rows with reasons) + run_import's dry-run change diff (insert/update/no-change, per-field old → new) — zero writes.",
+        "Click \"Execute write\" when satisfied: row-by-row UPSERT into definitions with real rows_ok/rows_rejected counts; finish_batch accounts automatically, revert_log persists into import_revert_log and the \"Rollback\" button below enables for this batch; you may also \"account completion without business writes\" (rows_ok=0 scope).",
+        "Check recent batches in the \"Registered batches\" list (file/fingerprint/counts/state); for accounted batches click \"Rollback\" — rollback reads the persisted log and works across sessions (not necessarily the write session): updates restore old_values, inserts are only recorded since definitions has no status column (no physical DELETE).",
+        "\"📖 Entry Browser\" tab: type a lemma keyword with prefix/substring matching; the result table shows lemma / sense count / coverage (pending) / source grading; page via the page-number box (20 per page).",
+        "Expand any lemma row: the word's oald_senses list (sense_index / definition / grammar code, first 10 + total); expanding reveals the sense spine — each sense's 🧬 expander lazy-loads seven linked sections (sense info / annotation trail / reliability / cluster membership / template preview / media / custom attributes), zero queries when collapsed."
+    ],
+    "notes_en": [
+        "Business writes are wired but scoped honestly: this page writes only the definitions lemma layer (Chinese definition/phonetics) —",
+        "Rollback semantics stated truthfully: updates restore old_values (including out-of-whitelist fields like cluster_id that were never touched at import); inserts are skipped by rollback_batch's soft-voiding and only recorded — platform discipline forbids physical DELETE.",
+        "The sense spine (wired batch 4) is a read-only view: seven sections fetch and degrade independently, missing data shown as \"no data: reason\" without invention; the reliability α is category×task scope (not per-sense); cluster/template sections honestly mark \"outside modelling coverage\" when the sense is not in the pilot library.",
+        "The coverage column's \"pending\" and the missing source-grading \"pending\" are honest labels — the coverage ladder (RUN pilot 32 senses → 352 modelled senses → 996 all senses) is not wired into the browser; never invent numbers.",
+        "% and _ in search terms match literally (escaped); wildcard requests are not supported on this page.",
+        "The uploaded file is read only for preview and fingerprinting — nothing enters the ledger before \"Register batch\" and no business table before \"Execute write\"; 20 MB is the MVP parsing cap, larger batches go through the CLI loader."
+    ],
 }
 
 
