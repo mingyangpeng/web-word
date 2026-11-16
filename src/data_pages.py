@@ -702,16 +702,18 @@ def _render_preview(data: bytes, file_name: str) -> Optional[Tuple[int, List[str
     n_protected = _changed_cell_count(preview, protected)
 
     _render_metric_cards([
-        ("数据行数", rows_total),
-        ("列数", len(columns)),
-        ("预览行数", f"{len(preview)} / {PREVIEW_ROWS}"),
-        ("防护命中格数", n_protected),
+        (_t("数据行数", "Data rows"), rows_total),
+        (_t("列数", "Columns"), len(columns)),
+        (_t("预览行数", "Preview rows"), f"{len(preview)} / {PREVIEW_ROWS}"),
+        (_t("防护命中格数", "Sanitized cells"), n_protected),
     ])
     st.code(sha, language=None)
     st.caption("↑ 文件 sha256 指纹（写入 import_batches.file_sha256，幂等/对账凭据）")
 
     column_names = ", ".join(_html_escape(c) for c in columns)
-    st.markdown(f"**列名清单：** {column_names}", unsafe_allow_html=True)
+    # 加粗段头双语：先取译串再进 f-string 插值（zh 态逐字不变）
+    column_list_label = _t("**列名清单：**", "**Column list:**")
+    st.markdown(f"{column_list_label} {column_names}", unsafe_allow_html=True)
     st.dataframe(protected, use_container_width=True)
     if n_protected > 0:
         st.caption(
@@ -737,7 +739,7 @@ def _render_mapping_editor(columns: List[str]) -> Tuple[Optional[Dict[str, str]]
         (mapping, errors)：映射合法时 ({列名: 字段}, [])；未指派任何列 / 校验
         不过时 (None, [中文原因, ...])。
     """
-    st.markdown("**列 → 目标字段映射**")
+    st.markdown(_t("**列 → 目标字段映射**", "**Column → Target Field Mapping**"))
     suggestions = _suggest_mapping(columns)
     st.caption(
         "目标字段白名单与引擎同源：verb＝词目键（必选一列）；chinese_ndef＝中文释义"
@@ -752,7 +754,8 @@ def _render_mapping_editor(columns: List[str]) -> Tuple[Optional[Dict[str, str]]
     for col in columns:
         prefill = suggestions.get(col, MAPPING_SKIP)
         choice = st.selectbox(
-            f"列「{col}」→ 目标字段",
+            # 下拉 label 带动态列名：模板化 _t（zh 态逐字不变）
+            _t("列「{col}」→ 目标字段", 'Column "{col}" → target field').format(col=col),
             MAPPING_OPTIONS,
             index=list(MAPPING_OPTIONS).index(prefill) if prefill in MAPPING_OPTIONS else 0,
             key=f"{KEY_IMPORT_PREFIX}map_{col}",
@@ -773,13 +776,14 @@ def _render_dry_run_tables(plan: Dict[str, Any], preview: List[Dict[str, Any]]) 
         for err in plan["mapping_errors"]:
             st.error(f"映射错误：{err}")
     _render_metric_cards([
-        ("合法行", plan.get("rows_ok", 0)),
-        ("非法行", plan.get("rows_rejected", 0)),
-        ("预览条目", len(preview)),
+        (_t("合法行", "Valid rows"), plan.get("rows_ok", 0)),
+        (_t("非法行", "Invalid rows"), plan.get("rows_rejected", 0)),
+        (_t("预览条目", "Preview entries"), len(preview)),
     ])
     rejected = plan.get("rejected") or []
     if rejected:
-        st.markdown("**非法行（执行时拒绝，原因如下）**")
+        st.markdown(_t("**非法行（执行时拒绝，原因如下）**",
+                       "**Invalid rows (rejected at execution; reasons below)**"))
         st.dataframe(
             pd.DataFrame([
                 {"行号": r["row_index"] + 1, "拒绝原因": r["reason"]} for r in rejected
@@ -812,7 +816,8 @@ def _render_dry_run_tables(plan: Dict[str, Any], preview: List[Dict[str, Any]]) 
                     "旧值": "—",
                     "新值": "—",
                 })
-        st.markdown("**变更 diff（执行写入将发生的确切变更）**")
+        st.markdown(_t("**变更 diff（执行写入将发生的确切变更）**",
+                       "**Change diff (exact changes the write execution will apply)**"))
         st.dataframe(pd.DataFrame(preview_rows), use_container_width=True)
     st.caption(
         "干跑（run_import 默认 dry_run=True）只读不写库：以上是「执行写入」将发生的"
@@ -841,7 +846,7 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
         if not can_register:
             st.warning("无法确定操作人（会话用户缺少有效 id），不能登记批次。")
         if st.button(
-            "📦 登记批次",
+            _t("📦 登记批次", "📦 Register Batch"),
             type="primary",
             disabled=not (can_register and mapping is not None),
             key=f"{KEY_IMPORT_PREFIX}register_btn",
@@ -878,18 +883,19 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
         for err in mapping_errors:
             st.error(f"映射错误：{err}")
     else:
-        st.markdown("**冻结映射（mapping_json 留痕 ＝ 执行口径）**")
+        st.markdown(_t("**冻结映射（mapping_json 留痕 ＝ 执行口径）**",
+                       "**Frozen mapping (mapping_json record = execution source)**"))
         st.json({col: registered_mapping[col] for col in sorted(registered_mapping)})
     _render_metric_cards([
-        ("批次 id", bid),
-        ("rows_total（预览计数）", registered_rows),
-        ("状态", "running"),
-        ("全量行数", len(rows)),
+        (_t("批次 id", "Batch id"), bid),
+        (_t("rows_total（预览计数）", "rows_total (preview count)"), registered_rows),
+        (_t("状态", "Status"), "running"),
+        (_t("全量行数", "Total rows"), len(rows)),
     ])
 
     if registered_mapping is not None:
         if st.button(
-            "🔍 干跑预览（零写库）",
+            _t("🔍 干跑预览（零写库）", "🔍 Dry-Run Preview (zero writes)"),
             key=f"{KEY_IMPORT_PREFIX}dryrun_btn",
             help="plan_import 校验表 ＋ run_import(dry_run=True) 变更 diff；只读，零写库。",
         ):
@@ -906,7 +912,8 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
 
         can_execute = bool(rows) and isinstance(operator, int) and operator > 0
         if st.button(
-            "🚀 执行写入（dry_run=False，写库）",
+            _t("🚀 执行写入（dry_run=False，写库）",
+               "🚀 Execute Write (dry_run=False, writes to DB)"),
             type="primary",
             disabled=not can_execute,
             key=f"{KEY_IMPORT_PREFIX}execute_btn",
@@ -968,7 +975,8 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
                     )
 
     if st.button(
-        "🧾 不写入业务表，直接记账完成（rows_ok=0）",
+        _t("🧾 不写入业务表，直接记账完成（rows_ok=0）",
+           "🧾 Skip business-table writes, finalize bookkeeping (rows_ok=0)"),
         key=f"{KEY_IMPORT_PREFIX}finish_zero_btn",
         help="finish_batch(rows_total=预览计数, rows_ok=0, rows_rejected=0)——放弃写入"
              "只结账（放弃口径如实留痕）。",
@@ -982,7 +990,7 @@ def _render_register_step(user: Dict[str, Any], file_name: str, sha: str,
                 st.session_state.pop(key, None)
         else:
             st.error("记账失败：批次不存在、已非 running 态或数据库不可用。")
-    if st.button("🧹 重置向导", key=f"{KEY_IMPORT_PREFIX}reset_btn",
+    if st.button(_t("🧹 重置向导", "🧹 Reset Wizard"), key=f"{KEY_IMPORT_PREFIX}reset_btn",
                  help="清空本页会话中的批次登记状态（不影响已登记的台账行；已写入的"
                       "业务数据与 revert_log 留痕不受影响）。"):
         for key in _WIZARD_SESSION_KEYS:
@@ -998,9 +1006,11 @@ def _render_batch_list() -> None:
     才回退本会话暂存的 revert_log（rollback_batch(batch_id, revert_log)
     显式传参的兼容口径）—— 两者皆无的批次按钮禁用并如实注明。
     """
+    # 区块标题带动态上限数：模板化 _t（zh 态逐字不变）；先取译串再进 f-string 插值
+    batches_title = _t("🗂️ 已登记批次（最近 {n} 条）",
+                       "🗂️ Registered Batches (last {n})").format(n=BATCH_LIST_LIMIT)
     st.markdown(
-        f"<h3 style='margin-top:32px;'>🗂️ 已登记批次（最近 {BATCH_LIST_LIMIT} 条）"
-        f"</h3>",
+        f"<h3 style='margin-top:32px;'>{batches_title}</h3>",
         unsafe_allow_html=True,
     )
     exec_result = st.session_state.get(EXEC_RESULT_KEY)
@@ -1042,7 +1052,7 @@ def _render_batch_list() -> None:
         for b in finished
     }
     selected_label = st.selectbox(
-        "选择要回滚的批次", list(options.keys()),
+        _t("选择要回滚的批次", "Select batch to roll back"), list(options.keys()),
         key=f"{KEY_IMPORT_PREFIX}rollback_select",
     )
     selected_bid = int(options.get(selected_label, 0))
@@ -1054,7 +1064,7 @@ def _render_batch_list() -> None:
     use_session = (not use_persisted) and bool(session_events) and session_bid == selected_bid
     can_rollback = use_persisted or use_session
     if st.button(
-        "↩️ 回滚选中批次",
+        _t("↩️ 回滚选中批次", "↩️ Roll Back Selected Batch"),
         disabled=not can_rollback,
         key=f"{KEY_IMPORT_PREFIX}rollback_btn",
         help="rollback_batch：更新行按 old_values 恢复旧值；新增行因 definitions "
@@ -1121,16 +1131,18 @@ def render_import_page() -> None:
         "oald_senses 追加写入不支持（批次 6 评审）。仅词典管理员（§15 导入同权）。"
     )
 
-    st.markdown("<h3>① 上传文件</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3>{_t('① 上传文件', '① Upload File')}</h3>", unsafe_allow_html=True)
     uploaded = st.file_uploader(
-        "词条文档（xlsx / csv；docx 阶段 2 接入）",
+        _t("词条文档（xlsx / csv；docx 阶段 2 接入）",
+           "Word-entry file (xlsx / csv; docx in phase 2)"),
         type=list(UPLOAD_TYPES),
         key=f"{KEY_IMPORT_PREFIX}uploader",
     )
     left, right = st.columns(2)
     with left:
         target_domain = st.text_input(
-            "目标域 target_domain（≤40 字符）",
+            _t("目标域 target_domain（≤40 字符）",
+               "Target domain target_domain (≤40 chars)"),
             value="definitions",
             max_chars=40,
             key=f"{KEY_IMPORT_PREFIX}target_domain",
@@ -1140,7 +1152,7 @@ def render_import_page() -> None:
         )
     with right:
         project_id = st.number_input(
-            "词典项目 id", min_value=1, value=1, step=1,
+            _t("词典项目 id", "Dictionary project id"), min_value=1, value=1, step=1,
             key=f"{KEY_IMPORT_PREFIX}project_id",
             help="import_batches.project_id（词典项目软引用；项目清单见主编驾驶舱）。",
         )
@@ -1158,14 +1170,17 @@ def render_import_page() -> None:
         _render_batch_list()
         return
 
-    st.markdown("<h3>② 预览与指纹</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3>{_t('② 预览与指纹', '② Preview & Fingerprint')}</h3>",
+                unsafe_allow_html=True)
     preview = _render_preview(data, uploaded.name)
     if preview is None:
         _render_batch_list()
         return
     rows_total, columns = preview
 
-    st.markdown("<h3>③ 登记批次＋列映射写入</h3>", unsafe_allow_html=True)
+    # 区块标题双语：先取译串再进 f-string 插值（py3.11 f-string 表达式不可跨行）
+    register_title = _t("③ 登记批次＋列映射写入", "③ Register Batch ＋ Column Mapping")
+    st.markdown(f"<h3>{register_title}</h3>", unsafe_allow_html=True)
     rows_df = _read_tabular(data, uploaded.name)
     rows = rows_df.to_dict("records") if rows_df is not None else []
     _render_register_step(
@@ -1206,7 +1221,10 @@ def _render_sense_lines(verb: str, senses: List[Dict[str, Any]]) -> None:
         if sense_id is None:
             continue  # 行缺义位锚（异常数据）时只少一个脊柱入口，不打崩列表
         with st.expander(
-            f"🧬 义项脊柱 · S{index}（展开即见标注留痕 / 信度 / 簇 / 模板 / 媒体）",
+            # 区块性 expander 头带动态义项号：模板化 _t（zh 态逐字不变）
+            _t("🧬 义项脊柱 · S{idx}（展开即见标注留痕 / 信度 / 簇 / 模板 / 媒体）",
+               "🧬 Sense Spine · S{idx} (expand for annotation trail / confidence / "
+               "cluster / template / media)").format(idx=index),
             key=f"{KEY_BROWSER_PREFIX}spine_{int(sense_id)}",
             on_change="rerun",
         ) as spine_expander:
@@ -1237,18 +1255,20 @@ def render_browser_page() -> None:
     left, right = st.columns([3, 1])
     with left:
         query = st.text_input(
-            "词目搜索（LIKE 前缀/子串；% _ 按字面匹配）",
+            _t("词目搜索（LIKE 前缀/子串；% _ 按字面匹配）",
+               "Headword search (LIKE prefix/substring; % _ matched literally)"),
             max_chars=MAX_TERM_LEN,
             key=f"{KEY_BROWSER_PREFIX}query",
         )
     with right:
         match_mode = st.radio(
-            "匹配方式", ("前缀匹配", "子串匹配"), horizontal=True,
+            _t("匹配方式", "Match mode"), ("前缀匹配", "子串匹配"), horizontal=True,
             key=f"{KEY_BROWSER_PREFIX}match_mode",
         )
     prefix_only = str(match_mode).startswith("前缀")
     page_input = st.number_input(
-        "页码（每页 20 条）", min_value=1, value=1, step=1,
+        _t("页码（每页 20 条）", "Page number (20 per page)"), min_value=1, value=1,
+        step=1,
         key=f"{KEY_BROWSER_PREFIX}page",
     )
 
@@ -1283,5 +1303,10 @@ def render_browser_page() -> None:
         verb = str(row.get("verb") or "")
         sense_total = int(row.get("sense_total") or 0)
         source = str(row.get("source_label") or "").strip() or COVERAGE_PENDING
-        with st.expander(f"📎 {verb} · 义项 {sense_total} 条 · 来源 {source}"):
+        with st.expander(
+            # 行级 expander 头的中文骨架（义项 N 条 / 来源）走模板化 _t，zh 态逐字不变
+            _t("📎 {verb} · 义项 {n} 条 · 来源 {src}",
+               "📎 {verb} · {n} senses · source {src}").format(
+                verb=verb, n=sense_total, src=source)
+        ):
             _render_sense_lines(verb, senses_map.get(verb, []))

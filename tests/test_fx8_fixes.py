@@ -166,7 +166,7 @@ class TestRV55ClusterNaming:
 
     def test_new_cluster_name_in_place(self):
         app_text = _read("app.py")
-        assert 'st.sidebar.metric("词簇"' in app_text
+        assert 'st.sidebar.metric(_t("词簇", "Clusters")' in app_text  # 批次 57 i18n 化后形态
         assert 'c3.metric("词簇"' in app_text
         assert "按词簇勾选过滤" in app_text
         guide_blob = _read("page_guides.py")

@@ -159,7 +159,7 @@ class TestClusterNaming:
 
     def test_cipin_cluster_metric_in_sidebar(self):
         app_text = _read("app.py")
-        assert 'st.sidebar.metric("词簇"' in app_text
+        assert 'st.sidebar.metric(_t("词簇", "Clusters")' in app_text  # 批次 57 i18n 化后形态
 
 
 # ============================================
@@ -202,7 +202,7 @@ class TestOtherCopyLocks:
         for filename in ("app.py", "page_guides.py"):
             text = _read(filename)
             assert "已收录词条" not in text, f"{filename} 仍含「已收录词条」"
-        assert 'st.sidebar.metric("已收录词目"' in _read("app.py")
+        assert 'st.sidebar.metric(_t("已收录词目", "Entries")' in _read('app.py')  # 批次 57 i18n 化后形态
 
     def test_oald_senses_wording(self):
         """OALD 数据层口径用「义项」不用「义位」。"""

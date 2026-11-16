@@ -553,7 +553,7 @@ def _render_provider_list(providers: List[Dict[str, Any]]) -> int:
     选中态记在 st.session_state[_SELECTED_KEY]；清单变化导致旧选中项消失时
     回落到首项（新建模式下选中项仅作「取消新建」后的落点）。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>📋 供应商列表</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('📋 供应商列表', '📋 Provider List')}</h3>", unsafe_allow_html=True)
     options = _provider_options(providers)
     selected_pid = 0
     if options:
@@ -567,7 +567,7 @@ def _render_provider_list(providers: List[Dict[str, Any]]) -> int:
         if stale_label is not None and stale_label not in labels:
             del st.session_state["llm_provider_pick"]
         picked = st.radio(
-            "选择供应商", labels, index=index, key="llm_provider_pick",
+            _t("选择供应商", "Select Provider"), labels, index=index, key="llm_provider_pick",
             help="括号内为供应商 id 与状态（·默认 / ·停用）。",
         )
         selected_pid = int(options.get(picked, 0))
@@ -577,7 +577,7 @@ def _render_provider_list(providers: List[Dict[str, Any]]) -> int:
         st.session_state[_SELECTED_KEY] = 0
         st.info("尚无供应商：点下方「＋ 添加供应商」录入第一家。")
 
-    if st.button("＋ 添加供应商", key="llm_add_provider",
+    if st.button(_t("＋ 添加供应商", "＋ Add Provider"), key="llm_add_provider",
                  use_container_width=True, type="primary"):
         st.session_state[_CREATING_KEY] = True
         st.session_state[_EDIT_MARKER] = None  # 强制编辑缓冲对「新建」重新同步
@@ -592,7 +592,7 @@ def _render_status_card(provider: Optional[Dict[str, Any]], creating: bool) -> N
     """编辑面板头卡：名称（转义）＋ 启用/默认徽章（新建模式给占位说明）。"""
     if creating:
         st.markdown(
-            f"<div style='{get_card_style()}'><strong>新建供应商</strong>"
+            f"<div style='{get_card_style()}'><strong>{_t('新建供应商', 'New Provider')}</strong>"
             f"<p style='margin:6px 0 0 0;color:#4a5568;'>填写完成后点「保存」"
             f"入库；保存后即可「测试连通」。</p></div>",
             unsafe_allow_html=True,
@@ -602,13 +602,13 @@ def _render_status_card(provider: Optional[Dict[str, Any]], creating: bool) -> N
     name = str((provider or {}).get("name") or f"供应商#{pid}")
     badges = []
     if (provider or {}).get("is_default"):
-        badges.append(_badge("默认", "#2b6cb0"))
+        badges.append(_badge(_t("默认", "Default"), "#2b6cb0"))
     if (provider or {}).get("enabled", True):
-        badges.append(_badge("启用", "#2f855a"))
+        badges.append(_badge(_t("启用", "Enabled"), "#2f855a"))
     else:
-        badges.append(_badge("停用", "#718096"))
+        badges.append(_badge(_t("停用", "Disabled"), "#718096"))
     st.markdown(
-        f"<div style='{get_card_style()}'><strong>编辑供应商 #{pid}："
+        f"<div style='{get_card_style()}'><strong>{_t('编辑供应商 #{pid}：', 'Edit Provider #{pid}:')}"
         f"{_esc(name)}</strong> {' '.join(badges)}"
         f"<p style='margin:6px 0 0 0;color:#4a5568;'>Base URL："
         f"{_esc((provider or {}).get('base_url') or '—')}</p></div>",
@@ -635,7 +635,7 @@ def _render_models_block() -> None:
     回调不能调 st.warning 等渲染件，校验结果经 llm_add_model_msg 落地。
     """
     st.text_area(
-        "模型列表（每行一个模型名）",
+        _t("模型列表（每行一个模型名）", "Model List (one model name per line)"),
         key="llm_models",
         height=120,
         help="该供应商下可供 AI 功能挑选的模型白名单；直接在文本域批量编辑，"
@@ -644,11 +644,11 @@ def _render_models_block() -> None:
     )
     add_col, btn_col = st.columns([3, 1])
     with add_col:
-        st.text_input("添加单个模型", key="llm_new_model",
-                      placeholder="如 glm-4-plus")
+        st.text_input(_t("添加单个模型", "Add Single Model"), key="llm_new_model",
+                      placeholder=_t("如 glm-4-plus", "e.g. glm-4-plus"))
     with btn_col:
         st.markdown("")  # 与输入框底部对齐的占位
-        st.button("＋ 添加模型", key="llm_add_model",
+        st.button(_t("＋ 添加模型", "＋ Add Model"), key="llm_add_model",
                   use_container_width=True, on_click=_on_add_model)
     msg = st.session_state.pop("llm_add_model_msg", None)
     if isinstance(msg, (tuple, list)) and len(msg) == 2:
@@ -790,13 +790,13 @@ def _render_edit_panel(selected_pid: int, providers: List[Dict[str, Any]],
     _sync_edit_buffer(_EDIT_TARGET_NEW if creating else selected_pid, provider)
     _render_status_card(provider, creating)
 
-    st.text_input("名称", key="llm_name", max_chars=120,
+    st.text_input(_t("名称", "Name"), key="llm_name", max_chars=120,
                   help="供应商显示名（如 智谱 / DeepSeek / 内网网关）。")
     st.text_input("Base URL", key="llm_base_url",
                   help="API 根地址，须以 http(s):// 开头（如 "
                        "https://open.bigmodel.cn/api/paas/v4）。")
     st.selectbox(
-        "API 格式", list(API_FORMATS), key="llm_api_format",
+        _t("API 格式", "API Format"), list(API_FORMATS), key="llm_api_format",
         format_func=lambda f: API_FORMAT_LABELS.get(f, f),
         help="openai=OpenAI 兼容 chat.completions；anthropic=Anthropic 原生。",
     )
@@ -809,38 +809,38 @@ def _render_edit_panel(selected_pid: int, providers: List[Dict[str, Any]],
              "可见；页面默认遮蔽，用下方「👁 显示明文」开关临时核对。"
              "保存后不会打进服务端日志。",
     )
-    st.toggle("👁 显示明文", key="llm_show_key",
+    st.toggle(_t("👁 显示明文", "👁 Show Plain Text"), key="llm_show_key",
               help="仅在当前页面回显明文，便于核对；不改变存储形态。")
 
-    st.markdown(f"<h4 style='{HEADER_H3}'>🧾 模型清单</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🧾 模型清单', '🧾 Model List')}</h4>", unsafe_allow_html=True)
     _render_models_block()
 
     toggle_col1, toggle_col2 = st.columns(2)
     with toggle_col1:
-        st.toggle("启用（enabled）", key="llm_enabled",
+        st.toggle(_t("启用（enabled）", "Enabled (enabled)"), key="llm_enabled",
                   help="关闭只是下线不删除，配置保留可随时重新启用。")
     with toggle_col2:
-        st.toggle("设为默认供应商（is_default）", key="llm_is_default",
+        st.toggle(_t("设为默认供应商（is_default）", "Set as Default Provider (is_default)"), key="llm_is_default",
                   help="AI 功能（释义生成等）默认使用标为默认的供应商。")
 
     st.markdown("")
     save_col, del_col, test_col = st.columns(3)
     with save_col:
-        if st.button("💾 保存", key="llm_save", type="primary",
+        if st.button(_t("💾 保存", "💾 Save"), key="llm_save", type="primary",
                      use_container_width=True):
             _handle_save(selected_pid, creating, provider, me)
     with del_col:
-        st.checkbox("我确认物理删除（不可恢复）", key="llm_confirm_delete")
-        if st.button("🗑 删除", key="llm_delete", use_container_width=True):
+        st.checkbox(_t("我确认物理删除（不可恢复）", "I confirm physical deletion (irreversible)"), key="llm_confirm_delete")
+        if st.button(_t("🗑 删除", "🗑 Delete"), key="llm_delete", use_container_width=True):
             _handle_delete(selected_pid, providers)
     with test_col:
         st.markdown("")  # 与保存按钮底部对齐的占位
-        if st.button("🔌 测试连通", key="llm_test", use_container_width=True):
+        if st.button(_t("🔌 测试连通", "🔌 Test Connection"), key="llm_test", use_container_width=True):
             _handle_test(selected_pid, creating)
 
     if creating:
         st.markdown("")
-        if st.button("取消新建", key="llm_cancel"):
+        if st.button(_t("取消新建", "Cancel New Provider"), key="llm_cancel"):
             st.session_state[_CREATING_KEY] = False
             st.session_state[_EDIT_MARKER] = None  # 回落编辑选中供应商前重同步
             st.rerun()
@@ -870,7 +870,7 @@ def render_model_settings_page() -> None:
     # 2.5rem/700，无 title 自带的底部留白差异）。
     # 页 H1 双语：原文即 key（「🤖 模型供应商」ZH_EN 已收录，en 态 "🤖 Model
     # Providers"，与 AI 协作区的 "🤖 AI Hub" 刻意区分不撞名）。
-    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('🤖 模型供应商')}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('🤖 模型供应商', '🤖 Model Providers')}</h1>", unsafe_allow_html=True)
     st.caption("管理 LLM 模型供应商，配置后在释义生成等 AI 功能中使用。")
 
     if llm_providers_db is None:

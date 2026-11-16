@@ -576,14 +576,19 @@ def _sort_pending(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _proposal_summary(p: Dict[str, Any]) -> str:
-    """收件箱条目的 expander 标题（纯文本组件，Streamlit 自带转义）。"""
+    """收件箱条目的 expander 标题（纯文本组件，Streamlit 自带转义）。
+
+    中文骨架（通道名 / 占位符 / 不确定度前缀）走模板化 _t —— zh 态逐字不变，
+    en 态就地出英文（页面级文案，不进 ZH_EN）。
+    """
     uncertainty = p.get("uncertainty")
-    unc_text = "未提供" if uncertainty is None else f"{uncertainty:.2f}"
-    kind_label = "质检" if p.get("kind") == KIND_AUDIT else (
-        "探针" if p.get("kind") == KIND_PROBE else "草稿")
+    unc_text = _t("未提供", "N/A") if uncertainty is None else f"{uncertainty:.2f}"
+    kind_label = _t("质检", "Audit") if p.get("kind") == KIND_AUDIT else (
+        _t("探针", "Probe") if p.get("kind") == KIND_PROBE else _t("草稿", "Draft"))
     return (
-        f"#{p.get('id')} · [{kind_label}] {p.get('stage') or '（无工序）'} · "
-        f"{p.get('unit_ref') or '（无单元）'} · 不确定度 {unc_text}"
+        f"#{p.get('id')} · [{kind_label}] {p.get('stage') or _t('（无工序）', '(no stage)')} · "
+        f"{p.get('unit_ref') or _t('（无单元）', '(no unit)')} · "
+        + _t("不确定度 {u}", "Uncertainty {u}").format(u=unc_text)
     )
 
 
@@ -613,18 +618,24 @@ def _decide_buttons(p: Dict[str, Any]) -> None:
     """
     pid = int(p.get("id") or 0)
     reason = st.text_area(
-        "裁决理由（否决必填；采纳/修改建议填写 —— 留痕可复现）",
+        _t("裁决理由（否决必填；采纳/修改建议填写 —— 留痕可复现）",
+           "Adjudication reason (required to reject; recommended for adopt/modify "
+           "— keeps the decision reproducible)"),
         key=f"{KEY_PREFIX}reason_{pid}",
         height=68,
-        placeholder="否决必须说明依据；采纳/修改建议写明落地位置或修改内容。",
+        placeholder=_t("否决必须说明依据；采纳/修改建议写明落地位置或修改内容。",
+                       "A rejection must state its grounds; for adopt/modify, note "
+                       "where it lands or what changed."),
     )
     adopt_col, reject_col, modify_col = st.columns(3)
     clicked: Optional[str] = None
-    if adopt_col.button("✅ 采纳", key=f"{KEY_PREFIX}adopt_{pid}", type="primary"):
+    if adopt_col.button(_t("✅ 采纳", "✅ Adopt"),
+                        key=f"{KEY_PREFIX}adopt_{pid}", type="primary"):
         clicked = DECISION_ADOPTED
-    if reject_col.button("⛔ 否决", key=f"{KEY_PREFIX}reject_{pid}"):
+    if reject_col.button(_t("⛔ 否决", "⛔ Reject"), key=f"{KEY_PREFIX}reject_{pid}"):
         clicked = DECISION_REJECTED
-    if modify_col.button("✏️ 修改后采纳", key=f"{KEY_PREFIX}modify_{pid}"):
+    if modify_col.button(_t("✏️ 修改后采纳", "✏️ Adopt with Modifications"),
+                         key=f"{KEY_PREFIX}modify_{pid}"):
         clicked = DECISION_MODIFIED
     if clicked is None:
         return
@@ -663,7 +674,9 @@ def _render_pending_inbox(me: Dict[str, Any]) -> List[Dict[str, Any]]:
     for kind in INBOX_KINDS:
         pending.extend(list_pending(kind=kind, limit=INBOX_LIMIT))
     pending = _sort_pending(pending)
-    st.markdown(f"<h3 style='{HEADER_H3}'>📨 待裁决 AI 建议</h3>", unsafe_allow_html=True)
+    # 区块标题双语：先取译串再进 f-string 插值（py3.11 f-string 表达式不可跨行）
+    pending_title = _t("📨 待裁决 AI 建议", "📨 AI Proposals Awaiting Adjudication")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{pending_title}</h3>", unsafe_allow_html=True)
     if not pending:
         st.info(
             "收件箱暂无待裁决建议（draft/audit 通道均为空，或数据库未初始化）—— "
@@ -696,8 +709,10 @@ def _render_admin_all_pending(inbox_count: int) -> None:
     all_pending = list_pending(limit=INBOX_LIMIT)  # 全通道（含 probe）
     probes = [p for p in all_pending if p.get("kind") == KIND_PROBE]
     st.divider()
+    all_pending_title = _t("📡 全部 pending（词典管理员视图）",
+                           "📡 All Pending (dict-admin view)")
     st.markdown(
-        f"<h3 style='{HEADER_H3}'>📡 全部 pending（词典管理员视图）</h3>",
+        f"<h3 style='{HEADER_H3}'>{all_pending_title}</h3>",
         unsafe_allow_html=True,
     )
     st.caption(
@@ -714,7 +729,8 @@ def _render_admin_all_pending(inbox_count: int) -> None:
 
 def _render_my_tasks(me: Dict[str, Any]) -> None:
     """「我的任务」段：当前用户 assignments（status≠closed）只读列表。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>📋 我的任务</h3>", unsafe_allow_html=True)
+    my_tasks_title = _t("📋 我的任务", "📋 My Tasks")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{my_tasks_title}</h3>", unsafe_allow_html=True)
 
     projects = get_projects_for_user(int(me.get("id") or 0))
     if projects:
@@ -779,7 +795,9 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
     counts = _pending_stage_counts()
     if not counts:
         return
-    st.markdown(f"<h3 style='{HEADER_H3}'>⚖️ 待我裁决（按工序分布）</h3>",
+    adjudication_title = _t("⚖️ 待我裁决（按工序分布）",
+                            "⚖️ Awaiting My Adjudication (by stage)")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{adjudication_title}</h3>",
                 unsafe_allow_html=True)
     st.table({"工序 stage": [c[0] for c in counts], "待决数": [c[1] for c in counts]})
     division = [n for stage, n in counts if stage == "sense_division"]
@@ -791,7 +809,8 @@ def _render_adjudication_section(me: Dict[str, Any]) -> None:
         # 抛 StreamlitAPIException（「去分立复核」必崩页）。照抄 app.py
         # goto_graph_page 的既有正确模式；_render_adjudication_section 内
         # 已无其他同型直写（grep 确认）。
-        st.button("去分立复核", key="collab_adj_goto_cluster",
+        st.button(_t("去分立复核", "Go to Split Review"),
+                  key="collab_adj_goto_cluster",
                   on_click=lambda: st.session_state.update(page="cluster"))
 
 
@@ -821,7 +840,8 @@ def _render_broadcast_banner(me: Optional[Dict[str, Any]]) -> None:
         return
     if not latest:
         return                      # 无广播不渲染段（不占收件箱版面）
-    st.markdown(f"<h3 style='{HEADER_H3}'>📢 项目广播</h3>", unsafe_allow_html=True)
+    broadcast_title = _t("📢 项目广播", "📢 Project Broadcasts")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{broadcast_title}</h3>", unsafe_allow_html=True)
     st.caption(
         f"您在册项目共 {len(latest)} 条最新广播（每项目一条；发布入口在"
         "词典管理区·项目成员 tab，词典管理员职责）。"
@@ -854,7 +874,12 @@ def _render_broadcast_banner(me: Optional[Dict[str, Any]]) -> None:
         except (TypeError, ValueError):
             pid = None
         if pid is not None:
-            with st.expander(f"📜 查看项目「{b.get('project_name') or pid}」全部广播"):
+            with st.expander(
+                # expander 头带动态项目名：模板化 _t（zh 态逐字不变）
+                _t("📜 查看项目「{name}」全部广播",
+                   '📜 View all broadcasts of project "{name}"').format(
+                    name=b.get("project_name") or pid)
+            ):
                 history = broadcast_db.list_broadcasts(pid, limit=20)
                 if not history:
                     st.caption("暂无更多广播记录（或数据库暂不可用）。")
@@ -927,7 +952,9 @@ def _render_five_metrics() -> None:
     口径（caption 标「提案对照口径」）；两口径口径文案见 collab_metrics 两
     NOTE 常量。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>🤝 协同度量五指标（规范 §5 · FX-19 补齐）</h3>",
+    five_metrics_title = _t("🤝 协同度量五指标（规范 §5 · FX-19 补齐）",
+                            "🤝 Five Collaboration Metrics (spec §5 · FX-19)")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{five_metrics_title}</h3>",
                 unsafe_allow_html=True)
     # FX-43 AI-人一致率双口径回退链：快照面有数据 → 逐特征真值优先（caption
     # 标「逐特征口径（n 提交）」）；无快照/库不可用 → 回退 FX-19 台账口径
@@ -959,7 +986,7 @@ def _render_five_metrics() -> None:
     row1 = st.columns(3)
     with row1[0]:
         st.metric(
-            "AI-人一致率", agreement_rate,
+            _t("AI-人一致率", "AI–Human Agreement"), agreement_rate,
             help=agreement_help,
         )
         if agreement is None or agreement.get("available"):
@@ -968,16 +995,21 @@ def _render_five_metrics() -> None:
             st.caption(f"灰注：{agreement.get('note')}")
     with row1[1]:
         savings_value = (
-            f"{savings.get('hours_saved', 0):.2f} 小时"
+            # metric 值的中文单位走模板化 _t（zh 态逐字不变）
+            _t("{h} 小时", "{h} h").format(
+                h=f"{savings.get('hours_saved', 0):.2f}")
             if savings.get("available") else "—"
         )
-        st.metric("标注节省量", savings_value, help=collab_metrics.SAVINGS_NOTE)
+        st.metric(_t("标注节省量", "Annotation Savings"), savings_value,
+                  help=collab_metrics.SAVINGS_NOTE)
         if savings.get("available"):
             # 估算徽章：本指标是工程估算（3.0 分钟/条假设），不是实测（R4-6 同款纪律）
+            estimate_text = _t(
+                "估算（工程假设 {m} 分钟/条 · 非实测）",
+                "Estimated (engineering assumption {m} min/item · not measured)",
+            ).format(m=f'{savings.get("minutes_per_item", 0):.1f}')
             st.markdown(
-                f'<span style="{_ESTIMATE_BADGE_STYLE}">估算'
-                f'（工程假设 {savings.get("minutes_per_item", 0):.1f} 分钟/条 · 非实测）'
-                f"</span>",
+                f'<span style="{_ESTIMATE_BADGE_STYLE}">{estimate_text}</span>',
                 unsafe_allow_html=True,
             )
             st.caption("数据源：ai_proposals kind='draft' 的 adopted+modified 计数。")
@@ -985,7 +1017,7 @@ def _render_five_metrics() -> None:
             st.caption(f"灰注：{savings.get('note')}")
     with row1[2]:
         st.metric(
-            "打回率", _fmt_rate(rejection.get("rejection_rate")),
+            _t("打回率", "Rejection Rate"), _fmt_rate(rejection.get("rejection_rate")),
             help=collab_metrics.REJECTION_NOTE,
         )
         if rejection.get("available"):
@@ -996,23 +1028,27 @@ def _render_five_metrics() -> None:
 
     row2 = st.columns(2)
     with row2[0]:
-        st.metric("替换测试通过率", "—", help=_SUBSTITUTION_TOOLTIP)
+        st.metric(_t("替换测试通过率", "Substitution Test Pass Rate"), "—",
+                  help=_SUBSTITUTION_TOOLTIP)
         st.caption(str(substitution.get("reason") or collab_metrics.SUBSTITUTION_NOTE))
     with row2[1]:
-        st.metric("体例质检通过率", "—", help=_STYLE_CHECK_TOOLTIP)
+        st.metric(_t("体例质检通过率", "Style-Check Pass Rate"), "—",
+                  help=_STYLE_CHECK_TOOLTIP)
         st.caption(str(style_check.get("reason") or collab_metrics.STYLE_CHECK_NOTE))
 
 
 def _render_metrics_tab() -> None:
     """📊 协同度量：get_stats 总卡（None 显示「—」不虚构）＋五指标卡（FX-19）
     ＋按工序下钻表。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>📈 提案台账总览（全库口径）</h3>",
+    ledger_title = _t("📈 提案台账总览（全库口径）",
+                      "📈 Proposal Ledger Overview (whole ledger)")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{ledger_title}</h3>",
                 unsafe_allow_html=True)
     stats = get_stats()  # 数据库不可用时返回全 0 口径 dict（比率 None）
     cards = st.columns(3)
-    cards[0].metric("提案总数", str(stats.get("total", 0)))
-    cards[1].metric("待裁决", str(stats.get("pending", 0)))
-    cards[2].metric("采纳率", _fmt_rate(stats.get("adoption_rate")))
+    cards[0].metric(_t("提案总数", "Total Proposals"), str(stats.get("total", 0)))
+    cards[1].metric(_t("待裁决", "Pending"), str(stats.get("pending", 0)))
+    cards[2].metric(_t("采纳率", "Adoption Rate"), _fmt_rate(stats.get("adoption_rate")))
     st.caption(
         "采纳率＝采纳 ÷（采纳＋否决＋修改后采纳），分母是已裁决提案（pending 不计）；"
         "「—」＝尚无已裁决提案，不是 0%。"
@@ -1022,7 +1058,8 @@ def _render_metrics_tab() -> None:
     # 体例质检通过率）—— 新卡排后，采纳率总览卡保持不动
     _render_five_metrics()
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>🔬 按工序下钻</h3>", unsafe_allow_html=True)
+    drilldown_title = _t("🔬 按工序下钻", "🔬 Drill-down by Stage")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{drilldown_title}</h3>", unsafe_allow_html=True)
     stages = _list_proposal_stages()
     # RV 第二轮（R4 两态两种级别）：原混句「台账暂无提案记录（或数据库不可用）」
     # 拆句 —— None=查询失败（服务端异常，勿重跑灌库）；[]=空台账（等业务工序
@@ -1093,14 +1130,17 @@ def _render_verb_picker() -> Optional[List[str]]:
         scope_verbs NULL = 任务不限动词，覆盖全库）。
     """
     results_key = f"{KEY_PREFIX}verb_results"
-    st.markdown("**① 范围动词（可空）**")
+    st.markdown(_t("**① 范围动词（可空）**", "**① Scope Verbs (optional)**"))
     keyword = st.text_input(
-        "搜索动词 / 义位（匹配词目或 OALD 义项词目，参数化只读查询）",
+        _t("搜索动词 / 义位（匹配词目或 OALD 义项词目，参数化只读查询）",
+           "Search verbs / senses (matches headword or OALD sense headword; "
+           "parameterized read-only query)"),
         key=f"{KEY_PREFIX}assign_search",
         max_chars=50,
-        placeholder="如 run、walk；留空直接创建＝不限动词",
+        placeholder=_t("如 run、walk；留空直接创建＝不限动词",
+                       "e.g. run, walk; leave empty to create with all verbs"),
     )
-    if st.button("🔍 搜索", key=f"{KEY_PREFIX}assign_search_btn"):
+    if st.button(_t("🔍 搜索", "🔍 Search"), key=f"{KEY_PREFIX}assign_search_btn"):
         st.session_state[results_key] = _search_verbs(keyword)
         # 新搜索结果替换旧清单：清掉上一次的勾选，避免过期选项残留会话
         st.session_state.pop(f"{KEY_PREFIX}assign_verbs", None)
@@ -1115,7 +1155,8 @@ def _render_verb_picker() -> Optional[List[str]]:
     }
     st.caption(f"命中 {len(verb_options)} 个动词（最多列 20 条，可换关键词重搜）。")
     picked = st.multiselect(
-        "选择范围动词（可多选；一个不选＝不限动词）",
+        _t("选择范围动词（可多选；一个不选＝不限动词）",
+           "Select scope verbs (multi-select; none selected = all verbs)"),
         list(verb_options.keys()),
         key=f"{KEY_PREFIX}assign_verbs",
     )
@@ -1140,7 +1181,8 @@ def _render_assign_tab(me: Dict[str, Any]) -> None:
             "legacy role=='admin' 经映射兼判）。"
         )
         return
-    st.markdown(f"<h3 style='{HEADER_H3}'>📤 创建任务分派</h3>", unsafe_allow_html=True)
+    assign_title = _t("📤 创建任务分派", "📤 Create Task Assignment")
+    st.markdown(f"<h3 style='{HEADER_H3}'>{assign_title}</h3>", unsafe_allow_html=True)
     st.caption(
         "分派规则（帮助文档 §6.6 ＋ 架构规范 §8）：创建前接三重校验 —— ① 任务×"
         "角色矩阵（标注类须 annotator 及以上）；② 负荷上限（同人在途 open/"
@@ -1158,22 +1200,25 @@ def _render_assign_tab(me: Dict[str, Any]) -> None:
             "（或经六角色 grant_role 授予）。"
         )
         return
-    st.markdown("**② 标注员**")
+    st.markdown(_t("**② 标注员**", "**② Assignee**"))
     assignee_label = st.selectbox(
-        "选择标注员（在用账号、annotator 及以上）",
+        _t("选择标注员（在用账号、annotator 及以上）",
+           "Select assignee (active accounts, annotator and above)"),
         list(candidates.keys()),
         key=f"{KEY_PREFIX}assign_assignee",
     )
-    st.markdown("**③ 任务类型**")
+    st.markdown(_t("**③ 任务类型**", "**③ Task Type**"))
     task_type = st.selectbox(
-        "任务类型（assignments.task_type 枚举）",
+        _t("任务类型（assignments.task_type 枚举）",
+           "Task type (assignments.task_type enum)"),
         list(ASSIGNMENT_TASK_TYPES),
         format_func=lambda t: f"{TASK_TYPE_LABELS.get(t, t)}（{t}）",
         key=f"{KEY_PREFIX}assign_task_type",
     )
 
     st.markdown("---")
-    if st.button("📤 创建分派", type="primary", key=f"{KEY_PREFIX}assign_submit"):
+    if st.button(_t("📤 创建分派", "📤 Create Assignment"),
+                 type="primary", key=f"{KEY_PREFIX}assign_submit"):
         assignee_id = candidates[assignee_label]
         # assignee_roles = 六角色事实源（users_db.list_roles）∪ 账号 legacy role
         legacy_role = _legacy_role_map(users).get(assignee_id)
@@ -1252,12 +1297,20 @@ def render_collab_page() -> None:
         f" · {_t('AI 协作区', 'Workspace')}</h1>",
         unsafe_allow_html=True,
     )
+    # 区块标题双语：先取译串再进 f-string 插值（py3.11 f-string 表达式不可跨行）
+    subtitle = _t("人机协同：AI 建议裁决 · 协同度量",
+                  "Human–AI Collaboration: Proposal Adjudication · Metrics")
     st.markdown(
-        f"<h2 style='{HEADER_H2}'>人机协同：AI 建议裁决 · 协同度量</h2>",
+        f"<h2 style='{HEADER_H2}'>{subtitle}</h2>",
         unsafe_allow_html=True,
     )
 
-    inbox_tab, metrics_tab = st.tabs(["📥 协作收件箱", "📊 协同度量"])
+    inbox_tab, metrics_tab = st.tabs(
+        [
+            _t("📥 协作收件箱", "📥 Collaboration Inbox"),
+            _t("📊 协同度量", "📊 Collaboration Metrics"),
+        ],
+    )
     with inbox_tab:
         _render_inbox_tab(me)
     with metrics_tab:

@@ -262,9 +262,9 @@ def _metrics_row(users: List[Dict[str, Any]]) -> None:
     n_active = sum(1 for u in users if int(u.get("active") or 0))
     n_admin = sum(1 for u in users if u.get("role") == "admin")
     cards = (
-        ("总用户数", str(n_total)),
-        ("启用中", str(n_active)),
-        ("管理员", str(n_admin)),
+        (_t("总用户数", "Total Users"), str(n_total)),
+        (_t("启用中", "Active"), str(n_active)),
+        (_t("管理员", "Admins"), str(n_admin)),
     )
     cols = st.columns(len(cards))
     for col, (label, value) in zip(cols, cards):
@@ -332,19 +332,19 @@ def _user_options(users: List[Dict[str, Any]], exclude_id: Optional[int] = None)
 
 def _render_change_role_form(users: List[Dict[str, Any]], me: Dict[str, Any]) -> None:
     """改角色表单。当前登录管理员不在可改名单里（不能撤销自己的 admin）。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>🔁 修改角色</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🔁 修改角色', '🔁 Change Role')}</h3>", unsafe_allow_html=True)
     options = _user_options(users, exclude_id=int(me.get("id") or 0))
     if not options:
         st.info("没有可修改角色的其他用户。")
         return
     with st.form("users_admin_role_form", clear_on_submit=True):
-        label = st.selectbox("选择用户", list(options.keys()))
+        label = st.selectbox(_t("选择用户", "Select User"), list(options.keys()))
         role = st.selectbox(
-            "新角色",
+            _t("新角色", "New Role"),
             list(ROLES),
             format_func=lambda r: f"{ROLE_LABELS.get(r, r)}（{r}）",
         )
-        submitted = st.form_submit_button("保存角色", use_container_width=True)
+        submitted = st.form_submit_button(_t("保存角色", "Save Role"), use_container_width=True)
     if not submitted:
         return
     uid = options[label]
@@ -383,15 +383,16 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
     皆可。数据层 set_active 另传 actor=当前会话用户（R1-1 直调面，纵深防御
     第二层；PermissionError 转译 st.error）。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>⏸️ 停用 / 启用</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('⏸️ 停用 / 启用', '⏸️ Deactivate / Activate')}</h3>", unsafe_allow_html=True)
     options = _user_options(users, exclude_id=int(me.get("id") or 0))
     if not options:
         st.info("没有可操作的其他用户。")
         return
     with st.form("users_admin_active_form", clear_on_submit=True):
-        label = st.selectbox("选择用户", list(options.keys()))
-        action = st.radio("操作", ("停用（禁止登录）", "启用（恢复登录）"), horizontal=True)
-        submitted = st.form_submit_button("执行", use_container_width=True)
+        label = st.selectbox(_t("选择用户", "Select User"), list(options.keys()))
+        # 选项值参与 action.startswith("启用") 值判定 —— 属值语义不译
+        action = st.radio(_t("操作", "Action"), ("停用（禁止登录）", "启用（恢复登录）"), horizontal=True)
+        submitted = st.form_submit_button(_t("执行", "Execute"), use_container_width=True)
     if not submitted:
         return
     uid = options[label]
@@ -421,21 +422,21 @@ def _render_toggle_active_form(users: List[Dict[str, Any]], me: Dict[str, Any]) 
 
 def _render_create_user_form(me: Dict[str, Any]) -> None:
     """新建用户表单。密码框不回显，提交读取后立即从会话清除。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>➕ 新建用户</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('➕ 新建用户', '➕ Create User')}</h3>", unsafe_allow_html=True)
     st.caption(
         "新号默认 viewer（只读）——三级最小权限链第一级；初始密码须首次登录修改"
         "（登录后出现强制改密提示），六角色叠加授权见上方「角色授予」面板。"
     )
     with st.form("users_admin_create_form", clear_on_submit=True):
-        username = st.text_input("用户名（唯一，≤50 字符）", max_chars=50, key="users_admin_create_username")
-        password = st.text_input("初始密码", type="password", key="users_admin_create_password")
-        display_name = st.text_input("显示名（≤80 字符）", max_chars=80, key="users_admin_create_display")
+        username = st.text_input(_t("用户名（唯一，≤50 字符）", "Username (unique, ≤50 chars)"), max_chars=50, key="users_admin_create_username")
+        password = st.text_input(_t("初始密码", "Initial Password"), type="password", key="users_admin_create_password")
+        display_name = st.text_input(_t("显示名（≤80 字符）", "Display Name (≤80 chars)"), max_chars=80, key="users_admin_create_display")
         role = st.selectbox(
-            "角色",
+            _t("角色", "Role"),
             list(ROLES),
             format_func=lambda r: f"{ROLE_LABELS.get(r, r)}（{r}）",
         )
-        submitted = st.form_submit_button("创建用户", use_container_width=True)
+        submitted = st.form_submit_button(_t("创建用户", "Create User"), use_container_width=True)
     if not submitted:
         return
     if not username.strip() or not password:
@@ -494,7 +495,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
     legacy admin 的权柄来自旧 role 列，撤销自己的 user_roles 行也会被
     list_roles 的旧列兜底映射复活，徒增困惑）。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>🎭 角色授予（六角色）</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🎭 角色授予（六角色）', '🎭 Role Granting (Six Roles)')}</h3>", unsafe_allow_html=True)
     st.caption(
         "六角色可叠加（词典管理员 dict_admin · 平台管理员 sys_admin · 审校 reviewer · "
         "撰写 editor · 标注 annotator · 只读 viewer）。新号默认 viewer；账号级角色在"
@@ -512,7 +513,7 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
         return
 
     selected_label = st.selectbox(
-        "选择用户", list(options.keys()), key="users_admin_role_grant_user",
+        _t("选择用户", "Select User"), list(options.keys()), key="users_admin_role_grant_user",
     )
     target_uid = options[selected_label]
     current_roles = list_roles(target_uid)
@@ -533,22 +534,22 @@ def _render_role_grant_panel(users: List[Dict[str, Any]], me: Dict[str, Any]) ->
     grant_role_sel: Optional[str] = None
     with st.form("users_admin_grant_role_form", clear_on_submit=True):
         grant_role_sel = st.selectbox(
-            "授予角色",
+            _t("授予角色", "Grant Role"),
             list(NEW_ROLES),
             format_func=lambda r: f"{ROLE_LABELS.get(r, r)}（{r}）",
         )
-        grant_submitted = st.form_submit_button("授予角色", use_container_width=True)
+        grant_submitted = st.form_submit_button(_t("授予角色", "Grant Role"), use_container_width=True)
 
     revoke_submitted = False
     revoke_role_sel: Optional[str] = None
     if current_roles:
         with st.form("users_admin_revoke_role_form", clear_on_submit=True):
             revoke_role_sel = st.selectbox(
-                "撤销角色",
+                _t("撤销角色", "Revoke Role"),
                 current_roles,
                 format_func=lambda r: f"{ROLE_LABELS.get(r, r)}（{r}）",
             )
-            revoke_submitted = st.form_submit_button("撤销角色", use_container_width=True)
+            revoke_submitted = st.form_submit_button(_t("撤销角色", "Revoke Role"), use_container_width=True)
     else:
         st.caption("该用户暂无可撤销的六角色（授予后可撤销）。")
 
@@ -629,7 +630,7 @@ def _render_my_preferences() -> None:
     me = _current_user()
     if not isinstance(me, dict):
         return
-    st.markdown(f"<h3 style='{HEADER_H3}'>⚙️ 我的偏好</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('⚙️ 我的偏好', '⚙️ My Preferences')}</h3>", unsafe_allow_html=True)
     st.caption(
         "个人偏好键值对（user_profiles 表，跨设备续接；仅自己可读写）。"
         "本段只做读写 UI：预设键暂不改变页面行为（消费接线归下批）。"
@@ -653,7 +654,7 @@ def _render_my_preferences() -> None:
                 f"{key} —— {label}", value=str(stored.get(key) or ""),
                 key=f"my_prefs_input_{key}",
             )
-        save_submitted = st.form_submit_button("💾 保存预设键",
+        save_submitted = st.form_submit_button(_t("💾 保存预设键", "💾 Save Preset Keys"),
                                                use_container_width=True)
     if save_submitted:
         failed = [k for k, v in new_values.items()
@@ -670,11 +671,14 @@ def _render_my_preferences() -> None:
     preset_names = {k for k, _ in _PREF_PRESET_KEYS}
     custom_keys = sorted(k for k in stored if k not in preset_names)
     with st.form("my_prefs_custom_form", clear_on_submit=True):
-        custom_key = st.text_input("自定义键（≤120 字符，如 ui.theme）",
+        custom_key = st.text_input(_t("自定义键（≤120 字符，如 ui.theme）",
+                                      "Custom Key (≤120 chars, e.g. ui.theme)"),
                                    max_chars=120, key="my_prefs_custom_key")
-        custom_value = st.text_input("自定义值（空白=未设值）",
+        custom_value = st.text_input(_t("自定义值（空白=未设值）",
+                                        "Custom Value (empty = unset)"),
                                      key="my_prefs_custom_value")
-        add_submitted = st.form_submit_button("➕ 新增/覆盖自定义键",
+        add_submitted = st.form_submit_button(_t("➕ 新增/覆盖自定义键",
+                                                 "➕ Add/Overwrite Custom Key"),
                                               use_container_width=True)
     if add_submitted:
         clean_key = custom_key.strip()
@@ -695,9 +699,9 @@ def _render_my_preferences() -> None:
         )
     if all_keys:
         with st.form("my_prefs_delete_form", clear_on_submit=False):
-            delete_key = st.selectbox("选择要删除的偏好键", all_keys,
+            delete_key = st.selectbox(_t("选择要删除的偏好键", "Select Preference Key to Delete"), all_keys,
                                       key="my_prefs_delete_key")
-            delete_submitted = st.form_submit_button("🗑 删除所选键",
+            delete_submitted = st.form_submit_button(_t("🗑 删除所选键", "🗑 Delete Selected Key"),
                                                      use_container_width=True)
         if delete_submitted:
             if user_context_db.delete_profile(delete_key):
@@ -849,7 +853,7 @@ def _render_my_bookmarks() -> None:
     me = _current_user()
     if not isinstance(me, dict):
         return
-    st.markdown(f"<h3 style='{HEADER_H3}'>📌 我的书签</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('📌 我的书签', '📌 My Bookmarks')}</h3>", unsafe_allow_html=True)
     st.caption(
         "收藏的义位/词条/页面快捷位（user_bookmarks 表，跨设备续接；仅自己可见）。"
         "页面锚、义位锚可一键跳转（义位锚自动预选标注平台动词，提取不到时引导"
@@ -901,11 +905,11 @@ def _render_my_bookmarks() -> None:
                 goto_col, del_col = st.columns(2)
                 with goto_col:
                     st.button(
-                        "前往 →", key=f"bm_goto_s_{row_id}",
+                        _t("前往 →", "Go →"), key=f"bm_goto_s_{row_id}",
                         on_click=_goto_sense_callback(me, display_title),
                     )
                 with del_col:
-                    if st.button("🗑 取消收藏", key=f"bm_del_{row_id}"):
+                    if st.button(_t("🗑 取消收藏", "🗑 Remove Bookmark"), key=f"bm_del_{row_id}"):
                         _delete_bookmark_row(anchor_type, anchor_id, display_title)
             elif can_jump:
                 # RV12-1：跳转经 on_click 回调写会话（先例：collab_pages
@@ -913,14 +917,14 @@ def _render_my_bookmarks() -> None:
                 goto_col, del_col = st.columns(2)
                 with goto_col:
                     st.button(
-                        "🔗 前往", key=f"bm_goto_{row_id}",
+                        _t("🔗 前往", "🔗 Go"), key=f"bm_goto_{row_id}",
                         on_click=_goto_page_callback(anchor_id),
                     )
                 with del_col:
-                    if st.button("🗑 取消收藏", key=f"bm_del_{row_id}"):
+                    if st.button(_t("🗑 取消收藏", "🗑 Remove Bookmark"), key=f"bm_del_{row_id}"):
                         _delete_bookmark_row(anchor_type, anchor_id, display_title)
             else:
-                if st.button("🗑 取消收藏", key=f"bm_del_{row_id}"):
+                if st.button(_t("🗑 取消收藏", "🗑 Remove Bookmark"), key=f"bm_del_{row_id}"):
                     _delete_bookmark_row(anchor_type, anchor_id, display_title)
 
 
@@ -963,9 +967,9 @@ def render_users_admin_page() -> None:
         return
 
     # 页 H1 双语：原文即 key（与侧边栏 label「👥 账号管理」不同串，ZH_EN 已补收条目）
-    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('👥 用户管理')}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('👥 用户管理', '👥 User Management')}</h1>", unsafe_allow_html=True)
     st.markdown(
-        f"<h2 style='{HEADER_H2}'>账号与角色（管理员专用）</h2>",
+        f"<h2 style='{HEADER_H2}'>{_t('账号与角色（管理员专用）', 'Accounts & Roles (Admin Only)')}</h2>",
         unsafe_allow_html=True,
     )
 
@@ -992,7 +996,7 @@ def render_users_admin_page() -> None:
 
     st.markdown(
         f"<div style='{get_card_style()}'>"
-        f"<strong>安全提示</strong>"
+        f"<strong>{_t('安全提示', 'Security Notice')}</strong>"
         f"<p style='margin:6px 0 0 0;color:#4a5568;'>内置默认管理员 "
         f"admin 的初始密码为公开的 bootstrap 凭据，<strong>首次登录后必须立即修改</strong>；"
         f"停用用户只是禁止登录，其历史提交记录保留。</p>"

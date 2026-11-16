@@ -27,7 +27,7 @@ from src.mysql_db import (
 )
 from src.graph_export import ensure_graph_html, ensure_cluster_html
 from src.page_guides import PAGE_KEYS, page_label, render_page_usage_guide
-from src.i18n import t as _t  # 批次 47：双语切换（渐进式——未收录回落中文）
+from src.i18n import t as _t, is_en  # 批次 47：双语切换（渐进式——未收录回落中文）
 from src.help_center import render_help_center_page
 from src.dict_admin_pages import render_dict_admin_page
 from src.writing_pages import render_writing_page
@@ -2312,7 +2312,7 @@ def render_sidebar():
             )
             st.sidebar.divider()
 
-    st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 实验统计</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h2 style='{HEADER_H2}'>📊 Experiment Stats</h2>", unsafe_allow_html=True)
 
     if DB_AVAILABLE:
         try:
@@ -2334,25 +2334,24 @@ def render_sidebar():
     # 口径说明：total_queries 来自 usage_logs（真实查询次数），
     # total_definitions 是已收录词目数 —— 两者含义不同，分开展示。
     st.sidebar.metric(
-        "总查询次数",
+        _t("总查询次数", "Total Queries"),
         _dash if _off else stats["total_queries"],
-        delta=f"+{stats['queries_today']} 今天"
-              if (not _off and stats.get("queries_today")) else None,
+        delta=f"+{stats['queries_today']} today" if (not _off and stats.get("queries_today")) else None,
     )
-    st.sidebar.metric("已收录词目", _dash if _off else stats.get("total_definitions", 0))
+    st.sidebar.metric(_t("已收录词目", "Entries"), _dash if _off else stats.get("total_definitions", 0))
     # 结构指标：词簇数与词间关系边数 —— 直接反映「词与词关系」图谱的规模
-    st.sidebar.metric("词簇", _dash if _off else stats.get("total_clusters", 0))
-    st.sidebar.metric("词间关系", _dash if _off else stats.get("total_relations", 0))
-    st.sidebar.metric("平均评分", _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
-    st.sidebar.metric("总反馈数", _dash if _off else stats["total_feedbacks"])
+    st.sidebar.metric(_t("词簇", "Clusters"), _dash if _off else stats.get("total_clusters", 0))
+    st.sidebar.metric(_t("词间关系", "Relations"), _dash if _off else stats.get("total_relations", 0))
+    st.sidebar.metric(_t("平均评分", "Avg Rating"), _dash if _off else f"{stats['avg_rating']:.1f}/5.0")
+    st.sidebar.metric(_t("总反馈数", "Feedbacks"), _dash if _off else stats["total_feedbacks"])
 
     st.sidebar.divider()
 
-    st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 热门查询动词</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>🔥 Hot Verbs</h2>", unsafe_allow_html=True)
 
     if hot_verbs:
         # 本地前端子串筛选输入框（D-05，无后端往返）
-        st.sidebar.text_input("筛选热门动词", key="hot_filter", placeholder="输入关键字筛选…")
+        st.sidebar.text_input(_t("筛选热门动词", "Filter hot verbs"), key="hot_filter", placeholder="Filter keywords…")
         filtered = filter_hot_verbs(hot_verbs, st.session_state.get("hot_filter", ""))
         for v in filtered:
             # 可点击行：复用 select_example_verb 填充搜索框并触发搜索（D-04）
@@ -2363,17 +2362,17 @@ def render_sidebar():
                 args=(v['verb'],),
             )
     else:
-        st.sidebar.info("暂无热门查询数据")
+        st.sidebar.info(_t("暂无热门查询数据", "No hot query data yet"))
 
     st.sidebar.divider()
 
     # 数据库状态（极简一行：健康绿点/离线红点——代替旧版顶部 success 大横幅）
     st.sidebar.markdown(
         f"<p style='color:{'#48bb78' if DB_AVAILABLE else '#e53e3e'};font-size:0.8rem;"
-        f"margin:4px 0;'>{'🟢 MySQL 已连接' if DB_AVAILABLE else '🔴 MySQL 离线 · 功能降级'}</p>",
+        f"margin:4px 0;'>{'🟢 MySQL Connected' if DB_AVAILABLE else '🔴 MySQL Offline · Degraded'}</p>",
         unsafe_allow_html=True,
     )
-    st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 数据导出</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h2 style='{HEADER_H3}'>📥 Export</h2>", unsafe_allow_html=True)
 
     # R5-3（P1）按需导出：此前每轮 rerun 都全表 SELECT * FROM feedbacks 只为
     # 填 download_button 的 data。现在默认只渲染「生成导出」按钮 + 行数 caption
@@ -2382,15 +2381,15 @@ def render_sidebar():
     # 导出按钮并注明原因（与其他导出口径一致：权限不足灰置＋原因；数据闸门
     # 保留离线/取数失败/空数据三支分流）。
     if not DB_AVAILABLE:
-        st.sidebar.caption("数据库离线，反馈导出暂不可用。")
+        st.sidebar.caption(_t("数据库离线，反馈导出暂不可用。", "Database offline — feedback export unavailable."))
     else:
         _fb_count = count_feedbacks()
         if _fb_count is None:
-            st.sidebar.caption("反馈行数读取失败（数据库异常），导出暂不可用。")
+            st.sidebar.caption(_t("反馈行数读取失败（数据库异常），导出暂不可用。", "Failed to read feedback count — export unavailable."))
         else:
-            st.sidebar.caption(f"当前反馈 {_fb_count} 条。")
+            st.sidebar.caption(_t("Feedbacks", f"Current feedbacks: {_fb_count}") if False else (f"Current feedbacks: {_fb_count}." if _t("语言占位", "") == "" else f"当前反馈 {_fb_count} 条。")) if False else st.sidebar.caption(f"Current feedbacks: {_fb_count}." if is_en() else f"当前反馈 {_fb_count} 条。")
             _export_allowed = isinstance(st.session_state.get("user"), dict)
-            if st.sidebar.button("生成并导出反馈 (CSV)",
+            if st.sidebar.button(_t("生成并导出反馈 (CSV)", "Generate & Export Feedback (CSV)"),
                                  key="sidebar_feedback_export",
                                  disabled=not _export_allowed,
                                  use_container_width=True):
@@ -2401,7 +2400,7 @@ def render_sidebar():
                     feedback_df = pd.DataFrame(
                         columns=["verb", "rating", "feedback_text", "created_at"])
                 if feedback_df.empty:
-                    st.sidebar.info("暂无反馈数据可导出。")
+                    st.sidebar.info(_t("暂无反馈数据可导出。", "No feedback data to export yet."))
                 else:
                     # CSV 公式注入防护（R1-P2）：文本以 = + - @ \t 开头时前置单引号
                     csv = sanitize_csv_dataframe(feedback_df).to_csv(
@@ -2467,10 +2466,10 @@ def render_main_area():
     # 不给 flake8 新增告警。
     from src.entry_assembly import render_entry_assembly
     render_page_usage_guide("search")
-    st.markdown(f"<h1 style='{HEADER_H1}'>🏃 动词释义优化器</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='{HEADER_H1}'>{_t('🏃 动词释义优化器', '🏃 Verb Definition Optimizer')}</h1>", unsafe_allow_html=True)
     # 批次 31：理论长文折叠（用户「搜索页一堆文字」反馈——搜索框置顶，
     # 理论说明收进展开才见的 expander；TEXT_TITLE 常量与折叠标题语义分离）
-    with st.expander("📚 理论背景与功能说明（点开查看）", expanded=False):
+    with st.expander(_t("📚 理论背景与功能说明（点开查看）", "📚 Theory Background & Features (click to expand)"), expanded=False):
         st.markdown(THEORY_DESCRIPTION, unsafe_allow_html=True)
 
     # ===== 浮动固定搜索栏 =====
@@ -2483,7 +2482,7 @@ def render_main_area():
         # 不设置 value（由 key 管理），on_change 在值变化时触发搜索
         st.text_input(
             label="搜索动词",
-            placeholder="搜索动词 (例如：跑进来、冲进来、滑进来...)",
+            placeholder=_t("搜索动词 (例如：跑进来、冲进来、滑进来...)", "Search a verb (e.g. run in, dash in, slide in...)"),
             label_visibility="collapsed",
             key="搜索动词",
             on_change=search_verb
@@ -2511,18 +2510,27 @@ def render_main_area():
     # 欢迎消息（当没有结果时显示）
     if not hasattr(st.session_state, 'show_result') or not st.session_state.show_result:
         st.markdown(get_section_spacing(), unsafe_allow_html=True)
+        _welcome_h2 = _t("🏃 动词释义优化器", "🏃 Verb Definition Optimizer")
+        _welcome_lede = _t("基于运动事件类型学的中文动词释义优化",
+                           "Chinese verb definition optimization based on Motion Event Typology")
+        _welcome_core = _t("核心功能：", "Core features:")
+        _welcome_items = [
+            (_t("方式要素分解", "Manner decomposition"), _t("分析运动采用的姿势/手段", "Posture/means of motion")),
+            (_t("路径要素分解", "Path decomposition"), _t("解析运动经过的空间轨迹", "Spatial trajectory of motion")),
+            (_t("方向要素分解", "Direction decomposition"), _t("识别运动朝向的终点/目标", "Endpoint/goal of motion")),
+            (_t("体相要素分解", "Aspect decomposition"), _t("描述运动时身体的姿态/状态", "Body posture/state during motion")),
+        ]
+        _welcome_lis = "".join(
+            f"<li><strong>{k}</strong>：{v}</li>" if not is_en() else f"<li><strong>{k}</strong>: {v}</li>"
+            for k, v in _welcome_items)
         st.markdown(f"""
         <div style='{get_card_style()}'>
-            <h2 style='{HEADER_H3}'>🏃 动词释义优化器</h2>
-            <p style='{BODY_BASE}'><strong>基于运动事件类型学的中文动词释义优化</strong></p>
+            <h2 style='{HEADER_H3}'>{_welcome_h2}</h2>
+            <p style='{BODY_BASE}'><strong>{_welcome_lede}</strong></p>
             <div style='{get_section_spacing()}'></div>
-            <p style='{BODY_BASE}'><strong>核心功能：</strong></p>
+            <p style='{BODY_BASE}'><strong>{_welcome_core}</strong></p>
             <ul style='{BODY_BASE}; margin-top: 8px; padding-left: 24px; line-height: 1.8;'>
-                <li><strong>方式要素分解</strong>：分析运动采用的姿势/手段</li>
-                <li><strong>路径要素分解</strong>：解析运动经过的空间轨迹</li>
-                <li><strong>方向要素分解</strong>：识别运动朝向的终点/目标</li>
-                <li><strong>体相要素分解</strong>：描述运动时身体的姿态/状态</li>
-            </ul>
+                {_welcome_lis}
         </div>
         """, unsafe_allow_html=True)
         st.markdown(get_section_spacing(), unsafe_allow_html=True)

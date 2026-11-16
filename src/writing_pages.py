@@ -873,7 +873,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         return
     cat_options = [c["code"] for c in categories]
     cat_code = st.selectbox(
-        "范畴",
+        _t("范畴", "Category"),
         options=cat_options,
         format_func=lambda code: next(
             (f"{c['code']} {c['name_cn']}" for c in categories if c["code"] == code),
@@ -882,7 +882,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         key="writing_category",
     )
     language = st.radio(
-        "语言",
+        _t("语言", "Language"),
         options=["en", "zh"],
         horizontal=True,
         format_func={"en": "英语（OALD10）", "zh": "汉语（现汉7）"}.get,
@@ -896,7 +896,9 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         )
         return
     sense = st.selectbox(
-        "选择义位（🔒 locked 簇优先 —— G3 闸门：分立复核定稿的簇才放行撰写）",
+        _t("选择义位（🔒 locked 簇优先 —— G3 闸门：分立复核定稿的簇才放行撰写）",
+           "Select sense (🔒 locked clusters first — G3 gate: drafting opens only "
+           "for clusters whose split review is finalized)"),
         options=senses,
         format_func=_sense_option_label,
         key="writing_sense",
@@ -933,14 +935,18 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         st.info(target["notice"])
 
     preview = _template_preview(str(sense.get("category_code") or ""), language, cs_id)
-    with st.expander("🧩 模板预览（确定性引擎 · 编者的语义底座，不是成品释义）"):
+    with st.expander(_t(
+        "🧩 模板预览（确定性引擎 · 编者的语义底座，不是成品释义）",
+        "🧩 Template Preview (deterministic engine · the editor's semantic "
+        "scaffold, not the finished definition)",
+    )):
         if not preview:
             st.info(
                 "模板预览暂不可用：该义位不在建模覆盖内 / 缺特征编码 / 范畴包解析"
                 "失败 —— 占位容错，不拦撰写，可直接成文。"
             )
         else:
-            st.markdown("**模板化释义（底稿）**")
+            st.markdown(_t("**模板化释义（底稿）**", "**Templated definition (base draft)**"))
             st.markdown(str(preview.get("template_text") or "（空模板）"))
             dim = preview.get("图式维度") or {}
             oald = preview.get("oald") or {}
@@ -962,7 +968,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         _apply_stash_defaults(stashed, target, latest)
     )
 
-    st.markdown("#### ✍️ 成文编辑")
+    st.markdown(_t("#### ✍️ 成文编辑", "#### ✍️ Draft Editing"))
     if restore_caption:
         st.caption(restore_caption)
     if base_caption:
@@ -971,7 +977,8 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         # 编辑框）：旧暂存文收 st.expander 只读展示 —— 可查证、不重放。
         archive_text = str(((stashed or {}).get("state") or {}).get("content") or "")
         if not restore_caption and archive_text.strip():
-            with st.expander("🗄️ 旧暂存存档（基线已前进，只读可查）"):
+            with st.expander(_t("🗄️ 旧暂存存档（基线已前进，只读可查）",
+                                "🗄️ Old Stash Archive (baseline advanced, read-only)")):
                 st.caption(
                     f"暂存于 {_format_dt((stashed or {}).get('updated_at'))} —— "
                     "基线已前进，暂存仅存档可查（未回填编辑框）。"
@@ -982,7 +989,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         f"{_safe_int((latest or {}).get('version')) or 0}"
     )
     content = st.text_area(
-        "释义成文",
+        _t("释义成文", "Definition text"),
         value=content_default,
         height=220,
         key=content_key,
@@ -990,14 +997,17 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         "定义词表合规检查（AI 体例质检）批次 8 接入。",
     )
     style_version = st.text_input(
-        "体例版本（可选，如 style.yaml@v1）", value=style_default,
+        _t("体例版本（可选，如 style.yaml@v1）",
+           "Style version (optional, e.g. style.yaml@v1)"), value=style_default,
         key="writing_style_version",
     )
 
     col_save, col_submit = st.columns(2)
     with col_save:
-        st.markdown("**💾 保存草稿**")
-        if st.button("保存草稿（版本自动递增）", key="writing_save_draft"):
+        st.markdown(_t("**💾 保存草稿**", "**💾 Save Draft**"))
+        if st.button(_t("保存草稿（版本自动递增）",
+                        "Save Draft (version auto-increments)"),
+                     key="writing_save_draft"):
             if not content.strip():
                 st.warning("释义成文为空：请先撰写内容再保存。")
             elif target["mode"] == "update":
@@ -1036,7 +1046,7 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
                 else:
                     st.error("保存失败：参数或数据库异常，详见服务端日志。")
     with col_submit:
-        st.markdown("**📨 提交初审**")
+        st.markdown(_t("**📨 提交初审**", "**📨 Submit for Initial Review**"))
         reviewers = _reviewer_options(me)
         if not reviewers:
             st.warning(
@@ -1046,12 +1056,16 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
             reviewer = None
         else:
             reviewer = st.selectbox(
-                "选择审校人（回避制：已滤掉本人，数据层再硬校验）",
+                _t("选择审校人（回避制：已滤掉本人，数据层再硬校验）",
+                   "Select reviewer (recusal: yourself pre-filtered, data layer "
+                   "re-validates)"),
                 options=reviewers,
                 format_func=lambda o: o["label"],
                 key="writing_reviewer",
             )
-        if st.button("提交初审（draft → in_review）", key="writing_submit_review"):
+        if st.button(_t("提交初审（draft → in_review）",
+                        "Submit for Initial Review (draft → in_review)"),
+                     key="writing_submit_review"):
             if not content.strip():
                 st.warning("释义成文为空，无法提交。")
             elif target["mode"] != "update":
@@ -1081,7 +1095,9 @@ def _render_write_tab(me: Dict[str, Any]) -> None:
         # FX-39 任务 2：💾 暂存草稿（与「提交审校」并列；落 draft_states 用户
         # 上下文域，**不进版本链、不触发审校流转**）。乐观锁/作者校验/回避制
         # 三闸不经过此路径 —— 暂存只写会话存储域快照，恢复只作表单默认值。
-        if st.button("💾 暂存草稿（不提交审校）", key="writing_stash_draft"):
+        if st.button(_t("💾 暂存草稿（不提交审校）",
+                        "💾 Stash Draft (without submitting for review)"),
+                     key="writing_stash_draft"):
             if not content.strip():
                 st.warning("释义成文为空：暂存前请先撰写内容。")
             elif user_context_db.upsert_draft(stash_form_key, {
@@ -1110,7 +1126,9 @@ def _render_review_tab(me: Dict[str, Any]) -> None:
     scope_all = False
     if "dict_admin" in users_db.effective_six_roles(me):
         scope_all = st.checkbox(
-            "查看全部待审（词典管理员总览口径；裁决仍仅受派审校人可执行）",
+            _t("查看全部待审（词典管理员总览口径；裁决仍仅受派审校人可执行）",
+               "View all pending reviews (dict-admin overview; adjudication still "
+               "restricted to the assigned reviewer)"),
             value=False, key="writing_review_all",
         )
     rows = writing_db.list_pending_reviews(None if scope_all else me.get("id"))
@@ -1146,7 +1164,9 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                            f"#{row.get('author_id')}")
         label = (
             f"#{row['task_id']} · {row['sense_ref']} v{row['version']} · "
-            f"第 {row['round']} 轮 · 作者：{author}"
+            # 行级 expander 头的中文骨架（第 X 轮 / 作者）走模板化 _t，zh 态逐字不变
+            + _t("第 {r} 轮 · 作者：{a}", "Round {r} · Author: {a}").format(
+                r=row["round"], a=author)
         )
         with st.expander(label):
             assigned = _safe_int(row.get("reviewer_id")) == _safe_int(me.get("id"))
@@ -1154,7 +1174,9 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                 st.warning(
                     "该任务受派给其他审校人：你只能挂意见，裁决按钮会被数据层拒绝。"
                 )
-            st.markdown(f"**释义内容（v{row['version']}）**")
+            st.markdown(
+                _t("**释义内容（v{v}）**", "**Definition (v{v})**").format(
+                    v=row["version"]))
             st.markdown(str(row.get("content") or ""))
             st.caption(
                 f"状态：{STATUS_LABELS.get(str(row.get('status')), '—')} · "
@@ -1162,7 +1184,8 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                 f"体例版本：{row.get('style_version') or '—'} · "
                 f"提交说明：{row.get('note') or '—'}"
             )
-            with st.expander("🤖 AI/模板草稿对照"):
+            with st.expander(_t("🤖 AI/模板草稿对照",
+                                "🤖 AI/Template Draft Comparison")):
                 payload = row.get("ai_draft")
                 if payload:
                     st.json(payload)
@@ -1171,7 +1194,9 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
             comments = comments_by_version.get(int(row["version_id"]))
             if comments is None:
                 comments = writing_db.list_comments(int(row["version_id"]))
-            st.markdown(f"**💬 意见线（{len(comments)} 条）**")
+            st.markdown(
+                _t("**💬 意见线（{n} 条）**", "**💬 Comment Thread ({n})**").format(
+                    n=len(comments)))
             if comments:
                 for c in comments:
                     who = names.get(_safe_int(c.get("reviewer_id")),
@@ -1184,10 +1209,11 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
             else:
                 st.caption("暂无意见。")
             new_comment = st.text_area(
-                "挂意见（逐条留痕）",
+                _t("挂意见（逐条留痕）", "Add comment (one entry at a time)"),
                 key=f"writing_comment_{row['task_id']}", height=80,
             )
-            if st.button("💬 挂意见", key=f"writing_add_comment_{row['task_id']}"):
+            if st.button(_t("💬 挂意见", "💬 Add Comment"),
+                         key=f"writing_add_comment_{row['task_id']}"):
                 if not new_comment.strip():
                     st.warning("意见内容为空。")
                 else:
@@ -1202,12 +1228,14 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                             "或参数异常。"
                         )
             note = st.text_area(
-                "裁决意见（打回理由 / 通过留言）",
+                _t("裁决意见（打回理由 / 通过留言）",
+                   "Adjudication note (reason for sending back / note for approval)"),
                 key=f"writing_note_{row['task_id']}", height=80,
             )
             col_reject, col_approve = st.columns(2)
             with col_reject:
-                if st.button("⛔ 要求修订（打回）",
+                if st.button(_t("⛔ 要求修订（打回）",
+                                "⛔ Request Revision (send back)"),
                              key=f"writing_revise_{row['task_id']}"):
                     if not assigned:
                         st.error("你不是该任务的受派审校人，无法裁决。")
@@ -1223,7 +1251,8 @@ def _render_pending_review_rows(me: Dict[str, Any], rows: List[Dict[str, Any]]) 
                     else:
                         st.error("打回失败：任务已被处理或状态已变化，请刷新。")
             with col_approve:
-                if st.button("✅ 通过（终审即 final）",
+                if st.button(_t("✅ 通过（终审即 final）",
+                                "✅ Approve (final review → final)"),
                              key=f"writing_approve_{row['task_id']}"):
                     if not assigned:
                         st.error("你不是该任务的受派审校人，无法裁决。")
@@ -1253,7 +1282,12 @@ def _render_adjudication_view(me: Dict[str, Any]) -> None:
     in_review = writing_db.list_versions(status=writing_db.STATUS_IN_REVIEW)
     approved = writing_db.list_versions(status=writing_db.STATUS_APPROVED)
     rows = in_review + approved
-    st.markdown(f"<h4 style='{HEADER_H3}'>👑 词典管理员终裁（两级终审收口）</h4>",
+    # 区块标题双语：先取译串再进 f-string 插值（py3.11 f-string 表达式不可跨行）
+    adjudication_title = _t(
+        "👑 词典管理员终裁（两级终审收口）",
+        "👑 Dict-Admin Final Adjudication (two-tier closure)",
+    )
+    st.markdown(f"<h4 style='{HEADER_H3}'>{adjudication_title}</h4>",
                 unsafe_allow_html=True)
     if not rows:
         st.caption(
@@ -1273,7 +1307,8 @@ def _render_adjudication_view(me: Dict[str, Any]) -> None:
         status = STATUS_LABELS.get(str(row.get("status")), str(row.get("status")))
         with st.expander(
             f"{row.get('sense_ref')} v{row.get('version')} · {status} · "
-            f"作者：{author}"
+            # 行级 expander 头的中文骨架（作者）走模板化 _t，zh 态逐字不变
+            + _t("作者：{a}", "Author: {a}").format(a=author)
         ):
             st.markdown(str(row.get("content") or ""))
             st.caption(
@@ -1281,12 +1316,15 @@ def _render_adjudication_view(me: Dict[str, Any]) -> None:
                 f"体例版本：{row.get('style_version') or '—'} · 行 id：{row.get('id')}"
             )
             note = st.text_area(
-                "终裁意见（否决理由必填 / 通过留言可选）",
+                _t("终裁意见（否决理由必填 / 通过留言可选）",
+                   "Final adjudication note (reason required to reject / "
+                   "optional note to approve)"),
                 key=f"writing_final_note_{row['id']}", height=80,
             )
             col_ok, col_no = st.columns(2)
             with col_ok:
-                if st.button("👑 终裁通过（→ final）",
+                if st.button(_t("👑 终裁通过（→ final）",
+                                "👑 Final Adjudication: Approve (→ final)"),
                              key=f"writing_final_ok_{row['id']}"):
                     if writing_db.adjudicate_final(
                         int(row["id"]), me.get("id"), "approved", note or "",
@@ -1303,7 +1341,8 @@ def _render_adjudication_view(me: Dict[str, Any]) -> None:
                             "重试。"
                         )
             with col_no:
-                if st.button("⛔ 终裁否决（→ rejected）",
+                if st.button(_t("⛔ 终裁否决（→ rejected）",
+                                "⛔ Final Adjudication: Reject (→ rejected)"),
                              key=f"writing_final_no_{row['id']}"):
                     if not note.strip():
                         st.warning("终裁否决须给理由：请在终裁意见里写明否决依据"
@@ -1357,7 +1396,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         return
     cat_options = [c["code"] for c in categories]
     cat_code = st.selectbox(
-        "范畴",
+        _t("范畴", "Category"),
         options=cat_options,
         format_func=lambda code: next(
             (f"{c['code']} {c['name_cn']}" for c in categories if c["code"] == code),
@@ -1366,7 +1405,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         key="writing_history_category",
     )
     language = st.radio(
-        "语言",
+        _t("语言", "Language"),
         options=["en", "zh"],
         horizontal=True,
         format_func={"en": "英语（OALD10）", "zh": "汉语（现汉7）"}.get,
@@ -1377,7 +1416,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         st.info("该范畴/语言暂无义位（与撰写台同源，merged 禁选）。")
         return
     sense = st.selectbox(
-        "选择义位", options=senses, format_func=_sense_option_label,
+        _t("选择义位", "Select sense"), options=senses, format_func=_sense_option_label,
         key="writing_history_sense",
     )
     cs_id = _safe_int(sense.get("cs_sense_id")) or 0
@@ -1419,7 +1458,7 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         })
     st.dataframe(table_rows, hide_index=True, use_container_width=True)
 
-    st.markdown("#### 版本链详情")
+    st.markdown(_t("#### 版本链详情", "#### Version Chain Details"))
     can_resolve_base = _can_review(me)
     my_id = _safe_int(me.get("id"))
     # R5-6（N+1 修复）：全部版本的意见线一次批量取回按 version 分组，
@@ -1433,7 +1472,10 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
         status = STATUS_LABELS.get(str(v.get("status")), str(v.get("status")))
         base = f"v{v.get('based_on_version')}" if v.get("based_on_version") else "—"
         with st.expander(
-            f"v{v.get('version')} · {status} · 作者：{_who(v.get('author_id'))} · 基于：{base}"
+            f"v{v.get('version')} · {status} · "
+            # 行级 expander 头的中文骨架（作者 / 基于）走模板化 _t，zh 态逐字不变
+            + _t("作者：{a} · 基于：{b}", "Author: {a} · Based on: {b}").format(
+                a=_who(v.get("author_id")), b=base)
         ):
             is_hidden_draft = (
                 not realname and str(v.get("status") or "") == "draft"
@@ -1444,13 +1486,16 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
                 st.markdown(str(v.get("content") or ""))
             ai = v.get("ai_draft")
             if ai:
-                with st.expander("🤖 AI/模板草稿快照"):
+                with st.expander(_t("🤖 AI/模板草稿快照",
+                                    "🤖 AI/Template Draft Snapshot")):
                     st.json(ai)
             comments = comments_by_version.get(int(v["id"]))
             if comments is None:
                 comments = writing_db.list_comments(int(v["id"]))
             if comments:
-                st.markdown(f"**💬 意见线（{len(comments)} 条）**")
+                st.markdown(
+                    _t("**💬 意见线（{n} 条）**", "**💬 Comment Thread ({n})**").format(
+                        n=len(comments)))
                 for c in comments:
                     flag = "✅ 已处理" if c.get("resolved") else "🔔 未处理"
                     st.markdown(
@@ -1461,7 +1506,9 @@ def _render_history_tab(me: Dict[str, Any]) -> None:
                 open_comments = [c for c in comments if not c.get("resolved")]
                 if open_comments and (can_resolve_base or my_id == _safe_int(v.get("author_id"))):
                     if st.button(
-                        f"✔️ 标记全部意见已处理（{len(open_comments)} 条）",
+                        _t("✔️ 标记全部意见已处理（{n} 条）",
+                           "✔️ Mark all {n} comments resolved").format(
+                            n=len(open_comments)),
                         key=f"writing_resolve_{v['id']}",
                     ):
                         done = sum(
@@ -1499,8 +1546,13 @@ def render_writing_page() -> None:
     # 页 H1 双语：原文即 key（与侧边栏 label 同串，ZH_EN 已收录）
     st.markdown(f"<h1 style='{HEADER_H1}'>{_t('✍️ 释义撰写与审校')}</h1>",
                 unsafe_allow_html=True)
+    # 区块标题双语：先取译串再进 f-string 插值（py3.11 f-string 表达式不可跨行）
+    workbench_title = _t(
+        "编纂成文域工作台（阶段 2 第一批）",
+        "Compilation Workbench (Phase 2, Batch 1)",
+    )
     st.markdown(
-        f"<h2 style='{HEADER_H2}'>编纂成文域工作台（阶段 2 第一批）</h2>",
+        f"<h2 style='{HEADER_H2}'>{workbench_title}</h2>",
         unsafe_allow_html=True,
     )
     st.caption(
@@ -1510,7 +1562,11 @@ def render_writing_page() -> None:
     )
 
     tab_write, tab_review, tab_history = st.tabs(
-        ["✍️ 撰写台", "⚖️ 审校台", "📚 版本历史"],
+        [
+            _t("✍️ 撰写台", "✍️ Drafting Workbench"),
+            _t("⚖️ 审校台", "⚖️ Review Desk"),
+            _t("📚 版本历史", "📚 Version History"),
+        ],
     )
     with tab_write:
         _render_write_tab(me)

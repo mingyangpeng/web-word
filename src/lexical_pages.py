@@ -417,7 +417,10 @@ def _render_merged_excluded(excluded: List[Dict[str, Any]]) -> None:
     """已并入义位清单（禁选标注；文案与义项脊柱同口径）。"""
     if not excluded:
         return
-    with st.expander(f"已并入义位（禁选，{len(excluded)}）", expanded=False):
+    # expander 头带动态计数：模板化 _t（zh 态逐字不变）
+    excluded_title = _t("已并入义位（禁选，{n}）",
+                        "Merged senses (excluded, {n})").format(n=len(excluded))
+    with st.expander(excluded_title, expanded=False):
         st.caption("分立复核定稿已并入目标义位的义位不再独立配置例证/对译；"
                    "内容随目标义位走（G3 语义）。")
         for row in excluded:
@@ -476,7 +479,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
         st.info("暂无可选义位（cs_senses 未建表/无数据/数据库不可用）——"
                 "例证配置需先在语义分析区完成义位甄别与分立复核。")
         return
-    pick = st.selectbox("选择义位", list(options.keys()), key="lex_ex_sense_pick")
+    pick = st.selectbox(_t("选择义位", "Select sense"),
+                        list(options.keys()), key="lex_ex_sense_pick")
     sense_id = options.get(pick)
     sense_row = next((s for s in senses if _as_int(s.get("id")) == sense_id), None)
     ok, reason = _sense_selectable((sense_row or {}).get("status"))
@@ -486,36 +490,45 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
         return
     sense_ref = str(sense_id)
     examples = list_examples(sense_ref)
-    st.markdown(f"<h4 style='{HEADER_H3}'>📋 例证列表"
-                f"（{len(examples)} 条）</h4>", unsafe_allow_html=True)
+    # 区块标题带动态计数：模板化 _t（zh 态逐字不变）；先取译串再进 f-string
+    # 插值（py3.11 f-string 表达式不可跨行）
+    examples_title = _t("📋 例证列表（{n} 条）",
+                        "📋 Example List ({n})").format(n=len(examples))
+    st.markdown(f"<h4 style='{HEADER_H3}'>{examples_title}</h4>",
+                unsafe_allow_html=True)
     if examples:
         _render_examples_table(examples)
     else:
         st.caption("该义位暂无例证，先在下方新增（新例证以「候选」态起步）。")
 
-    with st.expander("➕ 新增例证", expanded=False):
+    with st.expander(_t("➕ 新增例证", "➕ Add Example"), expanded=False):
         with st.form("lex_ex_add_form", clear_on_submit=True):
             content = st.text_area(
-                f"例证文本（必填，≤{MAX_CONTENT_LEN} 字符）", key="lex_ex_add_content",
+                _t("例证文本（必填，≤{n} 字符）",
+                   "Example text (required, ≤{n} chars)").format(n=MAX_CONTENT_LEN),
+                key="lex_ex_add_content",
                 height=100,
                 help="语料草选/人工改写/自拟均可；来源即改写标记，出版侧按来源"
                      "区分「自产/改写」与版权原文（G6 许可检查口径）。正文上限 "
                      f"{MAX_CONTENT_LEN} 字符（应用层显式设防，超长拒收不落库）。",
             )
             source = st.selectbox(
-                "来源 source", list(EXAMPLE_SOURCES),
+                _t("来源 source", "Source"), list(EXAMPLE_SOURCES),
                 format_func=lambda s: SOURCE_LABELS.get(s, s),
                 key="lex_ex_add_source",
             )
             caption = st.text_input(
-                "说明/出处图注（可选，如语料库名/例句出处）",
+                _t("说明/出处图注（可选，如语料库名/例句出处）",
+                   "Caption / provenance (optional, e.g. corpus name / example source)"),
                 key="lex_ex_add_caption",
             )
             order = st.number_input(
-                "展示顺序 sort_order（小在前）", value=0, step=1,
+                _t("展示顺序 sort_order（小在前）",
+                   "Display order sort_order (smaller first)"), value=0, step=1,
                 key="lex_ex_add_order",
             )
-            submitted = st.form_submit_button("新增例证", use_container_width=True)
+            submitted = st.form_submit_button(_t("新增例证", "Add Example"),
+                                              use_container_width=True)
         if submitted:
             eid = add_example(
                 sense_ref, content, source=source, caption=caption,
@@ -528,13 +541,15 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 st.error(f"新增失败：例证文本为空/超长（≤{MAX_CONTENT_LEN} 字符）/"
                          "参数非法/数据库不可用（lexical_db 已记日志）。")
 
-    with st.expander("✏️ 编辑 / 审定流转 / 删除", expanded=False):
+    with st.expander(_t("✏️ 编辑 / 审定流转 / 删除",
+                        "✏️ Edit / Review Flow / Delete"), expanded=False):
         ex_options = _example_options(examples)
         if not ex_options:
             st.caption("该义位暂无例证，先在上方新增。")
         else:
             edit_pick = st.selectbox(
-                "选择例证", list(ex_options.keys()), key="lex_ex_edit_pick",
+                _t("选择例证", "Select example"), list(ex_options.keys()),
+                key="lex_ex_edit_pick",
             )
             eid = ex_options.get(edit_pick)
             row = next(
@@ -545,28 +560,31 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
             else:
                 with st.form("lex_ex_edit_form", clear_on_submit=False):
                     new_content = st.text_area(
-                        f"例证文本（≤{MAX_CONTENT_LEN} 字符）",
+                        _t("例证文本（≤{n} 字符）",
+                           "Example text (≤{n} chars)").format(n=MAX_CONTENT_LEN),
                         value=str(row.get("content") or ""),
                         key="lex_ex_edit_content", height=100,
                     )
                     cur_source = str(row.get("source") or SOURCE_CORPUS)
                     new_source = st.selectbox(
-                        "来源 source", list(EXAMPLE_SOURCES),
+                        _t("来源 source", "Source"), list(EXAMPLE_SOURCES),
                         index=list(EXAMPLE_SOURCES).index(cur_source)
                         if cur_source in EXAMPLE_SOURCES else 0,
                         format_func=lambda s: SOURCE_LABELS.get(s, s),
                         key="lex_ex_edit_source",
                     )
                     new_caption = st.text_input(
-                        "说明/出处图注", value=str(row.get("caption") or ""),
+                        _t("说明/出处图注", "Caption / provenance"),
+                        value=str(row.get("caption") or ""),
                         key="lex_ex_edit_caption",
                     )
                     new_order = st.number_input(
-                        "展示顺序 sort_order",
+                        _t("展示顺序 sort_order", "Display order sort_order"),
                         value=int(_as_int(row.get("sort_order")) or 0), step=1,
                         key="lex_ex_edit_order",
                     )
-                    if st.form_submit_button("保存修改", use_container_width=True):
+                    if st.form_submit_button(_t("保存修改", "Save Changes"),
+                                             use_container_width=True):
                         if update_example(
                             eid, content=new_content, source=new_source,
                             caption=new_caption, sort_order=int(new_order),
@@ -580,7 +598,10 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 nxt_status = _next_example_status(cur_status)
                 if nxt_status:
                     if st.button(
-                        f"审定流转：{cur_status} → {nxt_status}",
+                        # 按钮带动态枚举值：模板化 _t（zh 态逐字不变）
+                        _t("审定流转：{cur} → {nxt}",
+                           "Review status flow: {cur} → {nxt}").format(
+                            cur=cur_status, nxt=nxt_status),
                         key=f"lex_ex_adv_{eid}",
                         help="单步流转不可跳级/回退；两人同流只有一人生效"
                              "（乐观并发守卫）。",
@@ -594,7 +615,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 else:
                     st.caption("该例证已「发布」（终态，不可再流转）。")
                 if st.button(
-                    "物理删除该例证（不可恢复）",
+                    _t("物理删除该例证（不可恢复）",
+                       "Hard-delete this example (irreversible)"),
                     key=f"lex_ex_del_{eid}",
                     help="例证可重建非词典正文，物理 DELETE；删除时自动摘除"
                          "该例证的全部媒体绑定（unbind_for_anchor），不留孤儿绑定。",
@@ -605,7 +627,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                     else:
                         st.error("删除失败：行不存在/数据库不可用。")
 
-    with st.expander("🖼️ 媒体例证绑定（入口）", expanded=False):
+    with st.expander(_t("🖼️ 媒体例证绑定（入口）",
+                        "🖼️ Media Example Binding (entry point)"), expanded=False):
         st.caption("资产先在「📖 词典管理 · 🖼️ 媒体库」登记（license 必填）——"
                    "本页只把已登记资产绑到例证（media_bindings example 锚，"
                    "用途 example_media，UNIQUE 幂等，重复绑定保留首次值）。")
@@ -614,7 +637,8 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
             st.caption("该义位暂无例证，先新增文字例证再绑媒体。")
         else:
             media_pick = st.selectbox(
-                "选择例证", list(media_options.keys()), key="lex_media_pick",
+                _t("选择例证", "Select example"), list(media_options.keys()),
+                key="lex_media_pick",
             )
             eid = media_options.get(media_pick)
             row = next((e for e in examples if _as_int(e.get("id")) == eid), None)
@@ -646,14 +670,17 @@ def _render_examples_tab(me: Dict[str, Any]) -> None:
                 else:
                     st.caption("该例证尚无媒体绑定。")
                 asset_id = st.number_input(
-                    "资产 id（media_assets.id）", min_value=1, step=1,
+                    _t("资产 id（media_assets.id）", "Asset id (media_assets.id)"),
+                    min_value=1, step=1,
                     key="lex_media_asset_id",
                 )
                 media_caption = st.text_input(
-                    "图注/来源说明（媒体例证通常记来源）",
+                    _t("图注/来源说明（媒体例证通常记来源）",
+                       "Caption / source note (media examples usually record the source)"),
                     key="lex_media_caption",
                 )
-                if st.button("绑定为媒体例证", key="lex_media_bind"):
+                if st.button(_t("绑定为媒体例证", "Bind as Media Example"),
+                             key="lex_media_bind"):
                     if bind_example_media(
                         eid, int(asset_id), media_caption,
                     ):
@@ -700,7 +727,8 @@ def _render_translations_tab(me: Dict[str, Any]) -> None:
     if not options:
         st.info("暂无可选义位（cs_senses 未建表/无数据/数据库不可用）。")
         return
-    pick = st.selectbox("选择义位", list(options.keys()), key="lex_tr_sense_pick")
+    pick = st.selectbox(_t("选择义位", "Select sense"),
+                        list(options.keys()), key="lex_tr_sense_pick")
     sense_id = options.get(pick)
     sense_row = next((s for s in senses if _as_int(s.get("id")) == sense_id), None)
     ok, reason = _sense_selectable((sense_row or {}).get("status"))
@@ -709,14 +737,16 @@ def _render_translations_tab(me: Dict[str, Any]) -> None:
         return
     sense_ref = str(sense_id)
 
-    st.markdown(f"<h4 style='{HEADER_H3}'>📜 已有定稿</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('📜 已有定稿', '📜 Existing Finalization')}</h4>",
+                unsafe_allow_html=True)
     existing = get_translation(sense_ref)
     _render_translation_state(existing)
 
-    st.markdown(f"<h4 style='{HEADER_H3}'>✒️ 三态定稿</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('✒️ 三态定稿', '✒️ Three-State Finalization')}</h4>",
+                unsafe_allow_html=True)
     default_state = str((existing or {}).get("state") or STATE_FULL)
     state = st.radio(
-        "对译三态",
+        _t("对译三态", "Translation three-state"),
         list(TRANSLATION_STATES),
         index=list(TRANSLATION_STATES).index(default_state)
         if default_state in TRANSLATION_STATES else 0,
@@ -727,25 +757,34 @@ def _render_translations_tab(me: Dict[str, Any]) -> None:
     )
     with st.form("lex_tr_form", clear_on_submit=False):
         equivalent = st.text_input(
-            "对应词 equivalent（full/partial 必填）",
+            _t("对应词 equivalent（full/partial 必填）",
+               "Equivalent (required for full/partial)"),
             value=str((existing or {}).get("equivalent") or ""),
             key="lex_tr_equivalent",
         )
-        note_label = ("括注 note（partial 必填：对应词的含义边界说明）"
-                      if state == STATE_PARTIAL
-                      else "辨析栏草稿 note（可选：近义簇英汉辨析栏起草）")
+        # 表单 label 随三态分支切换：两支都走 _t（zh 态逐字不变）
+        note_label = (
+            _t("括注 note（partial 必填：对应词的含义边界说明）",
+               "Bracket note (required for partial: meaning boundary of the equivalent)")
+            if state == STATE_PARTIAL
+            else _t("辨析栏草稿 note（可选：近义簇英汉辨析栏起草）",
+                    "Usage-note draft (optional: seeds the synonym-cluster "
+                    "EN–ZH differentiation column)")
+        )
         note = st.text_area(
             note_label,
             value=str((existing or {}).get("note") or ""),
             key="lex_tr_note", height=100,
         )
         paraphrase = st.text_area(
-            "释义翻译 paraphrase（none 必填）",
+            _t("释义翻译 paraphrase（none 必填）",
+               "Paraphrase (required for none)"),
             value=str((existing or {}).get("paraphrase") or ""),
             key="lex_tr_paraphrase", height=120,
             help="无对应时用中文释义直译该义位（装配侧 none 态渲染此列）。",
         )
-        submitted = st.form_submit_button("定稿", use_container_width=True)
+        submitted = st.form_submit_button(_t("定稿", "Finalize"),
+                                          use_container_width=True)
     if not submitted:
         return
     error = _translation_missing(state, equivalent, note, paraphrase)
@@ -786,8 +825,13 @@ def render_lexical_page() -> None:
 
     # 页 H1 双语：原文即 key（与侧边栏 label 同串，ZH_EN 已收录）
     st.markdown(f"<h1 style='{HEADER_H1}'>{_t('📖 例证与对译')}</h1>", unsafe_allow_html=True)
+    # 区块标题双语：先取译串再进 f-string 插值（py3.11 f-string 表达式不可跨行）
+    subtitle = _t(
+        "编纂成文 · 工序 11 例证配置 ＋ 工序 12 对译定稿",
+        "Compilation · Step 11 Example Configuration ＋ Step 12 Translation Finalization",
+    )
     st.markdown(
-        f"<h2 style='{HEADER_H2}'>编纂成文 · 工序 11 例证配置 ＋ 工序 12 对译定稿</h2>",
+        f"<h2 style='{HEADER_H2}'>{subtitle}</h2>",
         unsafe_allow_html=True,
     )
     st.caption(
@@ -796,7 +840,12 @@ def render_lexical_page() -> None:
         "已并入（merged）义位禁选，内容随目标义位走。"
     )
 
-    tab_examples, tab_translations = st.tabs(["🗂️ 例证配置", "🌐 对译定稿"])
+    tab_examples, tab_translations = st.tabs(
+        [
+            _t("🗂️ 例证配置", "🗂️ Example Configuration"),
+            _t("🌐 对译定稿", "🌐 Translation Finalization"),
+        ],
+    )
     with tab_examples:
         _render_examples_tab(me)
     with tab_translations:

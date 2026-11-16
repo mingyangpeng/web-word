@@ -31,6 +31,15 @@
 - tests/test_vocab_admin.py 6 条（往返/注释剔除/header 契约/casefold 防线分层——ASCII 序教训入注）
 - 全量 **3080 passed / 0 failed**（+33：vocab_admin 6＋i18n 27）
 
+## 2026-11-16 · 批次 57：双语第三波——页面 P0 可见文案全量 t() 化（真实浏览器反馈驱动）
+
+- **真实浏览器实证**（browser-use 复现用户操作）：框架层英文化生效（Sign in/Username/🔍 Browse/🔍 Search Definitions）——观感「还是中文」来自主内容区（页 H1/统计卡/区块标题/按钮未接 i18n）
+- **362 处 P0 文案 t(zh, en) 显式参数化**：A 组 dict_admin 141＋model_settings 24＋users_admin 39；B 组 writing 42＋lexical 35＋data 36＋collab 45；主会话 app.py 侧边栏统计区/H1/欢迎卡/搜索框 ~22
+- 翻译口径：地道 UI 英语（Editor Cockpit/Task Assignment/Media Library/Drafting Workbench/Review Desk/Collaboration Inbox/Entry Browser 等）；zh 态零变化（AST 逐条校验中文 key 原样）
+- 值语义不译（bool 写值/试标轮/停用启用 radio 选项等——startswith 判定依赖，注释注明）；caption 长说明渐进保留中文
+- 哨兵适配 ×3（copy_quality/fx8 的 app.py metric 字面量→_t 形态）；py3.11 f-string 花括号约束（插值标题改先取译再插值）
+- 全量 **3186 passed / 0 failed**
+
 ## 2026-11-16 · 批次 53：10 轮 review 第三波——R9 shell 终审＋移交清单全清
 
 - **R9 五脚本终审**：restore 退出码契约缺口（锚点计数非数字 case 预检）；snapshot 补 set -e＋mktemp trap EXIT；entrypoint set -euo pipefail＋幂等核实；backup_db .part 半截产物 trap 清理；ops/_common 死代码删＋status 口令口径归一 MYSQL_PWD

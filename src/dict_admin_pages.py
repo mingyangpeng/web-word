@@ -900,24 +900,26 @@ def _render_cockpit_metrics(projects: List[Dict[str, Any]],
             "数据），0 为真实计数；库恢复后刷新即回真值。"
         )
     n_members = sum(int(p.get("member_count") or 0) for p in projects)
-    st.markdown(f"<h3 style='{HEADER_H3}'>📊 规模与 AI 台账</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('📊 规模与 AI 台账', '📊 Scale & AI Ledger')}</h3>", unsafe_allow_html=True)
     org_cols = st.columns(2)
     with org_cols[0]:
-        st.metric("词典项目", "—" if projects_degraded else len(projects))
+        st.metric(_t("词典项目", "Dictionary Projects"),
+                  "—" if projects_degraded else len(projects))
     with org_cols[1]:
-        st.metric("成员人次（合计）", "—" if projects_degraded else n_members)
+        st.metric(_t("成员人次（合计）", "Members (Total)"),
+                  "—" if projects_degraded else n_members)
     ai_cols = st.columns(4)
     with ai_cols[0]:
-        st.metric("AI 提案总数",
+        st.metric(_t("AI 提案总数", "Total AI Proposals"),
                   "—" if stats_degraded else int(stats.get("total") or 0))
     with ai_cols[1]:
-        st.metric("待裁决",
+        st.metric(_t("待裁决", "Pending Review"),
                   "—" if stats_degraded else int(stats.get("pending") or 0))
     with ai_cols[2]:
-        st.metric("采纳率",
+        st.metric(_t("采纳率", "Adoption Rate"),
                   "—" if stats_degraded else _format_rate(stats.get("adoption_rate")))
     with ai_cols[3]:
-        st.metric("平均不确定度",
+        st.metric(_t("平均不确定度", "Avg. Uncertainty"),
                   "—" if stats_degraded else _format_uncertainty(stats.get("avg_uncertainty")))
 
 
@@ -958,7 +960,7 @@ def _render_cockpit_tab() -> None:
     _render_cockpit_metrics(projects, stats, projects_degraded, stats_degraded)
 
     st.markdown(
-        f"<h3 style='{HEADER_H3}'>⛓️ 进度漏斗（语义分析段 工序4–8 ＋ 编纂成文占位）</h3>",
+        f"<h3 style='{HEADER_H3}'>{_t('⛓️ 进度漏斗（语义分析段 工序4–8 ＋ 编纂成文占位）', '⛓️ Progress Funnel (Semantic Analysis Steps 4–8 + Drafting Placeholder)')}</h3>",
         unsafe_allow_html=True,
     )
     funnel_options = _funnel_category_options()
@@ -977,7 +979,8 @@ def _render_cockpit_tab() -> None:
     except ImportError:  # 并行读面未落 → 按无偏好降级
         pass
     funnel_cat = st.selectbox(
-        "漏斗范畴（范畴包 configs/<category>/）",
+        _t("漏斗范畴（范畴包 configs/<category>/）",
+           "Funnel Category (category packages configs/<category>/)"),
         funnel_options,
         index=funnel_idx,
         key="dict_admin_cockpit_category",
@@ -1030,7 +1033,7 @@ def _render_cockpit_tab() -> None:
             "CSV，reliability 页下载按钮）。"
         )
 
-    st.markdown(f"<h3 style='{HEADER_H3}'>🩺 项目自检（≥1 名在用 chief 等约束）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🩺 项目自检（≥1 名在用 chief 等约束）', '🩺 Project Self-Check (Constraints like ≥1 Active Chief)')}</h3>",
                 unsafe_allow_html=True)
     if not projects and not projects_degraded:
         st.info("尚无词典项目：在下方「🏗️ 创建项目（建壳）」建壳并指定首位词典管理员。")
@@ -1057,14 +1060,15 @@ def _render_cockpit_tab() -> None:
                        "请先在「👥 账号管理」为用户授予 dict_admin。")
         else:
             with st.form("dict_admin_project_create_form", clear_on_submit=True):
-                pname = st.text_input("项目名称", key="dict_admin_proj_name")
-                pcats = st.text_input("范畴包（逗号分隔，如 motion, speech）",
+                pname = st.text_input(_t("项目名称", "Project Name"), key="dict_admin_proj_name")
+                pcats = st.text_input(_t("范畴包（逗号分隔，如 motion, speech）",
+                                         "Category Packages (comma-separated, e.g. motion, speech)"),
                                       value="motion", key="dict_admin_proj_cats")
-                pchief = st.selectbox("首位词典管理员（chief）",
+                pchief = st.selectbox(_t("首位词典管理员（chief）", "First Chief (dict_admin)"),
                                       options=list(chief_opts.keys()),
                                       key="dict_admin_proj_chief")
-                pdesc = st.text_input("项目描述（可空）", key="dict_admin_proj_desc")
-                if st.form_submit_button("创建项目"):
+                pdesc = st.text_input(_t("项目描述（可空）", "Project Description (optional)"), key="dict_admin_proj_desc")
+                if st.form_submit_button(_t("创建项目", "Create Project")):
                     name = pname.strip()
                     if not name:
                         st.error("项目名称必填。")
@@ -1419,7 +1423,7 @@ def _render_risk_list_section() -> None:
     if not me or not _is_dict_admin(me):
         return
     st.markdown(
-        f"<h3 style='{HEADER_H3}'>⚠️ 风险清单（需词典管理员关注的事项）</h3>",
+        f"<h3 style='{HEADER_H3}'>{_t('⚠️ 风险清单（需词典管理员关注的事项）', '⚠️ Risk List (Items Requiring Dict Admin Attention)')}</h3>",
         unsafe_allow_html=True,
     )
     items = _fx24_collect_risk_items()
@@ -1438,7 +1442,7 @@ def _render_risk_list_section() -> None:
                 if it.get("goto") and it["tone"] != "off":
                     _pk = it["goto"]
                     st.button(
-                        "前往 →", key=f"fx24_goto_{_pk}",
+                        _t("前往 →", "Go →"), key=f"fx24_goto_{_pk}",
                         on_click=(lambda pk=_pk: st.session_state.update(page=pk)),
                     )
                 else:
@@ -1462,7 +1466,7 @@ def _render_my_decisions_section() -> None:
     me = _current_user()
     if not me or not _is_dict_admin(me):
         return
-    st.markdown(f"<h3 style='{HEADER_H3}'>📥 待我裁决汇总</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('📥 待我裁决汇总', '📥 Pending My Decisions')}</h3>", unsafe_allow_html=True)
     counts, kind_reason = _fx24_collect_pending_by_kind()
     me_id = me.get("id")
     my_n, my_reason = _fx24_collect_my_reviews(me_id)
@@ -1475,16 +1479,17 @@ def _render_my_decisions_section() -> None:
         )
     cols = st.columns(4)
     with cols[0]:
-        st.metric("AI 提案·草稿（draft）待裁决",
+        st.metric(_t("AI 提案·草稿（draft）待裁决", "AI Draft Proposals Pending"),
                   "—" if kind_reason else int(counts[ai_ledger.KIND_DRAFT]))
     with cols[1]:
-        st.metric("AI 提案·质检（audit）待裁决",
+        st.metric(_t("AI 提案·质检（audit）待裁决", "AI Audit Proposals Pending"),
                   "—" if kind_reason else int(counts[ai_ledger.KIND_AUDIT]))
     with cols[2]:
-        st.metric("AI 提案·探针（probe）待裁决",
+        st.metric(_t("AI 提案·探针（probe）待裁决", "AI Probe Proposals Pending"),
                   "—" if kind_reason else int(counts[ai_ledger.KIND_PROBE]))
     with cols[3]:
-        st.metric("待我审校（受派审校人）", "—" if my_reason is not None else int(my_n))
+        st.metric(_t("待我审校（受派审校人）", "My Reviews (Assigned Reviewer)"),
+                  "—" if my_reason is not None else int(my_n))
     st.caption(
         "处理入口：草稿/质检 →「🤖 AI 协作」页收件箱；待我审校 →"
         "「✍️ 释义撰写与审校」页审校台；探针通常不入裁决流（仅在探针问答页"
@@ -1730,7 +1735,7 @@ def _render_style_check_section() -> None:
     me = _current_user()
     if not me or not _is_dict_admin(me):
         return
-    st.markdown(f"<h3 style='{HEADER_H3}'>🧪 体例质检（AI 机械准绳）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🧪 体例质检（AI 机械准绳）', '🧪 Style Check (AI Mechanical Criteria)')}</h3>",
                 unsafe_allow_html=True)
     # RV21-1：范畴下拉在表单外——切换即 rerun 刷新结果/历史（表单内控件
     # 变更不触发 rerun，导致切范畴零反馈、看历史被迫走写路径）
@@ -1750,12 +1755,13 @@ def _render_style_check_section() -> None:
     except ImportError:  # 并行读面未落 → 按无偏好降级
         pass
     cat = st.selectbox(
-        "质检范畴（configs/<category>/style.yaml，范畴级缺席回退词典层）",
+        _t("质检范畴（configs/<category>/style.yaml，范畴级缺席回退词典层）",
+           "Check Category (configs/<category>/style.yaml, falls back to dictionary level when absent)"),
         check_options,
         index=check_idx,
         key="dict_admin_style_check_category",
     )
-    if st.button("▶ 运行体例质检", key="dict_admin_style_check_run"):
+    if st.button(_t("▶ 运行体例质检", "▶ Run Style Check"), key="dict_admin_style_check_run"):
         _style_check_run_clicked(str(cat or ""), me)
 
     runs = style_check.list_recent_runs(category=str(cat or ""),
@@ -1874,7 +1880,7 @@ def _render_members_table(members: List[Dict[str, Any]]) -> None:
 
 def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
     """添加成员表单：list_users 选人 + 项目内职能；已入册者重入 = 改授职能。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>➕ 添加成员 / 改授职能</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('➕ 添加成员 / 改授职能', '➕ Add Member / Change Role')}</h4>", unsafe_allow_html=True)
     users = users_db.list_users()
     if not users:
         st.info("暂无用户可入册（账号由平台管理员在系统管理区创建）。")
@@ -1886,15 +1892,15 @@ def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
 
     with st.form("dict_admin_member_add_form", clear_on_submit=True):
         user_label = st.selectbox(
-            "选择用户", list(user_options.keys()), key="dict_admin_mem_add_user",
+            _t("选择用户", "Select User"), list(user_options.keys()), key="dict_admin_mem_add_user",
         )
         role = st.selectbox(
-            "项目内职能",
+            _t("项目内职能", "Project Role"),
             list(org_db.PROJECT_ROLES),
             format_func=_project_role_label,
             key="dict_admin_mem_add_role",
         )
-        submitted = st.form_submit_button("入册 / 改授", use_container_width=True)
+        submitted = st.form_submit_button(_t("入册 / 改授", "Add / Update Role"), use_container_width=True)
     if not submitted:
         return
     uid = user_options[user_label]
@@ -1925,7 +1931,7 @@ def _render_add_member_form(project_id: int, me: Dict[str, Any]) -> None:
 def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
                                me: Dict[str, Any]) -> None:
     """移出项目表单：chief / 在途任务被拒时把 org_db 的返回转成 st.warning。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>➖ 移出项目</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('➖ 移出项目', '➖ Remove Member')}</h4>", unsafe_allow_html=True)
     if not members:
         st.info("无成员可移除。")
         return
@@ -1938,9 +1944,9 @@ def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
 
     with st.form("dict_admin_member_remove_form", clear_on_submit=True):
         member_label = st.selectbox(
-            "选择成员", list(member_options.keys()), key="dict_admin_mem_remove_user",
+            _t("选择成员", "Select Member"), list(member_options.keys()), key="dict_admin_mem_remove_user",
         )
-        submitted = st.form_submit_button("移出项目", use_container_width=True)
+        submitted = st.form_submit_button(_t("移出项目", "Remove from Project"), use_container_width=True)
     if not submitted:
         return
     uid = member_options[member_label]
@@ -1967,7 +1973,7 @@ def _render_remove_member_form(project_id: int, members: List[Dict[str, Any]],
 
 def _render_members_tab(me: Dict[str, Any]) -> None:
     """项目成员分区：项目下拉 + 成员表 + 入册/移出表单 + 本项目 selfcheck 结果。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>👥 项目成员（三级权限链第二级：入册）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('👥 项目成员（三级权限链第二级：入册）', '👥 Project Members (Level 2 of Permission Chain: Roster)')}</h3>",
                 unsafe_allow_html=True)
     projects = org_db.list_projects()
     if not projects:
@@ -1976,7 +1982,7 @@ def _render_members_tab(me: Dict[str, Any]) -> None:
         return
     options = _project_options(projects)
     project_label = st.selectbox(
-        "选择项目", list(options.keys()), key="dict_admin_mem_project",
+        _t("选择项目", "Select Project"), list(options.keys()), key="dict_admin_mem_project",
     )
     project_id = options[project_label]
 
@@ -2050,7 +2056,7 @@ def _render_broadcast_history(project_id: int) -> None:
         # 空/降级态，引导文案如实注明两种可能，不编历史行（宁缺毋假）。
         st.caption("📢 该项目暂无广播记录（或数据库暂不可用，稍后重试）。")
         return
-    st.markdown(f"<h4 style='{HEADER_H3}'>🗂️ 该项目广播历史</h4>",
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🗂️ 该项目广播历史', '🗂️ Broadcast History (This Project)')}</h4>",
                 unsafe_allow_html=True)
     st.caption(
         f"共 {len(items)} 条（最新在前，上限 {FX30_BROADCAST_HISTORY} 条）；"
@@ -2076,7 +2082,7 @@ def _render_broadcast_section(project_id: int, me: Dict[str, Any],
     —— 切项目后表单值不残留上一项目的陈旧载荷）；project_name 由调用方
     从已取的项目清单带出（本段不二次查库），缺省回退「项目 #id」。
     """
-    st.markdown(f"<h4 style='{HEADER_H3}'>📢 项目广播（项目成员全员可见）</h4>",
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('📢 项目广播（项目成员全员可见）', '📢 Project Broadcast (Visible to All Members)')}</h4>",
                 unsafe_allow_html=True)
     st.caption(
         f"发布目标：{project_name or f'项目 #{project_id}'}（id {project_id}）。"
@@ -2086,14 +2092,15 @@ def _render_broadcast_section(project_id: int, me: Dict[str, Any],
     form_key = f"dict_admin_broadcast_form_{project_id}"
     with st.form(form_key, clear_on_submit=True):
         title = st.text_input(
-            "广播标题（必填，≤200 字符）",
+            _t("广播标题（必填，≤200 字符）", "Broadcast Title (required, ≤200 chars)"),
             key=f"dict_admin_bc_title_{project_id}",
         )
         body = st.text_area(
-            "广播正文（必填，≤10000 字符）", height=120,
+            _t("广播正文（必填，≤10000 字符）", "Broadcast Body (required, ≤10000 chars)"),
+            height=120,
             key=f"dict_admin_bc_body_{project_id}",
         )
-        submitted = st.form_submit_button("📢 发布广播", use_container_width=True)
+        submitted = st.form_submit_button(_t("📢 发布广播", "📢 Publish Broadcast"), use_container_width=True)
     if not submitted:
         _render_broadcast_history(project_id)
         return
@@ -2132,27 +2139,31 @@ def _render_broadcast_section(project_id: int, me: Dict[str, Any],
 
 def _render_define_field_form(project_id: int, me: Dict[str, Any]) -> None:
     """定义字段表单：code/展示名/挂锚/值类型/枚举白名单（逗号分隔）/必填声明。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>📐 定义字段</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('📐 定义字段', '📐 Define Field')}</h4>", unsafe_allow_html=True)
     with st.form("dict_admin_field_form", clear_on_submit=True):
-        code = st.text_input("字段代码 code（项目内唯一，≤64 字符）",
+        code = st.text_input(_t("字段代码 code（项目内唯一，≤64 字符）",
+                                "Field Code (unique per project, ≤64 chars)"),
                              max_chars=64, key="dict_admin_field_code")
-        name = st.text_input("展示名（≤120 字符，如「语域」）",
+        name = st.text_input(_t("展示名（≤120 字符，如「语域」）",
+                                "Display Name (≤120 chars, e.g. Register)"),
                              max_chars=120, key="dict_admin_field_name")
         applies_to = st.selectbox(
-            "挂锚类型 applies_to", list(dict_admin_db.APPLIES_TO),
+            _t("挂锚类型 applies_to", "Applies To (Anchor Type)"), list(dict_admin_db.APPLIES_TO),
             format_func=_anchor_label, key="dict_admin_field_applies",
         )
         value_type = st.selectbox(
-            "值类型 value_type", list(dict_admin_db.VALUE_TYPES),
+            _t("值类型 value_type", "Value Type"), list(dict_admin_db.VALUE_TYPES),
             format_func=_value_type_label, key="dict_admin_field_vtype",
         )
         enum_raw = st.text_input(
-            "枚举值白名单（逗号分隔；仅 value_type=enum 使用）",
+            _t("枚举值白名单（逗号分隔；仅 value_type=enum 使用）",
+               "Enum Value Whitelist (comma-separated; only for value_type=enum)"),
             key="dict_admin_field_enum",
         )
-        required = st.checkbox("必填（表单侧强制，数据层不拒空值）",
+        required = st.checkbox(_t("必填（表单侧强制，数据层不拒空值）",
+                                  "Required (enforced on form side; data layer allows empty)"),
                                key="dict_admin_field_required")
-        submitted = st.form_submit_button("定义字段", use_container_width=True)
+        submitted = st.form_submit_button(_t("定义字段", "Define Field"), use_container_width=True)
     if not submitted:
         return
     clean_code = code.strip()
@@ -2218,7 +2229,7 @@ def _render_fields_table(fields: List[Dict[str, Any]]) -> None:
 
 def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
     """弃用字段表单：停写不删（存量值保留只读）。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>🚫 弃用字段（停写不删）</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🚫 弃用字段（停写不删）', '🚫 Deprecate Field (Stop Writing, Keep Data)')}</h4>", unsafe_allow_html=True)
     active_fields = [f for f in fields if str(f.get("status") or "") == "active"]
     if not active_fields:
         st.info("没有可弃用的在用字段。")
@@ -2228,9 +2239,9 @@ def _render_deprecate_field_form(fields: List[Dict[str, Any]]) -> None:
     }
     with st.form("dict_admin_field_deprecate_form", clear_on_submit=True):
         field_label = st.selectbox(
-            "选择在用字段", list(field_options.keys()), key="dict_admin_cf_dep_field",
+            _t("选择在用字段", "Select Active Field"), list(field_options.keys()), key="dict_admin_cf_dep_field",
         )
-        submitted = st.form_submit_button("弃用", use_container_width=True)
+        submitted = st.form_submit_button(_t("弃用", "Deprecate"), use_container_width=True)
     if not submitted:
         return
     fid = field_options[field_label]
@@ -2290,7 +2301,7 @@ def _coerce_value(value_type: str, raw: Any) -> Optional[Any]:
 
 def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -> None:
     """为锚写值表单：字段 + 锚类型/锚 id + 按值类型录入；重复写即改值。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>✍️ 为锚写值</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('✍️ 为锚写值', '✍️ Write Value for Anchor')}</h4>", unsafe_allow_html=True)
     active_fields = [f for f in fields if str(f.get("status") or "") == "active"]
     if not active_fields:
         st.info("没有在用字段可写值：先「定义字段」。")
@@ -2303,19 +2314,20 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
     }
     with st.form("dict_admin_value_form", clear_on_submit=True):
         field_label = st.selectbox(
-            "选择字段", list(field_options.keys()), key="dict_admin_val_field",
+            _t("选择字段", "Select Field"), list(field_options.keys()), key="dict_admin_val_field",
         )
         field = field_options.get(field_label)
         if field is None:
             # 字段清单在两次渲染间变化（他人弃用等）：不让 KeyError 打崩页面
-            submitted = st.form_submit_button("写入值", use_container_width=True)
+            submitted = st.form_submit_button(_t("写入值", "Write Value"), use_container_width=True)
             if submitted:
                 st.error("字段清单已变化，请重试。")
             return
         value_type = str(field.get("value_type") or "text")
         anchor_choices = list(dict_admin_db.APPLIES_TO)
         anchor_type = st.selectbox(
-            "锚类型（须与字段 applies_to 一致）",
+            _t("锚类型（须与字段 applies_to 一致）",
+               "Anchor Type (must match the field's applies_to)"),
             anchor_choices,
             index=anchor_choices.index(str(field.get("applies_to")))
             if str(field.get("applies_to")) in anchor_choices else 0,
@@ -2323,31 +2335,36 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
             key="dict_admin_val_anchor_type",
         )
         anchor_id = st.number_input(
-            "锚 id（锚行主键，如 oald_senses.id）",
+            _t("锚 id（锚行主键，如 oald_senses.id）",
+               "Anchor ID (anchor row primary key, e.g. oald_senses.id)"),
             min_value=1, step=1, key="dict_admin_val_anchor_id",
         )
         if value_type == "enum":
             enum_items = [str(v) for v in (field.get("enum_values") or [])]
             if enum_items:
                 raw_value: Any = st.selectbox(
-                    "枚举值（白名单内选一）", enum_items, key="dict_admin_val_enum",
+                    _t("枚举值（白名单内选一）", "Enum Value (choose from whitelist)"),
+                    enum_items, key="dict_admin_val_enum",
                 )
             else:
                 raw_value = st.text_input(
-                    "枚举值（该字段白名单为空，写入将被数据层拒绝）",
+                    _t("枚举值（该字段白名单为空，写入将被数据层拒绝）",
+                       "Enum Value (whitelist empty; write will be rejected by data layer)"),
                     key="dict_admin_val_enum_fallback",
                 )
         elif value_type == "bool":
+            # 选项值「是（True）/否（False）」参与 _coerce_value 值匹配 ——
+            # 属值语义不译（en 态保持原选项，避免表单侧强制转换失配）
             raw_value = st.selectbox(
-                "布尔值", ("是（True）", "否（False）"), key="dict_admin_val_bool",
+                _t("布尔值", "Boolean Value"), ("是（True）", "否（False）"), key="dict_admin_val_bool",
             )
         elif value_type == "date":
-            raw_value = st.text_input("日期（YYYY-MM-DD）", key="dict_admin_val_date")
+            raw_value = st.text_input(_t("日期（YYYY-MM-DD）", "Date (YYYY-MM-DD)"), key="dict_admin_val_date")
         elif value_type == "number":
-            raw_value = st.text_input("数值（如 3.5）", key="dict_admin_val_num")
+            raw_value = st.text_input(_t("数值（如 3.5）", "Number (e.g. 3.5)"), key="dict_admin_val_num")
         else:
-            raw_value = st.text_input("文本值", key="dict_admin_val_text")
-        submitted = st.form_submit_button("写入值", use_container_width=True)
+            raw_value = st.text_input(_t("文本值", "Text Value"), key="dict_admin_val_text")
+        submitted = st.form_submit_button(_t("写入值", "Write Value"), use_container_width=True)
     if not submitted:
         return
     field_name = str(field.get("name") or field.get("code") or "")
@@ -2407,7 +2424,7 @@ def _render_write_value_form(fields: List[Dict[str, Any]], me: Dict[str, Any]) -
 
 def _render_fields_tab(me: Dict[str, Any]) -> None:
     """定制属性分区：定义字段 + 字段列表（含弃用）+ 为锚写值（EAV）。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>🏷️ 定制属性（EAV：字段定义 × 锚值）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🏷️ 定制属性（EAV：字段定义 × 锚值）', '🏷️ Custom Fields (EAV: Field Definitions × Anchor Values)')}</h3>",
                 unsafe_allow_html=True)
     projects = org_db.list_projects()
     if not projects:
@@ -2416,7 +2433,7 @@ def _render_fields_tab(me: Dict[str, Any]) -> None:
         return
     options = _project_options(projects)
     project_label = st.selectbox(
-        "选择项目", list(options.keys()), key="dict_admin_cf_project",
+        _t("选择项目", "Select Project"), list(options.keys()), key="dict_admin_cf_project",
     )
     project_id = options[project_label]
 
@@ -2496,29 +2513,32 @@ def _list_media_bindings(limit: int = MEDIA_LIST_LIMIT) -> List[Dict[str, Any]]:
 
 def _render_media_register_form(me: Dict[str, Any]) -> None:
     """登记资产表单：license 必填（空许可 st.error）+ sha256 去重「已存在复用」。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>📦 登记资产</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('📦 登记资产', '📦 Register Asset')}</h4>", unsafe_allow_html=True)
     with st.form("dict_admin_media_register_form", clear_on_submit=True):
         file_path = st.text_input(
-            "资产文件路径（服务器/仓库相对路径，须真实存在）",
+            _t("资产文件路径（服务器/仓库相对路径，须真实存在）",
+               "Asset File Path (server/repo relative path, must exist)"),
             key="dict_admin_media_path",
             help="register_asset 会读取该文件计算 sha256 与大小；"
                  "仓库相对路径优先（便于换机）。",
         )
         kind = st.selectbox(
-            "资产形态 kind", list(media_db.KINDS),
+            _t("资产形态 kind", "Asset Kind"), list(media_db.KINDS),
             format_func=lambda k: MEDIA_KIND_LABELS.get(k, k),
             key="dict_admin_media_kind",
         )
         source = st.text_input(
-            "来源 source（如 ModernChineseDict/images）",
+            _t("来源 source（如 ModernChineseDict/images）",
+               "Source (e.g. ModernChineseDict/images)"),
             key="dict_admin_media_source",
         )
         license_text = st.text_input(
-            "许可 license（必填，如 CC BY 4.0 / 自产 TTS）",
+            _t("许可 license（必填，如 CC BY 4.0 / 自产 TTS）",
+               "License (required, e.g. CC BY 4.0 / in-house TTS)"),
             key="dict_admin_media_license",
             help="无许可的资产不入库（D⑥ 许可纪律同款硬约束）。",
         )
-        submitted = st.form_submit_button("登记资产", use_container_width=True)
+        submitted = st.form_submit_button(_t("登记资产", "Register Asset"), use_container_width=True)
     if not submitted:
         return
     error = _media_register_error(file_path, kind, source, license_text)
@@ -2565,7 +2585,7 @@ def _render_media_bind_candidate() -> None:
         "已登记，可直接在下方表单选锚与用途（同键重复绑定幂等，保留首次值）。"
     )
     _render_media_bind_form([candidate], key_prefix="dict_admin_media_bind_cand")
-    if st.button("清除复用候选", key="dict_admin_media_bind_candidate_clear",
+    if st.button(_t("清除复用候选", "Clear Reuse Candidate"), key="dict_admin_media_bind_candidate_clear",
                  help="清除后回到常规双轨登记；不清除可继续用上方表单绑定该资产。"):
         del st.session_state["dict_admin_media_bind_candidate"]
         st.rerun()
@@ -2582,24 +2602,27 @@ def _render_media_upload_form(me: Dict[str, Any]) -> None:
     st.error/st.warning 提示，不抛异常；落盘成功但登记失败时文件保留，
     提示改走「服务器路径登记」按落盘路径补登。
     """
-    st.markdown(f"<h4 style='{HEADER_H3}'>⬆️ 上传落盘（本地文件 → data/media）</h4>",
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('⬆️ 上传落盘（本地文件 → data/media）', '⬆️ Upload to Disk (Local File → data/media)')}</h4>",
                 unsafe_allow_html=True)
     with st.form("dict_admin_media_upload_form", clear_on_submit=True):
         upload = st.file_uploader(
-            "选择媒体文件（png / jpeg / jpg / mp3 / mp4，单文件 ≤ 50MB）",
+            _t("选择媒体文件（png / jpeg / jpg / mp3 / mp4，单文件 ≤ 50MB）",
+               "Choose Media File (png / jpeg / jpg / mp3 / mp4, ≤50MB per file)"),
             type=MEDIA_UPLOAD_TYPES,
             key="dict_admin_media_upload",
         )
         source = st.text_input(
-            "来源 source（如 自产截图 / CC BY 4.0 来源站点）",
+            _t("来源 source（如 自产截图 / CC BY 4.0 来源站点）",
+               "Source (e.g. in-house screenshot / CC BY 4.0 site)"),
             key="dict_admin_media_upload_source",
         )
         license_text = st.text_input(
-            "许可 license（必填，与路径登记同款许可纪律）",
+            _t("许可 license（必填，与路径登记同款许可纪律）",
+               "License (required, same license discipline as path registration)"),
             key="dict_admin_media_upload_license",
             help="无许可的资产不入库（D⑥ 许可纪律同款硬约束）。",
         )
-        submitted = st.form_submit_button("校验并上传落盘", use_container_width=True)
+        submitted = st.form_submit_button(_t("校验并上传落盘", "Validate & Upload"), use_container_width=True)
     if not submitted:
         _render_media_bind_candidate()
         return
@@ -2700,7 +2723,7 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
     dict_admin_media_bind_cand 前缀；默认值即主绑定表单的既有 key，主流程
     行为不变）。
     """
-    st.markdown(f"<h4 style='{HEADER_H3}'>🔗 绑定资产（四锚 × 用途）</h4>",
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🔗 绑定资产（四锚 × 用途）', '🔗 Bind Asset (4 Anchors × Purposes)')}</h4>",
                 unsafe_allow_html=True)
     if not assets:
         st.info("暂无资产可绑定：先在上方「登记资产」。")
@@ -2713,11 +2736,12 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
     }
     with st.form(f"{key_prefix}_form", clear_on_submit=True):
         asset_label = st.selectbox(
-            "选择资产", list(asset_options.keys()),
+            _t("选择资产", "Select Asset"), list(asset_options.keys()),
             key=f"{key_prefix}_asset",
         )
         anchor_type = st.selectbox(
-            "锚类型（多态引用：词目/义位/例证/图式）",
+            _t("锚类型（多态引用：词目/义位/例证/图式）",
+               "Anchor Type (polymorphic reference: entry/sense/example/schema)"),
             list(media_db.MEDIA_ANCHOR_TYPES),
             format_func=lambda t: MEDIA_ANCHOR_LABELS.get(t, t),
             key=f"{key_prefix}_anchor_type",
@@ -2725,18 +2749,19 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
                  "sense=oald_senses.id（义位唯一锚）；example/schema 各按其表主键。",
         )
         anchor_id = st.number_input(
-            "锚 id（锚行主键）", min_value=1, step=1,
+            _t("锚 id（锚行主键）", "Anchor ID (anchor row primary key)"), min_value=1, step=1,
             key=f"{key_prefix}_anchor_id",
         )
         purpose = st.selectbox(
-            "用途 purpose", list(media_db.PURPOSES),
+            _t("用途 purpose", "Purpose"), list(media_db.PURPOSES),
             format_func=lambda p: MEDIA_PURPOSE_LABELS.get(p, p),
             key=f"{key_prefix}_purpose",
         )
         caption = st.text_input(
-            "图注 caption（例证媒体应含来源说明）", key=f"{key_prefix}_caption",
+            _t("图注 caption（例证媒体应含来源说明）",
+               "Caption (example media should state its source)"), key=f"{key_prefix}_caption",
         )
-        submitted = st.form_submit_button("绑定资产", use_container_width=True)
+        submitted = st.form_submit_button(_t("绑定资产", "Bind Asset"), use_container_width=True)
     if not submitted:
         return
     asset_id = asset_options.get(asset_label, 0)
@@ -2760,7 +2785,7 @@ def _render_media_bind_form(assets: List[Dict[str, Any]],
 
 def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
     """绑定列表 + 审定流转（候选→审定→发布，逐级单步按钮）。"""
-    st.markdown(f"<h4 style='{HEADER_H3}'>🧾 绑定列表与审定流转</h4>",
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🧾 绑定列表与审定流转', '🧾 Binding List & Review Flow')}</h4>",
                 unsafe_allow_html=True)
     if not bindings:
         st.info("暂无绑定记录（media_bindings 为空或数据库不可用）。")
@@ -2795,7 +2820,8 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
         for b in flowable
     }
     flow_label = st.selectbox(
-        "选择要流转的绑定（逐级单步：候选→审定→发布）",
+        _t("选择要流转的绑定（逐级单步：候选→审定→发布）",
+           "Select Binding to Advance (one step at a time: candidate→reviewed→published)"),
         list(flow_options.keys()),
         key="dict_admin_media_flow_select",
     )
@@ -2803,7 +2829,8 @@ def _render_media_bindings_flow(bindings: List[Dict[str, Any]]) -> None:
     next_status = (media_db.next_binding_status(binding.get("binding_status"))
                    if binding else None)
     if st.button(
-        f"➡️ 流转到「{next_status or '—'}」",
+        _t(f"➡️ 流转到「{next_status or '—'}」",
+           f"➡️ Advance to \"{next_status or '—'}\""),
         type="primary",
         disabled=not next_status,
         key="dict_admin_media_flow_btn",
@@ -2839,7 +2866,7 @@ def _render_media_tab(me: Dict[str, Any]) -> None:
     同一条 register_asset 链（sha256 去重、license 必填口径一致）。
     """
     media_db.ensure_media_tables()
-    st.markdown(f"<h3 style='{HEADER_H3}'>🖼️ 媒体库（数据资产归词典管理员）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🖼️ 媒体库（数据资产归词典管理员）', '🖼️ Media Library (Data Assets Owned by Dict Admin)')}</h3>",
                 unsafe_allow_html=True)
     st.caption(
         "登记资产双轨（⬆️ 上传落盘 / 服务器路径；sha256 去重，license 必填）→ "
@@ -2850,7 +2877,8 @@ def _render_media_tab(me: Dict[str, Any]) -> None:
     _render_media_upload_form(me)
 
     status_filter = st.selectbox(
-        "资产列表按状态筛选", ("全部",) + tuple(media_db.MEDIA_STATUSES),
+        _t("资产列表按状态筛选", "Filter Assets by Status"),
+        ("全部",) + tuple(media_db.MEDIA_STATUSES),
         key="dict_admin_media_asset_filter",
     )
     assets = media_db.list_assets(None if status_filter == "全部" else str(status_filter),
@@ -3284,7 +3312,7 @@ def _render_snapshot_builder(
     快照按内部快照登记（MANIFEST 如实标注「未过（仅内部使用）」）。
     """
     st.markdown(
-        f"<h4 style='{HEADER_H3}'>📦 内容域快照（§15 内容性导出唯一正式出口）</h4>",
+        f"<h4 style='{HEADER_H3}'>{_t('📦 内容域快照（§15 内容性导出唯一正式出口）', '📦 Content Snapshot (Sole Official Export Outlet per §15)')}</h4>",
         unsafe_allow_html=True,
     )
     st.caption(
@@ -3293,7 +3321,7 @@ def _render_snapshot_builder(
         "**内部快照**登记（license_checked=0），不得对外交付 —— 对外交付须 G6 "
         "三项全过后流转 published。"
     )
-    if st.button("📦 生成内容域快照", key="pub_build_snapshot", type="primary"):
+    if st.button(_t("📦 生成内容域快照", "📦 Build Content Snapshot"), key="pub_build_snapshot", type="primary"):
         try:
             actor = guards.require_dict_admin()
         except PermissionError as e:
@@ -3357,7 +3385,8 @@ def _render_exports_flow(
                  f"{e.get('rows_total')} 行 · {e.get('created_at')}")
         options[label] = e
     label = st.selectbox(
-        "选择 ready 态快照（逐条单步流转，乐观并发守卫）",
+        _t("选择 ready 态快照（逐条单步流转，乐观并发守卫）",
+           "Select Ready Snapshot (one step at a time, optimistic concurrency guard)"),
         list(options.keys()), key="pub_flow_select",
     )
     row = options[label]
@@ -3369,7 +3398,7 @@ def _render_exports_flow(
     col_pub, col_rev = st.columns(2)
     with col_pub:
         if st.button(
-            "📤 标记 published（出版交付）", key="pub_publish_btn",
+            _t("📤 标记 published（出版交付）", "📤 Mark Published (Deliver)"), key="pub_publish_btn",
             type="primary", disabled=not gate_open,
             help="G6 三项全过才可出版；published 为终态；出版人/时间随流转留痕"
                  "（export_batches.published_by / published_at）。",
@@ -3392,7 +3421,8 @@ def _render_exports_flow(
                            "或数据库不可用。")
     with col_rev:
         if st.button(
-            "🚫 撤销快照（ready→revoked，单向不可逆）", key="pub_revoke_btn",
+            _t("🚫 撤销快照（ready→revoked，单向不可逆）",
+               "🚫 Revoke Snapshot (ready→revoked, irreversible)"), key="pub_revoke_btn",
             help="撤销表示该快照作废、退出出版通道；不可逆 —— 如需再出版须"
                  "重新生成快照（口径见 _advance_export_status docstring）。",
         ):
@@ -3484,14 +3514,14 @@ def _render_registry_form(me: Dict[str, Any]) -> None:
     )
     col_a, col_b = st.columns(2)
     with col_a:
-        name = st.text_input("资源名称（如 enTenTen21）", key="pub_reg_name")
+        name = st.text_input(_t("资源名称（如 enTenTen21）", "Resource Name (e.g. enTenTen21)"), key="pub_reg_name")
         coverage = st.text_input(
-            "覆盖说明（如 996 全义项）", key="pub_reg_coverage")
+            _t("覆盖说明（如 996 全义项）", "Coverage (e.g. 996 senses)"), key="pub_reg_coverage")
     with col_b:
-        version = st.text_input("资源版本（如 2021）", key="pub_reg_version")
+        version = st.text_input(_t("资源版本（如 2021）", "Resource Version (e.g. 2021)"), key="pub_reg_version")
         license_text = st.text_input(
-            "许可（如 CC BY 4.0）", key="pub_reg_license")
-    if st.button("🗂️ 登记资源", key="pub_reg_submit", type="primary"):
+            _t("许可（如 CC BY 4.0）", "License (e.g. CC BY 4.0)"), key="pub_reg_license")
+    if st.button(_t("🗂️ 登记资源", "🗂️ Register Resource"), key="pub_reg_submit", type="primary"):
         err = _registry_form_error(name, version, coverage, license_text)
         if err:
             st.error(f"⛔ {err}")
@@ -3525,7 +3555,7 @@ def _render_resource_registry_section(me: Dict[str, Any]) -> None:
     """🗂️ 资源登记块（登记表单＋资源清单；清单读取降级不拖垮本 tab）。"""
     st.markdown("")
     st.markdown(
-        f"<h4 style='{HEADER_H3}'>🗂️ 资源登记（D⑥ 资源发布域数据面）</h4>",
+        f"<h4 style='{HEADER_H3}'>{_t('🗂️ 资源登记（D⑥ 资源发布域数据面）', '🗂️ Resource Registry (D⑥ Resource Release Domain Data)')}</h4>",
         unsafe_allow_html=True,
     )
     try:
@@ -3554,7 +3584,7 @@ def _render_publication_tab(me: Dict[str, Any]) -> None:
     资源登记/状态流转都在 guards.require_dict_admin 闸门之后（纵深防御：
     tab 入口已过角色门，写路径调用点再过中央闸门）。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>🚧 G6 出版闸门检查清单（装配→出版）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🚧 G6 出版闸门检查清单（装配→出版）', '🚧 G6 Publishing Gate Checklist (Assembly → Publishing)')}</h3>",
                 unsafe_allow_html=True)
     st.caption(
         "G6 放行条件（架构规范 §3 闸门表）：许可检查＋体例终检＋备份新鲜三项全过，"
@@ -3566,7 +3596,7 @@ def _render_publication_tab(me: Dict[str, Any]) -> None:
     _render_resource_registry_section(me)
     _render_snapshot_builder(_g6_license_passed(checks), me)
     st.markdown("")
-    st.markdown(f"<h4 style='{HEADER_H3}'>🗂️ 快照清单与状态流转</h4>",
+    st.markdown(f"<h4 style='{HEADER_H3}'>{_t('🗂️ 快照清单与状态流转', '🗂️ Snapshot List & Status Flow')}</h4>",
                 unsafe_allow_html=True)
     exports = export_center.list_exports(limit=20)
     _render_exports_table(exports)
@@ -3626,7 +3656,7 @@ def _assignment_round_badges(item: Dict[str, Any]) -> str:
 
 def _render_assignment_ledger() -> None:
     """分派台账（FX-20）：assignments 行 + 轮次/试标徽章（只读降级渲染）。"""
-    st.markdown(f"<h3 style='{HEADER_H3}'>🗂️ 分派台账（轮次/试标徽章）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('🗂️ 分派台账（轮次/试标徽章）', '🗂️ Assignment Ledger (Round/Pilot Badges)')}</h3>",
                 unsafe_allow_html=True)
     ledger = annotation_flow.list_assignments_admin(limit=50)
     if not ledger:
@@ -3677,7 +3707,8 @@ def _render_reassign_section(me: Dict[str, Any]) -> None:
             return
         project_opts = _project_options(projects)
         project_label = st.selectbox(
-            "目标校验项目（新承包人须为其在册成员）",
+            _t("目标校验项目（新承包人须为其在册成员）",
+               "Target Validation Project (new assignee must be on its roster)"),
             list(project_opts.keys()),
             key="dict_admin_fx20_reassign_project",
         )
@@ -3699,7 +3730,8 @@ def _render_reassign_section(me: Dict[str, Any]) -> None:
                 f"承包人 {assignee}"
             ] = a
         assign_label = st.selectbox(
-            "选择分派（仅列出可改派状态）",
+            _t("选择分派（仅列出可改派状态）",
+               "Select Assignment (only reassignable statuses listed)"),
             list(assign_opts.keys()),
             key="dict_admin_fx20_reassign_assignment",
         )
@@ -3721,11 +3753,12 @@ def _render_reassign_section(me: Dict[str, Any]) -> None:
             for m in members
         }
         member_label = st.selectbox(
-            "新承包人（在册在用、非现承包人）",
+            _t("新承包人（在册在用、非现承包人）",
+               "New Assignee (on roster & active, not the current assignee)"),
             list(member_opts.keys()),
             key="dict_admin_fx20_reassign_member",
         )
-        if st.button("🔁 确认改派", type="primary",
+        if st.button(_t("🔁 确认改派", "🔁 Confirm Reassignment"), type="primary",
                      key="dict_admin_fx20_reassign_submit"):
             try:
                 actor = guards.require_dict_admin()
@@ -3775,31 +3808,36 @@ def _render_training_assign_section(me: Dict[str, Any]) -> None:
             )
             return
         with st.form("dict_admin_fx20_training_form", clear_on_submit=True):
-            category = st.text_input("范畴（如 motion）", value="motion",
+            category = st.text_input(_t("范畴（如 motion）", "Category (e.g. motion)"), value="motion",
                                      key="dict_admin_fx20_train_category")
             task_type = st.selectbox(
-                "任务类型（assignments.task_type 枚举）",
+                _t("任务类型（assignments.task_type 枚举）",
+                   "Task Type (assignments.task_type enum)"),
                 list(annotation_flow.TASK_TYPES),
                 format_func=lambda t: annotation_flow.TASK_TYPE_LABELS.get(t, t),
                 key="dict_admin_fx20_train_task_type",
             )
             assignee_label = st.selectbox(
-                "选择标注员（在用账号、annotator 及以上）",
+                _t("选择标注员（在用账号、annotator 及以上）",
+                   "Select Annotator (active account, annotator or above)"),
                 list(candidates.keys()),
                 key="dict_admin_fx20_train_assignee",
             )
             round_text = st.text_input(
-                "轮次 round（第几轮标注；留空=正式轮不留痕）",
+                _t("轮次 round（第几轮标注；留空=正式轮不留痕）",
+                   "Round (which annotation round; empty = formal round, no trace)"),
                 key="dict_admin_fx20_train_round",
                 max_chars=8,
-                placeholder="如 2；留空=正式轮",
+                placeholder=_t("如 2；留空=正式轮", "e.g. 2; empty = formal round"),
             )
+            # 选项值参与「试标轮 in training_label」值判定 —— 属值语义不译
             training_label = st.selectbox(
-                "试标轮 training",
+                _t("试标轮 training", "Pilot Round (training)"),
                 ["正式轮（training 不留痕）", "试标轮（training=1）"],
                 key="dict_admin_fx20_train_training",
             )
-            submitted = st.form_submit_button("🎯 创建分派（含轮次留痕）")
+            submitted = st.form_submit_button(_t("🎯 创建分派（含轮次留痕）",
+                                                 "🎯 Create Assignment (with round trace)"))
         if not submitted:
             return
         training_val: Optional[bool] = (
@@ -3904,26 +3942,30 @@ def _render_reannotation_section(me: Dict[str, Any]) -> None:
             "复核裁决状态。"
         )
         with st.form("dict_admin_fx20_reannotation_form", clear_on_submit=True):
-            category = st.text_input("范畴（包名 motion 或研究代号 RUN）",
+            category = st.text_input(_t("范畴（包名 motion 或研究代号 RUN）",
+                                        "Category (package name motion or study code RUN)"),
                                      value="motion",
                                      key="dict_admin_fx20_reann_category")
             task_type = st.selectbox(
-                "重标任务类型（默认 feature_coding=工序5 特征标注重标）",
+                _t("重标任务类型（默认 feature_coding=工序5 特征标注重标）",
+                   "Reannotation Task Type (default feature_coding = Step 5 feature coding redo)"),
                 list(annotation_flow.TASK_TYPES),
                 format_func=lambda t: annotation_flow.TASK_TYPE_LABELS.get(t, t),
                 key="dict_admin_fx20_reann_task_type",
             )
             round_no = st.number_input(
-                "被失效的当前轮次 round（重标任务建于 round+1）",
+                _t("被失效的当前轮次 round（重标任务建于 round+1）",
+                   "Invalidated Current Round (reannotation tasks built at round+1)"),
                 min_value=1, value=1, step=1,
                 key="dict_admin_fx20_reann_round",
             )
             ids_text = st.text_input(
-                "受影响义位 id（标注侧 oald_senses.id，逗号分隔）",
+                _t("受影响义位 id（标注侧 oald_senses.id，逗号分隔）",
+                   "Affected Sense IDs (annotation-side oald_senses.id, comma-separated)"),
                 key="dict_admin_fx20_reann_senses",
-                placeholder="如 101, 102",
+                placeholder=_t("如 101, 102", "e.g. 101, 102"),
             )
-            submitted = st.form_submit_button("♻️ 发起重标")
+            submitted = st.form_submit_button(_t("♻️ 发起重标", "♻️ Start Reannotation"))
         if not submitted:
             return
         sense_ids: List[int] = []
@@ -4100,7 +4142,7 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
     本页提供：质检状态实时反映 ＋ 词表浏览 ＋ 增词/删词（写回 txt 留痕）。
     语言学分寸（该不该用 X 解释 Y）由编者判断——本页只管「表里有哪些词」。
     """
-    st.markdown(f"<h3 style='{HEADER_H3}'>📝 词表核定（受控定义词表）</h3>",
+    st.markdown(f"<h3 style='{HEADER_H3}'>{_t('📝 词表核定（受控定义词表）', '📝 Vocabulary Approval (Controlled Defining Vocabulary)')}</h3>",
                 unsafe_allow_html=True)
     st.caption(
         "定义词表＝释义正文的受控用词封闭集（OALD/Longman 通行做法）：释义用词"
@@ -4145,7 +4187,7 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
     # _vocab_write_words(expect_mtime=…) 比对，他人并发写过（mtime 变了）
     # 即拒写防丢更新。文件不在场（首次建表）基线为 None。
     vocab_mtime = _vocab_file_mtime()
-    st.metric("当前词条数", len(words))
+    st.metric(_t("当前词条数", "Current Word Count"), len(words))
 
     # 🔄 从语料重建初版（批次 51：语料变化后词表刷新——构建函数单一事实源
     # 在 src/style_check.py，页面直调；重建覆盖编者增删——按钮级二次确认）
@@ -4154,7 +4196,7 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
             "以当前释义语料（996 条英文释义）重新提取高频词表（覆盖本页编者"
             "增删——重建后需重新核定）。语料变化（重新灌库/增删释义）后使用。"
         )
-        if st.button("🔄 重建词表初版", key="vocab_rebuild_btn"):
+        if st.button(_t("🔄 重建词表初版", "🔄 Rebuild Vocabulary from Corpus"), key="vocab_rebuild_btn"):
             # R9 P2 移交修复：写路径调用点二次闸（API 级中央闸门，同页媒体/
             # 出版/成员 tab 写路径同口径——纵深防御 §6-4；页面 tab 门在场时
             # 不可达利用，闸是低权会话直构造提交事件的兜底）
@@ -4182,10 +4224,11 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
 
     left, right = st.columns([3, 2])
     with left:
-        st.markdown("**➕ 增词**（每行一词或逗号分隔；只收字母词，重复自动跳过）")
-        add_text = st.text_area("新增词条", key="vocab_add", height=100,
+        st.markdown(_t("**➕ 增词**（每行一词或逗号分隔；只收字母词，重复自动跳过）",
+                       "**➕ Add Words** (one per line or comma-separated; letters only, duplicates skipped automatically)"))
+        add_text = st.text_area(_t("新增词条", "Words to Add"), key="vocab_add", height=100,
                                 placeholder="e.g.\ncome, go\nbecome")
-        if st.button("➕ 写入新增词", key="vocab_add_btn",
+        if st.button(_t("➕ 写入新增词", "➕ Write Added Words"), key="vocab_add_btn",
                      use_container_width=True):
             # R9 P2 移交修复：写路径调用点二次闸（同重建按钮口径）
             try:
@@ -4236,10 +4279,11 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
                                      f"——词表现 {total} 词。记得 git 提交固化。")
                         st.rerun()
     with right:
-        st.markdown("**➖ 删词**（输入要移除的词条，精准删除）")
-        del_text = st.text_input("删除词条", key="vocab_del",
+        st.markdown(_t("**➖ 删词**（输入要移除的词条，精准删除）",
+                       "**➖ Remove Words** (type the entry to remove, exact match)"))
+        del_text = st.text_input(_t("删除词条", "Word to Remove"), key="vocab_del",
                                  placeholder="e.g. somebody")
-        if st.button("➖ 移除该词", key="vocab_del_btn",
+        if st.button(_t("➖ 移除该词", "➖ Remove This Word"), key="vocab_del_btn",
                      use_container_width=True):
             # R9 P2 移交修复：写路径调用点二次闸（同增词/重建按钮口径）
             try:
@@ -4266,12 +4310,14 @@ def _render_vocab_tab(me: Dict[str, Any]) -> None:
             else:
                 st.warning(f"「{target}」不在词表中（或输入为空）")
 
-    st.markdown(f"**词表浏览**（{len(words)} 词，按字母序）")
+    st.markdown(_t(f"**词表浏览**（{len(words)} 词，按字母序）",
+                   f"**Browse Vocabulary** ({len(words)} words, alphabetical)"))
     st.dataframe(
         __import__("pandas").DataFrame({"词条": sorted(words, key=str.casefold)}),
         use_container_width=True, height=420, hide_index=True,
     )
-    st.download_button("📥 下载词表 txt", data=_VOCAB_PATH.read_text(encoding="utf-8"),
+    st.download_button(_t("📥 下载词表 txt", "📥 Download Vocabulary (txt)"),
+                       data=_VOCAB_PATH.read_text(encoding="utf-8"),
                        file_name="defining_vocab.txt", mime="text/plain",
                        use_container_width=True)
 
@@ -4309,7 +4355,7 @@ def render_dict_admin_page() -> None:
     # 页 H1 双语：原文即 key（与侧边栏 label 同串，ZH_EN 已收录）
     st.markdown(f"<h1 style='{HEADER_H1}'>{_t('📖 词典管理')}</h1>", unsafe_allow_html=True)
     st.markdown(
-        f"<h2 style='{HEADER_H2}'>词典管理员工作台（阶段 1 MVP）</h2>",
+        f"<h2 style='{HEADER_H2}'>{_t('词典管理员工作台（阶段 1 MVP）', 'Dictionary Admin Workbench (Phase 1 MVP)')}</h2>",
         unsafe_allow_html=True,
     )
     st.caption(
@@ -4336,8 +4382,11 @@ def render_dict_admin_page() -> None:
 
     (tab_cockpit, tab_members, tab_fields, tab_import, tab_vocab,
      tab_browser, tab_assign, tab_media, tab_publish) = st.tabs(
-        ["🧭 主编驾驶舱", "👥 项目成员", "🏷️ 定制属性", "📥 数据导入", "📝 词表核定",
-         "📖 词条浏览器", "📋 任务分配", "🖼️ 媒体库", "📤 出版导出"],
+        [_t("🧭 主编驾驶舱", "🧭 Editor Cockpit"), _t("👥 项目成员", "👥 Project Members"),
+         _t("🏷️ 定制属性", "🏷️ Custom Fields"), _t("📥 数据导入", "📥 Data Import"),
+         _t("📝 词表核定", "📝 Vocabulary Approval"), _t("📖 词条浏览器", "📖 Entry Browser"),
+         _t("📋 任务分配", "📋 Task Assignment"), _t("🖼️ 媒体库", "🖼️ Media Library"),
+         _t("📤 出版导出", "📤 Publishing Export")],
     )
     with tab_cockpit:
         _render_cockpit_tab()
