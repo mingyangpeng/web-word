@@ -1065,27 +1065,41 @@ def _render_page_feature_switches(me: Dict[str, Any]) -> None:
                     "Switch tables failed to initialise (database unavailable) — this section is unavailable."))
         return
 
-    # —— 页面开关 ——
+    # —— 页面开关（按七区分组渲染——商业观感：17 行平铺 → 每区一个分组小节）——
     st.markdown(f"**{_t('页面开关', 'Page switches')}**")
     page_states = {str(r.get("page_key")): r for r in list_page_settings()}
-    for key in PAGE_KEYS:
-        st_row = page_states.get(key, {})
-        enabled = bool(st_row.get("enabled", 1)) if st_row else True
-        locked = key in LOCKED_PAGES
-        label = f"{_t(page_label(key))}" + (f"  ·  {_t('底线页（不可停用）', 'locked page')}" if locked else "")
-        new_enabled = st.checkbox(
-            label,
-            value=enabled if not locked else True,
-            key=f"pg_switch_{key}",
-            disabled=locked,
-            help=_t("底线页不可停用", "Locked pages cannot be disabled") if locked else None,
-        )
-        if not locked and new_enabled != enabled:
-            ok = set_page_enabled(key, new_enabled, me)
-            if ok:
-                st.rerun()
-            else:
-                st.error(_t("写入失败（数据库异常），请重试。", "Write failed (database error) — please retry."))
+    from src.app import _SIDEBAR_ZONES  # 七区分组单一事实源（与侧边栏同源）
+
+    grouped = {zone: keys for zone, keys in _SIDEBAR_ZONES}
+    rendered = set()
+    for zone, zone_keys in _SIDEBAR_ZONES:
+        st.markdown(f"<span style='color:#718096;font-size:0.85rem;'>{_t(zone)}</span>",
+                    unsafe_allow_html=True)
+        for key in zone_keys:
+            rendered.add(key)
+            st_row = page_states.get(key, {})
+            enabled = bool(st_row.get("enabled", 1)) if st_row else True
+            locked = key in LOCKED_PAGES
+            label = f"{_t(page_label(key))}" + (f"  ·  {_t('底线页（不可停用）', 'locked page')}" if locked else "")
+            new_enabled = st.checkbox(
+                label,
+                value=enabled if not locked else True,
+                key=f"pg_switch_{key}",
+                disabled=locked,
+                help=_t("底线页不可停用", "Locked pages cannot be disabled") if locked else None,
+            )
+            if not locked and new_enabled != enabled:
+                ok = set_page_enabled(key, new_enabled, me)
+                if ok:
+                    st.rerun()
+                else:
+                    st.error(_t("写入失败（数据库异常），请重试。", "Write failed (database error) — please retry."))
+        st.markdown("")
+    # 兜底：不在七区映射的页键（防御——PAGE_KEYS 变更时开关面不漏行）
+    leftovers = [k for k in PAGE_KEYS if k not in rendered]
+    if leftovers:
+        st.caption(_t("以下页面未归属七区（防御兜底）：", "Pages not in the seven zones (fallback):")
+                   + " " + ", ".join(leftovers))
 
     st.markdown("")
 

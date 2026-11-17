@@ -58,11 +58,17 @@ def pageplug_env(monkeypatch):
     db.MYSQL_DATABASE = TEST_DB
     snap_pool = dict(db._connection_pools)
     db._connection_pools.clear()
+    # 批次 62 review：读缓存是进程级（30s TTL）——切库必须清，否则上一个
+    # 测试库的开关态会跨库污染（潜在 flaky）
+    import src.page_plugins as _pp
+
+    _pp._read_cache.clear()
     ensure_page_plugins_tables()
     yield
     db.MYSQL_DATABASE = old_db
     db._connection_pools.clear()
     db._connection_pools.update(snap_pool)
+    _pp._read_cache.clear()
 
 
 class TestPageSwitches:
